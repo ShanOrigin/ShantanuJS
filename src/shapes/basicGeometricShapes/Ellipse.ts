@@ -1,0 +1,256 @@
+import { renderer } from '../../core/graphics/providers/graphics.js';
+import {
+  Shape,
+  DEV_INTERNAL_ACCESS,
+  assertAccess
+} from '../baseShape/Shape.js';
+import {
+  GraphicalElementProperties,
+  CommonGeometricProperties,
+  AllGShapeStyleProperties
+} from '../../properties/provider/shapeProperties.js';
+
+import {
+  IGraphicalElementProperties,
+  StyleForGShapeTag
+} from '../../properties/provider/shapeProperties';
+
+import {
+  checkParent,
+  isValidMatrix,
+  validProps,
+  parameterTypeValidator,
+  autoFixGeometry
+} from '../../utils/providers/utils.js';
+
+type propsType = Partial<IGraphicalElementProperties['ellipse']> &
+  Partial<StyleForGShapeTag<'ellipse'>>;
+export class Ellipse extends Shape<'ellipse', 'ellipse'> {
+  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+  #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
+  #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
+  #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
+
+  // #Animations!: SAnimation<'ellipse'>[]; // for timeline support but not implementated yet
+
+  constructor(
+    cx: number,
+    cy: number,
+    rx: number,
+    ry: number,
+    props: propsType = {}
+  ) {
+    super('ellipse', props?.id ?? '', 'ellipse');
+    try {
+      const {
+        cx: dcx = 0,
+        cy: dcy = 0,
+        rx: drxOffset = 0,
+        ry: dryOffset = 0,
+        ...rest
+      } = props;
+
+      'id' in props && delete props.id;
+      parameterTypeValidator(
+        props,
+        GraphicalElementProperties,
+        {},
+        {},
+        'ellipse'
+      );
+
+      autoFixGeometry(props, ['rx', 'ry']);
+
+      const safeProps = {
+        initial: true,
+        cx: cx + +dcx,
+        cy: cy + +dcy,
+        rx: rx + +drxOffset,
+        ry: ry + +dryOffset,
+        ...rest
+      };
+
+      parameterTypeValidator(
+        safeProps,
+        GraphicalElementProperties,
+        AllGShapeStyleProperties,
+        this.#classProp,
+        'ellipse'
+      );
+
+      autoFixGeometry(props, ['rx', 'ry', 'stroke-width']);
+
+      this.attrs(safeProps);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  static validProps() {
+    return validProps(
+      AllGShapeStyleProperties,
+      CommonGeometricProperties,
+      GraphicalElementProperties,
+      'ellipse'
+    );
+  }
+  public clone(
+    offsetX: number = 10,
+    offsetY: number = 10,
+    visibleRadiusX?: number,
+    visibleRadiusY?: number
+  ): Ellipse {
+    checkParent(this.#fig, 'ellipse');
+
+    if (
+      this.#geometry &&
+      typeof this.#geometry === 'object' &&
+      this.#geometry !== null &&
+      this.#style &&
+      typeof this.#style === 'object' &&
+      this.#style !== null
+    ) {
+      const { copies = 0, cx = 0, cy = 0, rx = 0, ry = 0 } = this.#geometry;
+
+      const nextCopies = copies + 1;
+
+      const style = { ...this.#style } as StyleForGShapeTag<'ellipse'>;
+      if ('id' in style && style.id !== '') {
+        style.id = `${style.id}-c${nextCopies}`;
+      }
+
+      this.#geometry['copies'] = nextCopies;
+      return new Ellipse(
+        offsetX + cx,
+        offsetY + cy,
+        (visibleRadiusX ?? 0) + rx,
+        (visibleRadiusY ?? 0) + ry,
+        style as propsType
+      );
+    }
+
+    throw new Error('Cannot clone: geometry or style is invalid.');
+  }
+
+  protected override generateMatrix(accessKey: symbol): void {
+    try {
+      assertAccess(accessKey);
+      if (!this.#geometry) return;
+
+      const { cx = 0, cy = 0, rx = 0, ry = 0 } = this.#geometry;
+      const shapeRows = 3;
+      const bboxRows = 4;
+      const totalLength = (shapeRows + bboxRows) * 3;
+
+      // Allocate once and reuse
+      if (
+        !this.#geometry.sharedBuffer ||
+        this.#geometry.sharedBuffer.length !== totalLength
+      ) {
+        this.#geometry.sharedBuffer = new Float32Array(totalLength);
+      }
+
+      const sb = this.#geometry.sharedBuffer as Float32Array;
+      sb.set([cx, cy, 1, cx + rx, cy, 1, cx, cy + ry, 1], 0);
+      // Only recreate views if buffer was reallocated
+      if (!this.#geometry.matrix) {
+        this.#geometry.matrix = [
+          new Float32Array(sb.buffer, 0 * 4, 3),
+          new Float32Array(sb.buffer, 3 * 4, 3),
+          new Float32Array(sb.buffer, 6 * 4, 3)
+        ];
+      }
+      renderer.render({ el: this });
+      this.restoreDimension(DEV_INTERNAL_ACCESS);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  protected override validateShapeMatrix(
+    accessKey: symbol,
+    matrix: Float32Array[],
+    output: boolean = false
+  ): boolean | number[] {
+    try {
+      assertAccess(accessKey);
+
+      if (!this.#geometry || matrix.length !== 3) return false;
+      const [center, right, bottom] = matrix;
+      const crx = Math.hypot(right[0] - center[0], right[1] - center[1]);
+      const cry = Math.hypot(bottom[0] - center[0], bottom[1] - center[1]);
+      const [rx, ry] = [this.#geometry.rx ?? 0, this.#geometry.ry ?? 0];
+
+      const rValid = Math.abs(rx - crx) < 1e-6 && Math.abs(ry - cry) < 1e-6;
+
+      if (output && rValid) {
+        return [crx, cry];
+      }
+
+      return rValid;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  protected override restoreDimension(
+    accessKey: symbol,
+    basic: boolean = true
+  ) {
+    try {
+      assertAccess(accessKey);
+      if (!this.#geometry) return;
+      const m = this.#geometry && (this.#geometry.matrix as Float32Array[]);
+      if (!isValidMatrix(m, 3, 3)) return;
+
+      const [cx, cy] = m[0]; // center of ellipse
+      const a = Math.hypot(m[1][0] - cx, m[1][1] - cy);
+      const b = Math.hypot(m[2][0] - cx, m[2][1] - cy);
+
+      basic &&
+        (([this.#geometry.rx, this.#geometry.ry] = [a, b]),
+        ([this.#geometry.cx, this.#geometry.cy] = m[0]));
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  protected override getAttrsAccordingToShape(
+    accessKeys: symbol,
+    attrs: Record<string, any>
+  ): { x: number; y: number; width: number; height: number } {
+    assertAccess(accessKeys);
+
+    const rx = this.#geometry?.rx ?? 1;
+    const ry = this.#geometry?.ry ?? 1;
+    const attr = {
+      x: attrs.cx ?? 0,
+      y: attrs.cy ?? 0,
+      width: attrs.rx ?? rx,
+      height: attrs.ry ?? ry
+    };
+
+    return attr;
+  }
+
+  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+  } {
+    assertAccess(accessKeys);
+    const {
+      cx: x = 0,
+      cy: y = 0,
+      rx: width,
+      ry: height
+    } = this.#geometry as {
+      cx: number;
+      cy: number;
+      rx: number;
+      ry: number;
+    };
+    return { x, y, width, height };
+  }
+}

@@ -1,0 +1,41 @@
+# ===========================
+# ShantanuJS Git Ignore File
+# ===========================
+
+# Build output
+dist/
+build/
+out/
+
+# Node modules
+node_modules/
+
+# WASM old build folders
+oldWASM/
+
+# Experimental or test directories
+jPlag/
+temp/
+logs/
+.cache/
+
+# Environment and config
+.env
+*.local
+
+# TypeScript build info
+*.tsbuildinfo
+
+# IDE and OS-specific
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# SSH keys
+id_rsa
+id_rsa.pub
+svgp
+svgp.pub
+*.pem
+*.key
