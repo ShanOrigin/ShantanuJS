@@ -10,6 +10,7 @@ import { RectFiltersTests } from '../tests/shapes/basicShapes/rect/visualTest/vi
 
 import { access } from '../utils/internals/accessKeys.js';
 
+// Tester function
 async function RectClassTester(testType: string) {
   switch (testType) {
     case 'unit':
