@@ -297,3 +297,15 @@ Notes:
 -  third is full neu morph like how actual neu morph.
 - In glass morph it feels like holding frost glass on that perticular element.
 
+[2025-11-09 | Sunday | 13:18] [scripts | 1h] Added auto git sync and push scripts
+Notes:
+- Added gitSmartSync and gitSmartPush script for auto syncing.
+- when local is behind or ahead or local changes.
+- when local changes need to push to git for sync
+
+[2025-11-09 | Sunday | 13:47] [scripts | 1h] Added auto git sync and push scripts
+Notes:
+- Added gitSmartSync and gitSmartPush script for auto syncing.
+- when local is behind or ahead or local changes.
+- when local changes need to push to git for sync
+
