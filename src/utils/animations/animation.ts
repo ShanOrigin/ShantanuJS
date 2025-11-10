@@ -548,10 +548,13 @@ export class Animation<T extends GShpesTages> {
     // Compute progress normally
     if (this.#isTranslation && physicsMotion) {
       const distance = (elapsed / 1000) * clampedSpeed * this.#totalLength;
-      this.#progress = getTForDistance(distance, this.#arcTable);
+
+      const safeDistance = Math.min(Math.max(0, distance), this.#totalLength);
+      this.#progress = getTForDistance(safeDistance, this.#arcTable);
     } else {
       const time = Math.min((elapsed * clampedSpeed) / this.#totalTime, 1);
       this.#progress = this.#easingFunction(time);
+      console.log('in non physics mode');
     }
 
     // Flip for alternate direction
@@ -964,13 +967,16 @@ export class Animation<T extends GShpesTages> {
     const OBB = this.#sharedSMatrix.subarray(N - 12); // last 12 elements
 
     [this.#curvePoints, this.#arcTable, this.#totalLength] =
-      generateCurvePoints(
-        p1,
-        p2,
-        (curve.stepness as number) * -1,
-        curve.smoothness,
-        curve.curvePath as CurveType
-      ) as [Point[], ArcTableEntry[], number];
+      generateCurvePoints({
+        P1: p1,
+        P2: p2,
+        bend: (curve.stepness as number) * -1,
+        smoothness: curve.smoothness,
+        curveName: curve.curvePath as CurveType,
+        pointsOnly: false,
+        continuous: false,
+        continuousCount: 1
+      }) as [Point[], ArcTableEntry[], number];
 
     const p = { px: 0, py: 0 };
     if (translateMode == 'r' || translateMode == 'relative') {
@@ -983,7 +989,12 @@ export class Animation<T extends GShpesTages> {
 
     this.#curveFormation(this.#elFig, this.#curvePoints, p);
 
-    ////console.log(' curve point =  ', this.#curvePoints);
+    console.log(
+      ' curve point =  ',
+      this.#curvePoints,
+      this.#arcTable,
+      this.#totalLength
+    );
   }
 
   //+++++++++++++++++++++++++++

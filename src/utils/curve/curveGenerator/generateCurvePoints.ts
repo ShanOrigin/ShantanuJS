@@ -63,82 +63,7 @@ export function clampBend(bend: number): number {
  * - `totalLength` → total length of the curve.
  */
 
-export function generateCurvePoints(
-  P1: Point,
-  P2: Point,
-  bend: number = 0,
-  smoothness: number = 0,
-  curveName: CurveType = 'quadratic'
-): [Point[], ArcTableEntry[], number] {
-  const table: ArcTableEntry[] = [{ t: 0, distance: 0 }];
-  const points: Point[] = [];
-  let curveInfo: CurveInfo = {};
-  let totalLength: number = 0;
-
-  const { x: x1, y: y1 } = P1;
-  const { x: x2, y: y2 } = P2;
-
-  bend = clampBend(bend);
-  bend == 0 && (curveName = 'linear');
-  if (!Number.isFinite(smoothness) || smoothness <= 0) {
-    //  smoothness = getAdaptiveSmoothness(el, dist);
-    smoothness = getCurveAdaptiveSmoothness(P1, P2, bend, curveName);
-  }
-
-  switch (curveName) {
-    case 'quadratic':
-      curveInfo = getQuadraticCurveControlPoint(x1, y1, x2, y2, bend);
-      break;
-    case 'cubic':
-      curveInfo = getCubicCurveControlPoints(x1, y1, x2, y2, bend);
-
-      break;
-
-    case 'arc':
-      curveInfo = getArcCurveControlInfo(bend);
-      break;
-    case 'earc':
-      curveInfo['arcCurveSign'] = bend;
-
-      break;
-    case 'linear':
-      break;
-    default:
-      break;
-  }
-
-  for (let i = 0; i <= smoothness; i++) {
-    const t = i / smoothness;
-    const absolute = interpolatePointOnCurve(
-      x1,
-      y1,
-      x2,
-      y2,
-      t,
-      curveName,
-      curveInfo
-    );
-    points.push({
-      x: absolute.x,
-      y: absolute.y
-    });
-
-    if (i > 0) {
-      const dx = points[i].x - points[i - 1].x;
-      const dy = points[i].y - points[i - 1].y;
-      const segmentLength = Math.hypot(dx, dy);
-      totalLength += segmentLength;
-      table.push({
-        t,
-        distance: totalLength
-      });
-    }
-  }
-
-  return [points, table, totalLength];
-}
-
-export function GenerateCurvePoints({
+export function generateCurvePoints({
   P1,
   P2,
   bend = 0,
@@ -169,7 +94,6 @@ export function GenerateCurvePoints({
   const dy = y2 - y1;
   //  const dist = Math.hypot(dx, dy);
   // If continuous mode is active, precompute base distanc
-  bend = clampBend(bend);
   if (bend === 0) curveName = 'linear';
 
   if (!Number.isFinite(smoothness) || smoothness <= 0) {

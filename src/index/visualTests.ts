@@ -48,5 +48,5 @@ async function Tester(classes: string, types: string) {
 
 setTimeout(async () => {
   access();
-  await Tester('rect', 'filters');
+  await Tester('rect', 'animation');
 }, 5000);

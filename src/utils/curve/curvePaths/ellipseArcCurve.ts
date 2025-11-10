@@ -20,12 +20,13 @@ import type { CurveInfo } from '../../../types/animation';
  *
  * @returns An object `{ x, y }` representing the coordinates of the point along the ellipse.
  */
+
 export function getEllipsePoint(
   x1: number,
   y1: number,
   x2: number,
   y2: number,
-  t: number, // progress along arc [0..1]
+  t: number,
   info: CurveInfo
 ) {
   const cx = (x1 + x2) / 2;
@@ -34,28 +35,28 @@ export function getEllipsePoint(
   const dx = x2 - x1;
   const dy = y2 - y1;
   const dist = Math.hypot(dx, dy);
+  if (dist === 0) return { x: x1, y: y1 };
 
-  if (dist === 0) {
-    return { x: x1, y: y1 };
-  }
-
-  // Horizontal radius (half of the distance between points)
   const rx = dist / 2;
-  const bend = info?.arcCurveSign ?? 1;
-  // Vertical radius scaled by bend factor
-  const ry = rx * bend;
+  const bend = info?.arcCurveSign ?? 1; // bend factor
 
-  // Angle of first point (relative to center)
-  const angle1 = Math.atan2(y1 - cy, x1 - cx);
-  // Sweep 180° in direction of bend
-  const sweep = Math.PI * (bend >= 0 ? 1 : -1);
+  const ry = rx * Math.abs(bend); // vertical radius (height)
+  const sign = Math.sign(bend) || 1; // direction of bend (+up, -down)
 
-  // Interpolated angle
-  const angle = angle1 + t * sweep;
+  console.log(bend, rx, ry);
+  // angle of baseline between points
+  const baseAngle = Math.atan2(dy, dx);
 
-  // Coordinates on ellipse
-  const x = cx + rx * Math.cos(angle);
-  const y = cy + ry * Math.sin(angle);
+  // t in [0..1] maps to θ in [π, 0] to make it start at x1,y1 and end at x2,y2
+  const theta = Math.PI * (1 - t);
+
+  // Ellipse in local coordinates, where center is origin and major axis is horizontal
+  const localX = rx * Math.cos(theta);
+  const localY = sign * ry * Math.sin(theta);
+
+  // Rotate ellipse to align with baseline
+  const x = cx + localX * Math.cos(baseAngle) - localY * Math.sin(baseAngle);
+  const y = cy + localX * Math.sin(baseAngle) + localY * Math.cos(baseAngle);
 
   return { x, y };
 }

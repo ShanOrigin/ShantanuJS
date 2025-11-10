@@ -42,24 +42,24 @@ export async function RectAnimationTests() {
       //
       //
 
-      const rect00 = new Shantanu.Rect(20, 20, 20, 20, {
+      const rect00 = new Shantanu.Rect(20, 40, 20, 20, {
         fill: 'rgb(120 , 140 , 90)'
       });
       Canvas.addTo(rect00);
       await rect00.animate(
-        { translate: { x: 70, y: 20 } },
+        { translate: { x: 70, y: 40 } },
         null,
         800,
         'easeInOutQuad'
       );
       await delay(time);
 
-      const rect2 = new Shantanu.Rect(20, 20, 20, 20, {
+      const rect2 = new Shantanu.Rect(20, 40, 20, 20, {
         fill: 'rgb(40 , 70 , 120)'
       });
       Canvas.addTo(rect2);
       await rect2.animate(
-        { translate: { x: 70, y: 20 }, skew: { sx: 30 } },
+        { translate: { x: 70, y: 40 }, skew: { sx: 30 } },
         {
           physics: { physicsMotion: false },
           curve: { curvePathMotion: true, curvePath: 'cubic', stepness: 0.7 },
@@ -70,12 +70,12 @@ export async function RectAnimationTests() {
       );
       await delay(time);
 
-      const rect21 = new Shantanu.Rect(20, 20, 20, 20, {
+      const rect21 = new Shantanu.Rect(20, 40, 20, 20, {
         fill: 'rgb(90, 160 , 50)'
       });
       Canvas.addTo(rect21);
       await rect21.animate(
-        { translate: { x: 70, y: 20 }, rotate: { angle: 360 } },
+        { translate: { x: 70, y: 40 }, rotate: { angle: 360 } },
         {
           curve: {
             curvePathMotion: true,
@@ -89,15 +89,35 @@ export async function RectAnimationTests() {
       );
       await delay(time);
 
-      const rect22 = new Shantanu.Rect(20, 20, 20, 20, {
+      const rect22 = new Shantanu.Rect(20, 40, 20, 20, {
         fill: 'rgb(230 , 70 , 50)'
       });
       Canvas.addTo(rect22);
       await rect22.animate(
-        { width: 30, height: 30, opacity: 0.4, translate: { x: 70, y: 20 } },
+        { width: 30, height: 30, opacity: 0.4, translate: { x: 70, y: 40 } },
         {
           curve: { curvePathMotion: true, curvePath: 'arc', stepness: 0.7 },
-          pivot: { scalePivot: 'C' }
+          pivot: { scalePivot: 'C' },
+          physics: { physicsMotion: true }
+        },
+        800,
+        'easeOutBounce'
+      );
+      await delay(time);
+
+      const rect23 = new Shantanu.Rect(20, 40, 20, 20, {
+        fill: 'rgb(230 , 120 , 50)'
+      });
+      Canvas.addTo(rect23);
+      await rect23.animate(
+        { translate: { x: 70, y: 40 } },
+        {
+          curve: { curvePathMotion: true, curvePath: 'earc', stepness: 1.7 },
+          pivot: { scalePivot: 'C' },
+          //        physics: { physicsMotion: true },
+          controls: {
+            optimizationTechnique: 'preComputeFrames'
+          }
         },
         800,
         'easeOutBounce'

@@ -309,3 +309,9 @@ Notes:
 - when local is behind or ahead or local changes.
 - when local changes need to push to git for sync
 
+[2025-11-10 | Monday | 18:59] [Script/Animation | 2h] added smart message callback when commit message not given / fixed elliptical animation path following and ALP.
+Notes:
+- Added smart callback so message should be in correct formst for commit.
+- fixed elliptical animation path generation function 
+- fixed arc-lenght-parameterization for physics based speed.
+
