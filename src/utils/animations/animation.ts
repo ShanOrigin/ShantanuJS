@@ -56,14 +56,6 @@ import {
   choosePivotAwareOptimization
 } from './preBuilds/helpers/helpers.js';
 
-/*
-import {
-  interpolateAlongCurve,
-  getTForDistance
-} from './preBuilds/curveGenerator/interpolateAlongCurve.js';
-import { generateCurvePoints } from './preBuilds/curveGenerator/generateCurvePoints.js';
-
-*/
 import {
   interpolateAlongCurve,
   getTForDistance

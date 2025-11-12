@@ -140,6 +140,7 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
       this.#fig!.appendChild(el.getIFig(DEV_INTERNAL_ACCESS));
 
       addToTrackByCanvas && this.#canvasElements.push(el);
+
       el.attrs({
         inside: `svg,${this.#style?.id}`
       });

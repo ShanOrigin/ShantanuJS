@@ -7,16 +7,44 @@ function getActualBBox(canvas: any, shape: any): Promise<DOMRect> {
         const canvasRect = canvas
           .getIFig(DEV_INTERNAL_ACCESS)
           .getBoundingClientRect();
-        const shapeRect = shape
-          .getIFig(DEV_INTERNAL_ACCESS)
-          .getBoundingClientRect();
+
+        const shapeFig = shape.getIFig(DEV_INTERNAL_ACCESS);
+        const shapeRect = shapeFig.getBoundingClientRect();
+
+        // ✅ Get stroke width directly from shape
+        // First try internal property, then attribute fallback
+        let sw =
+          parseFloat(shapeFig.getAttribute?.('stroke-width') || '0') || 0;
+
+        // remove stroke expansion (half per side)
+
+        const x = shapeRect.x + sw - (canvasRect.x - sw);
+        const y = shapeRect.y + sw - (canvasRect.y - sw);
 
         const relativeRect = new DOMRect(
-          shapeRect.x - canvasRect.x,
-          shapeRect.y - canvasRect.y,
-          shapeRect.width,
-          shapeRect.height
+          x,
+          y,
+          Math.max(0, shapeRect.width - 2 * (sw + sw / 2)),
+          Math.max(0, shapeRect.height - 2 * (sw + sw / 2))
         );
+
+        /*
+        const ctm = shapeFig.getScreenCTM();
+        const scaleX = ctm?.a || 1;
+        const scaleY = ctm?.d || 1;
+
+        // shrink visually, scaled to screen pixels
+        const shrinkX = (strokeWidth / 2) * scaleX;
+        const shrinkY = (strokeWidth / 2) * scaleY;
+
+        const relativeRect = new DOMRect(
+          shapeRect.x - canvasRect.x + shrinkX,
+          shapeRect.y - canvasRect.y + shrinkY,
+          Math.max(0, shapeRect.width - strokeWidth * scaleX),
+          Math.max(0, shapeRect.height - strokeWidth * scaleY)
+        );
+*/
+
         resolve(relativeRect);
       });
     });

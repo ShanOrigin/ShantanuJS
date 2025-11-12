@@ -61,11 +61,12 @@ export const GraphicalElementProperties = Object.seal({
     y1: 0,
     x2: 0,
     y2: 0,
-    curveture: 0,
+    curvature: 0,
     smoothness: 0,
     continuous: false,
     continuousCount: 0,
-    curveName: ''
+    curveName: '',
+    points: ''
   }
 });
 

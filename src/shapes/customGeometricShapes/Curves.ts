@@ -26,7 +26,7 @@ import {
   computeBBox
 } from '../../utils/providers/utils.js';
 
-import { GenerateCurvePoints } from '../../utils/curve/curveGenerator/generateCurvePoints.js';
+import { generateCurvePoints } from '../../utils/curve/curveGenerator/generateCurvePoints.js';
 
 export type propsType = Partial<IGraphicalElementProperties['curve']> &
   Partial<StyleForGShapeTag<'polyline'>>;
@@ -50,7 +50,7 @@ export class Curve extends Shape<'curve', 'polyline'> {
         y1,
         x2,
         y2,
-        curveture,
+        curvature = 0.5,
         smoothness,
         continuous = false,
         continuousCount = 1
@@ -60,11 +60,11 @@ export class Curve extends Shape<'curve', 'polyline'> {
       } else {
       }
 
-      const points = GenerateCurvePoints({
+      const points = generateCurvePoints({
         P1: { x: x1, y: y1 } as Point,
         P2: { x: x2, y: y2 } as Point,
 
-        bend: curveture,
+        bend: curvature * -1,
         smoothness,
         curveName: props.curveName! as CurveType,
         pointsOnly: true,
@@ -87,10 +87,9 @@ export class Curve extends Shape<'curve', 'polyline'> {
         (points && !Array.isArray(points)) ||
         !points.every(
           (row) =>
-            Array.isArray(row) &&
-            row.length === 2 &&
-            typeof row[0] == 'number' &&
-            typeof row[1] == 'number'
+            typeof row == 'object' &&
+            typeof row.x == 'number' &&
+            typeof row.y == 'number'
         )
       ) {
         throw new Error(
@@ -99,17 +98,20 @@ export class Curve extends Shape<'curve', 'polyline'> {
       }
 
       for (let i = 0; i < points.length; i++) {
-        pointsAttr += points[i][0] + ',' + points[i][1];
+        pointsAttr += `${points[i].x.toFixed(10)},${points[i].y.toFixed(10)}`;
         if (i < points.length - 1) {
           pointsAttr += ' ';
         }
       }
 
-      this.attrs({
-        stroke: props['stroke'],
-        'stroke-width': props['stroke-width'],
-        points: pointsAttr
-      });
+      const safeProps = {
+        stroke: props['stroke'] || 'black',
+        'stroke-width': props['stroke-width'] || 0.5,
+        points: pointsAttr,
+        initial: true
+      };
+
+      this.attrs(safeProps);
     } catch (e) {
       throw e;
     }
@@ -153,8 +155,11 @@ export class Curve extends Shape<'curve', 'polyline'> {
 
   #validatePolylineCoordinates(path: string) {
     // Match the pattern of "x,y" coordinates separated by spaces
-    const coordinateListRegex =
+    const oordinateListRegex =
       /^(-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)(\s+-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)*$/;
+
+    const coordinateListRegex =
+      /^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?(?:\s+-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?)*$/;
 
     // Check if the path matches the valid polyline format
     if (!coordinateListRegex.test(path)) {

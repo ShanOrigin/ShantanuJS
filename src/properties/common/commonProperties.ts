@@ -177,6 +177,7 @@ export const AllGShapeStyleProperties = {
   circle: shapeStyle,
   path: shapeStyle,
   g: shapeStyle,
+  curve: shapeStyle,
   text: { ...shapeStyle, ...TextStyleProperties },
   image: { ...shapeStyle, ...ImageStyleProperties }
 };

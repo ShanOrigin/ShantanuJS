@@ -65,7 +65,8 @@ export abstract class GraphicalElementComposer<
         'polyline',
         'text',
         'g',
-        'dot'
+        'dot',
+        'curve'
       ].includes(shape)
         ? (this.#fig as SVGGraphicsElement).getBBox()
         : (() => {

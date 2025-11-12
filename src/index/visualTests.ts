@@ -10,11 +10,39 @@ import { RectFiltersTests } from '../tests/shapes/basicShapes/rect/visualTest/vi
 
 import { access } from '../utils/internals/accessKeys.js';
 
+import { QuadraticCurveUnitTests } from '../tests/shapes/customShapes/curves/visualTest/visualUnitTest.js';
+
 // Tester function
+// Rect testing
 async function RectClassTester(testType: string) {
   switch (testType) {
     case 'unit':
       await RectUnitTests();
+      break;
+
+    case 'combine':
+      await RectCombineTests();
+      break;
+    case 'animation':
+      await RectAnimationTests();
+      break;
+
+    case 'events':
+      await RectEventsTests();
+      break;
+
+    case 'filters':
+      await RectFiltersTests();
+      break;
+  }
+}
+
+// quadratic curve testing
+
+async function QuadraticCurveClassTester(testType: string) {
+  switch (testType) {
+    case 'unit':
+      await QuadraticCurveUnitTests();
       break;
 
     case 'combine':
@@ -40,7 +68,10 @@ async function Tester(classes: string, types: string) {
       await RectClassTester(types);
 
       break;
+    case 'qcurve':
+      await QuadraticCurveClassTester(types);
 
+      break;
     default:
       break;
   }
@@ -48,5 +79,5 @@ async function Tester(classes: string, types: string) {
 
 setTimeout(async () => {
   access();
-  await Tester('rect', 'animation');
+  await Tester('qcurve', 'unit');
 }, 5000);

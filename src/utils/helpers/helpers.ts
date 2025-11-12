@@ -77,6 +77,7 @@ export function checkParent(
   returnType: boolean = false
 ): void | boolean {
   const svgCanvas = svg?.ownerSVGElement;
+
   if (!(svgCanvas instanceof SVGSVGElement)) {
     throw new Error(
       `Possibly this ${classType} is not added to the svg canvas. Please use canvas.addTo() to add this Group.`
@@ -934,6 +935,7 @@ export function computeBBox(geo: any, fn: Function) {
 
   for (let i = 0; i < matrix.length; i++) {
     const [x, y] = matrix[i] as Float32Array;
+
     if (x < minX) minX = x;
     if (y < minY) minY = y;
     if (x > maxX) maxX = x;
