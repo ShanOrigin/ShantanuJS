@@ -11,7 +11,7 @@ import { Flip } from './preBuilds/transformations/flip.js';
 
 import { parseExpression } from './preBuilds/transformDSL/parsingAndApply.js';
 
-import { assertAccess, DEV_INTERNAL_ACCESS } from '../providers/accesskeys.js';
+import { DEV_INTERNAL_ACCESS } from '../providers/accesskeys.js';
 import type {
   TranslateProps,
   ScaleProps,
@@ -20,8 +20,6 @@ import type {
   FlipProps,
   ParsedDaTa
 } from '../../types/transformations';
-import { transformStack } from '../../types/index.js';
-import { accessKey } from 'happy-dom/lib/PropertySymbol.js';
 
 export function InheritTransformationClassByMinix<
   TBase extends abstract new (...args: any[]) => any
@@ -89,20 +87,21 @@ export function InheritTransformationClassByMinix<
       resetMatrix(this.#TMatrix);
     }
 
-    // method to end batching and finalizeTransform batching in visuals
+    // method to end batching and affect batching in visuals
 
-    public endT(): void {
+    public endT(track: boolean = true): void {
       if (!this.#isBatching) return;
 
       this.#isBatching = false;
 
-      this.#finalizeTransform({
+      this.#affect({
         callback: this.#batchCallback,
-        transformMatrix: this.#TMatrix,
-        transformName: 'cumulative',
-        transformType: 'batched',
+        m: this.#TMatrix,
+        transformation: 'cumulative',
+        Ttype: 'batched',
         isEffect: true,
-        isVEffect: true
+        isVEffect: true,
+        track
       });
 
       this.#resetMatrix();
@@ -118,12 +117,69 @@ export function InheritTransformationClassByMinix<
         this.#TMatrix &&
         this.#TMatrix instanceof DOMMatrix
       ) {
-        this.#matrixProductTxM(T, true);
+        this.#matrixProductTxM(T);
         this.#TMatrix = T.multiply(this.#TMatrix);
 
         //console.log(this.#TMatrix.a, this.#TMatrix.d);
       }
     }
+
+    /*
+    public createTransformationMatrix(
+      transformations: createTransformationMatrixProps,
+      major: 'row' | 'column'
+    ): tMatrixData {
+      const isS = transformations && 'scale' in transformations;
+      const isSk = transformations && 'skew' in transformations;
+      const isR = transformations && 'rotate' in transformations;
+      const isT = transformations && 'translate' in transformations;
+
+      const sharedBuffer = this.#geometry.sharedBuffer as Float32Array;
+      const temp = new Float32Array(sharedBuffer.length);
+      temp.set(sharedBuffer, 0);
+
+      this.#resetMatrix();
+      this.beginT();
+
+      isS && this.Scale(transformations.scale as ScaleProps);
+
+      isSk && this.Skwe(transformations.skew as SkewProps);
+
+      isR && this.Rotate(transformations.rotate as RotateProps);
+
+      isT && this.Translate(transformations.translate as TranslateProps);
+
+      console.log(' transformation = ', transformations);
+      const { a, b, c, d, e, f, m31, m32 } = this.#TMatrix as DOMMatrix;
+
+      let tM = [];
+      major == 'row' &&
+        ((tM[0] = [a, c, e]), (tM[1] = [b, d, f]), (tM[2] = [m31, m32, 1]));
+
+      major == 'column' &&
+        ((tM[0] = [a, b, m31]), (tM[1] = [c, d, m32]), (tM[2] = [e, f, 1]));
+
+      this.#resetMatrix();
+      this.#isBatching = false;
+
+      console.log(' tepm and buffer ', temp, JSON.stringify(sharedBuffer));
+      sharedBuffer.set(temp, 0);
+      return tM as tMatrixData;
+    }
+
+
+
+    // method to check user given custom transformation matrix is correct or not if yes return that
+
+    public setTMatrix(tmat: number[][] | DOMMatrix): void | DOMMatrix {
+      tmat = setTMatrix(tmat) as DOMMatrix;
+
+      console.log('in set T ', tmat);
+      this.#matrixProductTxM(tmat);
+
+      return tmat;
+    }
+*/
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //++++++++++++++ Healper  Methods +++++++++++++++
@@ -131,7 +187,7 @@ export function InheritTransformationClassByMinix<
 
     // method to multiply Transformation matrix with sharedBuffer of Shape through WASM-> C -> TS
 
-    #matrixProductTxM(T: DOMMatrix, assing: boolean = false) {
+    #matrixProductTxM(T: DOMMatrix) {
       const sharedBuffer = this.#geometry.sharedBuffer as Float32Array;
       if (!(sharedBuffer instanceof Float32Array) || sharedBuffer.length < 1) {
         throw new Error(
@@ -139,198 +195,74 @@ export function InheritTransformationClassByMinix<
         );
       }
 
-      const updatedBuffer = this.#cmath.multiplyMatrix(T, sharedBuffer);
+      const updatedMatrix = this.#cmath.multiplyMatrix(T, sharedBuffer);
 
       if (
-        !(updatedBuffer instanceof Float32Array) ||
-        updatedBuffer.length !== sharedBuffer.length
+        !(updatedMatrix instanceof Float32Array) ||
+        updatedMatrix.length !== sharedBuffer.length
       ) {
         throw new Error('Matrix Multiplication went Wrong');
       }
 
-      assing &&
-        sharedBuffer.set(
-          updatedBuffer.subarray(updatedBuffer.length - 12),
-          sharedBuffer.length - 12
-        );
-
-      return updatedBuffer;
+      sharedBuffer.set(updatedMatrix, 0);
     }
+    // main method which affects transformation matrix to sharedBuffer and visually
 
-    public getMProduct(key: symbol, transformMatrix: DOMMatrix) {
-      assertAccess(key);
-      return () => this.#matrixProductTxM(transformMatrix);
-    }
-
-    // main method which finalizeTransforms transformation matrix to sharedBuffer and visually
-
-    #finalizeTransform({
+    #affect({
       callback,
-      transformMatrix,
-      transformName,
-      transformType,
-
+      m,
+      transformation,
+      Ttype,
       isEffect,
-      isVEffect
+      isVEffect,
+      track = true
     }: {
       callback: Function;
-      transformMatrix: DOMMatrix | null;
-      transformName: string;
-      transformType: string;
+      m: DOMMatrix;
+      transformation: string;
+      Ttype: string;
       isEffect: boolean;
       isVEffect: boolean;
+      track?: boolean;
     }) {
-      let temporaryState!: Float32Array;
-
-      const geo = this.#geometry as { transformStack: transformStack };
-
-      if (transformMatrix instanceof DOMMatrix) {
-        const { a, b, m31, c, d, m32, e, f } = transformMatrix;
-
-        // column major because shape matrix is row major and for clearity
-
-        const tm = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
-
-        geo.transformStack.stack.push({
-          transformMatrix: tm,
-          transformName,
-          transformType
-        });
-      }
-
-      const composedMat = this.#composeTransforms(true) as DOMMatrix;
-      const { a, b, m31, c, d, m32, e, f } = composedMat;
-
-      // column major because shape matrix is row major and for clearity
-
-      const finalizedMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
-
-      geo.transformStack.stack[0].transformMatrix = finalizedMatrix;
-
-      (transformType != 'batched' &&
-        (temporaryState = this.#matrixProductTxM(composedMat, true))) ||
-        (temporaryState = this.#matrixProductTxM(composedMat, false));
+      Ttype != 'batched' && this.#matrixProductTxM(m);
 
       if (callback && typeof callback === 'function') {
         callback({
-          transformMatrix: finalizedMatrix,
-          temporaryState,
+          tmat: m,
+          transformation,
+          Ttype,
           isEffect,
-          isVEffect
+          isVEffect,
+          track
         });
       } else {
         throw new Error(
-          `call back must be given by the over return method and it should be the function in ${transformName} method `
+          `call back must be given by the over return method and it should be the function in ${transformation} method `
         );
       }
     }
 
-    #composeTransforms(required: boolean = false) {
-      const { stack, skip } = (
-        this.#geometry as { transformStack: transformStack }
-      ).transformStack;
-
-      if (!required) return stack[0].transformMatrix;
-
-      let res = new DOMMatrix();
-
-      for (let i = 1; i < stack.length - skip; i++) {
-        const T = stack[i];
-        const t = T.transformMatrix as Float32Array;
-        // convert your column-major 3×3 into DOMMatrix
-        const dm = new DOMMatrix([
-          t[0],
-          t[1], // a , b , 0
-          t[3],
-          t[4], // c , d , 0
-          t[6],
-          t[7] // e , f , 1
-        ]);
-
-        // correct multiplication order
-        res = dm.multiply(res);
-      }
-
-      const cm = stack[0].transformMatrix;
-      const [da, db, dc, dd, de, df] = [
-        Math.abs(cm[0] - res.a),
-        Math.abs(cm[1] - res.b),
-        Math.abs(cm[3] - res.c),
-        Math.abs(cm[4] - res.d),
-        Math.abs(cm[6] - res.e),
-        Math.abs(cm[7] - res.f)
-      ];
-      console.log(
-        `Floating Point Drinfts : a : ${da} , b : ${db} , c : ${dc} , d : ${dd} , e : ${de} , f : ${df} `
-      );
-
-      return res;
-    }
-
-    public getCMatrix(key: symbol) {
-      assertAccess(key);
-      return () => this.#composeTransforms(true);
-    }
-
-    #undo(N: number = 1, callback: Function) {
-      const geo = this.#geometry as { transformStack: transformStack };
-      geo.transformStack.skip = Math.min(
-        geo.transformStack.skip + N,
-        geo.transformStack.stack.length
-      );
-
-      this.#finalizeTransform({
-        callback,
-        transformMatrix: null,
-        transformName: '',
-        transformType: '',
-        isEffect: true,
-        isVEffect: true
-      });
-    }
-
-    #redo(N: number = 1, callback: Function) {
-      const geo = this.#geometry as { transformStack: transformStack };
-      geo.transformStack.skip = Math.max(geo.transformStack.skip - N, 0);
-
-      this.#finalizeTransform({
-        callback,
-        transformMatrix: null,
-        transformName: '',
-        transformType: '',
-        isEffect: true,
-        isVEffect: true
-      });
-    }
-
-    #batchingAndFinalizeTransformHandler({
-      transformMatrix,
-      transformName,
-      transformType,
-      isEffect,
-      isVEffect,
-      callbacks
-    }: {
-      transformMatrix: DOMMatrix;
-      transformName: string;
-      transformType: string;
-      isEffect: boolean;
-      isVEffect: boolean;
-
-      callbacks: Function;
-    }) {
+    #batchingAndAffectHandler(
+      matrix: DOMMatrix,
+      type: string,
+      isEffect: boolean,
+      isVEffect: boolean,
+      transform: string,
+      callback: Function
+    ) {
       if (this.#isBatching) {
-        this.#batchCallback = callbacks as Function;
+        this.#batchCallback = callback as Function;
 
-        this.#batchTMatrix(transformMatrix);
+        this.#batchTMatrix(matrix);
         return this;
       }
 
-      this.#finalizeTransform({
-        callback: callbacks as Function,
-        transformMatrix,
-        transformName,
-        transformType,
+      this.#affect({
+        callback: callback as Function,
+        m: matrix,
+        transformation: transform,
+        Ttype: type,
         isEffect: isEffect ?? true,
         isVEffect: isVEffect ?? true
       });
@@ -361,16 +293,16 @@ export function InheritTransformationClassByMinix<
 
         const Buffer = this.#geometry.sharedBuffer as Float32Array;
         const buffer = Buffer.subarray(Buffer.length - 12);
-        const transformMatrix = Translate({ x, y, type, px, py, buffer });
+        const matrix = Translate({ x, y, type, px, py, buffer });
 
-        this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
-          transformType: type,
-          isEffect,
-          isVEffect,
-          transformName: 'translate',
-          callbacks: callbacks as Function
-        });
+        this.#batchingAndAffectHandler(
+          matrix,
+          type,
+          isEffect ?? true,
+          isVEffect ?? true,
+          'translate',
+          callbacks as Function
+        );
       } catch (e) {
         throw e;
       }
@@ -401,16 +333,16 @@ export function InheritTransformationClassByMinix<
 
         const Buffer = this.#geometry.sharedBuffer as Float32Array;
         const buffer = Buffer.subarray(Buffer.length - 12);
-        const transformMatrix = Scale({ sx, sy, type, px, py, buffer });
+        const matrix = Scale({ sx, sy, type, px, py, buffer });
 
-        this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
-          transformType: type,
-          isEffect,
-          isVEffect,
-          transformName: 'scale',
-          callbacks: callbacks as Function
-        });
+        this.#batchingAndAffectHandler(
+          matrix,
+          type,
+          isEffect ?? true,
+          isVEffect ?? true,
+          'scale',
+          callbacks as Function
+        );
       } catch (e) {
         throw e;
       }
@@ -440,18 +372,21 @@ export function InheritTransformationClassByMinix<
 
         angle = angle % 360;
 
+        const r = this.#geometry as any;
+        r['rotation'] = (r['rotation'] ?? 0) + angle;
+
         const Buffer = this.#geometry.sharedBuffer as Float32Array;
         const buffer = Buffer.subarray(Buffer.length - 12);
-        const transformMatrix = Rotate({ angle, type, px, py, buffer });
+        const matrix = Rotate({ angle, type, px, py, buffer });
 
-        this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
-          transformType: type,
-          isEffect,
-          isVEffect,
-          transformName: 'rotate',
-          callbacks: callbacks as Function
-        });
+        this.#batchingAndAffectHandler(
+          matrix,
+          type,
+          isEffect ?? true,
+          isVEffect ?? true,
+          'rotate',
+          callbacks as Function
+        );
       } catch (e) {
         throw e;
       }
@@ -481,19 +416,22 @@ export function InheritTransformationClassByMinix<
         );
 
         [sx, sy] = [sx % 360, sy % 360];
+        const r = this.#geometry as any;
+        r['skewX'] = (r['skewX'] ?? 0) + sx;
+        r['skewY'] = (r['skewY'] ?? 0) + sy;
 
         const Buffer = this.#geometry.sharedBuffer as Float32Array;
         const buffer = Buffer.subarray(Buffer.length - 12);
-        const transformMatrix = Skew({ sx, sy, type, px, py, buffer });
+        const matrix = Skew({ sx, sy, type, px, py, buffer });
 
-        this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
-          transformType: type,
-          isEffect,
-          isVEffect,
-          transformName: 'skew',
-          callbacks: callbacks as Function
-        });
+        this.#batchingAndAffectHandler(
+          matrix,
+          type,
+          isEffect ?? true,
+          isVEffect ?? true,
+          'skew',
+          callbacks as Function
+        );
       } catch (e) {
         throw e;
       }
@@ -528,25 +466,16 @@ export function InheritTransformationClassByMinix<
           y: number;
         };
 
-        const transformMatrix = Flip({
-          flipX,
-          flipY,
-          dirX,
-          dirY,
-          x,
-          y,
-          width,
-          height
-        });
+        const matrix = Flip({ flipX, flipY, dirX, dirY, x, y, width, height });
 
-        this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
-          transformType: `${dirX}${dirY}`,
-          isEffect,
-          isVEffect,
-          transformName: 'flip',
-          callbacks: callbacks as Function
-        });
+        this.#batchingAndAffectHandler(
+          matrix,
+          `${dirX}${dirY}`,
+          isEffect ?? true,
+          isVEffect ?? true,
+          'flip',
+          callbacks as Function
+        );
       } catch (e) {
         throw e;
       }

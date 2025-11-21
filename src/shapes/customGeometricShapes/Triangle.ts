@@ -112,7 +112,6 @@ export class Triangle extends Polygon {
         );
       }
     }
-    console.log('hi');
 
     super(points, finalProps);
   }

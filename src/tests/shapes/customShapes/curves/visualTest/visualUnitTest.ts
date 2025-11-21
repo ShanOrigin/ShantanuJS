@@ -25,14 +25,10 @@ export async function QuadraticCurveUnitTests() {
     const Shape = new Shantanu.Shapes.Custom.QuadraticCurve({
       x1: 50,
       y1: 50,
-      x2: 100,
+      x2: 130,
       y2: 70,
-      curvature: 1.35,
-      smoothness: 15,
-      continuous: true,
-      continuousCount: 2,
-      'stroke-width': 1,
-      stroke: 'skyblue'
+      curvature: -1.5,
+      'stroke-width': 1
     });
 
     Canvas.addTo(Shape);
@@ -46,12 +42,9 @@ export async function QuadraticCurveUnitTests() {
     const Shape = new Shantanu.Shapes.Custom.CubicCurve({
       x1: 50,
       y1: 50,
-      x2: 80,
+      x2: 130,
       y2: 70,
-      curvature: 1.35,
-      smoothness: 35,
-      continuous: true,
-      continuousCount: 3,
+      curvature: -1.35,
       'stroke-width': 1,
       stroke: 'blue'
     });
@@ -66,12 +59,9 @@ export async function QuadraticCurveUnitTests() {
     const Shape = new Shantanu.Shapes.Custom.ArcCurve({
       x1: 50,
       y1: 50,
-      x2: 100,
+      x2: 130,
       y2: 70,
-      curvature: 0.5,
-      smoothness: 50,
-      continuous: true,
-      continuousCount: 1,
+      curvature: -0.5,
       'stroke-width': 1,
       stroke: 'green'
     });
@@ -86,12 +76,9 @@ export async function QuadraticCurveUnitTests() {
     const Shape = new Shantanu.Shapes.Custom.EarcCurve({
       x1: 50,
       y1: 50,
-      x2: 100,
+      x2: 130,
       y2: 70,
-      curvature: 0.4,
-      smoothness: 55,
-      continuous: true,
-      continuousCount: 2,
+      curvature: -4,
       'stroke-width': 1,
 
       stroke: 'red'
@@ -100,44 +87,6 @@ export async function QuadraticCurveUnitTests() {
     Canvas.addTo(Shape);
 
     await visualTest(Canvas, Shape, 1);
-  });
-
-  await delay(500);
-
-  await vTest('create Shape with basic propeties', async () => {
-    async function generatePolarPointsClockwise(
-      centerX: number,
-      centerY: number,
-      radius = 50,
-      angleStep = 1
-    ) {
-      for (let deg = 180; deg <= 360 + 180; deg += angleStep) {
-        // convert to radians
-        const rad = (deg * Math.PI) / 180;
-
-        const px = centerX + radius * Math.cos(rad);
-        const py = centerY + radius * Math.sin(rad);
-
-        const Shape = new Shantanu.Shapes.Custom.Curve('arc', {
-          x1: px,
-          y1: py,
-          x2: centerX,
-          y2: centerY,
-          curvature: 0.7,
-          smoothness: 7,
-          continuous: true,
-          continuousCount: 2,
-          'stroke-width': 1
-        });
-
-        Canvas.addTo(Shape);
-        await delay(100);
-        //       console.log(Shape.geometry?.matrix);
-
-        //  await visualTest(Canvas, Shape, 1);
-      }
-    }
-    generatePolarPointsClockwise(100, 270, 50, 10);
   });
 
   /*

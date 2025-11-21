@@ -9,9 +9,6 @@ import { NonGraphicalElement as NG } from '../graphics/nonGraphicalElement.js';
 import { GraphicalElementComposer } from '../graphics/graphicalElementComposer.js';
 import { Group as GR } from '../../../utils/collection/group.js';
 import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
-
-import { renderer } from '../renderer/renderer.js';
-
 type shapeType = keyof IG;
 
 type GType = G<shapeType, keyof IG>;
@@ -34,7 +31,7 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
   ) {
     super('svg', `${id}-Canvas`, 'svg');
     try {
-      //   super.attrs({ width: width, height: height });
+      super.attrs({ width: width, height: height });
 
       this.#parent = document.getElementById(id);
 
@@ -62,139 +59,6 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
 
       const def = createSVGElement('defs');
       this.#fig.appendChild(def);
-
-      console.log('applying dim to canvas ');
-      this.attrs({
-        width: width,
-        height: height,
-        x: posX,
-        y: posY,
-        stroke: this.#style.stroke ?? 'rbg(0,0,0)',
-        'stroke-width': this.#style['stroke-width'] ?? 0
-      });
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  #setCanvasParams(
-    posX: number,
-    posY: number,
-    stroke: string,
-    strokeWidth: number = 0.5,
-    fill: string = 'white'
-  ): void {
-    try {
-      const c = new Colors(fill);
-
-      this.x = posX;
-      this.y = posY;
-      Object.assign(this.#fig.style, {
-        position: 'absolute',
-        left: `${posX}px`,
-        top: `${posY}px`,
-        borderColor: c.isColor(stroke),
-        background: c.isColor(fill),
-        borderWidth: strokeWidth,
-        borderStyle: strokeWidth > 0 ? 'solid' : 'none'
-      });
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  public attrs(
-    props:
-      | {
-          width?: number;
-          height?: number;
-          x?: number;
-          y?: number;
-          stroke?: string;
-          'stroke-width'?: number;
-          selectable?: boolean;
-          fill?: string;
-        }
-      | string
-  ): void | (string | number | undefined)[] | (string | number | undefined) {
-    // Guard clause for empty object or empty string
-    try {
-      if (
-        (typeof props === 'object' && Object.keys(props).length === 0) ||
-        (typeof props === 'string' && props.trim() === '')
-      )
-        return;
-
-      // Handle object props
-      if (typeof props === 'object') {
-        const safeProps = props as {
-          width?: number;
-          height?: number;
-          x?: number;
-          y?: number;
-          stroke?: string;
-          'stroke-width'?: number;
-          selectable?: boolean;
-          fill?: string;
-        };
-        const propsA = Object.entries(safeProps);
-
-        /*
-        for (let i = 0; i < propsA.length; i++) {
-          const [k, v] = propsA[i];
-          (k == 'width' ||
-            k == 'height' ||
-            k == 'stroke' ||
-            k == 'stroke-width' ||
-            k == 'selectable') &&
-            super.attrs({ [k]: v });
-        }
-				*/
-
-        super.attrs(safeProps);
-
-        // Set canvas parameters
-        this.#setCanvasParams(
-          safeProps.x ?? this.x,
-          safeProps.y ?? this.y,
-          safeProps.stroke ?? 'rgb(0,0,0)',
-          safeProps['stroke-width'] ?? 1,
-          safeProps.fill
-        );
-      }
-
-      let attrValue:
-        | void
-        | (string | number | undefined)[]
-        | (string | number | undefined) = [];
-      // updated code
-
-      if (typeof props === 'string' && props.length >= 1) {
-        const arg = props.trim().split(' ');
-
-        for (let i = 0; i < arg.length; i++) {
-          const e = arg[i].trim();
-          if (e !== '') {
-            if (e === 'x' || e === 'y') {
-              const index = arg.indexOf(e);
-              attrValue[index] === undefined &&
-                (attrValue[index] = this[e as 'x' | 'y'] as number);
-              continue;
-            }
-
-            const r = super.attrs(e);
-            attrValue[i] =
-              typeof r === 'string' || typeof r === 'number' ? r : undefined;
-          }
-        }
-      }
-
-      if (Array.isArray(attrValue) && attrValue.length > 0) {
-        return attrValue.length > 1 ? attrValue : attrValue[0];
-      }
-
-      renderer.render({ el: this, isEffect: true });
-      return undefined;
     } catch (e) {
       throw e;
     }
@@ -508,6 +372,124 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
   public getAllElements(): Array<allowedSVG> {
     try {
       return this.#canvasElements;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  #setCanvasParams(
+    posX: number,
+    posY: number,
+    stroke: string,
+    strokeWidth: number = 0.5,
+    fill: string = 'white'
+  ): void {
+    try {
+      const c = new Colors(fill);
+
+      this.x = posX;
+      this.y = posY;
+      Object.assign(this.#fig.style, {
+        position: 'absolute',
+        left: `${posX}px`,
+        top: `${posY}px`,
+        borderColor: c.isColor(stroke),
+        background: c.isColor(fill),
+        borderWidth: strokeWidth,
+        borderStyle: strokeWidth > 0 ? 'solid' : 'none'
+      });
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  public attrs(
+    props:
+      | {
+          width?: number;
+          height?: number;
+          x?: number;
+          y?: number;
+          stroke?: string;
+          'stroke-width'?: number;
+          selectable?: boolean;
+          fill?: string;
+        }
+      | string
+  ): void | (string | number | undefined)[] | (string | number | undefined) {
+    // Guard clause for empty object or empty string
+    try {
+      if (
+        (typeof props === 'object' && Object.keys(props).length === 0) ||
+        (typeof props === 'string' && props.trim() === '')
+      )
+        return;
+
+      // Handle object props
+      if (typeof props === 'object') {
+        const safeProps = props as {
+          width?: number;
+          height?: number;
+          x?: number;
+          y?: number;
+          stroke?: string;
+          'stroke-width'?: number;
+          selectable?: boolean;
+          fill?: string;
+        };
+        const propsA = Object.entries(safeProps);
+
+        for (let i = 0; i < propsA.length; i++) {
+          const [k, v] = propsA[i];
+          (k == 'width' ||
+            k == 'height' ||
+            k == 'stroke' ||
+            k == 'stroke-width' ||
+            k == 'selectable') &&
+            super.attrs({ [k]: v });
+        }
+
+        // Set canvas parameters
+        this.#setCanvasParams(
+          safeProps.x ?? this.x,
+          safeProps.y ?? this.y,
+          safeProps.stroke ?? 'rgb(0,0,0)',
+          safeProps['stroke-width'] ?? 1,
+          safeProps.fill
+        );
+      }
+
+      let attrValue:
+        | void
+        | (string | number | undefined)[]
+        | (string | number | undefined) = [];
+      // updated code
+
+      if (typeof props === 'string' && props.length >= 1) {
+        const arg = props.trim().split(' ');
+
+        for (let i = 0; i < arg.length; i++) {
+          const e = arg[i].trim();
+          if (e !== '') {
+            if (e === 'x' || e === 'y') {
+              const index = arg.indexOf(e);
+              attrValue[index] === undefined &&
+                (attrValue[index] = this[e as 'x' | 'y'] as number);
+              continue;
+            }
+
+            const r = super.attrs(e);
+            attrValue[i] =
+              typeof r === 'string' || typeof r === 'number' ? r : undefined;
+          }
+        }
+      }
+
+      if (Array.isArray(attrValue)) {
+        return attrValue.length > 1 ? attrValue : attrValue[0];
+      }
+
+      return undefined;
     } catch (e) {
       throw e;
     }

@@ -1,4 +1,3 @@
-/*
 import { isValidMatrix } from '../../../utils/providers/utils.js';
 import { cmath } from '../../../webAsm/interface/TS/CMATH_Interface.js';
 import { GraphicalElementComposer } from '../graphics/graphicalElementComposer.js';
@@ -17,27 +16,25 @@ import type {
   iPath
 } from '../../../shapes/provider/shapesTypes';
 
-import {
-  type ipDot,
-  type ipLine,
-  type ipCircle,
-  type ipEllipse,
-  type ipPolygon,
-  type ipPolyline,
-  type ipPath,
-  type ipRect,
-  type ipText,
-  type ipImage,
-  AllGShapeStyleProperties
+import type {
+  ipDot,
+  ipLine,
+  ipCircle,
+  ipEllipse,
+  ipPolygon,
+  ipPolyline,
+  ipPath,
+  ipRect,
+  ipText,
+  ipImage
 } from '../../../properties/provider/shapeProperties';
-import { transformStack } from '../../../types/index.js';
 
 //import { ty } from '../../../utils/animations/healper.js';
 
 interface RenderOptions {
   el: GraphicalElementComposer<GShpesTages, GShpesTages>;
   //	el : shapeType
-  finalMatrix?: Float32Array;
+  T?: DOMMatrix;
   isEffect?: boolean;
   isProjections?: boolean;
 }
@@ -64,91 +61,121 @@ type shapeTypeParams =
   | ipText;
 
 export class Renderer {
-  public render({ el, finalMatrix, isEffect = true }: RenderOptions) {
+  public render({ el, T, isEffect = true }: RenderOptions) {
     if (!(el instanceof GraphicalElementComposer))
       throw new Error(
         'Given Shape is not Randerable because neccesary all parameter are not provided '
       );
-    const geoRef = el.getIGeo(DEV_INTERNAL_ACCESS) as Partial<{
-      canonicalMatrix: Float32Array[];
-      transformStack: transformStack;
-      shape: string;
-    }>;
 
-    const styleRef = el.getIStyle(DEV_INTERNAL_ACCESS);
-
-    //    const geoRef = el.getIGeo(DEV_INTERNAL_ACCESS) as shapeType & shapeTypeParams;
-    const figRef = el.getIFig(DEV_INTERNAL_ACCESS);
-    const shape = geoRef.shape;
-
-    if (shape != 'svg' && (el as shapeType).isBatching())
+    if ((el as shapeType).isBatching())
       throw new Error(
         'Transformation batching is acvite by .beginT() , please call .endT() after n number of Transformation applyed.'
       );
 
-    if (!geoRef || (shape != 'svg' && !geoRef?.canonicalMatrix))
-      throw new Error('Shape geometry or canonicalMatrix is missing');
+    const geoRef = el.getIGeo(DEV_INTERNAL_ACCESS) as shapeType &
+      shapeTypeParams;
+    const figRef = el.getIFig(DEV_INTERNAL_ACCESS);
+    const styleRef = el.getIStyle(DEV_INTERNAL_ACCESS);
 
-    if (finalMatrix && finalMatrix instanceof Float32Array) {
+    if (!geoRef || !geoRef?.matrix)
+      throw new Error('Shape geometry or matrix missing');
+
+    if (T && T instanceof DOMMatrix && geoRef?.TList?.[0]) {
+      const CTM = (geoRef?.TList?.[0]?.TMatrix ??
+        new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1])) as Float32Array; // cumulative Transformation matrix [ a , b , 0 , c , d , 0 , e , f  ,1 ] Column major matrix
+
+      //      console.log('ctm =', CTM);
+      const CNTM = T.multiplySelf(
+        new DOMMatrix([CTM[0], CTM[1], CTM[3], CTM[4], CTM[6], CTM[7]])
+      );
+      /*
+      console.log(
+        'Applying Transformation',
+        CNTM,
+        `matrix(${CNTM.a},${CNTM.b},${CNTM.c},${CNTM.d},${CNTM.e},${CNTM.f})`
+      );
+			*/
       isEffect &&
         el
           .getIFig(DEV_INTERNAL_ACCESS)
           .setAttribute(
             'transform',
-            `matrix(${finalMatrix[0]},${finalMatrix[1]},${finalMatrix[3]},${finalMatrix[4]},${finalMatrix[6]},${finalMatrix[7]})`
+            `matrix(${CNTM.a},${CNTM.b},${CNTM.c},${CNTM.d},${CNTM.e},${CNTM.f})`
           );
 
+      const e = geoRef;
+      /*
+      console.log(
+        e,
+        'TList' in e,
+        e.TList,
+        e.TList[0],
+        'TMatrix' in e.TList[0]
+      );
+			*/
+      if (
+        e &&
+        'TList' in e &&
+        e.TList &&
+        e.TList[0] &&
+        'TMatrix' in e.TList[0]
+      ) {
+        console.log('setting t matrix');
+        e.TList[0].TMatrix = new Float32Array([
+          CNTM.a,
+          CNTM.b,
+          0,
+          CNTM.c,
+          CNTM.d,
+          0,
+          CNTM.e,
+          CNTM.f,
+          1
+        ]);
+      }
       return;
     }
 
     // case 2 : initial render and when properties changed by attr method of el
-
-    const matrix = (geoRef?.canonicalMatrix ?? []) as Float32Array[];
-
-    console.log('rendering');
+    let d: string = '';
+    const matrix = geoRef?.matrix as Float32Array[];
+    const shape = geoRef?.shape;
+    //  console.warn('shape matrix : ', JSON.stringify(geoRef.matrix));
     switch (shape) {
-      case 'svg':
-        {
-          const { width, height } = geoRef as { width: number; height: number };
-
-          if (
-            Number(figRef.getAttribute('width')) != width ||
-            Number(figRef.getAttribute('height')) != height
-          ) {
-            console.log('changed geometry');
-            figRef.setAttribute('width', String(width));
-            figRef.setAttribute('height', String(height));
-          }
-        }
-        break;
-
       case 'dot':
         {
-          const { cx, cy, r } = geoRef as { cx: number; cy: number; r: number };
+          /*
+          isValidMatrix(matrix, 1, 3);
+          let [cx, cy] = matrix[0];
 
-          if (
-            Number(figRef.getAttribute('cx')) != cx ||
-            Number(figRef.getAttribute('cy')) != cy ||
-            Number(figRef.getAttribute('r')) != r
-          ) {
-            let cr = 1;
-            (r < 1 && (cr = 1)) || (r > 5 && (cr = 5));
+          let r = geoRef?.r ?? 1;
+          (r < 1 && (r = 1)) || (r > 5 && (r = 5));
+          // We'll use two arc commands to form a complete circle
+          d = `M ${cx + r},${cy} A ${r} ${r} 0 1 1 ${cx - 0.001},${cy} Z`;
+          */
 
-            figRef.setAttribute('cx', String(cx));
-            figRef.setAttribute('cy', String(cy));
-            figRef.setAttribute('r', String(cr));
-          }
+          const { cx, cy, r } = geoRef;
+          let cr = 1;
+          (r < 1 && (cr = 1)) || (r > 5 && (cr = 5));
+
+          figRef.setAttribute('cx', String(cx));
+          figRef.setAttribute('cy', String(cy));
+          figRef.setAttribute('r', String(cr));
         }
         break;
 
       case 'line':
         {
-          const { x1, y1, x2, y2 } = geoRef as {
-            x1: number;
-            y1: number;
-            x2: number;
-            y2: number;
-          };
+          /*
+          isValidMatrix(matrix, 2, 3);
+
+          const [x1, y1] = matrix[0];
+          const [x2, y2] = matrix[1];
+
+          d = `M${x1} ,${y1} L${x2},${y2}`; // for line
+					*/
+
+          const { x1, y1, x2, y2 } = geoRef;
           figRef.setAttribute('x1', String(x1));
           figRef.setAttribute('y1', String(y1));
           figRef.setAttribute('x2', String(x2));
@@ -158,7 +185,20 @@ export class Renderer {
 
       case 'circle':
         {
-          const { cx, cy, r } = geoRef as { cx: number; cy: number; r: number };
+          /*
+          // console.log(matrix);
+          isValidMatrix(matrix, 2, 3);
+          const [rx, ry] = matrix[1];
+
+          const r = geoRef?.r ?? 1;
+
+          // We'll use two arc commands to form a complete circle
+          d = `M ${rx},${ry} A ${r} ${r} 0 1 1 ${rx - 0.001},${ry} Z`;
+
+          //  console.log(d);
+					*/
+
+          const { cx, cy, r } = geoRef;
           figRef.setAttribute('cx', String(cx));
           figRef.setAttribute('cy', String(cy));
           figRef.setAttribute('r', String(r));
@@ -168,12 +208,18 @@ export class Renderer {
 
       case 'ellipse':
         {
-          const { cx, cy, rx, ry } = geoRef as {
-            cx: number;
-            cy: number;
-            rx: number;
-            ry: number;
-          };
+          /*
+          isValidMatrix(matrix, 3, 3);
+          const [crx, cry] = matrix[1];
+          const [rx, ry] = [geoRef?.rx ?? 1, geoRef?.ry ?? 1];
+          const ang =
+            Math.atan2(cry - matrix[0][1], crx - matrix[0][0]) * 57.295;
+          d = `M ${crx},${cry} A ${rx} ${ry} ${ang} 1 1 ${
+            crx - 0.001
+          },${cry} Z`;
+*/
+
+          const { cx, cy, rx, ry } = geoRef;
           figRef.setAttribute('cx', String(cx));
           figRef.setAttribute('cy', String(cy));
           figRef.setAttribute('rx', String(rx));
@@ -182,21 +228,37 @@ export class Renderer {
         break;
 
       case 'rect': {
-        const {
-          x,
-          y,
-          width,
-          height,
-          rx = 0,
-          ry = 0
-        } = geoRef as {
-          x: number;
-          y: number;
-          width: number;
-          height: number;
-          rx: number;
-          ry: number;
-        };
+        /*
+        isValidMatrix(matrix, 4, 3);
+
+        const [rx, ry] = [geoRef?.rx ?? 0, geoRef?.ry ?? 0];
+        const existingD = styleRef?.d; // if you store last path string somewhere
+        if (existingD && (rx > 0 || ry > 0)) {
+          d = addCornerRadiusToExistingPath(existingD, rx, ry);
+        } else {
+          // DEFAULT: original behavior
+          const [x1, y1] = matrix[0];
+          const [x2, y2] = matrix[1];
+          const [x3, y3] = matrix[2];
+          const [x4, y4] = matrix[3];
+
+          if (rx == 0 && ry == 0) {
+            d = `M ${x1},${y1} L ${x2},${y2} L ${x3},${y3} L ${x4},${y4} Z`;
+          } else {
+            d = `M${x1 + rx},${y1}
+           L${x2 - rx},${y2}
+           A${rx},${ry} 0 0 1 ${x2},${y1 + ry}
+           L${x3},${y3 - ry}
+           A${rx},${ry} 0 0 1 ${x3 - rx},${y3}
+           L${x4 + rx},${y4}
+           A${rx},${ry} 0 0 1 ${x4},${y4 - ry}
+           L${x1},${y1 + ry}
+           A${rx},${ry} 0 0 1 ${x1 + rx},${y1} Z`;
+          }
+					}
+*/
+
+        const { x, y, width, height, rx = 0, ry = 0 } = geoRef;
 
         figRef.setAttribute('x', String(x));
         figRef.setAttribute('y', String(y));
@@ -212,6 +274,18 @@ export class Renderer {
       case 'polygon':
         {
           const mlen = matrix.length;
+          /*
+          isValidMatrix(matrix, mlen, 3);
+
+          for (let index = 0; index < mlen; index++) {
+            const [x, y] = matrix[index];
+            d += index != 0 ? `L${x},${y} ` : `M${x},${y} `;
+          }
+          if (shape == 'polygon') {
+            d += 'Z';
+          }
+          */
+
           let points = '';
           for (let index = 0; index < mlen; index++) {
             const [x, y] = matrix[index];
@@ -223,9 +297,9 @@ export class Renderer {
         break;
 
       case 'path': {
-        
-					 //   figRef.setAttribute('d' , d );
-					
+        /*
+					    figRef.setAttribute('d' , d );
+					* */
 
         break;
       }
@@ -233,457 +307,86 @@ export class Renderer {
       default:
         break;
     }
+    /*
+    if (d !== '' && el.style && el.style?.d !== d && geoRef) {
+      figRef.setAttribute('d', d);
+      styleRef['d'] = d;
+      // console.log('js str use ', geoRef?.shape);
 
-    const style = styleRef as Record<string, string | number>;
-
-    console.log('rendering style ');
-    for (const key in style) {
-      if (Object.prototype.hasOwnProperty.call(style, key)) {
-        const value = style[key];
-        figRef.setAttribute(key, value.toString());
-      }
-    }
-  }
-}
-
-export const renderer = new Renderer();
-*/
-
-/* Keep your original imports */
-import { isValidMatrix } from '../../../utils/providers/utils.js';
-import { cmath } from '../../../webAsm/interface/TS/CMATH_Interface.js';
-import { GraphicalElementComposer } from '../graphics/graphicalElementComposer.js';
-
-import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
-import type { GShpesTages } from '../graphics/graphicalElement';
-
-import type {
-  iPoint,
-  iLine,
-  iCircle,
-  iEllipse,
-  iPolygon,
-  iPolyline,
-  iRect,
-  iPath
-} from '../../../shapes/provider/shapesTypes';
-
-import {
-  type ipDot,
-  type ipLine,
-  type ipCircle,
-  type ipEllipse,
-  type ipPolygon,
-  type ipPolyline,
-  type ipPath,
-  type ipRect,
-  type ipText,
-  type ipImage,
-  AllGShapeStyleProperties
-} from '../../../properties/provider/shapeProperties';
-import { transformStack } from '../../../types/index.js';
-
-type shapeType =
-  | iPoint
-  | iLine
-  | iCircle
-  | iEllipse
-  | iPolyline
-  | iPolygon
-  | iRect
-  | iPath;
-
-type shapeTypeParams =
-  | ipDot
-  | ipLine
-  | ipCircle
-  | ipEllipse
-  | ipPolyline
-  | ipPolygon
-  | ipPath
-  | ipRect
-  | ipText;
-
-/**
- * Renderer — Engine-level optimized SVG attribute writer.
- *
- * Key behavior:
- * - All heavy computation happens in JS; renderer writes only minimal diffs to DOM.
- * - Geometry caching per-element prevents rebuilding strings/allocations when geometry unchanged.
- * - For polyline/polygon we rely on reference replacement for canonicalMatrix (case B).
- *
- * Only public method: render()
- * Everything else uses runtime-private fields/methods (#).
- */
-export class Renderer {
-  // runtime-private caches (true JS private fields)
-  #geoCache = new WeakMap<Element, Record<string, unknown>>();
-  #styleCache = new WeakMap<Element, Record<string, string>>();
-  #transformCache = new WeakMap<Element, string>();
-
-  /* -------------------------
-   * Runtime-private helpers
-   * ------------------------- */
-
-  #getOrInitGeoCache(el: Element): Record<string, unknown> {
-    let c = this.#geoCache.get(el);
-    if (c === undefined) {
-      c = Object.create(null) as Record<string, unknown>;
-      this.#geoCache.set(el, c);
-    }
-    return c;
-  }
-
-  #getOrInitStyleCache(el: Element): Record<string, string> {
-    let c = this.#styleCache.get(el);
-    if (c === undefined) {
-      c = Object.create(null) as Record<string, string>;
-      this.#styleCache.set(el, c);
-    }
-    return c;
-  }
-
-  /**
-   * Set transform only if changed (uses transformCache).
-   */
-  #setTransformIfChanged(fig: Element, matrixStr: string): void {
-    const prev = this.#transformCache.get(fig);
-    if (prev !== matrixStr) {
-      if (matrixStr === '') fig.removeAttribute('transform');
-      else fig.setAttribute('transform', matrixStr);
-      this.#transformCache.set(fig, matrixStr);
-    }
-  }
-
-  /**
-   * Convert Float32Array canonical 3x3 -> SVG matrix(a,b,c,d,e,f)
-   */
-  #matrixToSVG(matrix: Float32Array): string {
-    return `matrix(${matrix[0]},${matrix[1]},${matrix[3]},${matrix[4]},${matrix[6]},${matrix[7]})`;
-  }
-
-  #numToStr(n: number): string {
-    return String(n);
-  }
-
-  /* -------------------------
-   * Public API
-   * ------------------------- */
-
-  /**
-   * Render the given GraphicalElementComposer to its SVG element.
-   *
-   * - el: element wrapper providing geo/style/fig via internal access.
-   * - finalMatrix: optional explicit transform to apply (short-circuit).
-   * - isEffect: whether to apply transform attribute.
-   */
-  public render({
-    el,
-    finalMatrix,
-    isEffect = true
-  }: {
-    el: GraphicalElementComposer<GShpesTages, GShpesTages>;
-    finalMatrix?: Float32Array;
-    isEffect?: boolean;
-  }): void {
-    // Validate the wrapper
-    if (!(el instanceof GraphicalElementComposer))
-      throw new Error(
-        'Given Shape is not Renderable: necessary parameters are not provided'
-      );
-
-    // get geometry/style/DOM handle
-    const geoRef = el.getIGeo(DEV_INTERNAL_ACCESS) as Partial<{
-      canonicalMatrix: Float32Array[];
-      transformStack: transformStack;
-      shape: string;
-      currentMatrix?: Float32Array;
-      d?: string;
-      pathD?: string;
-    }>;
-    const styleRef = el.getIStyle(DEV_INTERNAL_ACCESS);
-    const figRef = el.getIFig(DEV_INTERNAL_ACCESS);
-    const shape = geoRef?.shape;
-
-    if (!geoRef || (shape !== 'svg' && !geoRef?.canonicalMatrix))
-      throw new Error('Shape geometry or canonicalMatrix is missing');
-
-    if (shape !== 'svg' && (el as shapeType).isBatching())
-      throw new Error(
-        'Transformation batching is active by .beginT(); call .endT() after transformations are applied.'
-      );
-
-    // Short-circuit: explicit finalMatrix provided — apply transform and return.
-    if (finalMatrix && finalMatrix instanceof Float32Array) {
-      isEffect &&
-        this.#setTransformIfChanged(figRef, this.#matrixToSVG(finalMatrix));
       return;
     }
+		*/
 
-    // get per-element caches (available for every shape)
-    const geoCache = this.#getOrInitGeoCache(figRef); // Record<string, unknown>
-    const styleCache = this.#getOrInitStyleCache(figRef); // Record<string, string>
-
-    // Build desired attributes but avoid heavy work if cache indicates unchanged
-    const desiredAttrs: Record<string, string> = Object.create(null);
-
-    switch (shape) {
-      case 'svg': {
-        const { width, height } = geoRef as { width: number; height: number };
-        const wStr = this.#numToStr(width);
-        const hStr = this.#numToStr(height);
-
-        // Only set if changed (use geoCache for cheap comparison)
-        if ((geoCache as any).__width !== wStr) {
-          desiredAttrs.width = wStr;
-          // (geoCache as any).__width = wStr;
-        }
-        if ((geoCache as any).__height !== hStr) {
-          desiredAttrs.height = hStr;
-          // (geoCache as any).__height = hStr;
-        }
-        break;
-      }
-
-      case 'dot': {
-        const { cx, cy, r } = geoRef as { cx: number; cy: number; r: number };
-        const cr = r < 1 ? 1 : r > 5 ? 5 : r;
-
-        const cxStr = this.#numToStr(cx);
-        const cyStr = this.#numToStr(cy);
-        const rStr = this.#numToStr(cr);
-
-        if ((geoCache as any).__cx !== cxStr) {
-          desiredAttrs.cx = cxStr;
-          (geoCache as any).__cx = cxStr;
-        }
-        if ((geoCache as any).__cy !== cyStr) {
-          desiredAttrs.cy = cyStr;
-          (geoCache as any).__cy = cyStr;
-        }
-        if ((geoCache as any).__r !== rStr) {
-          desiredAttrs.r = rStr;
-          (geoCache as any).__r = rStr;
-        }
-        break;
-      }
-
-      case 'line': {
-        const { x1, y1, x2, y2 } = geoRef as {
-          x1: number;
-          y1: number;
-          x2: number;
-          y2: number;
-        };
-        const x1s = this.#numToStr(x1);
-        const y1s = this.#numToStr(y1);
-        const x2s = this.#numToStr(x2);
-        const y2s = this.#numToStr(y2);
-
-        if ((geoCache as any).__x1 !== x1s) {
-          desiredAttrs.x1 = x1s;
-          //  (geoCache as any).__x1 = x1s;
-        }
-        if ((geoCache as any).__y1 !== y1s) {
-          desiredAttrs.y1 = y1s;
-          //   (geoCache as any).__y1 = y1s;
-        }
-        if ((geoCache as any).__x2 !== x2s) {
-          desiredAttrs.x2 = x2s;
-          // (geoCache as any).__x2 = x2s;
-        }
-        if ((geoCache as any).__y2 !== y2s) {
-          desiredAttrs.y2 = y2s;
-          // (geoCache as any).__y2 = y2s;
-        }
-        break;
-      }
-
-      case 'circle': {
-        const { cx, cy, r } = geoRef as { cx: number; cy: number; r: number };
-        const cxs = this.#numToStr(cx);
-        const cys = this.#numToStr(cy);
-        const rs = this.#numToStr(r);
-
-        if ((geoCache as any).__cx !== cxs) {
-          desiredAttrs.cx = cxs;
-          (geoCache as any).__cx = cxs;
-        }
-        if ((geoCache as any).__cy !== cys) {
-          desiredAttrs.cy = cys;
-          (geoCache as any).__cy = cys;
-        }
-        if ((geoCache as any).__r !== rs) {
-          desiredAttrs.r = rs;
-          (geoCache as any).__r = rs;
-        }
-        break;
-      }
-
-      case 'ellipse': {
-        const { cx, cy, rx, ry } = geoRef as {
-          cx: number;
-          cy: number;
-          rx: number;
-          ry: number;
-        };
-        const cxs = this.#numToStr(cx);
-        const cys = this.#numToStr(cy);
-        const rxs = this.#numToStr(rx);
-        const rys = this.#numToStr(ry);
-
-        if ((geoCache as any).__cx !== cxs) {
-          desiredAttrs.cx = cxs;
-          (geoCache as any).__cx = cxs;
-        }
-        if ((geoCache as any).__cy !== cys) {
-          desiredAttrs.cy = cys;
-          (geoCache as any).__cy = cys;
-        }
-        if ((geoCache as any).__rx !== rxs) {
-          desiredAttrs.rx = rxs;
-          (geoCache as any).__rx = rxs;
-        }
-        if ((geoCache as any).__ry !== rys) {
-          desiredAttrs.ry = rys;
-          (geoCache as any).__ry = rys;
-        }
-        break;
-      }
-
-      case 'rect': {
-        const {
-          x,
-          y,
-          width,
-          height,
-          rx = 0,
-          ry = 0
-        } = geoRef as {
-          x: number;
-          y: number;
-          width: number;
-          height: number;
-          rx: number;
-          ry: number;
-        };
-        const xs = this.#numToStr(x);
-        const ys = this.#numToStr(y);
-        const ws = this.#numToStr(width);
-        const hs = this.#numToStr(height);
-        const rxs = this.#numToStr(rx);
-        const rys = this.#numToStr(ry);
-
-        if ((geoCache as any).__x !== xs) {
-          desiredAttrs.x = xs;
-          (geoCache as any).__x = xs;
-        }
-        if ((geoCache as any).__y !== ys) {
-          desiredAttrs.y = ys;
-          (geoCache as any).__y = ys;
-        }
-        if ((geoCache as any).__width !== ws) {
-          desiredAttrs.width = ws;
-          (geoCache as any).__width = ws;
-        }
-        if ((geoCache as any).__height !== hs) {
-          desiredAttrs.height = hs;
-          (geoCache as any).__height = hs;
-        }
-        if ((geoCache as any).__rx !== rxs) {
-          desiredAttrs.rx = rxs;
-          (geoCache as any).__rx = rxs;
-        }
-        if ((geoCache as any).__ry !== rys) {
-          desiredAttrs.ry = rys;
-          (geoCache as any).__ry = rys;
-        }
-        break;
-      }
-
-      case 'polyline':
-      case 'polygon': {
-        // canonicalMatrix is an array-of-points. You said you replace arrays when geometry changes.
-        const matrix = (geoRef?.canonicalMatrix ?? []) as Float32Array[];
-
-        // Fast reference check (case B): if reference didn't change, skip rebuild.
-        const prevMatrixRef = (geoCache as any).__matrixRef as
-          | Float32Array[]
-          | undefined;
-        if (prevMatrixRef !== matrix) {
-          // rebuild points string only when reference changed
-          const len = matrix.length;
-          // pre-allocate parts array of exact size
-          const parts: string[] = new Array(len);
-          for (let i = 0; i < len; i++) {
-            const pt = matrix[i];
-            parts[i] = `${pt[0]},${pt[1]}`;
-          }
-          const pointsStr = parts.join(' ');
-          desiredAttrs.points = pointsStr;
-          (geoCache as any).__points = pointsStr;
-          (geoCache as any).__matrixRef = matrix;
-        } else {
-          // reference same => no geometry change => do nothing
-        }
-        break;
-      }
-
-      case 'path': {
-        // use geoRef.d or geoRef.pathD if provided
-        const d = (geoRef as any).d ?? (geoRef as any).pathD;
-        if (typeof d === 'string') {
-          if ((geoCache as any).__d !== d) {
-            desiredAttrs.d = d;
-            (geoCache as any).__d = d;
-          }
-        }
-        break;
-      }
-
-      default:
-        // no-op for unknown shapes
-        break;
-    }
-
-    console.log('desired = ', desiredAttrs);
-
-    // Apply geometry attributes (written only if desiredAttrs contains them)
-    for (const key in desiredAttrs) {
-      if (!Object.prototype.hasOwnProperty.call(desiredAttrs, key)) continue;
-
-      const vStr = desiredAttrs[key];
-      figRef.setAttribute(key, vStr);
-      styleCache[key] = vStr;
-    }
-
-    // Style handling: update attributes for style props and remove stale ones
-    if (styleRef && typeof styleRef === 'object') {
-      const styleObj = styleRef as Record<string, string | number>;
-      // write or update
-      for (const k in styleObj) {
-        if (!Object.prototype.hasOwnProperty.call(styleObj, k)) continue;
-        const vStr = String(styleObj[k]);
-        if (styleCache[k] !== vStr) {
-          figRef.setAttribute(k, vStr);
-          styleCache[k] = vStr;
-        }
-      }
-
-      /*
-      // remove stale style attributes that were previously set by renderer
-      for (const prevKey in styleCache) {
-        if (!Object.prototype.hasOwnProperty.call(styleCache, prevKey))
-          continue;
-        if (!(prevKey in styleObj)) {
-          figRef.removeAttribute(prevKey);
-          delete styleCache[prevKey];
-        }
-      }
-    */
-    }
+    // case 3 : fallback if case 2 wont work in any impossible rare case
+    // svg path generation via data & matrix -> TS -> wasm -> C - > wasm -> TS -> string ouput
+    /*
+    const dataS = new Float32Array([-1, 0]);
+    const csvgPath = cmath.getSVGPath(geoRef?.matrix as Float32Array[], dataS);
+    if (figRef.getAttribute('d') !== csvgPath) {
+      figRef.setAttribute('d', csvgPath);
+    }*/
   }
 }
 
-/* Export singleton instance to preserve the prior exported symbol. */
+function addCornerRadiusToExistingPath(
+  d: string,
+  rx: number,
+  ry: number
+): string {
+  const hasArcs = /A\s*[\d.]+,[\d.]+/i.test(d);
+  let points: [number, number][];
+
+  if (hasArcs) {
+    points = extractOriginalCorners(d);
+    console.log('has arc ', points);
+  } else {
+    points = extractPolygonPoints(d);
+    console.log('has not  arc ', points);
+  }
+
+  if (points.length !== 4) return d; // Safety
+
+  const [p1, p2, p3, p4] = points;
+
+  return `
+    M${p1[0] + rx},${p1[1]}
+    L${p2[0] - rx},${p2[1]}
+    A${rx},${ry} 0 0 1 ${p2[0]},${p2[1] + ry}
+    L${p3[0]},${p3[1] - ry}
+    A${rx},${ry} 0 0 1 ${p3[0] - rx},${p3[1]}
+    L${p4[0] + rx},${p4[1]}
+    A${rx},${ry} 0 0 1 ${p4[0]},${p4[1] - ry}
+    L${p1[0]},${p1[1] + ry}
+    A${rx},${ry} 0 0 1 ${p1[0] + rx},${p1[1]} Z
+  `;
+}
+
+function extractPolygonPoints(d: string): [number, number][] {
+  const coords: [number, number][] = [];
+  const matches = d.matchAll(/([ML])\s*([\d.]+)[,\s]+([\d.]+)/gi);
+  for (const m of matches) {
+    coords.push([parseFloat(m[2]), parseFloat(m[3])]);
+  }
+  return coords;
+}
+
+function extractOriginalCorners(d: string): [number, number][] {
+  const points = extractPolygonPoints(d);
+  const arcMatch = d.match(/A\s*([\d.]+)[,\s]+([\d.]+)/i);
+  if (!arcMatch) return points; // fallback
+  const rx = parseFloat(arcMatch[1]);
+  const ry = parseFloat(arcMatch[2]);
+
+  // Reverse-engineer unrounded rectangle coordinates
+  points[0][0] -= rx; // p1.x
+  // p1.y stays the same
+  points[1][0] += rx; // p2.x
+  // p2.y stays the same
+  points[2][1] += ry; // p3.y
+  // p3.x stays the same
+  points[3][0] -= rx; // p4.x
+  points.length = 4;
+  return points;
+}
+
 export const renderer = new Renderer();

@@ -117,59 +117,67 @@ export class Text extends Shape<'text', 'text'> {
   protected override generateMatrix(accessKey: symbol): void {
     try {
       assertAccess(accessKey);
-      const geo = this.#geometry as {
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
-        x: number;
-        y: number;
-      };
-      if (!geo) return;
+      if (!this.#geometry) return;
 
-      const { x = 0, y = 0 } = geo;
+      const { x = 0, y = 0 } = this.#geometry;
       const shapeRows = 1;
       const bboxRows = 4;
       const totalLength = (shapeRows + bboxRows) * 3;
 
       // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      if (
+        !this.#geometry.sharedBuffer ||
+        this.#geometry.sharedBuffer.length !== totalLength
+      ) {
+        this.#geometry.sharedBuffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = this.#geometry.sharedBuffer as Float32Array;
       sb.set([x, y, 1], 0);
 
       // Only recreate views if buffer was reallocated
-      if (!geo.canonicalMatrix) {
-        geo.canonicalMatrix = [new Float32Array(sb.buffer, 0 * 4, 3)];
+      if (!this.#geometry.matrix) {
+        this.#geometry.matrix = [new Float32Array(sb.buffer, 0 * 4, 3)];
       }
 
       //     renderer.render({ el: this });
-      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
+      this.restoreDimension(DEV_INTERNAL_ACCESS);
     } catch (e) {
       throw e;
     }
   }
 
-  protected override restoreDimension(
-    accessKey: symbol,
-    temporaryState: Float32Array
-  ) {
+  protected override restoreDimension(accessKey: symbol) {
     try {
       assertAccess(accessKey);
-
       if (!this.#geometry) return;
-      /*
       const m = this.#geometry.matrix as Float32Array[];
 
       if (!isValidMatrix(m, 1, 3)) return;
-			*/
-      [this.#geometry.x, this.#geometry.y] = [
-        temporaryState[0],
-        temporaryState[1]
-      ]; // center if circle
+      [this.#geometry.x, this.#geometry.y] = m[0]; // center if circle
     } catch (e) {
       throw e;
     }
+  }
+
+  protected override getAttrsAccordingToShape(
+    accessKeys: symbol,
+    attrs: Record<string, any>
+  ): { x: number; y: number; width: number; height: number } {
+    assertAccess(accessKeys);
+
+    return { x: attrs.x ?? 0, y: attrs.y ?? 0, width: 1, height: 1 };
+  }
+
+  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+  } {
+    assertAccess(accessKeys);
+    const g = this.#geometry as { x: number; y: number };
+    return { x: g.x, y: g.y, width: 1, height: 1 };
   }
 
   protected override validateShapeMatrix(

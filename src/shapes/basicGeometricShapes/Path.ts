@@ -113,6 +113,28 @@ export class Path extends Shape<'path', 'path'> {
     return isValidMatrix(matrix, 4, 3);
   }
 
+  protected override getAttrsAccordingToShape(
+    accessKeys: symbol,
+    attrs: Record<string, any>
+  ): { x: number; y: number; width: number; height: number } {
+    assertAccess(accessKeys);
+    if (attrs) {
+    }
+
+    return { x: 0, y: 0, width: 1, height: 1 };
+  }
+
+  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+  } {
+    assertAccess(accessKeys);
+
+    return { x: 0, y: 0, width: 1, height: 1 };
+  }
+
   protected override restoreDimension(accessKeys: symbol): void {
     assertAccess(accessKeys);
   }

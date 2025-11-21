@@ -1,62 +1,38 @@
+
 {
   "compilerOptions": {
     // ---- Target & Module ---- 
     "target": "ES2020",
     "module": "ES2020",
     "lib": ["DOM", "ESNext"],
-
     // ---- Paths & Resolution ---- 
     "rootDir": "./src/",
     "outDir": "./dist/",
     "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "allowJs": true,
-    "checkJs": false,
-    "allowArbitraryExtensions": true,
+    "resolveJsonModule": true,          // allow importing .json
+    "allowJs": true,                    // allow .js imports
+    "checkJs": false,                   // don’t type-check JS files
+    "allowArbitraryExtensions": true,   // allow .d.ts / custom ext
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 
-    // ---- Incremental Build ---- 
+    //---- Incremental Build ---- 
     "incremental": true,
-    "sourceMap": true,
+    "sourceMap": false,
 
     // ---- Strictness ---- 
     "strict": true,
     "skipLibCheck": true,
 
-    // ---- Types & Declarations ----
-    "types": ["vitest/globals"],
-    "noEmit": false,
-    "declaration": true,
+
+    //---- Types & Declarations ----
+    "types": ["vitest/globals"] , 
+    "noEmit" : false , // create .js files in src if true 
+    "declaration": true , // create .d.ts in dist directory 
     "declarationDir": "./dist/distribution/types",
-    "emitDeclarationOnly": false,
+    "emitDeclarationOnly": false // it helps im creation 
 
-    // ---- ADD ALL STRICT FLAGS INSIDE HERE ----
-/*
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
-    "allowUnreachableCode": false,
-    "allowUnusedLabels": false,
 
-    // Object Properties
-    "strictPropertyInitialization": true,
-    "exactOptionalPropertyTypes": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "noUncheckedIndexedAccess": true,
-
-    // Methods / Class correctness
-    "noImplicitOverride": true,
-
-    // Exceptions & runtime safety
-    "useUnknownInCatchVariables": true
-
-    */
   },
 
   "watchOptions": {
@@ -66,16 +42,85 @@
     "synchronousWatchDirectory": true
   },
 
-  "include": ["src/index/**/*.ts"],
+  "include": ["src/index/**/*.ts"],     // only include your main entry points
   "exclude": [
-    "src/tests/**",
-    "src/**/*.test.ts",
-    "src/**/visualTest/**",
-    "src/shapes/customGeometricShapes/*.ts",
+    "src/tests/**",                      // exclude tests
+    "src/**/*.test.ts",                  // exclude test files
+    "src/**/visualTest/**",              // exclude visual test folders
+    "src/shapes/customGeometricShapes/*.ts", // exclude if they’re placeholders
     "node_modules",
     "dist"
   ]
+
+
+
+  /*
+    // Recommended strictness flags
+    "noUnusedLocals": true,        // Error on unused variables
+    "noUnusedParameters": true,    // Error on unused function parameters
+    "noImplicitReturns": true,     // Error if not all code paths return a value
+    "noFallthroughCasesInSwitch": true, // Prevent fallthrough in switch statements
+    "forceConsistentCasingInFileNames": true, // Ensure consistent casing in imports
+    "noImplicitAny": true,         // Prevent implicit 'any' types
+    "strictNullChecks": true,      // Enable strict null checking
+    "strictFunctionTypes": true,   // Enable strict function type checking
+    "strictBindCallApply": true,   // Enable strict bind/call/apply checking
+    "allowUnreachableCode": false, // Disallow unreachable code
+    "allowUnusedLabels": false     // Disallow unused labels
+  }
+  */
 }
 
 
 
+
+
+
+
+
+/*
+
+{
+  "compilerOptions": {
+    // ---- Target & Module ---- 
+    "target": "ES2020",
+    "module": "ES2020",
+    "lib": ["DOM", "ESNext"],
+
+    // ---- Paths & Resolution ---- 
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,          // allow importing .json
+    "allowJs": true,                    // allow .js imports
+    "checkJs": false,                   // don’t type-check JS files
+    "allowArbitraryExtensions": true,   // allow .d.ts / custom ext
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // ---- Strictness ---- 
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+
+    //---- Types & Declarations ----
+    "types": ["vitest/globals"],
+    "declaration": true,
+    "emitDeclarationOnly": false,
+
+    //---- Incremental Build ---- 
+    "incremental": true,
+    "sourceMap": false
+  },
+  "include": [
+    "src//*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+
+
+}
+*/

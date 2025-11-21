@@ -135,39 +135,33 @@ export class Ellipse extends Shape<'ellipse', 'ellipse'> {
   protected override generateMatrix(accessKey: symbol): void {
     try {
       assertAccess(accessKey);
-      const geo = this.#geometry as {
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
-        cx: number;
-        cy: number;
-        rx: number;
-        ry: number;
-      };
+      if (!this.#geometry) return;
 
-      if (!geo) return;
-
-      const { cx = 0, cy = 0, rx = 0, ry = 0 } = geo;
+      const { cx = 0, cy = 0, rx = 0, ry = 0 } = this.#geometry;
       const shapeRows = 3;
       const bboxRows = 4;
       const totalLength = (shapeRows + bboxRows) * 3;
 
       // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      if (
+        !this.#geometry.sharedBuffer ||
+        this.#geometry.sharedBuffer.length !== totalLength
+      ) {
+        this.#geometry.sharedBuffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = this.#geometry.sharedBuffer as Float32Array;
       sb.set([cx, cy, 1, cx + rx, cy, 1, cx, cy + ry, 1], 0);
       // Only recreate views if buffer was reallocated
-      if (!geo.canonicalMatrix) {
-        geo.canonicalMatrix = [
+      if (!this.#geometry.matrix) {
+        this.#geometry.matrix = [
           new Float32Array(sb.buffer, 0 * 4, 3),
           new Float32Array(sb.buffer, 3 * 4, 3),
           new Float32Array(sb.buffer, 6 * 4, 3)
         ];
       }
       renderer.render({ el: this });
-      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
+      this.restoreDimension(DEV_INTERNAL_ACCESS);
     } catch (e) {
       throw e;
     }
@@ -201,26 +195,62 @@ export class Ellipse extends Shape<'ellipse', 'ellipse'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array,
     basic: boolean = true
   ) {
     try {
       assertAccess(accessKey);
       if (!this.#geometry) return;
-      //     const m = this.#geometry && (this.#geometry.matrix as Float32Array[]);
-      //    if (!isValidMatrix(m, 3, 3)) return;
+      const m = this.#geometry && (this.#geometry.matrix as Float32Array[]);
+      if (!isValidMatrix(m, 3, 3)) return;
 
-      const [cx, cy] = [temporaryState[0], temporaryState[1]]; // center of ellipse
-
-      const a = Math.hypot(temporaryState[3] - cx, temporaryState[4] - cy);
-
-      const b = Math.hypot(temporaryState[6] - cx, temporaryState[7] - cy);
+      const [cx, cy] = m[0]; // center of ellipse
+      const a = Math.hypot(m[1][0] - cx, m[1][1] - cy);
+      const b = Math.hypot(m[2][0] - cx, m[2][1] - cy);
 
       basic &&
         (([this.#geometry.rx, this.#geometry.ry] = [a, b]),
-        ([this.#geometry.cx, this.#geometry.cy] = [cx, cy]));
+        ([this.#geometry.cx, this.#geometry.cy] = m[0]));
     } catch (e) {
       throw e;
     }
+  }
+
+  protected override getAttrsAccordingToShape(
+    accessKeys: symbol,
+    attrs: Record<string, any>
+  ): { x: number; y: number; width: number; height: number } {
+    assertAccess(accessKeys);
+
+    const rx = this.#geometry?.rx ?? 1;
+    const ry = this.#geometry?.ry ?? 1;
+    const attr = {
+      x: attrs.cx ?? 0,
+      y: attrs.cy ?? 0,
+      width: attrs.rx ?? rx,
+      height: attrs.ry ?? ry
+    };
+
+    return attr;
+  }
+
+  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+  } {
+    assertAccess(accessKeys);
+    const {
+      cx: x = 0,
+      cy: y = 0,
+      rx: width,
+      ry: height
+    } = this.#geometry as {
+      cx: number;
+      cy: number;
+      rx: number;
+      ry: number;
+    };
+    return { x, y, width, height };
   }
 }

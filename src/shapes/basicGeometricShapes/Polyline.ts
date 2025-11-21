@@ -174,13 +174,7 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
     try {
       assertAccess(accessKey);
 
-      const geo = this.#geometry as {
-        points: string;
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
-      };
-
-      if (!geo) return;
+      if (!this.#geometry) return;
       let vmat: Float32Array;
 
       if (setM && setM instanceof Float32Array) {
@@ -199,36 +193,39 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
       const totalLength = (shapeRows + bboxRows) * 3;
 
       // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
+      if (
+        !this.#geometry.sharedBuffer ||
+        this.#geometry.sharedBuffer.length !== totalLength
+      ) {
         /*
         if (setM && render) {
           // only valid when setSMatrix Frist try went wrong
           this.#geometry.sharedBuffer = vmat as Float32Array;
         } else {
 					*/
-        geo.sharedBuffer = new Float32Array(totalLength);
+        this.#geometry.sharedBuffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = this.#geometry.sharedBuffer as Float32Array;
       sb.set(vmat, 0);
 
       // Only recreate views if buffer was reallocated
       if (
-        !geo.canonicalMatrix ||
-        totalLength - 12 != geo.canonicalMatrix.length * 3
+        !this.#geometry.matrix ||
+        totalLength - 12 != this.#geometry.matrix.length * 3
       ) {
         const mat = [];
 
         for (let i = 0; i < shapeRows; i++) {
           mat.push(new Float32Array(sb.buffer, i * 3 * 4, 3));
         }
-        geo.canonicalMatrix = mat;
+        this.#geometry.matrix = mat;
       }
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
       renderer.render({ el: this });
-      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
+      this.restoreDimension(DEV_INTERNAL_ACCESS);
     } catch (e) {
       throw e;
     }
@@ -243,24 +240,18 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
     return isValidMatrix(m, m.length, 3);
   }
 
-  protected override restoreDimension(
-    accessKey: symbol,
-    temporaryState: Float32Array
-  ) {
+  protected override restoreDimension(accessKey: symbol) {
     try {
       assertAccess(accessKey);
-      // const m = this.#geometry?.matrix as Float32Array[];
-      // if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
+      const m = this.#geometry?.matrix as Float32Array[];
+      if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
 
       // Replacing reduce with traditional loop
-      /*
       let points = '';
       for (let i = 0; i < m.length; i++) {
         points += `${m[i][0]},${m[i][1]} `;
       }
       this.#geometry.points = points;
-
-			*/
     } catch (e) {
       throw e;
     }
@@ -268,5 +259,26 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
 
   public getBBox() {
     return computeBBox(this.#geometry, () => super.getBBox());
+  }
+
+  protected override getAttrsAccordingToShape(
+    accessKeys: symbol,
+    attrs: Record<string, any>
+  ): { x: number; y: number; width: number; height: number } {
+    assertAccess(accessKeys);
+    if (attrs) {
+    }
+    return { x: 0, y: 0, width: 1, height: 1 };
+  }
+
+  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+  } {
+    assertAccess(accessKeys);
+
+    return { x: 0, y: 0, width: 1, height: 1 };
   }
 }
