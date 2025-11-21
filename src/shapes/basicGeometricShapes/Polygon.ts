@@ -71,10 +71,10 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
             pointsAttr += ' ';
           }
         }
-        pointsAttr += 'Z';
+        pointsAttr += ' Z';
       }
 
-      if (pointsAttr[pointsAttr.length - 1].toLowerCase() == 'z') {
+      if (pointsAttr[pointsAttr.length - 1].toLowerCase() !== 'z') {
         throw new Error("Given Path is Not Closed please close path with 'Z'");
       }
 
@@ -110,7 +110,7 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Polygon {
-    checkParent(this.#fig, 'polyline');
+    checkParent(this.#fig, 'polygon');
 
     if (
       this.#geometry &&
@@ -139,18 +139,24 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
   #validatePolygonCoordinates(path: string) {
     // Match the pattern of "x,y" coordinates separated by spaces
 
-    const coordinateListRegex =
+    const oordinateListRegex =
       /^(-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)(\s+-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)*$/;
+
+    const coordinateListRegex =
+      /^(-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)(\s+-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)*(?:\s+[Zz])?$/;
 
     // Check if the path matches the valid polyline format
     if (!coordinateListRegex.test(path)) {
       throw new Error('Given Path is not correct please check');
     }
 
-    const rowVertex = path.trim().split(/\s+/);
-    const Vertex = new Float32Array(rowVertex.length * 3); // 3 floats per vertex: x, y, 1
+    const rowVertex = path
+      .trim()
 
-    for (let i = 0; i < rowVertex.length; i++) {
+      .split(/\s+/);
+    const Vertex = new Float32Array((rowVertex.length - 1) * 3); // 3 floats per vertex: x, y, 1
+
+    for (let i = 0; i < rowVertex.length - 1; i++) {
       const pair = rowVertex[i].trim();
       const s = pair.indexOf(',');
       const x = parseFloat(pair.slice(0, s));
@@ -180,7 +186,13 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
     try {
       assertAccess(accessKey);
 
-      if (!this.#geometry) return;
+      const geo = this.#geometry as {
+        points: string;
+        sharedBuffer: Float32Array;
+        canonicalMatrix: Float32Array[];
+      };
+
+      if (!geo) return;
       let vmat: Float32Array;
 
       if (setM && setM instanceof Float32Array) {
@@ -199,33 +211,30 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
       const totalLength = (shapeRows + bboxRows) * 3;
 
       // Allocate once and reuse
-      if (
-        !this.#geometry.sharedBuffer ||
-        this.#geometry.sharedBuffer.length !== totalLength
-      ) {
+      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
         /*
        if (setM && render) {
          // only valid when setSMatrix Frist try went wrong
          this.#geometry.sharedBuffer = vmat as Float32Array;
        } else {
          */
-        this.#geometry.sharedBuffer = new Float32Array(totalLength);
+        geo.sharedBuffer = new Float32Array(totalLength);
       }
 
-      const sb = this.#geometry.sharedBuffer as Float32Array;
+      const sb = geo.sharedBuffer as Float32Array;
       sb.set(vmat, 0);
 
       // Only recreate views if buffer was reallocated
       if (
-        !this.#geometry.matrix ||
-        totalLength - 12 != this.#geometry.matrix.length * 3
+        !geo.canonicalMatrix ||
+        totalLength - 12 != geo.canonicalMatrix.length * 3
       ) {
         const mat = [];
 
         for (let i = 0; i < shapeRows; i++) {
           mat.push(new Float32Array(sb.buffer, i * 3 * 4, 3));
         }
-        this.#geometry.matrix = mat;
+        geo.canonicalMatrix = mat;
       }
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
@@ -248,6 +257,7 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
   protected override restoreDimension(accessKey: symbol) {
     try {
       assertAccess(accessKey);
+      /*
       const m = this.#geometry?.matrix as Float32Array[];
       if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
 
@@ -255,35 +265,11 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
       for (let i = 0; i < m.length; i++) {
         points += `${m[i][0]},${m[i][1]} `;
       }
-      points = 'Z';
+      points += 'Z';
       this.#geometry.points = points;
+			*/
     } catch (e) {
       throw e;
     }
-  }
-
-  protected override getAttrsAccordingToShape(
-    accessKeys: symbol,
-    attrs: Record<string, any>
-  ): { x: number; y: number; width: number; height: number } {
-    assertAccess(accessKeys);
-    if (attrs) {
-    }
-    return { x: 0, y: 0, width: 1, height: 1 };
-  }
-
-  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-  } {
-    assertAccess(accessKeys);
-
-    return { x: 0, y: 0, width: 1, height: 1 };
-  }
-
-  public getBBox() {
-    return computeBBox(this.#geometry, () => super.getBBox());
   }
 }

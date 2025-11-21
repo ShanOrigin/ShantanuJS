@@ -71,6 +71,7 @@ import {
   precomputeFramesRaw,
   setPreComputedFrame
 } from './preBuilds/preComputationsOptimizations/preComputeFrames.js';
+import { transformStack } from '../../types';
 
 type optFuncType = Float32Array &
   ReturnType<typeof fitTransformPolynomialsFast>;
@@ -231,7 +232,11 @@ export class Animation<T extends GShpesTages> {
   ) {
     this.#elFig = GElement.getIFig(DEV_INTERNAL_ACCESS);
 
-    const geo = GElement.getIGeo(DEV_INTERNAL_ACCESS);
+    const geo = GElement.getIGeo(DEV_INTERNAL_ACCESS) as {
+      transformStack: transformStack;
+      shape: string;
+      sharedBuffer: Float32Array;
+    };
     const style = GElement.getIStyle(DEV_INTERNAL_ACCESS);
     this.#shape = geo?.shape as T;
     this.#isAnimation = isAnimation;
@@ -240,7 +245,7 @@ export class Animation<T extends GShpesTages> {
     this.#sharedSMatrix = new Float32Array(geo?.sharedBuffer?.length ?? 0);
     this.#sharedSMatrix.set(geo?.sharedBuffer as Float32Array);
 
-    this.#Tmatrix = ((geo?.TList && geo?.TList[0]?.TMatrix) ??
+    this.#Tmatrix = (geo.transformStack.stack[0].transformMatrix ??
       this.#Tmatrix) as Float32Array;
 
     for (const key in style) {
@@ -775,9 +780,11 @@ export class Animation<T extends GShpesTages> {
 
     // - accessing base transformation matrix of a shape which includes previously applied all transformation on shape
 
-    const baseTransformationMatrix: Float32Array = (this.#el.getIGeo(
-      DEV_INTERNAL_ACCESS
-    )?.TList?.[0]?.TMatrix ||
+    const baseTransformationMatrix: Float32Array = ((
+      this.#el.getIGeo(DEV_INTERNAL_ACCESS) as {
+        transformStack: transformStack;
+      }
+    ).transformStack.stack[0].transformMatrix ||
       new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1])) as Float32Array;
 
     let controls = this.#advInfo.controls as controlsParams;

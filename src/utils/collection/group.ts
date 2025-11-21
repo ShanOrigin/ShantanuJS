@@ -599,8 +599,8 @@ let s = 0 ;
         element instanceof NG && (shape = element.attributes?.tag);
 				*/
 
-        delete this.#geometry?.matrix;
-        delete this.#geometry?.Obbox;
+        delete this.#geometry?.canonicalMatrix;
+        delete this.#geometry?.obbox;
         assignBBoxMatrix(this.#geometry, this.getBBox.bind(this), 'both');
         shape && (this.#batches[shape] ??= []).push(element);
       }
@@ -668,8 +668,8 @@ let s = 0 ;
         //console.log('index to remove =', removedElementIndex);
         //console.log(this.#fig);
 
-        delete this.#geometry?.matrix;
-        delete this.#geometry?.Obbox;
+        delete this.#geometry?.canonicalMatrix;
+        delete this.#geometry?.obbox;
         assignBBoxMatrix(this.#geometry, this.getBBox.bind(this), 'both');
         this.#groupElements.splice(removedElementIndex, 1);
       }
@@ -694,8 +694,8 @@ let s = 0 ;
         });
       }
 
-      delete this.#geometry?.matrix;
-      delete this.#geometry?.Obbox;
+      delete this.#geometry?.canonicalMatrix;
+      delete this.#geometry?.obbox;
       this.#groupElements = [];
 
       ////console.log('All elements ungrouped and added back to canvas');
@@ -742,44 +742,9 @@ let s = 0 ;
 
   protected override restoreDimension(
     accessKeys: symbol,
+    temporaryState: Float32Array,
     basic?: boolean
   ): void {
     assertAccess(accessKeys);
-  }
-
-  protected override getAttrsAccordingToShape(
-    accessKeys: symbol,
-    attrs: Record<string, any>
-  ): { x: number; y: number; width: number; height: number } {
-    assertAccess(accessKeys);
-
-    return {
-      x: attrs.x ?? 0,
-      y: attrs.y ?? 0,
-      width: attrs.width,
-      height: attrs.height
-    };
-  }
-
-  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-  } {
-    assertAccess(accessKeys);
-
-    const attrs = this.#geometry as {
-      x: number;
-      y: number;
-      width?: number;
-      height?: number;
-    };
-    return {
-      x: attrs.x ?? 0,
-      y: attrs.y ?? 0,
-      width: attrs.width,
-      height: attrs.height
-    };
   }
 }

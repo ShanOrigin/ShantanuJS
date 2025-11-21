@@ -256,19 +256,18 @@ export abstract class GraphicalElement<
 
       if (typeof prop !== 'object' || Object.keys(prop).length == 0) return;
       let [key, value] = Object.entries(prop)[0];
-      /*
-      this.#geometry &&
-        this.#isGeometricProp(key) &&
-        (((this.#geometry as Record<string, string | number>)[key] = value),
-        (this.#fig.tagName == 'svg' ||
-          (this.#fig.tagName == 'text' && key != 'text')) &&
-          this.#fig.setAttribute(key, String(value)));
-*/
+
       if (this.#isGeometricProp(key)) {
         (this.#geometry as Record<string, string | number>)[key] = value;
 
+        /*
         !(this.#fig.tagName == 'text' && key == 'text') &&
           this.#fig.setAttribute(key, String(value));
+				*/
+        /*
+        this.#fig.tagName == 'svg' &&
+          this.#fig.setAttribute(key, String(value));
+				*/
       }
 
       //+++++++++ only text element specific code +++++++++
@@ -276,14 +275,10 @@ export abstract class GraphicalElement<
         key == 'text' &&
         (this.#fig.textContent = value.toString());
       //+++++++++++++++++++++++++++++++++++++++++++++++++++
-      if (
-        typeof this.#style == 'object' &&
-        this.#isStyleProp(key) &&
-        key != 'id'
-      ) {
+      if (typeof this.#style == 'object' && this.#isStyleProp(key)) {
         (this.#style as Record<string, string | number>)[key] = value;
 
-        this.#fig.setAttribute(key, String(value));
+        // this.#fig.setAttribute(key, String(value));
       }
     } catch (e) {
       throw e;

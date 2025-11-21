@@ -136,7 +136,8 @@ export function generateCurvePoints({
     }
 
     for (let i = 0; i <= smoothness; i++) {
-      const t = lastT + i / smoothness;
+      //  const t = lastT +  i / smoothness;
+      const t = i / smoothness;
       const absolute = interpolatePointOnCurve(
         x1,
         y1,
@@ -154,7 +155,8 @@ export function generateCurvePoints({
         const curr = points[points.length - 1];
         const segmentLength = Math.hypot(curr.x - prev.x, curr.y - prev.y);
         totalLength += segmentLength;
-        table.push({ t, distance: totalLength });
+        const arct = (lastT * smoothness + i) / (smoothness * continuousCount);
+        table.push({ t: arct, distance: totalLength });
       }
     }
     lastT += 1; // move to next segment

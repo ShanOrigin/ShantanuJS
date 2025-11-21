@@ -122,33 +122,40 @@ export class Line extends Shape<'line', 'line'> {
   protected override generateMatrix(accessKey: symbol): void {
     try {
       assertAccess(accessKey);
-      if (!this.#geometry) return;
-      const { x1 = 0, y1 = 0, x2 = 0, y2 = 0 } = this.#geometry;
+      const geo = this.#geometry as {
+        x1: number;
+        y1: number;
+        x2: number;
+        y2: number;
+        sharedBuffer: Float32Array;
+        canonicalMatrix: Float32Array[];
+      };
+
+      if (!geo) return;
+      const { x1 = 0, y1 = 0, x2 = 0, y2 = 0 } = geo;
       const shapeRows = 2;
       const bboxRows = 4;
       const totalLength = (shapeRows + bboxRows) * 3;
 
       // Allocate once and reuse
-      if (
-        !this.#geometry.sharedBuffer ||
-        this.#geometry.sharedBuffer.length !== totalLength
-      ) {
-        this.#geometry.sharedBuffer = new Float32Array(totalLength);
+      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
+        geo.sharedBuffer = new Float32Array(totalLength);
       }
 
-      const sb = this.#geometry.sharedBuffer as Float32Array;
+      const sb = geo.sharedBuffer as Float32Array;
       sb.set([x1, y1, 1, x2, y2, 1], 0);
 
       // Only recreate views if buffer was reallocated
-      if (!this.#geometry.matrix) {
-        this.#geometry.matrix = [
+      if (!geo.canonicalMatrix) {
+        geo.canonicalMatrix = [
           new Float32Array(sb.buffer, 0 * 4, 3),
           new Float32Array(sb.buffer, 3 * 4, 3)
         ];
       }
 
+      console.log('hi');
       renderer.render({ el: this });
-      this.restoreDimension(DEV_INTERNAL_ACCESS);
+      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;
     }
@@ -161,50 +168,21 @@ export class Line extends Shape<'line', 'line'> {
     assertAccess(accessKey);
     return isValidMatrix(m, 2, 3);
   }
-  protected override restoreDimension(accessKey: symbol) {
-    assertAccess(accessKey);
-    const m = this.#geometry?.matrix as Float32Array[];
-    if (!this.#geometry || !isValidMatrix(m, 2, 3)) return;
-
-    [this.#geometry.x1, this.#geometry.y1] = m[0];
-    [this.#geometry.x2, this.#geometry.y2] = m[1];
-  }
-
-  protected override getAttrsAccordingToShape(
+  protected override restoreDimension(
     accessKey: symbol,
-    attrs: Record<string, any>
-  ): { x: number; y: number; width: number; height: number } {
+    temporaryState: Float32Array
+  ) {
     assertAccess(accessKey);
+    //    const m = this.#geometry?.matrix as Float32Array[];
+    //   if (!this.#geometry || !isValidMatrix(m, 2, 3)) return;
 
-    const {
-      x1: ux1,
-      //   x2: ux2,
-      y1: uy1
-      //    y2: uy2
-    } = attrs as { x1: number; y1: number; x2: number; y2: number };
-
-    /*	
-;  const dx = Math.abs( (ux1 ?? x1 )-  (ux2 ?? x2 ) )
-  const dy = Math.abs( (uy1 ?? y1 )-  (uy2 ?? y2 ) )
-
- const dist = Math.hypot( dx , dy );
- 	*/
-
-    return { x: ux1 ?? 0, y: uy1 ?? 0, width: 1, height: 1 };
-  }
-
-  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-  } {
-    assertAccess(accessKeys);
-    const { x1, y1 } = this.#geometry as {
+    const geo = this.#geometry as {
       x1: number;
       y1: number;
+      x2: number;
+      y2: number;
     };
-
-    return { x: x1 ?? 0, y: y1 ?? 0, width: 1, height: 1 };
+    [geo.x1, geo.y1] = [temporaryState[0], temporaryState[1]];
+    [geo.x2, geo.y2] = [temporaryState[3], temporaryState[4]];
   }
 }
