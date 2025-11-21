@@ -12,7 +12,7 @@ import { Polyline } from '../shapes/basicGeometricShapes/Polyline.js';
 import { Rect } from '../shapes/basicGeometricShapes/Rectangle.js';
 
 // importing custom Shapes classes
-
+import { Curve } from '../shapes/customGeometricShapes/Curves.js';
 import { QuadraticCurve } from '../shapes/customGeometricShapes/quadraticCurves.js';
 import { CubicCurve } from '../shapes/customGeometricShapes/cubicCurves.js';
 import { ArcCurve } from '../shapes/customGeometricShapes/arcCurves.js';
@@ -34,7 +34,17 @@ export const Shantanu = {
   Path,
   // custom shapes
   Shapes: {
+    Basic: {
+      Circle,
+      Line,
+      Ellipse,
+      Point,
+      Polyline,
+      Polygon,
+      Path
+    },
     Custom: {
+      Curve,
       QuadraticCurve,
       CubicCurve,
       ArcCurve,

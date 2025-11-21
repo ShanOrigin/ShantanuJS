@@ -34,7 +34,7 @@ export { DEV_INTERNAL_ACCESS, assertAccess };
 // ------ Type Imports ------
 
 import type { animatableProps } from '../../utils/animations/animation.js';
-import type { attrsMethodReturnTypes } from '../../types/index';
+import type { attrsMethodReturnTypes, transformStack } from '../../types/index';
 import type {
   IadvanceProps,
   EasingType,
@@ -47,7 +47,7 @@ import type {
   SkewMethodProps,
   FlipMethodProps
 } from '../../types/transformations';
-import type { shapesPropsType } from '../../types/shapes';
+import type { shapesPropsType, lineGeoTypes } from '../../types/shapes';
 
 import {
   boxShadowProps,
@@ -64,6 +64,7 @@ import {
 
 import type { IGraphicalElementProperties as IG } from '../../properties/provider/shapeProperties';
 import type { GShpesTages } from '../../core/graphics/graphics/graphicalElement';
+import { CMATH } from '../../webAsm/interface/TS/CMATH_Interface.js';
 
 const combinationOfSVGAndTransformationsClasses =
   InheritTransformationClassByMinix(GraphicalElementComposer);
@@ -95,7 +96,7 @@ export abstract class Shape<
   }
 
   protected getClassProps(accessKey: symbol) {
-    assertAccess(accessKey);
+    assertAccess(DEV_INTERNAL_ACCESS);
 
     return this.#classProp;
   }
@@ -109,6 +110,7 @@ export abstract class Shape<
   // Restore dimension code should be according to the shape
   protected abstract restoreDimension(
     accessKeys: symbol,
+    temporaryState: Float32Array,
     basic?: boolean
   ): void;
 
@@ -123,25 +125,50 @@ export abstract class Shape<
     outputn?: boolean
   ): boolean | number[] | number;
 
-  // It returns any shape property which can cause a translation and scaling in the form of x , y , width and height
-  // Example - rect (x,y,width,height) , circle(cx,cy,radius,radius) , ellipse(cx,cy,rediusX,rediusY) , line(x1,y1,distace,1)
-
-  protected abstract getAttrsAccordingToShape(
-    accessKeys: symbol,
-    attrs: Record<string, any>
-  ): { x: number; y: number; width: number; height: number };
-
-  // It returns any shape property which can cause a translation but it should in geometry of shape then  in the form of x , y .
-  // example - rect (x,y) , circle(cx,cy) , ellipse(cx,cy) , line(x1,y1)
-
-  protected abstract getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-  };
-
   //++++++++++++++++++++++++++++++++++±+++++++++++++++++++++++++++++
+
+  #flattenTransforms() {
+    const composedMatrix = this.getCMatrix(DEV_INTERNAL_ACCESS)() as DOMMatrix;
+
+    const { a, b, m31, c, d, m32, e, f } = composedMatrix;
+
+    // column major because shape matrix is row major and for clearity
+
+    const transformMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
+
+    const updatedBuffer = this.getMProduct(
+      DEV_INTERNAL_ACCESS,
+      composedMatrix
+    )() as Float32Array;
+
+    this.#restore({
+      transformMatrix,
+      temporaryState: updatedBuffer,
+      isEffect: true,
+      isVEffect: false
+    });
+
+    this.generateMatrix(DEV_INTERNAL_ACCESS);
+
+    /*
+      renderer.render({ el: this });
+
+      //    'obbox' in geo && delete geo.obbox;
+
+      assignBBoxMatrix(this.#geometry, () => super.getBBox(), 'obbox');
+      // setting '' to transform attribute of svg
+      this.attrs({ transform: '' });
+      // clearing all transformations stack history
+      geo.transforStack.stack.length = 1;
+      // assinging identity matrix to composed or cumulative  matrix
+
+      (geo.transforStack.stack[0].transformMatrix as Float32Array).set(
+        [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        0
+      );
+
+*/
+  }
 
   public attrs(
     props: shapesPropsType | string,
@@ -203,7 +230,9 @@ export abstract class Shape<
 
           // applying geometric perperties with respect to shape if any property available
 
-          Object.keys(g).length > 0 && this.#applyTransformsByAttrs(g, mode);
+          // Object.keys(g).length > 0 && this.#applyTransformsByAttrs(g, mode);
+          Object.keys(g).length > 0 && this.#flattenTransforms();
+          super.attrs(g);
         }
       } else if (typeof props === 'string') {
         let result = super.attrs(props);
@@ -218,110 +247,6 @@ export abstract class Shape<
     }
   }
 
-  #applyTransformsByAttrs(
-    attr: Record<string, number | undefined>,
-    mode: string
-  ) {
-    try {
-      !['a', 'r', 'relative', 'absolute'].includes(mode) && (mode = 'a'); // default to absolute
-
-      // let { x, y, width = 0, height = 0 } = attr;
-
-      // extracting common properties from shape
-      const { rotation, skewY, skewX } = this.#geometry as {
-        rotation: number;
-        skewY: number;
-        skewX: number;
-      };
-
-      // geting x , y , width , height from all shapes with conversions
-      // like x -> cx , y -> cy , rx -> width , ry -> height -> for circle/ ellipse
-      let {
-        x,
-        y,
-        width = 0,
-        height = 0
-      } = this.getAttrsAccordingToShape(DEV_INTERNAL_ACCESS, attr);
-
-      const { x: ppx, y: ppy } =
-        this.getUpdatedGeometryAccordingToShape(DEV_INTERNAL_ACCESS);
-
-      this.beginT(); // my throw error if batching already started
-
-      // changing shape local space to the world space
-      rotation &&
-        Math.abs(rotation) > 0.02 &&
-        this.Rotate({ angle: -rotation });
-
-      skewX && Math.abs(skewX) > 0.02 && this.Skew({ sx: -skewX, sy: 0 });
-
-      skewY && Math.abs(skewY) > 0.02 && this.Skew({ sx: 0, sy: -skewY });
-
-      const {
-        x: ax = 0,
-        y: ay = 0,
-        width: aw = 1,
-        height: ah = 1
-      } = this.getUpdatedGeometryAccordingToShape(DEV_INTERNAL_ACCESS) as {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      };
-
-      // updating the user given properties which are geometric one according to the shape
-
-      //+++++++++++++ Need Replacement function Remember for Common code class  ++++++++++++++
-      //  if ('width' in attr || 'height' in attr) {
-      let sx, sy;
-
-      if (mode === 'a' || mode === 'absolute') {
-        width == 0 && (width = aw);
-        height == 0 && (height = ah);
-        sx = Math.abs(width / (aw || 1));
-        sy = Math.abs(height / (ah || 1));
-      } else {
-        // relative
-        sx = Math.abs((width + aw) / (aw || 1));
-        sy = Math.abs((height + ah) / (ah || 1));
-      }
-
-      //+++++++++++++++++++++++++++++++++++++++++++
-
-      this.Scale({ sx, sy, type: 'pivot', px: ax, py: ay });
-      //}
-
-      // again changing shape world space into the shape local space
-
-      (skewX || skewY) &&
-        (Math.abs(skewX) > 0.02 || Math.abs(skewY) > 0.02) &&
-        this.Skew({ sx: skewX, sy: skewY });
-
-      rotation && Math.abs(rotation) > 0.02 && this.Rotate({ angle: rotation });
-
-      const { x: aax, y: aay } = this.#geometry as { x: number; y: number };
-      if (x != 0 || y != 0) {
-        if (mode == 'r' || mode == 'relative') {
-          !x && (x = 0);
-          !y && (y = 0);
-          (x = ppx + x - aax), (y = ppy + y - aay);
-        } else {
-          !x && (x = ppx);
-          !y && (y = ppy);
-        }
-
-        this.Translate({ x, y, type: mode });
-      }
-      this.endT();
-    } catch (e) {
-      //  this method does not support in the batching changing ok so that below error is the indication
-
-      throw new Error(
-        ' The .attrs() method can not be used in between  .beginT() and .endT() , because .attrs() is used for property setter or getter not for transformations. '
-      );
-    }
-  }
-
   public setSMatrix(m: number[][], rollback: boolean = false): void {
     try {
       if (this.#isAnimations) {
@@ -333,91 +258,67 @@ export abstract class Shape<
         'setSMatrix: All previous transformations are cleared , becarefull , you might loose all privouse dara of shape.'
       );
 
+      const geo = this.#geometry as {
+        transforStack: transformStack;
+        canonicalMatrix: Float32Array[];
+        sharedBuffer: Float32Array;
+        shape: string;
+        obbox: Float32Array[];
+      };
+
+      if (!geo) {
+        throw new Error('Geometry not initialized');
+      }
+      const shape = geo.shape as keyof typeof dimensions;
+
+      const [rowSize, columnSize] = dimensions[shape];
+
+      checkParent(this.#fig, shape);
+
+      const sb = geo.sharedBuffer as Float32Array;
+      const prev = new Float32Array(sb.slice(0, columnSize * rowSize)); // backup
+
+      for (let i = 0; i < rowSize; i++) {
+        for (let j = 0; j < columnSize; j++) {
+          sb[i * columnSize + j] = m[i]?.[j] ?? 1;
+        }
+      }
+
+      const matrix = geo.canonicalMatrix as Float32Array[];
+
       if (
-        this.#geometry &&
-        this.#geometry.sharedBuffer &&
-        this.#geometry.TList
+        !Array.isArray(matrix) ||
+        !this.validateShapeMatrix(DEV_INTERNAL_ACCESS, matrix)
       ) {
-        const shape = this.#geometry.shape as keyof typeof dimensions;
-
-        const [rowSize, columnSize] = dimensions[shape];
-
-        checkParent(this.#fig, shape);
-
-        const sb = this.#geometry.sharedBuffer as Float32Array;
-        const prev = new Float32Array(sb.slice(0, columnSize * rowSize)); // backup
-
-        for (let i = 0; i < rowSize; i++) {
-          for (let j = 0; j < columnSize; j++) {
-            sb[i * columnSize + j] = m[i]?.[j] ?? 1;
-          }
-        }
-
-        const matrix = this.#geometry.matrix as Float32Array[];
-
-        if (
-          !Array.isArray(matrix) ||
-          !this.validateShapeMatrix(DEV_INTERNAL_ACCESS, matrix)
-        ) {
-          if (rollback) {
-            sb.set(prev, 0); // rollback
-          } else {
-            throw new Error(
-              'given Matrix for Rectangle is invalid maybe it is not actually the shape which you want to give'
-            );
-          }
-        }
-
-        this.restoreDimension(DEV_INTERNAL_ACCESS);
-        renderer.render({ el: this });
-
-        'Obbox' in this.#geometry && delete this.#geometry.Obbox;
-
-        assignBBoxMatrix(this.#geometry, () => super.getBBox(), 'Obbox');
-        // setting '' to transform attribute of svg
-        this.attrs({ transform: '' });
-        // clearing all transformations stack history
-        this.#geometry.TList.length = 1;
-        // assinging identity matrix to composed or cumulative  matrix
-        if (this.#geometry.TList[0] && 'TMatrix' in this.#geometry.TList[0]) {
-          (this.#geometry.TList[0]['TMatrix'] as Float32Array).set(
-            [1, 0, 0, 0, 1, 0, 0, 0, 1],
-            0
+        if (rollback) {
+          sb.set(prev, 0); // rollback
+        } else {
+          throw new Error(
+            'given Matrix for Rectangle is invalid maybe it is not actually the shape which you want to give'
           );
         }
       }
+
+      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
+      renderer.render({ el: this });
+
+      //    'obbox' in geo && delete geo.obbox;
+
+      assignBBoxMatrix(this.#geometry, () => super.getBBox(), 'obbox');
+      // setting '' to transform attribute of svg
+      this.attrs({ transform: '' });
+      // clearing all transformations stack history
+      geo.transforStack.stack.length = 1;
+      // assinging identity matrix to composed or cumulative  matrix
+
+      (geo.transforStack.stack[0].transformMatrix as Float32Array).set(
+        [1, 0, 0, 0, 1, 0, 0, 0, 1],
+        0
+      );
     } catch (e) {
       throw e;
     }
   }
-  /*
-  public override setTMatrix(
-    tmat: number[][] | DOMMatrix,
-    transformation: string = 'custom'
-  ): void {
-    // Transformation matrix should be row major
-    // [ a , c , e ]
-    // [ b , d , f ]
-    // [ g , h , i ] where i = 1 always
-
-    const dmat = super.setTMatrix(tmat);
-    if (!(dmat instanceof DOMMatrix)) {
-      throw new Error('Invalid Transformation Matrix');
-    }
-
-    //cwarn('t matrix ', JSON.stringify(tmat));
-
-    this.#restore({
-      tmat: dmat,
-      transformation: transformation,
-      type: 'all',
-      isEffect: true,
-      isVEffect: true,
-      track: true
-    });
-  }
-*/
-
   // returning a transformation Matrix applied by user
 
   public getTMatrix(
@@ -425,83 +326,80 @@ export abstract class Shape<
     major: 'r' | 'c' = 'r'
   ): number[][] {
     return getTransformationMatrix(
-      this.#geometry?.TList,
+      (this.#geometry as { transforStack: transformStack }).transforStack.stack,
       which,
       major
     ) as number[][];
   }
-  /*
-  #estore({
-    tmat,
-    transformation,
-    type,
-    isEffect,
-    isVEffect = true,
-    track = true
-  }: {
-    tmat: DOMMatrix;
-    transformation: string;
-    type: string;
-    isEffect: boolean;
-    isVEffect: boolean;
-    track: boolean;
-  }) {
-    restore({
-      tmat,
-      transformation,
-      type,
-      isEffect,
-      isVEffect,
-      track,
-      g: this,
-      geo: this.#geometry as object,
-      restoreFN: this.restoreDimension.bind(this),
-      rendererFN: renderer.render.bind(this)
-    });
-  }
-*/
 
   #restore({
-    tmat,
-    transformation,
-    type,
+    transformMatrix,
+    temporaryState,
     isEffect,
-    isVEffect = true,
-    track = true
+    isVEffect = true
   }: {
-    tmat: DOMMatrix;
-    transformation: string;
-    type: string;
+    transformMatrix: Float32Array;
+    temporaryState: Float32Array;
     isEffect: boolean;
     isVEffect: boolean;
-    track: boolean;
   }) {
-    const TM = new Float32Array([
-      tmat.a,
-      tmat.b,
-      tmat.m31,
-      tmat.c,
-      tmat.d,
-      tmat.m32,
-      tmat.e,
-      tmat.f,
-      1
-    ]); // column major because shape matrix is row major and for clearity
-
-    track && trackTransformation(this.#geometry, transformation, type, TM);
-    isEffect && this.restoreDimension(DEV_INTERNAL_ACCESS);
+    isEffect && this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
 
     //cwarn('in restore ', isVEffect);
     isVEffect &&
       renderer.render({
         el: this,
-        T: tmat,
+        finalMatrix: transformMatrix,
         isEffect: isVEffect
       });
   }
 
-  public getBBox() {
+  /*
+  public gettBBox() {
     return computeBBox(this.#geometry, () => super.getBBox());
+  }
+	*/
+
+  public getBBox() {
+    const geo = this.#geometry as { obbox: Float32Array[] };
+
+    !geo?.obbox && assignBBoxMatrix(geo, () => super.getBBox(), 'obbox');
+
+    const matrix = geo?.obbox as Float32Array[];
+
+    let minX = Infinity,
+      minY = Infinity;
+    let maxX = -Infinity,
+      maxY = -Infinity;
+
+    for (let i = 0; i < matrix.length; i++) {
+      const [x, y] = matrix[i] as Float32Array;
+
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const [cx, cy] = [minX + width / 2, minY + height / 2];
+    // Create the 4 corner points in canvas order (top-left, top-right, bottom-right, bottom-left)
+    const bboxMatrix = [
+      new Float32Array([minX, minY, 1]), // top-left
+      new Float32Array([maxX, minY, 1]), // top-right
+      new Float32Array([maxX, maxY, 1]), // bottom-right
+      new Float32Array([minX, maxY, 1]) // bottom-left
+    ];
+    return {
+      x: minX,
+      y: minY,
+      width,
+      height,
+      cx,
+      cy,
+      matrix: bboxMatrix
+    };
   }
 
   //++++++++++++++++++++++++++++++++++++++++++++
@@ -509,7 +407,8 @@ export abstract class Shape<
   //++++++++++++++++++++++++++++++++++++++++++++
   #preChecks(mode: string, px: number, py: number) {
     checkParent(this.#fig, 'Rect');
-    this.#geometry && !this.#geometry.Obbox && this.getBBox();
+    //  this.#geometry && !this.#geometry.Obbox && this.getBBox();
+
     if ((mode == 'p' || mode == 'pivot') && px == 0 && py == 0) {
       cwarn(
         "pivot px , py both are zero so effect is same as relative transformation even if type is 'pivot' or 'p' , falling to 'relative' type to save computations."

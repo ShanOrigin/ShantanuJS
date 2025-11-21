@@ -41,7 +41,10 @@ export class Curve extends Shape<'curve', 'polyline'> {
 
   //  #Animations!: Animation<'polyline'>[]; // for timeline support but not implementated yet
 
-  constructor(props: polylinePropsType & curvePropsType = {}) {
+  constructor(
+    curveName: CurveType,
+    props: polylinePropsType & curvePropsType = {}
+  ) {
     super('curve', props?.id ?? '', 'polyline');
 
     try {
@@ -66,7 +69,7 @@ export class Curve extends Shape<'curve', 'polyline'> {
 
         bend: curvature * -1,
         smoothness,
-        curveName: props.curveName! as CurveType,
+        curveName: curveName || (props.curveName! as CurveType),
         pointsOnly: true,
         continuous,
         continuousCount
@@ -200,7 +203,13 @@ export class Curve extends Shape<'curve', 'polyline'> {
     try {
       assertAccess(accessKey);
 
-      if (!this.#geometry) return;
+      const geo = this.#geometry as {
+        sharedBuffer: Float32Array;
+        canonicalMatrix: Float32Array[];
+        points: string;
+      };
+
+      if (!geo) return;
       let vmat: Float32Array;
 
       if (setM && setM instanceof Float32Array) {
@@ -219,39 +228,36 @@ export class Curve extends Shape<'curve', 'polyline'> {
       const totalLength = (shapeRows + bboxRows) * 3;
 
       // Allocate once and reuse
-      if (
-        !this.#geometry.sharedBuffer ||
-        this.#geometry.sharedBuffer.length !== totalLength
-      ) {
+      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
         /*
         if (setM && render) {
           // only valid when setSMatrix Frist try went wrong
           this.#geometry.sharedBuffer = vmat as Float32Array;
         } else {
 					*/
-        this.#geometry.sharedBuffer = new Float32Array(totalLength);
+        geo.sharedBuffer = new Float32Array(totalLength);
       }
 
-      const sb = this.#geometry.sharedBuffer as Float32Array;
+      const sb = geo.sharedBuffer as Float32Array;
       sb.set(vmat, 0);
 
       // Only recreate views if buffer was reallocated
       if (
-        !this.#geometry.matrix ||
-        totalLength - 12 != this.#geometry.matrix.length * 3
+        !geo.canonicalMatrix ||
+        totalLength - 12 != geo.canonicalMatrix.length * 3
       ) {
         const mat = [];
 
         for (let i = 0; i < shapeRows; i++) {
           mat.push(new Float32Array(sb.buffer, i * 3 * 4, 3));
         }
-        this.#geometry.matrix = mat;
+        geo.canonicalMatrix = mat;
       }
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
       renderer.render({ el: this });
-      this.restoreDimension(DEV_INTERNAL_ACCESS);
+      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;
     }
@@ -266,9 +272,13 @@ export class Curve extends Shape<'curve', 'polyline'> {
     return isValidMatrix(m, m.length, 3);
   }
 
-  protected override restoreDimension(accessKey: symbol) {
+  protected override restoreDimension(
+    accessKey: symbol,
+    temporaryState: Float32Array
+  ) {
     try {
       assertAccess(accessKey);
+      /*
       const m = this.#geometry?.matrix as Float32Array[];
       if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
 
@@ -278,6 +288,7 @@ export class Curve extends Shape<'curve', 'polyline'> {
         points += `${m[i][0]},${m[i][1]} `;
       }
       this.#geometry.points = points;
+			*/
     } catch (e) {
       throw e;
     }
@@ -285,26 +296,5 @@ export class Curve extends Shape<'curve', 'polyline'> {
 
   public getBBox() {
     return computeBBox(this.#geometry, () => super.getBBox());
-  }
-
-  protected override getAttrsAccordingToShape(
-    accessKeys: symbol,
-    attrs: Record<string, any>
-  ): { x: number; y: number; width: number; height: number } {
-    assertAccess(accessKeys);
-    if (attrs) {
-    }
-    return { x: 0, y: 0, width: 1, height: 1 };
-  }
-
-  protected override getUpdatedGeometryAccordingToShape(accessKeys: symbol): {
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-  } {
-    assertAccess(accessKeys);
-
-    return { x: 0, y: 0, width: 1, height: 1 };
   }
 }

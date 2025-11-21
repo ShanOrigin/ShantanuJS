@@ -10,7 +10,7 @@ import {
 
 import { Colors } from '../../../utils/providers/utils.js';
 import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
-
+import { transformStack } from '../../../types/index';
 //svg class
 //P should be path only
 //export abstract class SVG<T ,P  extends CommonShapeTag > extends Events {
@@ -25,18 +25,23 @@ export abstract class GraphicalElementComposer<
     super(shapeName, tagName ?? ('path' as S), ID);
 
     try {
-      this.#geometry &&
-        !this.#geometry.TList &&
-        (this.#geometry['TList'] = [
-          {
-            MatrixType: 'cummulative',
-            type: 'all',
-            TMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1])
-          }
-        ]);
+      const geo = this.#geometry as {
+        transformStack: transformStack;
+      };
+      if (!geo) {
+        throw new Error('Geometry not initialized ');
+      }
 
-      // console.log('in GSVGElement');
-      // console.log(this.#geometry?.TList);
+      geo.transformStack = {
+        stack: [
+          {
+            transformName: 'cummulative',
+            transformType: 'all',
+            transformMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1])
+          }
+        ],
+        skip: 0
+      };
     } catch (e) {
       throw e;
     }
@@ -109,11 +114,11 @@ export abstract class GraphicalElementComposer<
 
       if (!this.#geometry) return;
 
-      if (!('Obbox' in this.#geometry)) {
-        assignBBoxMatrix(this.#geometry, this.getBBox.bind(this), 'Obbox');
+      if (!('obbox' in this.#geometry)) {
+        assignBBoxMatrix(this.#geometry, this.getBBox.bind(this), 'obbox');
       }
 
-      const matrix = (this.#geometry.Obbox ?? []) as Float32Array[];
+      const matrix = (this.#geometry.obbox ?? []) as Float32Array[];
 
       if (!isValidMatrix(matrix, matrix.length, 3)) {
         console.warn('Invalid OBB matrix');

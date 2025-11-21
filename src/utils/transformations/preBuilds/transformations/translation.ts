@@ -53,6 +53,7 @@ export function Translate({
       case 'a': {
         [px, py] = [cx, cy];
         matrix.translateSelf(-px, -py).translateSelf(x, y);
+
         break;
       }
 

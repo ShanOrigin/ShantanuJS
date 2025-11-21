@@ -3,7 +3,7 @@ import type { propsType } from './Curves';
 
 export class EarcCurve extends Curve {
   constructor(props: propsType) {
-    super({
+    super('earc', {
       ...props,
       curveName: 'earc',
       curvature: props.curvature || 1

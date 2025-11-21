@@ -244,67 +244,38 @@ export class Rect extends Shape<'rect', 'rect'> {
     throw new Error('Cannot clone: geometry or style is invalid.');
   }
 
-  protected override getAttrsAccordingToShape(
-    accessKey: symbol,
-    attrs: Record<string, any>
-  ): { x: number; y: number; width: number; height: number } {
-    assertAccess(accessKey);
-
-    // if class is Rect then attrs should be only x , y , width , height , rx , ry nothing except this
-    const {
-      x = 0,
-      y = 0,
-      width = 0,
-      height = 0
-    } = attrs as { x: number; y: number; width: number; height: number };
-
-    return { x, y, width, height };
-  }
-
-  protected override getUpdatedGeometryAccordingToShape(accessKey: symbol): {
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-  } {
-    assertAccess(accessKey);
-
-    const { x, y, width, height } = this.#geometry as {
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    };
-
-    return { x, y, width, height };
-  }
-
   protected override generateMatrix(accessKey: symbol): void {
     try {
       assertAccess(accessKey);
 
-      if (!this.#geometry) return;
+      const geo = this.#geometry as {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        sharedBuffer: Float32Array;
+        canonicalMatrix: Float32Array[];
+      };
 
-      const { x = 0, y = 0, width: w = 0, height: h = 0 } = this.#geometry;
+      if (!geo) return;
+
+      const { x = 0, y = 0, width: w = 0, height: h = 0 } = geo;
       const shapeRows = 4;
       const bboxRows = 4;
       7;
       const totalLength = (shapeRows + bboxRows) * 3;
 
       // Allocate once and reuse
-      if (
-        !this.#geometry.sharedBuffer ||
-        this.#geometry.sharedBuffer.length !== totalLength
-      ) {
-        this.#geometry.sharedBuffer = new Float32Array(totalLength);
+      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
+        geo.sharedBuffer = new Float32Array(totalLength);
       }
 
-      const sb = this.#geometry.sharedBuffer as Float32Array;
+      const sb = geo.sharedBuffer as Float32Array;
       sb.set([x, y, 1, x + w, y, 1, x + w, y + h, 1, x, y + h, 1], 0);
 
       // Only recreate views if buffer was reallocated
-      if (!this.#geometry.matrix) {
-        this.#geometry.matrix = [
+      if (!geo.canonicalMatrix) {
+        geo.canonicalMatrix = [
           new Float32Array(sb.buffer, 0 * 4, 3),
           new Float32Array(sb.buffer, 3 * 4, 3),
           new Float32Array(sb.buffer, 6 * 4, 3),
@@ -312,8 +283,37 @@ export class Rect extends Shape<'rect', 'rect'> {
         ];
       }
 
-      this.restoreDimension(DEV_INTERNAL_ACCESS);
+      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
       renderer.render({ el: this });
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  protected override restoreDimension(
+    accessKey: symbol,
+    temporaryStatus: Float32Array,
+    basic: boolean = true
+  ) {
+    try {
+      assertAccess(accessKey);
+
+      const geo = this.#geometry as {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        sharedBuffer: Float32Array;
+        canonicalMatrix: Float32Array[];
+      };
+      if (!geo) return;
+      const m = geo.canonicalMatrix as Float32Array[];
+      //   if (!isValidMatrix(m, 4, 3)) return;
+      const dim = this.validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true);
+      basic &&
+        Array.isArray(dim) &&
+        (([geo.width, geo.height] = dim),
+        ([geo.x, geo.y] = [temporaryStatus[0], temporaryStatus[1]]));
     } catch (e) {
       throw e;
     }
@@ -408,25 +408,6 @@ export class Rect extends Shape<'rect', 'rect'> {
     if (output) return [AB_len, BC_len];
 
     return true;
-  }
-
-  protected override restoreDimension(
-    accessKey: symbol,
-    basic: boolean = true
-  ) {
-    try {
-      assertAccess(accessKey);
-      if (!this.#geometry) return;
-      const m = this.#geometry?.matrix as Float32Array[];
-      if (!isValidMatrix(m, 4, 3)) return;
-      const dim = this.validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true);
-      basic &&
-        Array.isArray(dim) &&
-        (([this.#geometry.width, this.#geometry.height] = dim),
-        ([this.#geometry.x, this.#geometry.y] = m[0]));
-    } catch (e) {
-      throw e;
-    }
   }
 
   static plugins: (string | symbol)[] = [];

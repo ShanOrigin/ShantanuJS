@@ -124,7 +124,7 @@ export function checkParent(
 export function assignBBoxMatrix(
   g: any,
   fn: Function,
-  key: 'Obbox' | 'matrix' | 'both' = 'Obbox'
+  key: 'obbox' | 'canonicalMatrix' | 'both' = 'obbox'
 ) {
   try {
     //  console.log(g, typeof fn);
@@ -133,7 +133,7 @@ export function assignBBoxMatrix(
       typeof g !== 'object' ||
       'Obbox' in g ||
       typeof fn != 'function' ||
-      (key !== 'Obbox' && key !== 'matrix' && key !== 'both')
+      (key !== 'obbox' && key !== 'canonicalMatrix' && key !== 'both')
     )
       throw new Error('please check parameters of assignBBoxMatrix ');
 
@@ -145,7 +145,7 @@ export function assignBBoxMatrix(
         'Matrix assignment field check parameters specially function parameter'
       );
 
-    let slen = g?.matrix?.length ?? 0;
+    let slen = g?.canonicalMatrix?.length ?? 0;
     const sb = g?.sharedBuffer as Float32Array;
 
     if (sb.length <= 12)
@@ -167,7 +167,7 @@ export function assignBBoxMatrix(
       1
     ];
 
-    if (key == 'matrix' || key == 'both') {
+    if (key == 'canonicalMatrix' || key == 'both') {
       const offSet = 0;
       sb.set(bm, offSet);
       const mat = [
@@ -177,11 +177,11 @@ export function assignBBoxMatrix(
         new Float32Array(sb.buffer, offSet + 9 * 4, 3)
       ];
 
-      g['matrix'] = mat;
+      g['canonicalMatrix'] = mat;
       slen = 4;
     }
 
-    if (key == 'Obbox' || key == 'both') {
+    if (key == 'obbox' || key == 'both') {
       let offSet = slen * 3;
       // console.log('seting obbox', offSet, '+', bm.length * 4, sb.byteLength);
       sb.set(bm, offSet);
@@ -194,7 +194,7 @@ export function assignBBoxMatrix(
         new Float32Array(sb.buffer, offSet + 9 * 4, 3)
       ];
 
-      g['Obbox'] = mat;
+      g['obbox'] = mat;
     }
   } catch (e) {
     throw e;
@@ -924,7 +924,7 @@ export function computeBBox(geo: any, fn: Function) {
     throw new Error(' Check parameters Of Function types are wrong  ');
   }
   if (!geo?.Obbox) {
-    assignBBoxMatrix(geo, fn, 'Obbox');
+    assignBBoxMatrix(geo, fn, 'obbox');
   }
   const matrix = geo?.Obbox as Float32Array[];
 

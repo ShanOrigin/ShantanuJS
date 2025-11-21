@@ -7,11 +7,11 @@ import {
   toError
 } from '../../../../vTest.js';
 
-const time = 1000;
+const time = 900;
 
 // Unit visual testes
 
-export async function QuadraticCurveUnitTests() {
+export async function LineUnitTests() {
   // create actual canvas and Shape you want to test
 
   const Canvas = new Shantanu.Canvas('testing', 200, 400);
@@ -21,172 +21,62 @@ export async function QuadraticCurveUnitTests() {
     'stroke-width': 0
   });
 
+  console.log(Canvas);
+
   await vTest('create Shape with basic propeties', async () => {
-    const Shape = new Shantanu.Shapes.Custom.QuadraticCurve({
-      x1: 50,
-      y1: 50,
-      x2: 100,
-      y2: 70,
-      curvature: 1.35,
-      smoothness: 15,
-      continuous: true,
-      continuousCount: 2,
-      'stroke-width': 1,
-      stroke: 'skyblue'
-    });
+    const Shape = new Shantanu.Shapes.Basic.Line(40, 10, 70, 10);
 
     Canvas.addTo(Shape);
-
+    console.log(Shape);
     await visualTest(Canvas, Shape, 1);
-  });
-
-  await delay(time);
-
-  await vTest('create Shape with basic propeties', async () => {
-    const Shape = new Shantanu.Shapes.Custom.CubicCurve({
-      x1: 50,
-      y1: 50,
-      x2: 80,
-      y2: 70,
-      curvature: 1.35,
-      smoothness: 35,
-      continuous: true,
-      continuousCount: 3,
-      'stroke-width': 1,
-      stroke: 'blue'
-    });
-
-    Canvas.addTo(Shape);
-
-    await visualTest(Canvas, Shape, 1);
-  });
-
-  await delay(time);
-  await vTest('create Shape with basic propeties', async () => {
-    const Shape = new Shantanu.Shapes.Custom.ArcCurve({
-      x1: 50,
-      y1: 50,
-      x2: 100,
-      y2: 70,
-      curvature: 0.5,
-      smoothness: 50,
-      continuous: true,
-      continuousCount: 1,
-      'stroke-width': 1,
-      stroke: 'green'
-    });
-
-    Canvas.addTo(Shape);
-
-    await visualTest(Canvas, Shape, 1);
-  });
-  await delay(time);
-
-  await vTest('create Shape with basic propeties', async () => {
-    const Shape = new Shantanu.Shapes.Custom.EarcCurve({
-      x1: 50,
-      y1: 50,
-      x2: 100,
-      y2: 70,
-      curvature: 0.4,
-      smoothness: 55,
-      continuous: true,
-      continuousCount: 2,
-      'stroke-width': 1,
-
-      stroke: 'red'
-    });
-
-    Canvas.addTo(Shape);
-
-    await visualTest(Canvas, Shape, 1);
-  });
-
-  await delay(500);
-
-  await vTest('create Shape with basic propeties', async () => {
-    async function generatePolarPointsClockwise(
-      centerX: number,
-      centerY: number,
-      radius = 50,
-      angleStep = 1
-    ) {
-      for (let deg = 180; deg <= 360 + 180; deg += angleStep) {
-        // convert to radians
-        const rad = (deg * Math.PI) / 180;
-
-        const px = centerX + radius * Math.cos(rad);
-        const py = centerY + radius * Math.sin(rad);
-
-        const Shape = new Shantanu.Shapes.Custom.Curve('arc', {
-          x1: px,
-          y1: py,
-          x2: centerX,
-          y2: centerY,
-          curvature: 0.7,
-          smoothness: 7,
-          continuous: true,
-          continuousCount: 2,
-          'stroke-width': 1
-        });
-
-        Canvas.addTo(Shape);
-        await delay(100);
-        //       console.log(Shape.geometry?.matrix);
-
-        //  await visualTest(Canvas, Shape, 1);
-      }
-    }
-    generatePolarPointsClockwise(100, 270, 50, 10);
   });
 
   /*
   await vTest('create Shape with basic propeties + stroke width ', async () => {
-    const Shape = new Shantanu.Rect(40, 10, 30, 30, {
-      fill: 'rgb(196 , 130 , 1)',
+    const Shape = new Shantanu.Line(40, 20, 10, 30, {
+      stroke: 'rgb(196 , 130 , 1)',
+
       'stroke-width': 2
     });
 
     Canvas.addTo(Shape);
-    await visualTest(Canvas, Shape, 4.5);
+    await visualTest(Canvas, Shape, 1);
   });
-
-  await vTest(
-    'create Shape with basic propeties + rx , ry , result is Star figure if width = 0 , height = 0 ',
-    async () => {
-      const Shape = new Shantanu.Rect(10, 50, 0, 0, -10, {
-        fill: 'rgb(98 , 180 , 107)',
-        'stroke-width': 0
-      });
-
-      Canvas.addTo(Shape);
-      await visualTest(Canvas, Shape);
-    }
-  );
 
   await vTest(
     'create Shape with basic propeties + basic in props ',
     async () => {
-      const Shape = new Shantanu.Rect(20, 40, 10, 10, {
-        x: 15,
-        y: 10,
-        width: 30,
-        height: 20,
-        rx: -5,
-        ry: -7,
-        fill: 'rgb(78 , 130 , 190)',
-        'stroke-width': 0
+      const Shape = new Shantanu.Shapes.Basic.Line(10, 50, 100, 0, {
+        stroke: 'rgb(98 , 180 , 107)',
+        'stroke-width': 0.5,
+        x2: -60,
+        y2: 40
       });
 
       Canvas.addTo(Shape);
+      console.log(Shape);
       await visualTest(Canvas, Shape);
     }
   );
 
+  
   await vTest('Changing Shapes geometric propeties by  .attrs() ', async () => {
-    const Shape = new Shantanu.Rect(80, 40, 30, 30, {
+    const Shape = new Shantanu.Line(50, 40, 30, 30, {
+      fill: 'rgba(178 , 80 , 90 , 0.3)',
+      'stroke-width': 2
+    });
+
+    Canvas.addTo(Shape);
+
+    console.log(Shape);
+    await visualTest(Canvas, Shape, 1);
+    await delay(time);
+  });
+
+  await vTest('Changing Shapes geometric propeties by  .attrs() ', async () => {
+    const Shape = new Shantanu.Line(80, 40, 30, 30, {
       fill: 'rgba(78 , 80 , 90 , 0.3)',
-      'stroke-width': 0
+      'stroke-width': 1
     });
 
     Canvas.addTo(Shape);
@@ -194,18 +84,89 @@ export async function QuadraticCurveUnitTests() {
     await delay(time);
 
     Shape.attrs({
-      width: 20,
-      height: 35,
-      x: 90,
-      y: 35,
+      x1: 50,
+      y1: 40,
 
-      fill: 'rgba(50,190,140,0.5)'
+      stroke: 'rgba(50,190,140,0.5)'
     }); // absolute by default
 
     console.log(Shape);
     await visualTest(Canvas, Shape);
     await delay(time);
   });
+
+*/
+
+  /*
+  ///
+
+  // ++++++++++++ set custom transformation matrix  ++++++++++++++++
+  await vTest(' set custom transformation matrix ', async () => {
+    const Shape0 = new Shantanu.Rect(90, 50, 40, 30, {
+      fill: 'rgba(18 , 45 , 90 , 1)',
+      'stroke-width': 0
+    });
+
+    Canvas.addTo(Shape0);
+
+    await delay(time * 4);
+
+    console.error('-----hhhh');
+    Shape0.setTMatrix([
+      [1.4, 0, 0],
+      [0, 0.5, 0],
+      [0, 0, 1]
+    ]);
+
+    await delay(time * 4);
+    console.error('-----hhhh');
+    Shape0.beginT();
+    Shape0.Translate({ x: 10, y: 10, type: 'r' });
+    Shape0.Rotate({ angle: 50, type: 'a' });
+    Shape0.endT();
+    console.log(Shape0.getBBox());
+    console.log(Shape0.geometry?.TList);
+    await visualTest(Canvas, Shape0);
+
+    const Shape = new Shantanu.Rect(90, 50, 40, 30, {
+      fill: 'rgba(108 , 45 , 90 , 1)',
+      'stroke-width': 0
+    });
+
+    Canvas.addTo(Shape);
+
+    await delay(time);
+
+    Shape.setTMatrix([
+      [1.4, 0, 0],
+      [0, 0.5, 0],
+      [0, 0, 1]
+    ]);
+
+    console.log(Shape);
+    await visualTest(Canvas, Shape);
+    await delay(time);
+
+    const m = Shape.createTransformationMatrix(
+      {
+        translate: { x: 10, y: 10, type: 'r' },
+        rotate: { angle: 50, type: 'a' }
+      },
+      'row'
+    );
+
+    console.log('composed mstrix = ', JSON.stringify(m));
+    Shape.setTMatrix(m);
+
+    console.log('BBOX ', Shape.getBBox());
+    await delay(time);
+  
+    console.log(Shape);
+    await visualTest(Canvas, Shape);
+  });
+
+
+///
 
   // ++++++++++++ set custom transformation matrix end  ++++++++++++++++
 
@@ -662,7 +623,6 @@ export async function QuadraticCurveUnitTests() {
     }
   });
 
-	*/
-
   // ++++++++++++ Flip End ++++++++++++++++
+	*/
 }
