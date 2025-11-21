@@ -315,3 +315,16 @@ Notes:
 - fixed elliptical animation path generation function 
 - fixed arc-lenght-parameterization for physics based speed.
 
+[2025-11-21 | Friday | 15:55] [**Core | 5days] Major refactor of shape geometry model to introduce canonicalMatrix and new transformStack architecture
+Notes:
+- Replaced mutable  with strictly immutable , introducing a canonical local-space geometry model for all shapes.
+-  Consolidated all geometry-related numeric data into a single  backing store to reduce allocations and expose 1D Float32Array views.
+-  Introduced new  view structure: this now stores the original, unmodified base geometry of each shape in local space. All transformations apply relative to this canonical geometry.
+-  Removed the old mixed  representation and replaced it with strict typed Float32Array views into  for deterministic, GC-free access.
+-  Updated geometry structure to store  (oriented bounding box) separately from , ensuring clean separation of truth-geometry and world-space derived geometry.
+-  Introduced new  with deterministic , , , and  entries for each applied transform.
+-  Implemented composite matrix caching inside  where index 0 is always the composite matrix of all transforms, recomputed on every push/pop.
+-  Removed deprecated fields: rotation, skewX, skewY, area, equation — these are now derived from canonical geometry + transformStack, not stored permanently.
+-  Introduced  field in transformStack for future undo/redo and high-level batch editing operations.
+-  All canonical transformations now require explicit flattening before canonical geometry mutation (attrs), enforcing strict geometry invariants.
+

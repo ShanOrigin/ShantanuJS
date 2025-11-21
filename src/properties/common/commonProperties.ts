@@ -17,23 +17,21 @@ export const CommonGeometricProperties = Object.seal({
   geometry: {
     sharedBuffer: new Float32Array(0), // shape + OBB matrix in 1d combined
     shape: '', // shape which shape
-    matrix: [] as Float32Array[], // view to sharedBuffer on shape data
-    Obbox: [] as Float32Array[], // view to OBB on sharedBuffer data
-    TList: [
-      // transformations list
-      {
-        MatrixType: '', //transformations name
-        type: '', // types like relative , absolute , pivot , batched , compose
-        TMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]) // [a, b , g = 0 , c , d, h =  0 , e , f , i =  1 ] // column major
-        // array to store each transformations appled on shape in 1d as column major and 0 index is composed matrix for all matrix from 1 to n
-      }
-    ],
-    copies: 0, // copy count
-    rotation: 0, // rotation factor
-    skweX: 0, // skew factors
-    skweY: 0
-    // area : 0 ,
-    // equation : ''
+    canonicalMatrix: [] as Float32Array[], // view to sharedBuffer on shape data
+    obbox: [] as Float32Array[], // view to OBB on sharedBuffer data
+    transformStack: {
+      stack: [
+        // transformations list
+        {
+          transformName: '', //transformations name
+          transformType: '', // types like relative , absolute , pivot , batched , compose
+          transformMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]) // [a, b , g = 0 , c , d, h =  0 , e , f , i =  1 ] // column major
+          // array to store each transformations appled on shape in 1d as column major and 0 index is composed matrix for all matrix from 1 to n
+        }
+      ],
+      skip: 0 //for redu , undo
+    },
+    copies: 0 // copy count
   }
 });
 
@@ -223,210 +221,3 @@ export type StyleForGShapeTag<T extends keyof TagToGShapeStyleKeyMap> =
     TagToGShapeStyleKeyMap[T],
     keyof IAllGShapeStyleProperties
   >];
-
-/*
-  gradient: IGradientAndPatternProperties;
-  filter: IFilterPrimitiveProperties;
-}
-
-*/
-
-/*
-
-export const CommonStyleProperties = Object.seal({
-  style: {
-    'role-of-el': '',
-    inside: '',
-    name: '',
-    selectable: '',
-    d: '', // may be deleted in future
-    id: '',
-
-    fill: '',
-    stroke: '',
-    'stroke-width': 0,
-    opacity: 1,
-    transform: '',
-    display: '',
-    visibility: '',
-    'clip-path': '',
-    cursor: '',
-    'pointer-events': '',
-    'marker-start': '',
-    'marker-mid': '',
-    'marker-end': '',
-    'font-family': '',
-    'font-size': '',
-    'font-size-adjust': 0,
-    'font-stretch': '',
-    'font-style': '',
-    'font-variant': '',
-    'font-weight': '',
-    'letter-spacing': '',
-    'word-spacing': '',
-    'text-anchor': '',
-    'alignment-baseline': '',
-    'dominant-baseline': '',
-    kerning: '',
-    'baseline-shift': '',
-    'writing-mode': '',
-    direction: '',
-    'glyph-orientation-vertical': '',
-    'stroke-linecap': 'butt',
-    'stroke-linejoin': 'miter',
-    'stroke-miterlimit': 4,
-    'fill-rule': 'nonzero',
-    'stop-color': '',
-    'stop-opacity': 1,
-    filter: '',
-    'flood-color': '',
-    'flood-opacity': 1,
-    'lighting-color': '',
-    'gradient-transform': '',
-    'gradient-units': 'userSpaceOnUse',
-    'spread-method': 'pad',
-    'pattern-transform': '',
-    'pattern-units': 'userSpaceOnUse',
-    'pattern-content-units': 'userSpaceOnUse',
-    mask: '',
-    'clip-rule': 'nonzero',
-    'vector-effect': 'none' //   'non-scaling-stroke' helps in whether stroke scale or not
-  }
-});
-
-export const CommonStyleProperties__ = Object.seal({
-  style: {
-    // ===== Common Properties =====
-    roleOfSVG: '', // Custom property (semantic role, not standard SVG)
-    inside: '', // Custom property (possibly a layout container or internal grouping)
-    id: '', // Element identifier (for referencing)
-    name: '', // Optional name attribute (non-SVG standard)
-    selectable: '', // Controls whether element can be selected (usually CSS)
-    display: '', // Controls rendering (e.g. 'inline', 'none', 'block')
-    visibility: '', // Visibility without affecting layout ('visible', 'hidden')
-    transform: '', // Applies transformation (rotate, translate, scale, etc.)
-    cursor: '', // Sets the mouse cursor (e.g. 'pointer', 'move')
-    opacity: 1, // Overall transparency (0 to 1)
-    'pointer-events': '', // Enables or disables mouse events on the element
-    filter: '', // Applies graphic filters (e.g. blur, drop shadow)
-    mask: '', // Applies a mask to the element (another element used for masking)
-    'clip-path': '', // Crops an element using a shape or path
-    'clip-rule': 'nonzero', // Rule to determine inside of clipping path (nonzero/evenodd)
-    'vector-effect': 'none', // Controls stroke scaling; 'non-scaling-stroke' disables stroke scaling
-
-    // ===== Shape Properties =====
-    d: '', // Defines the path data for <path> elements
-    fill: '', // Fill color or pattern
-    stroke: '', // Stroke (border) color or pattern
-    'stroke-width': 0, // Width of the stroke
-    'stroke-linecap': 'butt', // End shape of open paths ('butt', 'round', 'square')
-    'stroke-linejoin': 'miter', // Corner shape for path joins ('miter', 'round', 'bevel')
-    'stroke-miterlimit': 4, // Limit for miter joins
-    'fill-rule': 'nonzero', // Rule for determining interior regions ('nonzero', 'evenodd')
-    'marker-start': '', // Reference to marker (e.g. arrowhead) at the start of a path
-    'marker-mid': '', // Marker on the middle of the path
-    'marker-end': '', // Marker on the end of the path
-    'stroke-dasharray': '', // Creates dashed or dotted strokes (e.g., '5,5' = dash of 5px + gap of 5px)
-    'stroke-dashoffset': '', // Offset the start of dash pattern (useful for animations)
-
-    // ===== Text Properties =====
-    'font-family': '', // Font used for text
-    'font-size': '', // Size of the text
-    'font-size-adjust': 0, // Adjusts text size based on x-height
-    'font-stretch': '', // Controls font width (e.g. 'condensed', 'expanded')
-    'font-style': '', // Italic, normal, oblique
-    'font-variant': '', // Small caps or other typographic features
-    'font-weight': '', // Font thickness (normal, bold, 100–900)
-    'letter-spacing': '', // Space between characters
-    'word-spacing': '', // Space between words
-    'text-anchor': '', // Horizontal alignment of text ('start', 'middle', 'end')
-    'alignment-baseline': '', // Vertical alignment of text baseline
-    'dominant-baseline': '', // Alignment of dominant baseline in multi-line text
-    kerning: '', // Space adjustment between specific character pairs
-    'baseline-shift': '', // Shifts the text baseline up or down (e.g. superscript)
-    'writing-mode': '', // Text direction (horizontal-tb, vertical-rl, etc.)
-    direction: '', // Left-to-right or right-to-left text ('ltr', 'rtl')
-    'glyph-orientation-vertical': '', // Orientation of individual glyphs in vertical mode
-
-    // ===== Gradient and Pattern Properties (Used in shapes like <rect>, <path>, etc.) =====
-    'gradient-transform': '', // Transform applied to the gradient
-    'gradient-units': 'userSpaceOnUse', // Defines coordinate system for gradient ('objectBoundingBox' or 'userSpaceOnUse')
-    'spread-method': 'pad', // How gradient behaves outside bounds ('pad', 'reflect', 'repeat')
-    'pattern-transform': '', // Transform applied to the pattern fill
-    'pattern-units': 'userSpaceOnUse', // Coordinate system for the pattern container
-    'pattern-content-units': 'userSpaceOnUse', // Coordinate system for content inside the pattern
-
-    // ===== Filter Primitive Properties =====
-    'flood-color': '', // Fill color used in filter operations
-    'flood-opacity': 1, // Opacity of flood fill
-    'lighting-color': '', // Light color used in lighting filters
-    'stop-color': '', // Used in gradients to define stop color
-    'stop-opacity': 1 // Opacity of gradient stop
-  }
-});
-
-//  helper type first for creating interface
-type _ICommonStyleProperties = DeepPartial<typeof CommonStyleProperties>;
-
-//  an  actual interface
-export interface ICommonStyleProperties extends _ICommonStyleProperties {}
-
-*/
-// above common style property interface something look like below commented one
-/*
-
-  export interface CommonStyleProperties {
-  style: {
-    id?: string;
-    fill?: string;
-    stroke?: string;
-    'stroke-width'?: number;
-    opacity?: number;
-    transform?: string;
-    display?: string;
-    visibility?: string;
-    'clip-path'?: string;
-    cursor?: string;
-    'pointer-events'?: string;
-    'marker-start'?: string;
-    'marker-mid'?: string;
-    'marker-end'?: string;
-    'font-family'?: string;
-    'font-size'?: string;
-    'font-size-adjust'?: number;
-    'font-stretch'?: string;
-    'font-style'?: string;
-    'font-variant'?: string;
-    'font-weight'?: string;
-    'letter-spacing'?: string;
-    'word-spacing'?: string;
-    'text-anchor'?: string;
-    'alignment-baseline'?: string;
-    'dominant-baseline'?: string;
-    kerning?: string;
-    'baseline-shift'?: string;
-    'writing-mode'?: string;
-    direction?: string;
-    'glyph-orientation-vertical'?: string;
-    'stroke-linecap'?: 'butt' | 'round' | 'square' | string;
-    'stroke-linejoin'?: 'miter' | 'round' | 'bevel' | string;
-    'stroke-miterlimit'?: number;
-    'fill-rule'?: 'nonzero' | 'evenodd' | string;
-    'stop-color'?: string;
-    'stop-opacity'?: number;
-    filter?: string;
-    'flood-color'?: string;
-    'flood-opacity'?: number;
-    'lighting-color'?: string;
-    'gradient-transform'?: string;
-    'gradient-units'?: 'userSpaceOnUse' | 'objectBoundingBox' | string;
-    'spread-method'?: 'pad' | 'reflect' | 'repeat' | string;
-    'pattern-transform'?: string;
-    'pattern-units'?: 'userSpaceOnUse' | 'objectBoundingBox' | string;
-    'pattern-content-units'?: 'userSpaceOnUse' | 'objectBoundingBox' | string;
-    mask?: string;
-    'clip-rule'?: 'nonzero' | 'evenodd' | string;
-  };
-}
-
-*/

@@ -5,6 +5,30 @@ Below is a checklist of tasks to complete before finalizing the project structur
 
 ---
 
+### +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+### IMPORTANT Big issuse ### 
+
+### Change attrs() structure :
+    - any property Change affect original geometry matrix and SVG (if Backed is SVG ) directly
+    - any privious applyed transformations would be reapplyed again after original geometry change 
+    - compute new dimensions according to changes 
+
+### Put matrix as original :
+    - create temporary transformed state whenever need in execution flow     - Area -> in transformations while batching 
+    - transfer batched temporary transformed matrix state to compute new dimensions as parameters
+    - do not create temporary transformed matrix state in compute dimensions
+   
+### Always recompute Transformation matrix : to avoid floating point drift approximatly 
+    - use TList transformations stack for recompute Transformation matrix 
+    - then apply to new or updated original matrix state 
+    - store new state in temporary state do not modify original matrix state 
+    - then recompute new dimensions from temporary transformed state if need or use temporary state for any other use 
+
+### +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
 ## 🔹 Naming Consistency
 - [ ] Fix typos in file/folder names:
 

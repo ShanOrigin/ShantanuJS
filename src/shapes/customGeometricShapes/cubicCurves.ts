@@ -3,6 +3,10 @@ import type { propsType } from './Curves';
 
 export class CubicCurve extends Curve {
   constructor(props: propsType) {
-    super({ ...props, curveName: 'cubic', curvature: props.curvature || 0.5 });
+    super('cubic', {
+      ...props,
+      curveName: 'cubic',
+      curvature: props.curvature || 0.5
+    });
   }
 }
