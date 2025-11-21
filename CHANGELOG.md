@@ -328,3 +328,55 @@ Notes:
 -  Introduced  field in transformStack for future undo/redo and high-level batch editing operations.
 -  All canonical transformations now require explicit flattening before canonical geometry mutation (attrs), enforcing strict geometry invariants.
 
+[2025-11-21 | Friday | 16:19] [utils/transformations | 4days] Implementation of composed transform logic, flattening pipeline, and deterministic transformStack computations
+Notes:
+- Added  to multiply all transform matrices in transformStack and update the composite matrix stored at index 0.
+- Implemented  to apply the composite matrix directly to canonical geometry, rewrite canonicalMatrix values, clear transformStack, and reset composite state.
+- Updated all transform operations (translate, rotate, scale, skew, pivot-based transforms, reflect) to push individual transform matrices into transformStack instead of mutating geometry.
+- Ensured strictly column-major Float32Array representation for every transform matrix, optimized for WASM-based multiplication.
+- Removed all DOMMatrix multiplication logic and replaced it with WASM-powered raw matrix multiplication for superior speed and determinism.
+- Reworked pivot-based transformations to generate pivot-forward and pivot-reverse matrices properly and append them into transformStack in correct order.
+- Added automatic recomposition of the composite matrix after every transform push to maintain O(1) access to world-space matrix.
+- Eliminated GC overhead by reusing pre-allocated Float32Array buffers for internal matrix operations and temporary composites.
+- Enforced world-space semantics for all absolute and pivot-based transform modes.
+- Established strict rule: any geometry edits require flattenTransforms() to maintain consistent canonical geometry invariants.
+
+[2025-11-21 | Friday | 16:20] [utils/animation | 5days] Full animation engine migration to canonicalMatrix + transformStack architecture
+Notes:
+- Updated the animation pipeline so that all animations apply changes as transform matrices pushed into transformStack instead of directly modifying geometry.
+- Implemented frame-by-frame recomposition using composeTransforms() ensuring no accumulation drift and full determinism for animated shapes.
+- Added automatic flatten-before-edit logic when animation keyframes attempt to modify canonical geometry, preventing double transforms and corrupted geometry.
+- Reworked path-based animations (quadratic, cubic, arc, elliptical arc) to compute world positions, then apply them through transform matrices rather than modifying points.
+- Integrated arc-length reparameterization to supply stable world-space animation positions fully compatible with transformStack.
+- Removed legacy per-attribute mutation animations and replaced them with pure matrix-driven animation pipelines.
+- Added support for simultaneously animating translate, rotate, scale, skew, and pivot parameters in one composed transformation sequence.
+- Embedded absolute, relative, and pivot-based motion semantics directly into animation routines for consistent behavior with manual transforms.
+- Updated filter animation logic so filters apply after composite transformation evaluation but before rendering, ensuring correct visual ordering.
+- Ensured animations never corrupt canonical geometry and always operate through non-destructive transformation stacking.
+
+[2025-11-21 | Friday | 16:22] [shapes | 4days] Shape objects fully migrated to new canonicalMatrix model and non-destructive transformStack
+Notes:
+- All shapes now store immutable canonical geometry through canonicalMatrix rather than storing transformed geometry.
+- Every shape property (x,y,width,height,points,pathCommands) is now derived from canonical geometry combined with composite transforms instead of persistent local mutation.
+- attrs() operations now interpret inputs in world-space coordinates and auto-trigger flattenTransforms() before applying new canonical geometry updates.
+- Removed old shape fields like rotation, skewX, skewY and replaced them with pure transformStack-based transformations.
+- Updated clone operations so copies inherit canonicalMatrix but not transformStack, ensuring clean independent copies.
+- Reworked all geometry measurement functions (AABB, OBB, centroid, extents) to rely on canonicalMatrix transformed by composite matrix.
+- Normalized geometry memory layout for every shape type into sharedBuffer for GC-free and cache-friendly behavior.
+- Updated rendering logic so SVG attributes are computed from composite world-space geometry rather than stored coordinates.
+- Added automatic invalidation of OBB and AABB whenever canonicalMatrix or transformStack changes.
+- Ensured that no shape method mutates geometry unless flattenTransforms() is intentionally applied.
+
+[2025-11-21 | Friday | 16:22] [core/engine | 6days] Complete engine-wide migration to canonical geometry system and composed transform pipeline
+Notes:
+- Refactored the entire render pipeline to always compute world-space geometry through composite transformation matrices.
+- Added deterministic update cycle: canonicalMatrix → compositeMatrix → world geometry → render, ensuring stable and predictable rendering.
+- Enforced flatten-before-edit rules for any attrs() call that modifies canonical geometry while transforms exist.
+- Upgraded engine-level memory model so canonical and OBB matrices live in sharedBuffer using zero garbage allocation strategy.
+- Added lifecycle hooks: beforeTransform, afterTransform, beforeFlatten, afterFlatten for future editor/debug features.
+- Updated hit-testing, collisions, and selection logic to compute intersections through canonical geometry transformed by composite matrices.
+- Hooked curve, animation, filter, and transformation systems into unified canonicalMatrix + transformStack engine architecture.
+- Reimplemented renderer integration so all world-space coordinates are derived from composite transforms rather than stored mutated coordinates.
+- Introduced new debugging overlays for canonical geometry, composite world matrix, pivot indicators, and OBB visualization.
+- Completed engine-wide refactor to eliminate all direct geometry mutation paths except through controlled flatten operations.
+
