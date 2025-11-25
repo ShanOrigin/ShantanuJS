@@ -10,7 +10,7 @@ import { Skew } from './preBuilds/transformations/skew.js';
 import { Flip } from './preBuilds/transformations/flip.js';
 
 import { parseExpression } from './preBuilds/transformDSL/parsingAndApply.js';
-
+import { computeAABBPoints } from './preBuilds/boundingBoxes/axisAlignedBoundingBox.js';
 import { assertAccess, DEV_INTERNAL_ACCESS } from '../providers/accesskeys.js';
 import type {
   TranslateProps,
@@ -21,7 +21,6 @@ import type {
   ParsedDaTa
 } from '../../types/transformations';
 import { transformStack } from '../../types/index.js';
-import { accessKey } from 'happy-dom/lib/PropertySymbol.js';
 
 export function InheritTransformationClassByMinix<
   TBase extends abstract new (...args: any[]) => any
@@ -34,7 +33,7 @@ export function InheritTransformationClassByMinix<
     #cmath = new CMATH();
 
     #geometry = this.getIGeo(DEV_INTERNAL_ACCESS);
-
+    #style = this.getIStyle(DEV_INTERNAL_ACCESS);
     //#isProjection: boolean = false;
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //++++++++++++++ Transformation Batching  Methods +++++++++++++++
@@ -128,6 +127,39 @@ export function InheritTransformationClassByMinix<
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //++++++++++++++ Healper  Methods +++++++++++++++
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    public getBBox() {
+      if (!this.#geometry || !this.#style) {
+        throw new Error('geometry or style is not initialized');
+      }
+
+      const sw = (this.#style['stroke-width'] ?? 0) / 2;
+
+      const canonical = this.#geometry.sharedBuffer as Float32Array;
+      const M = this.#composeTransforms(true) as DOMMatrix;
+
+      // Transform all canonical points into screen space
+      const transformed = this.#cmath.multiplyMatrix(M, canonical);
+
+      // Extract AABB
+      const { minX, minY, maxX, maxY } = computeAABBPoints(transformed);
+
+      // Stroke expansion (screen-space)
+      const x = minX - sw;
+      const y = minY - sw;
+      const width = maxX + sw - x;
+      const height = maxY + sw - y;
+
+      // Extra user-friendly 4-corner matrix (optional but valid for AABB)
+      const matrix = [
+        [x, y, 1],
+        [x + width, y, 1],
+        [x + width, y + height, 1],
+        [x, y + height, 1]
+      ];
+
+      return { x, y, width, height, matrix };
+    }
 
     // method to multiply Transformation matrix with sharedBuffer of Shape through WASM-> C -> TS
 
@@ -230,7 +262,19 @@ export function InheritTransformationClassByMinix<
         this.#geometry as { transformStack: transformStack }
       ).transformStack;
 
-      if (!required) return stack[0].transformMatrix;
+      if (!required) {
+        const t = stack[0].transformMatrix as Float32Array;
+        const dm = new DOMMatrix([
+          t[0],
+          t[1], // a , b , 0
+          t[3],
+          t[4], // c , d , 0
+          t[6],
+          t[7] // e , f , 1
+        ]);
+
+        return dm;
+      }
 
       let res = new DOMMatrix();
 

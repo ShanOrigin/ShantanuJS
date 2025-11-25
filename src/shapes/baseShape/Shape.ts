@@ -127,7 +127,41 @@ export abstract class Shape<
 
   //++++++++++++++++++++++++++++++++++±+++++++++++++++++++++++++++++
 
-  #flattenTransforms() {
+  /*
+Flattening = Taking your local canonical points + applying the ENTIRE transform stack → rewriting those points in world space → making that the new canonical
+
+
+Destroying the previous local coordinate frame
+
+Collapsing transforms into geometry
+
+Moving geometry into world coordinates
+
+Making world geometry into new local geometry
+
+Recomputing all parametric values
+
+Resetting transform stack to identity
+
+
+LOCAL (canonical)
+   ↓ apply transform stack
+WORLD (live geometry)
+   ↓ derive param attributes
+PARAMETRIC (semantic)
+   ↓ apply param edit
+WORLD (modified)
+   ↓ flatten into new local
+LOCAL (new canonical)
+
+Description : taking original shape data ( which is local geometry ) and then applying all transformations stack ( combined ) to convert local geometry to World geometry or Actual screen representation then apply parametric attributes accordingly ( because parametric attributes changes original geometry ) then after this now making new world geometry as local geometry for further operations and reseting entire transform stack to identity . 
+
+*/
+
+  #flattenTransforms(
+    applyUserParams: Function,
+    userParams: Record<string, string | number>
+  ) {
     const composedMatrix = this.getCMatrix(DEV_INTERNAL_ACCESS)() as DOMMatrix;
 
     const { a, b, m31, c, d, m32, e, f } = composedMatrix;
@@ -141,6 +175,8 @@ export abstract class Shape<
       composedMatrix
     )() as Float32Array;
 
+    // create world view parameters of local geometry and reflects that new world view parameters in Actual current state of this shape geometry which are current parameters of shape.
+
     this.#restore({
       transformMatrix,
       temporaryState: updatedBuffer,
@@ -148,6 +184,10 @@ export abstract class Shape<
       isVEffect: false
     });
 
+    // apply or add user given parameters to world view parameters .
+    applyUserParams(userParams);
+
+    // this use world view parameters + user Parameters created by restore to create new local or canonical representation of shape with respect to world parameters and new user given attrs parameters
     this.generateMatrix(DEV_INTERNAL_ACCESS);
 
     /*
@@ -206,7 +246,7 @@ export abstract class Shape<
             ];
 
           // g for storing Geometry specific properties
-          const g: Record<string, number | undefined> = {};
+          const g: Record<string, number | string> = {};
           // s for storing Style specific properties
           const s: Record<string, string | number | undefined> = {};
 
@@ -231,8 +271,8 @@ export abstract class Shape<
           // applying geometric perperties with respect to shape if any property available
 
           // Object.keys(g).length > 0 && this.#applyTransformsByAttrs(g, mode);
-          Object.keys(g).length > 0 && this.#flattenTransforms();
-          super.attrs(g);
+          Object.keys(g).length > 0 && this.#flattenTransforms(super.attrs, g);
+          //super.attrs(g);
         }
       } else if (typeof props === 'string') {
         let result = super.attrs(props);
@@ -360,6 +400,7 @@ export abstract class Shape<
   }
 	*/
 
+  /*
   public getBBox() {
     const geo = this.#geometry as { obbox: Float32Array[] };
 
@@ -401,6 +442,7 @@ export abstract class Shape<
       matrix: bboxMatrix
     };
   }
+*/
 
   //++++++++++++++++++++++++++++++++++++++++++++
   // Transformations Section

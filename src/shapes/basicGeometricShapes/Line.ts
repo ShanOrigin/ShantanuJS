@@ -58,6 +58,7 @@ export class Line extends Shape<'line', 'line'> {
     } = props as propsType;
 
     const safeProps = {
+      'stroke-linecap': 'square',
       initial: true,
       x1: x1 + +dx1,
       y1: y1 + +dy1,

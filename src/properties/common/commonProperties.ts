@@ -15,10 +15,11 @@ type DeepPartial<T> = {
 
 export const CommonGeometricProperties = Object.seal({
   geometry: {
-    sharedBuffer: new Float32Array(0), // shape + OBB matrix in 1d combined
+    buffer: new Float32Array(0), // shape + OBB matrix in 1d combined
+    //	sharedBuffer: new Float32Array(0), // shape + OBB matrix in 1d combined
     shape: '', // shape which shape
-    canonicalMatrix: [] as Float32Array[], // view to sharedBuffer on shape data
-    obbox: [] as Float32Array[], // view to OBB on sharedBuffer data
+    // canonicalMatrix: [] as Float32Array[], // view to sharedBuffer on shape data
+    // obbox: [] as Float32Array[], // view to OBB on sharedBuffer data
     transformStack: {
       stack: [
         // transformations list

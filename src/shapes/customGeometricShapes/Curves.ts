@@ -293,8 +293,9 @@ export class Curve extends Shape<'curve', 'polyline'> {
       throw e;
     }
   }
-
+  /*
   public getBBox() {
     return computeBBox(this.#geometry, () => super.getBBox());
   }
+	*/
 }

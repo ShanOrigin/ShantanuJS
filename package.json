@@ -29,7 +29,7 @@
     "cirdep:index": "dpdm -T --circular --warning --tsconfig tsconfig.json ./src/index/index.ts",
     "bs": "browser-sync start --server --files './index.html,./dist' --ignore 'node_modules' --no-cache --reload-delay 200",
 
-    "live": "live-server --watch=dist,index.html --ignore=node_modules --no-browser --port=3000",
+    "live": "live-server --watch=dist  --ignore=node_modules --no-browser --port=3000",
     "dev": "npm-run-all --parallel tsc:watch live",
     "dev:sync": "npm run gitsmartsync && npm run dev"
   },

@@ -455,15 +455,15 @@ export class Renderer {
 
         if ((geoCache as any).__cx !== cxStr) {
           desiredAttrs.cx = cxStr;
-          (geoCache as any).__cx = cxStr;
+          //  (geoCache as any).__cx = cxStr;
         }
         if ((geoCache as any).__cy !== cyStr) {
           desiredAttrs.cy = cyStr;
-          (geoCache as any).__cy = cyStr;
+          // (geoCache as any).__cy = cyStr;
         }
         if ((geoCache as any).__r !== rStr) {
           desiredAttrs.r = rStr;
-          (geoCache as any).__r = rStr;
+          // (geoCache as any).__r = rStr;
         }
         break;
       }
@@ -507,15 +507,15 @@ export class Renderer {
 
         if ((geoCache as any).__cx !== cxs) {
           desiredAttrs.cx = cxs;
-          (geoCache as any).__cx = cxs;
+          // (geoCache as any).__cx = cxs;
         }
         if ((geoCache as any).__cy !== cys) {
           desiredAttrs.cy = cys;
-          (geoCache as any).__cy = cys;
+          // (geoCache as any).__cy = cys;
         }
         if ((geoCache as any).__r !== rs) {
           desiredAttrs.r = rs;
-          (geoCache as any).__r = rs;
+          // (geoCache as any).__r = rs;
         }
         break;
       }
@@ -534,19 +534,19 @@ export class Renderer {
 
         if ((geoCache as any).__cx !== cxs) {
           desiredAttrs.cx = cxs;
-          (geoCache as any).__cx = cxs;
+          // (geoCache as any).__cx = cxs;
         }
         if ((geoCache as any).__cy !== cys) {
           desiredAttrs.cy = cys;
-          (geoCache as any).__cy = cys;
+          // (geoCache as any).__cy = cys;
         }
         if ((geoCache as any).__rx !== rxs) {
           desiredAttrs.rx = rxs;
-          (geoCache as any).__rx = rxs;
+          //  (geoCache as any).__rx = rxs;
         }
         if ((geoCache as any).__ry !== rys) {
           desiredAttrs.ry = rys;
-          (geoCache as any).__ry = rys;
+          //  (geoCache as any).__ry = rys;
         }
         break;
       }
@@ -576,27 +576,27 @@ export class Renderer {
 
         if ((geoCache as any).__x !== xs) {
           desiredAttrs.x = xs;
-          (geoCache as any).__x = xs;
+          //  (geoCache as any).__x = xs;
         }
         if ((geoCache as any).__y !== ys) {
           desiredAttrs.y = ys;
-          (geoCache as any).__y = ys;
+          ///   (geoCache as any).__y = ys;
         }
         if ((geoCache as any).__width !== ws) {
           desiredAttrs.width = ws;
-          (geoCache as any).__width = ws;
+          //  (geoCache as any).__width = ws;
         }
         if ((geoCache as any).__height !== hs) {
           desiredAttrs.height = hs;
-          (geoCache as any).__height = hs;
+          //  (geoCache as any).__height = hs;
         }
         if ((geoCache as any).__rx !== rxs) {
           desiredAttrs.rx = rxs;
-          (geoCache as any).__rx = rxs;
+          //  (geoCache as any).__rx = rxs;
         }
         if ((geoCache as any).__ry !== rys) {
           desiredAttrs.ry = rys;
-          (geoCache as any).__ry = rys;
+          //  (geoCache as any).__ry = rys;
         }
         break;
       }
@@ -621,8 +621,8 @@ export class Renderer {
           }
           const pointsStr = parts.join(' ');
           desiredAttrs.points = pointsStr;
-          (geoCache as any).__points = pointsStr;
-          (geoCache as any).__matrixRef = matrix;
+          //  (geoCache as any).__points = pointsStr;
+          // (geoCache as any).__matrixRef = matrix;
         } else {
           // reference same => no geometry change => do nothing
         }
@@ -635,7 +635,7 @@ export class Renderer {
         if (typeof d === 'string') {
           if ((geoCache as any).__d !== d) {
             desiredAttrs.d = d;
-            (geoCache as any).__d = d;
+            //  (geoCache as any).__d = d;
           }
         }
         break;
@@ -646,7 +646,7 @@ export class Renderer {
         break;
     }
 
-    console.log('desired = ', desiredAttrs);
+    //    console.log('desired = ', desiredAttrs);
 
     // Apply geometry attributes (written only if desiredAttrs contains them)
     for (const key in desiredAttrs) {

@@ -142,5 +142,5 @@ async function Tester(classes: string, types: string) {
 }
 
 setTimeout(async () => {
-  await Tester('qcurve', 'unit');
+  await Tester('line', 'unit');
 }, 4000);

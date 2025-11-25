@@ -51,6 +51,7 @@ export abstract class GraphicalElementComposer<
    * function return  bounding box of svg element
    */
 
+  /*
   public getBBox(): Object | undefined {
     try {
       checkParent(this.#fig, 'SVG');
@@ -178,6 +179,7 @@ export abstract class GraphicalElementComposer<
       throw e;
     }
   }
+*/
 
   public hide(): void {
     try {

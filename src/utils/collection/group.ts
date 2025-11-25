@@ -599,9 +599,9 @@ let s = 0 ;
         element instanceof NG && (shape = element.attributes?.tag);
 				*/
 
-        delete this.#geometry?.canonicalMatrix;
-        delete this.#geometry?.obbox;
-        assignBBoxMatrix(this.#geometry, this.getBBox.bind(this), 'both');
+        //   delete this.#geometry?.canonicalMatrix;
+        //   delete this.#geometry?.obbox;
+        //   assignBBoxMatrix(this.#geometry, this.getBBox.bind(this), 'both');
         shape && (this.#batches[shape] ??= []).push(element);
       }
 
@@ -668,9 +668,9 @@ let s = 0 ;
         //console.log('index to remove =', removedElementIndex);
         //console.log(this.#fig);
 
-        delete this.#geometry?.canonicalMatrix;
-        delete this.#geometry?.obbox;
-        assignBBoxMatrix(this.#geometry, this.getBBox.bind(this), 'both');
+        //    delete this.#geometry?.canonicalMatrix;
+        //    delete this.#geometry?.obbox;
+        //    assignBBoxMatrix(this.#geometry, this.getBBox.bind(this), 'both');
         this.#groupElements.splice(removedElementIndex, 1);
       }
       return this;
@@ -694,8 +694,8 @@ let s = 0 ;
         });
       }
 
-      delete this.#geometry?.canonicalMatrix;
-      delete this.#geometry?.obbox;
+      //      delete this.#geometry?.canonicalMatrix;
+      //     delete this.#geometry?.obbox;
       this.#groupElements = [];
 
       ////console.log('All elements ungrouped and added back to canvas');

@@ -117,6 +117,7 @@ export class Path extends Shape<'path', 'path'> {
     assertAccess(accessKeys);
   }
 
+  /*
   public getBBox() {
     const g = () => super.getBBox();
     assignBBoxMatrix(this.#geometry, g, 'both');
@@ -136,4 +137,5 @@ export class Path extends Shape<'path', 'path'> {
       throw e;
     }
   }
+	*/
 }

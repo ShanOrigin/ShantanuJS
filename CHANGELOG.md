@@ -380,3 +380,15 @@ Notes:
 - Introduced new debugging overlays for canonical geometry, composite world matrix, pivot indicators, and OBB visualization.
 - Completed engine-wide refactor to eliminate all direct geometry mutation paths except through controlled flatten operations.
 
+[2025-11-25 | Tuesday | 08:10] [geometry/core/utils.transformations | 4h] refactored geometry storage from sharedBuffer + canonicalMatrix/OBB to unified immutable buffer system as single truth 
+Notes:
+- removed sharedBuffer 
+-  removed canonicalMatrix 
+-  removed obbox 
+-  added single geometry buffer 
+-  added parametric data field 
+-  improved flattening determinism 
+-  simplified transform pipeline 
+-  eliminated buffer aliasing 
+-  stabilized canonical geometry model
+

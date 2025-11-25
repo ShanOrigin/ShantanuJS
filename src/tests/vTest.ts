@@ -16,31 +16,19 @@ function cornersFromRect(x: number, y: number, w: number, h: number) {
 // -------------------------------------------------------------
 // EXPECTED BBOX POINTS (using SVG getBBox + getScreenCTM → screen px)
 // -------------------------------------------------------------
-async function getExpectedBBoxPoints(canvas: any, shape: any) {
+async function getExpectedBBoxPoints(shape: any) {
   await new Promise(requestAnimationFrame);
   await new Promise(requestAnimationFrame);
 
-  const canvasRect = canvas
-    .getIFig(DEV_INTERNAL_ACCESS)
-    .getBoundingClientRect();
-  const shapeFig = shape.getIFig(DEV_INTERNAL_ACCESS);
-  const bbox = shape.getBBox();
+  const shapeFig = shape.getIFig(DEV_INTERNAL_ACCESS) as SVGElement;
+  const bbox = shape.getBBox(); // svg BBox method
   const svg = shapeFig.ownerSVGElement;
-  const ctm = shapeFig.getScreenCTM();
 
-  if (!svg || !ctm) return [];
-
-  const pt = svg.createSVGPoint();
-
-  const transform = (ux: number, uy: number) => {
-    pt.x = ux;
-    pt.y = uy;
-    const r = pt.matrixTransform(ctm);
-    return [r.x - canvasRect.x, r.y - canvasRect.y] as [number, number];
-  };
+  if (!svg) return [];
 
   const corners = cornersFromRect(bbox.x, bbox.y, bbox.width, bbox.height);
-  return corners; // .map(([x, y]) => transform(x, y));
+
+  return corners;
 }
 
 // -------------------------------------------------------------
@@ -64,17 +52,20 @@ async function getActualBBoxPoints(canvas: any, shape: any) {
   const shrink = (sw * scale) / 2;
 
   const { x, y, width, height } = rect;
-
-  const corners = cornersFromRect(x, y, width, height);
-  return corners;
   /*
+  console.log(x, y, width, height);
+  console.log(canvasRect.x, canvasRect.y);
+  console.log(x - canvasRect.x, y - canvasRect.y);
+*/
+  const corners = cornersFromRect(x, y, width, height);
+
   // shrink & convert to canvas-relative
-  return corners.map(([px, py]) => [
+  const cor = corners.map(([px, py]) => [
     px - canvasRect.x, // + (px === x ? shrink : -shrink),
     py - canvasRect.y //+ (py === y ? shrink : -shrink)
   ]) as [number, number][];
 
-	*/
+  return cor;
 }
 
 // -------------------------------------------------------------
@@ -111,10 +102,10 @@ function compareBBoxMatrices(
 // -------------------------------------------------------------
 export async function visualTest(canvas: any, shape: any, epsilon = 0.5) {
   const actual = await getActualBBoxPoints(canvas, shape);
-  const expected = await getExpectedBBoxPoints(canvas, shape);
+  const expected = await getExpectedBBoxPoints(shape);
 
-  console.log('actual  =', actual);
-  console.log('expected=', expected);
+  //  console.log('actual  =', actual);
+  //  console.log('expected=', expected);
 
   compareBBoxMatrices(actual, expected, epsilon);
 

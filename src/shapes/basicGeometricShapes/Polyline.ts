@@ -265,8 +265,9 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
       throw e;
     }
   }
-
+  /*
   public getBBox() {
     return computeBBox(this.#geometry, () => super.getBBox());
   }
+	*/
 }

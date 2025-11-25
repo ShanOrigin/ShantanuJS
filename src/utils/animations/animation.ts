@@ -235,15 +235,15 @@ export class Animation<T extends GShpesTages> {
     const geo = GElement.getIGeo(DEV_INTERNAL_ACCESS) as {
       transformStack: transformStack;
       shape: string;
-      sharedBuffer: Float32Array;
+      buffer: Float32Array;
     };
     const style = GElement.getIStyle(DEV_INTERNAL_ACCESS);
     this.#shape = geo?.shape as T;
     this.#isAnimation = isAnimation;
     this.#el = GElement;
 
-    this.#sharedSMatrix = new Float32Array(geo?.sharedBuffer?.length ?? 0);
-    this.#sharedSMatrix.set(geo?.sharedBuffer as Float32Array);
+    this.#sharedSMatrix = new Float32Array(geo?.buffer?.length ?? 0);
+    this.#sharedSMatrix.set(geo?.buffer as Float32Array);
 
     this.#Tmatrix = (geo.transformStack.stack[0].transformMatrix ??
       this.#Tmatrix) as Float32Array;
@@ -515,9 +515,7 @@ export class Animation<T extends GShpesTages> {
 
     const geo = this.#el.getIGeo(DEV_INTERNAL_ACCESS);
 
-    (geo?.sharedBuffer as Float32Array).set(
-      this.#sharedSMatrix as Float32Array
-    );
+    (geo?.buffer as Float32Array).set(this.#sharedSMatrix as Float32Array);
     (
       ((geo as any)?.TList[0] as { TMatrix: Float32Array })
         ?.TMatrix as Float32Array
