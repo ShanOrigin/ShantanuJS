@@ -128,24 +128,23 @@ export class Line extends Shape<'line', 'line'> {
         y1: number;
         x2: number;
         y2: number;
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
+        buffer: Float32Array;
       };
 
       if (!geo) return;
       const { x1 = 0, y1 = 0, x2 = 0, y2 = 0 } = geo;
       const shapeRows = 2;
       const bboxRows = 4;
-      const totalLength = (shapeRows + bboxRows) * 3;
+      const totalLength = shapeRows * 3;
 
       // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = geo.buffer as Float32Array;
       sb.set([x1, y1, 1, x2, y2, 1], 0);
-
+      /*
       // Only recreate views if buffer was reallocated
       if (!geo.canonicalMatrix) {
         geo.canonicalMatrix = [
@@ -153,8 +152,7 @@ export class Line extends Shape<'line', 'line'> {
           new Float32Array(sb.buffer, 3 * 4, 3)
         ];
       }
-
-      console.log('hi');
+*/
       renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {

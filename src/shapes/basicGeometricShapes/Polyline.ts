@@ -20,8 +20,8 @@ import {
   isValidMatrix,
   validProps,
   parameterTypeValidator,
-  autoFixGeometry,
-  computeBBox
+  autoFixGeometry
+  //  computeBBox
 } from '../../utils/providers/utils.js';
 
 type propsType = Partial<IGraphicalElementProperties['polyline']> &
@@ -123,7 +123,7 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
       this.#geometry['copies'] = nextCopies;
 
       const pl = new Polyline(points, style as propsType);
-      pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
+      //   pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return pl;
     }
 

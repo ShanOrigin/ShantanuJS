@@ -1,6 +1,6 @@
 // Core transform metadata shared by all except flip
 interface BaseTransformMeta {
-  type?: string;
+  tType?: string;
   px?: number;
   py?: number;
 }

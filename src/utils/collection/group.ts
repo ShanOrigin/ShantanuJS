@@ -64,8 +64,8 @@ import {
 } from '../../properties/provider/shapeProperties.js';
 
 import {
-  assignBBoxMatrix,
-  trackTransformation,
+  //  assignBBoxMatrix,
+  //  trackTransformation,
   checkParent,
   isValidMatrix,
   validProps
@@ -723,7 +723,7 @@ let s = 0 ;
     ttype: string,
     isEffect: true
   ) {
-    this.#geometry && trackTransformation(this.#geometry, tr, ttype, tmat);
+    //    this.#geometry && trackTransformation(this.#geometry, tr, ttype, tmat);
     //isEffect && this.#createPathFromMatrix();
     //isEffect && this.#restoreDimension();
   }

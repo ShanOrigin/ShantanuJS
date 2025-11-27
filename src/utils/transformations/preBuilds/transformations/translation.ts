@@ -35,23 +35,19 @@ import type { TranslateProps } from '../../../../types/transformations';
 export function Translate({
   x,
   y,
-  type = 'a',
+  tType = 'a',
   px = 0,
-  py = 0,
-  buffer
-}: TranslateProps & { buffer: Float32Array }): DOMMatrix {
+  py = 0
+}: TranslateProps): DOMMatrix {
   try {
-    const mode = type == 'c' || type == 'center' ? 'c' : typeCheck(type);
-    let [cx, cy] = [buffer[0], buffer[1]];
     // Always start with a fresh DOMMatrix
     const matrix = new DOMMatrix([
       1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
     ]);
 
-    switch (mode) {
+    switch (tType) {
       case 'absolute':
       case 'a': {
-        [px, py] = [cx, cy];
         matrix.translateSelf(-px, -py).translateSelf(x, y);
 
         break;
@@ -59,10 +55,8 @@ export function Translate({
 
       case 'center':
       case 'c': {
-        const [cx, cy] = getCentre(buffer);
-
         // Step 2: move by desired offset
-        matrix.translateSelf(x - cx, y - cy);
+        matrix.translateSelf(x - px, y - py);
 
         break;
       }

@@ -14,10 +14,10 @@ import {
   checkParent,
   parameterTypeValidator,
   animationChecks,
-  computeBBox,
+  //  computeBBox,
   getTransformationMatrix,
-  assignBBoxMatrix,
-  trackTransformation,
+  //  assignBBoxMatrix,
+  //  trackTransformation,
   cwarn
 } from '../../utils/providers/utils.js';
 
@@ -96,7 +96,7 @@ export abstract class Shape<
   }
 
   protected getClassProps(accessKey: symbol) {
-    assertAccess(DEV_INTERNAL_ACCESS);
+    assertAccess(accessKey);
 
     return this.#classProp;
   }
@@ -162,6 +162,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
     applyUserParams: Function,
     userParams: Record<string, string | number>
   ) {
+    console.log('in Flattening');
     const composedMatrix = this.getCMatrix(DEV_INTERNAL_ACCESS)() as DOMMatrix;
 
     const { a, b, m31, c, d, m32, e, f } = composedMatrix;
@@ -170,6 +171,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
     const transformMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
 
+    //  console.log('transforMatrix ', transformMatrix);
     const updatedBuffer = this.getMProduct(
       DEV_INTERNAL_ACCESS,
       composedMatrix
@@ -177,6 +179,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
     // create world view parameters of local geometry and reflects that new world view parameters in Actual current state of this shape geometry which are current parameters of shape.
 
+    // console.log('updatedBuffer = ', updatedBuffer);
     this.#restore({
       transformMatrix,
       temporaryState: updatedBuffer,
@@ -185,35 +188,25 @@ Description : taking original shape data ( which is local geometry ) and then ap
     });
 
     // apply or add user given parameters to world view parameters .
-    applyUserParams(userParams);
+    applyUserParams({ ...userParams, transform: '' });
 
     // this use world view parameters + user Parameters created by restore to create new local or canonical representation of shape with respect to world parameters and new user given attrs parameters
     this.generateMatrix(DEV_INTERNAL_ACCESS);
 
-    /*
-      renderer.render({ el: this });
+    const geo = this.#geometry as {
+      transformStack: transformStack;
+    };
 
-      //    'obbox' in geo && delete geo.obbox;
+    geo.transformStack.stack.length = 1;
+    // assinging identity matrix to composed or cumulative  matrix
 
-      assignBBoxMatrix(this.#geometry, () => super.getBBox(), 'obbox');
-      // setting '' to transform attribute of svg
-      this.attrs({ transform: '' });
-      // clearing all transformations stack history
-      geo.transforStack.stack.length = 1;
-      // assinging identity matrix to composed or cumulative  matrix
-
-      (geo.transforStack.stack[0].transformMatrix as Float32Array).set(
-        [1, 0, 0, 0, 1, 0, 0, 0, 1],
-        0
-      );
-
-*/
+    (geo.transformStack.stack[0].transformMatrix as Float32Array).set(
+      [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      0
+    );
   }
 
-  public attrs(
-    props: shapesPropsType | string,
-    mode: string = 'absolute'
-  ): attrsMethodReturnTypes {
+  public attrs(props: shapesPropsType | string): attrsMethodReturnTypes {
     try {
       const shape = this.#geometry?.shape;
       if (!shape || shape == '') {
@@ -223,6 +216,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
       if (typeof props === 'object') {
         if ('initial' in props && props.initial) {
           delete props.initial;
+          console.log('initial');
           super.attrs(props);
           this.generateMatrix(DEV_INTERNAL_ACCESS);
         } else {
@@ -270,9 +264,12 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
           // applying geometric perperties with respect to shape if any property available
 
-          // Object.keys(g).length > 0 && this.#applyTransformsByAttrs(g, mode);
-          Object.keys(g).length > 0 && this.#flattenTransforms(super.attrs, g);
-          //super.attrs(g);
+          Object.keys(g).length > 0 &&
+            this.#flattenTransforms(super.attrs.bind(this), g);
+
+          // renderering new updated geometry and style
+
+          renderer.render({ el: this });
         }
       } else if (typeof props === 'string') {
         let result = super.attrs(props);
@@ -299,11 +296,9 @@ Description : taking original shape data ( which is local geometry ) and then ap
       );
 
       const geo = this.#geometry as {
-        transforStack: transformStack;
-        canonicalMatrix: Float32Array[];
-        sharedBuffer: Float32Array;
+        transformStack: transformStack;
+        buffer: Float32Array;
         shape: string;
-        obbox: Float32Array[];
       };
 
       if (!geo) {
@@ -315,23 +310,24 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
       checkParent(this.#fig, shape);
 
-      const sb = geo.sharedBuffer as Float32Array;
-      const prev = new Float32Array(sb.slice(0, columnSize * rowSize)); // backup
+      const sb = [] as Float32Array[];
+      const prev = new Float32Array(geo.buffer.slice(0, columnSize * rowSize)); // backup
 
       for (let i = 0; i < rowSize; i++) {
+        sb[i] = new Float32Array(3);
         for (let j = 0; j < columnSize; j++) {
-          sb[i * columnSize + j] = m[i]?.[j] ?? 1;
+          const e = m[i]?.[j] ?? 1;
+          geo.buffer[i * columnSize + j] = e;
+          sb[i][j] = e;
         }
       }
 
-      const matrix = geo.canonicalMatrix as Float32Array[];
-
       if (
-        !Array.isArray(matrix) ||
-        !this.validateShapeMatrix(DEV_INTERNAL_ACCESS, matrix)
+        !Array.isArray(sb) ||
+        !this.validateShapeMatrix(DEV_INTERNAL_ACCESS, sb)
       ) {
         if (rollback) {
-          sb.set(prev, 0); // rollback
+          geo.buffer.set(prev, 0); // rollback
         } else {
           throw new Error(
             'given Matrix for Rectangle is invalid maybe it is not actually the shape which you want to give'
@@ -339,19 +335,17 @@ Description : taking original shape data ( which is local geometry ) and then ap
         }
       }
 
-      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
+      console.log('before  matrix update ', JSON.stringify(this.#geometry));
+      this.restoreDimension(DEV_INTERNAL_ACCESS, geo.buffer);
       renderer.render({ el: this });
-
-      //    'obbox' in geo && delete geo.obbox;
-
-      assignBBoxMatrix(this.#geometry, () => super.getBBox(), 'obbox');
+      console.log('after  matrix update ', JSON.stringify(this.#geometry));
       // setting '' to transform attribute of svg
       this.attrs({ transform: '' });
       // clearing all transformations stack history
-      geo.transforStack.stack.length = 1;
+      geo.transformStack.stack.length = 1;
       // assinging identity matrix to composed or cumulative  matrix
 
-      (geo.transforStack.stack[0].transformMatrix as Float32Array).set(
+      (geo.transformStack.stack[0].transformMatrix as Float32Array).set(
         [1, 0, 0, 0, 1, 0, 0, 0, 1],
         0
       );
@@ -359,6 +353,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
       throw e;
     }
   }
+
   // returning a transformation Matrix applied by user
 
   public getTMatrix(
@@ -366,7 +361,8 @@ Description : taking original shape data ( which is local geometry ) and then ap
     major: 'r' | 'c' = 'r'
   ): number[][] {
     return getTransformationMatrix(
-      (this.#geometry as { transforStack: transformStack }).transforStack.stack,
+      (this.#geometry as { transformStack: transformStack }).transformStack
+        .stack,
       which,
       major
     ) as number[][];
@@ -394,56 +390,6 @@ Description : taking original shape data ( which is local geometry ) and then ap
       });
   }
 
-  /*
-  public gettBBox() {
-    return computeBBox(this.#geometry, () => super.getBBox());
-  }
-	*/
-
-  /*
-  public getBBox() {
-    const geo = this.#geometry as { obbox: Float32Array[] };
-
-    !geo?.obbox && assignBBoxMatrix(geo, () => super.getBBox(), 'obbox');
-
-    const matrix = geo?.obbox as Float32Array[];
-
-    let minX = Infinity,
-      minY = Infinity;
-    let maxX = -Infinity,
-      maxY = -Infinity;
-
-    for (let i = 0; i < matrix.length; i++) {
-      const [x, y] = matrix[i] as Float32Array;
-
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (x > maxX) maxX = x;
-      if (y > maxY) maxY = y;
-    }
-
-    const width = maxX - minX;
-    const height = maxY - minY;
-    const [cx, cy] = [minX + width / 2, minY + height / 2];
-    // Create the 4 corner points in canvas order (top-left, top-right, bottom-right, bottom-left)
-    const bboxMatrix = [
-      new Float32Array([minX, minY, 1]), // top-left
-      new Float32Array([maxX, minY, 1]), // top-right
-      new Float32Array([maxX, maxY, 1]), // bottom-right
-      new Float32Array([minX, maxY, 1]) // bottom-left
-    ];
-    return {
-      x: minX,
-      y: minY,
-      width,
-      height,
-      cx,
-      cy,
-      matrix: bboxMatrix
-    };
-  }
-*/
-
   //++++++++++++++++++++++++++++++++++++++++++++
   // Transformations Section
   //++++++++++++++++++++++++++++++++++++++++++++
@@ -463,7 +409,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
   public override Translate({
     x,
     y,
-    type = 'a',
+    tType = 'a',
     px = 0,
     py = 0
   }: TranslateMethodProps): this {
@@ -474,12 +420,12 @@ Description : taking original shape data ( which is local geometry ) and then ap
         );
         return this;
       }
-      type = this.#preChecks(type, px, py);
+      tType = this.#preChecks(tType, px, py);
 
       super.Translate({
         x,
         y,
-        type,
+        tType,
         px,
         py,
         isEffect: true,
@@ -495,7 +441,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
   public override Scale({
     sx = 1,
     sy = 1,
-    type = 'a',
+    tType = 'a',
     px = 0,
     py = 0
   }: ScaleMethodProps): this {
@@ -507,11 +453,11 @@ Description : taking original shape data ( which is local geometry ) and then ap
         return this;
       }
 
-      type = this.#preChecks(type, px, py);
+      tType = this.#preChecks(tType, px, py);
       super.Scale({
         sx,
         sy,
-        type,
+        tType,
         px,
         py,
         isEffect: true,
@@ -526,7 +472,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
   public override Rotate({
     angle,
-    type = 'a',
+    tType = 'a',
     px = 0,
     py = 0
   }: RotateMethodProps): this {
@@ -538,11 +484,11 @@ Description : taking original shape data ( which is local geometry ) and then ap
         return this;
       }
 
-      type = this.#preChecks(type, px, py);
+      tType = this.#preChecks(tType, px, py);
 
       super.Rotate({
         angle,
-        type,
+        tType,
         px,
         py,
         isEffect: true,
@@ -557,7 +503,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
   public override Skew({
     sx,
     sy,
-    type = 'a',
+    tType = 'a',
     px = 0,
     py = 0
   }: SkewMethodProps): this {
@@ -568,12 +514,12 @@ Description : taking original shape data ( which is local geometry ) and then ap
         );
         return this;
       }
-      type = this.#preChecks(type, px, py);
+      tType = this.#preChecks(tType, px, py);
 
       super.Skew({
         sx,
         sy,
-        type,
+        tType,
         px,
         py,
         isEffect: true,

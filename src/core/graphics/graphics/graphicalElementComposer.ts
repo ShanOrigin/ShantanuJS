@@ -3,7 +3,7 @@ import type { GShpesTages } from './graphicalElement';
 import { Events } from '../events/event.js';
 
 import {
-  assignBBoxMatrix,
+  //  assignBBoxMatrix,
   checkParent,
   isValidMatrix
 } from '../../../utils/providers/utils.js';
@@ -35,7 +35,7 @@ export abstract class GraphicalElementComposer<
       geo.transformStack = {
         stack: [
           {
-            transformName: 'cummulative',
+            transformName: 'composed',
             transformType: 'all',
             transformMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1])
           }

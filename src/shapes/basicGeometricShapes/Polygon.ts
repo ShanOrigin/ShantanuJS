@@ -20,8 +20,8 @@ import {
   isValidMatrix,
   validProps,
   parameterTypeValidator,
-  autoFixGeometry,
-  computeBBox
+  autoFixGeometry
+  //  computeBBox
 } from '../../utils/providers/utils.js';
 
 type propsType = Partial<IGraphicalElementProperties['polygon']> &
@@ -129,7 +129,7 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
       this.#geometry['copies'] = nextCopies;
 
       const pl = new Polygon(points, style as propsType);
-      pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
+      //  pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return pl;
     }
 

@@ -1,5 +1,7 @@
 import { LineUnitTests } from '../tests/shapes/basicShapes/line/visualTest/visualUnitTest.js';
 
+import { LineCombineTests } from '../tests/shapes/basicShapes/line/visualTest/visualCombineTest.js';
+
 // Rect imports
 import { RectUnitTests } from '../tests/shapes/basicShapes/rect/visualTest/visualUnitTest.js';
 
@@ -25,7 +27,7 @@ async function LineClassTester(testType: string) {
       break;
 
     case 'combine':
-      await RectCombineTests();
+      await LineCombineTests();
       break;
     case 'animation':
       await RectAnimationTests();
@@ -142,5 +144,5 @@ async function Tester(classes: string, types: string) {
 }
 
 setTimeout(async () => {
-  await Tester('line', 'unit');
-}, 4000);
+  await Tester('line', 'combine');
+}, 5000);

@@ -5,7 +5,7 @@ import Canvas from '../core/graphics/providers/canvas.js';
 import { Circle } from '../shapes/basicGeometricShapes/Circle.js';
 import { Ellipse } from '../shapes/basicGeometricShapes/Ellipse.js';
 import { Line } from '../shapes/basicGeometricShapes/Line.js';
-import { Path } from '../shapes/basicGeometricShapes/Path.js';
+//import { Path } from '../shapes/basicGeometricShapes/Path.js';
 import { Point } from '../shapes/basicGeometricShapes/Point.js';
 import { Polygon } from '../shapes/basicGeometricShapes/Polygon.js';
 import { Polyline } from '../shapes/basicGeometricShapes/Polyline.js';
@@ -31,7 +31,7 @@ export const Shantanu = {
   Point,
   Polyline,
   Polygon,
-  Path,
+  //  Path,
   // custom shapes
   Shapes: {
     Basic: {
@@ -40,8 +40,8 @@ export const Shantanu = {
       Ellipse,
       Point,
       Polyline,
-      Polygon,
-      Path
+      Polygon
+      //      Path
     },
     Custom: {
       Curve,
@@ -67,7 +67,7 @@ export namespace Shantanu {
   export type Point = InstanceType<typeof Shantanu.Point>;
   export type Polyline = InstanceType<typeof Shantanu.Polyline>;
   export type Polygon = InstanceType<typeof Shantanu.Polygon>;
-  export type Path = InstanceType<typeof Shantanu.Path>;
+  //  export type Path = InstanceType<typeof Shantanu.Path>;
 
   export type Text = InstanceType<typeof Shantanu.Text>;
 }

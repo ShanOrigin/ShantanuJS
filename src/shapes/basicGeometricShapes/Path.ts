@@ -18,8 +18,8 @@ import {
   validProps,
   parameterTypeValidator,
   autoFixGeometry,
-  computeBBox,
-  assignBBoxMatrix,
+  //  computeBBox,
+  //  assignBBoxMatrix,
   isValidMatrix
 } from '../../utils/providers/utils.js';
 
@@ -92,7 +92,7 @@ export class Path extends Shape<'path', 'path'> {
       this.#geometry['copies'] = nextCopies;
       const p = new Path(d, style as propsType);
 
-      p.Translate({ x: offsetX, y: offsetY, type: 'r' });
+      //    p.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return p;
     }
 

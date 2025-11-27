@@ -58,9 +58,9 @@ export async function RectCombineTests() {
       Shape2.Skew({ sx: 30, sy: 45 });
 
       await delay(time);
-      Shape.Rotate({ angle: 45, type: 'p', px: 35, py: 50 });
-      Shape1.Rotate({ angle: 45, type: 'p', px: 35, py: 50 });
-      Shape2.Rotate({ angle: 45, type: 'p', px: 35, py: 50 });
+      Shape.Rotate({ angle: 45, tType: 'p', px: 35, py: 50 });
+      Shape1.Rotate({ angle: 45, tType: 'p', px: 35, py: 50 });
+      Shape2.Rotate({ angle: 45, tType: 'p', px: 35, py: 50 });
 
       await delay(time);
       Shape.Rotate({ angle: -45 });
@@ -85,8 +85,8 @@ export async function RectCombineTests() {
       Shape1.Rotate({ angle: 45 });
 
       await delay(time);
-      Shape.Translate({ x: 35, y: 50, type: 'a' });
-      Shape1.Translate({ x: 35, y: 50, type: 'a' });
+      Shape.Translate({ x: 35, y: 50, tType: 'a' });
+      Shape1.Translate({ x: 35, y: 50, tType: 'a' });
       Shape1.endT();
 
       Shape2.attrs({ width: 75, height: 40, x: 35, y: 50 });
@@ -143,9 +143,9 @@ export async function RectCombineTests() {
       Shape1.beginT();
 
       await delay(time);
-      Shape.Rotate({ angle: 45, type: 'p', px: 100, py: 50 });
-      Shape1.Rotate({ angle: 45, type: 'p', px: 100, py: 50 });
-      Shape2.Rotate({ angle: 45, type: 'p', px: 100, py: 50 });
+      Shape.Rotate({ angle: 45, tType: 'p', px: 100, py: 50 });
+      Shape1.Rotate({ angle: 45, tType: 'p', px: 100, py: 50 });
+      Shape2.Rotate({ angle: 45, tType: 'p', px: 100, py: 50 });
 
       await delay(time);
       Shape.Rotate({ angle: -45 });
@@ -160,8 +160,8 @@ export async function RectCombineTests() {
       Shape1.Rotate({ angle: 45 });
 
       await delay(time);
-      Shape.Translate({ x: 100, y: 50, type: 'a' });
-      Shape1.Translate({ x: 100, y: 50, type: 'a' });
+      Shape.Translate({ x: 100, y: 50, tType: 'a' });
+      Shape1.Translate({ x: 100, y: 50, tType: 'a' });
       Shape1.endT();
 
       Shape2.attrs({ width: 75, height: 40, x: 100, y: 50 });
@@ -211,14 +211,14 @@ export async function RectCombineTests() {
       await delay(time);
       Shape.transform('R(60)T(10,10,r)');
       await delay(time);
-      Shape.Rotate({ angle: 30, type: 'p', px: 37.74, py: 164.75 });
+      Shape.Rotate({ angle: 30, tType: 'p', px: 37.74, py: 164.75 });
 
       console.log(Shape);
 
       await delay(time);
       Shape1.Scale({ sx: 1.5, sy: 1.5 })
         .transform('R(60)T(10,10,r)')
-        .Rotate({ angle: 30, type: 'p', px: 37.74, py: 164.75 });
+        .Rotate({ angle: 30, tType: 'p', px: 37.74, py: 164.75 });
       await delay(time);
 
       Shape2.beginT(); // start batching
@@ -226,7 +226,7 @@ export async function RectCombineTests() {
       await delay(time);
       Shape2.transform('R(60)T(10,10,r)');
       await delay(time);
-      Shape2.Rotate({ angle: 30, type: 'p', px: 37.74, py: 164.75 });
+      Shape2.Rotate({ angle: 30, tType: 'p', px: 37.74, py: 164.75 });
       Shape2.endT(); // end batching and apply
 
       await delay(time);
@@ -234,7 +234,7 @@ export async function RectCombineTests() {
       Shape3.beginT() // start batching
         .Scale({ sx: 1.5, sy: 1.5 })
         .transform('R(60)T(10,10,r)')
-        .Rotate({ angle: 30, type: 'p', px: 37.74, py: 164.75 })
+        .Rotate({ angle: 30, tType: 'p', px: 37.74, py: 164.75 })
         .endT(); // // end batching and apply
 
       await delay(time);
@@ -265,14 +265,14 @@ export async function RectCombineTests() {
 
       Shape5.attrs({ x: 40, y: 90 });
       await delay(time);
-      Shape4.attrs({ x: 30, y: 50, width: 20, height: 10 }, 'r');
+      Shape4.attrs({ x: 30, y: 50, width: 20, height: 10 });
       await delay(time);
       Shape5.attrs({ x: 40, y: 100 });
       await delay(time);
       Shape5.attrs({ x: 70 });
 
       await delay(time);
-      Shape4.attrs({ x: 30, width: -20, height: -10 }, 'r');
+      Shape4.attrs({ x: 30, width: -20, height: -10 });
       Shape4.toFront();
     }
   );
@@ -315,7 +315,7 @@ export async function RectCombineTests() {
 
       Shape.attrs({ fill: 'blue', x: 100, y: 160, width: 10, height: 10 });
       await delay(time);
-      Shape.Rotate({ angle: -90, type: 'p', px: 100, py: 160 });
+      Shape.Rotate({ angle: -90, tType: 'p', px: 100, py: 160 });
 
       await delay(time);
       Shape1.Scale({ sx: 1.3, sy: 1.5 });
@@ -329,7 +329,7 @@ export async function RectCombineTests() {
       await delay(time);
       Shape1.attrs({ fill: 'green', x: 100, y: 160, width: 10, height: 10 });
       await delay(time);
-      Shape1.Rotate({ angle: -90, type: 'p', px: 100, py: 160 });
+      Shape1.Rotate({ angle: -90, tType: 'p', px: 100, py: 160 });
 
       await delay(time);
       Shape2.Scale({ sx: 1.3, sy: 1.5 });
@@ -343,7 +343,7 @@ export async function RectCombineTests() {
       await delay(time);
       Shape2.attrs({ fill: 'purple', x: 100, y: 160, width: 10, height: 10 });
       await delay(time);
-      Shape2.Rotate({ angle: -90, type: 'p', px: 100, py: 160 });
+      Shape2.Rotate({ angle: -90, tType: 'p', px: 100, py: 160 });
       await visualTest(Canvas, Shape);
       await visualTest(Canvas, Shape1);
       await visualTest(Canvas, Shape2);

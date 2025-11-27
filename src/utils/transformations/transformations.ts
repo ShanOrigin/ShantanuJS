@@ -1,7 +1,11 @@
 import { CMATH } from '../../webAsm/interface/TS/CMATH_Interface.js';
-import { parameterTypeValidator } from '../helpers/helpers.js';
+import { cwarn, parameterTypeValidator } from '../helpers/helpers.js';
 
-import { propTypes, resetMatrix } from './preBuilds/helpers/helpers.js';
+import {
+  propTypes,
+  resetMatrix,
+  typeCheck
+} from './preBuilds/helpers/helpers.js';
 
 import { Translate } from './preBuilds/transformations/translation.js';
 import { Scale } from './preBuilds/transformations/scale.js';
@@ -41,24 +45,10 @@ export function InheritTransformationClassByMinix<
 
     // batching Dom Matrix for transformation batching
 
-    #TMatrix: DOMMatrix = new DOMMatrix([
-      1,
-      0,
-      0,
-      0, // Column 1: m11, m12, m13, m14
-      0,
-      1,
-      0,
-      0, // Column 2: m21, m22, m23, m24
-      0,
-      0,
-      1,
-      0, // Column 3: m31, m32, m33, m34 (perspective)
-      0,
-      0,
-      0,
-      1 // Column 4: m41, m42, m43, m44
-    ]);
+    #__batchedComposeTMatrix: DOMMatrix = new DOMMatrix();
+    #__composeTMatrix: DOMMatrix = new DOMMatrix();
+
+    #__tempTMatrix: DOMMatrix = new DOMMatrix();
 
     #isBatching: boolean = false; // track batching
 
@@ -84,8 +74,8 @@ export function InheritTransformationClassByMinix<
 
     // method to reset batching matrix
 
-    #resetMatrix(): void {
-      resetMatrix(this.#TMatrix);
+    #resetMatrix(mat: DOMMatrix = this.#__composeTMatrix): void {
+      resetMatrix(mat);
     }
 
     // method to end batching and finalizeTransform batching in visuals
@@ -97,30 +87,30 @@ export function InheritTransformationClassByMinix<
 
       this.#finalizeTransform({
         callback: this.#batchCallback,
-        transformMatrix: this.#TMatrix,
+        transformMatrix: this.#__batchedComposeTMatrix,
         transformName: 'cumulative',
         transformType: 'batched',
         isEffect: true,
         isVEffect: true
       });
 
-      this.#resetMatrix();
+      this.#resetMatrix(this.#__batchedComposeTMatrix);
     }
 
     // method to batch transformation matric only affetcs buffer not visual output for next batch transform
 
-    #batchTMatrix(T: DOMMatrix): void {
+    #batch__composeTMatrix(T: DOMMatrix): void {
       if (
         this.#isBatching &&
         T &&
         T instanceof DOMMatrix &&
-        this.#TMatrix &&
-        this.#TMatrix instanceof DOMMatrix
+        this.#__batchedComposeTMatrix &&
+        this.#__batchedComposeTMatrix instanceof DOMMatrix
       ) {
-        this.#matrixProductTxM(T, true);
-        this.#TMatrix = T.multiply(this.#TMatrix);
+        // this.#matrixProductTxM(T, true);
+        this.#__batchedComposeTMatrix.multiplySelf(T); // = T.multiply(this.#__composeTMatrix);
 
-        //console.log(this.#TMatrix.a, this.#TMatrix.d);
+        //console.log(this.#__composeTMatrix.a, this.#__composeTMatrix.d);
       }
     }
 
@@ -128,19 +118,23 @@ export function InheritTransformationClassByMinix<
     //++++++++++++++ Healper  Methods +++++++++++++++
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-    public getBBox() {
+    public getBBox(includeStroke = true) {
       if (!this.#geometry || !this.#style) {
         throw new Error('geometry or style is not initialized');
       }
 
-      const sw = (this.#style['stroke-width'] ?? 0) / 2;
+      const sw = includeStroke ? (this.#style['stroke-width'] ?? 0) / 2 : 0;
 
-      const canonical = this.#geometry.sharedBuffer as Float32Array;
+      const canonical = this.#geometry.buffer as Float32Array;
       const M = this.#composeTransforms(true) as DOMMatrix;
 
+      // console.log(' canonical = ', canonical, M, this.#geometry);
       // Transform all canonical points into screen space
       const transformed = this.#cmath.multiplyMatrix(M, canonical);
 
+      this.#resetMatrix(this.#__composeTMatrix);
+      this.#resetMatrix(this.#__tempTMatrix);
+      //  console.log('transformed = ', transformed);
       // Extract AABB
       const { minX, minY, maxX, maxY } = computeAABBPoints(transformed);
 
@@ -161,30 +155,26 @@ export function InheritTransformationClassByMinix<
       return { x, y, width, height, matrix };
     }
 
-    // method to multiply Transformation matrix with sharedBuffer of Shape through WASM-> C -> TS
+    // method to multiply Transformation matrix with buffer of Shape through WASM-> C -> TS
 
     #matrixProductTxM(T: DOMMatrix, assing: boolean = false) {
-      const sharedBuffer = this.#geometry.sharedBuffer as Float32Array;
-      if (!(sharedBuffer instanceof Float32Array) || sharedBuffer.length < 1) {
+      const buffer = this.#geometry.buffer as Float32Array;
+      if (!(buffer instanceof Float32Array) || buffer.length < 1) {
         throw new Error(
           'There is Some Problem in Shape Matrix And Oriantation Matrix , may be you did something worng'
         );
       }
 
-      const updatedBuffer = this.#cmath.multiplyMatrix(T, sharedBuffer);
+      const updatedBuffer = this.#cmath.multiplyMatrix(T, buffer);
 
       if (
         !(updatedBuffer instanceof Float32Array) ||
-        updatedBuffer.length !== sharedBuffer.length
+        updatedBuffer.length !== buffer.length
       ) {
         throw new Error('Matrix Multiplication went Wrong');
       }
 
-      assing &&
-        sharedBuffer.set(
-          updatedBuffer.subarray(updatedBuffer.length - 12),
-          sharedBuffer.length - 12
-        );
+      assing && buffer.set(updatedBuffer, 0);
 
       return updatedBuffer;
     }
@@ -194,7 +184,7 @@ export function InheritTransformationClassByMinix<
       return () => this.#matrixProductTxM(transformMatrix);
     }
 
-    // main method which finalizeTransforms transformation matrix to sharedBuffer and visually
+    // main method which finalizeTransforms transformation matrix to buffer and visually
 
     #finalizeTransform({
       callback,
@@ -215,6 +205,7 @@ export function InheritTransformationClassByMinix<
       let temporaryState!: Float32Array;
 
       const geo = this.#geometry as { transformStack: transformStack };
+      const stack = geo.transformStack.stack;
 
       if (transformMatrix instanceof DOMMatrix) {
         const { a, b, m31, c, d, m32, e, f } = transformMatrix;
@@ -223,13 +214,14 @@ export function InheritTransformationClassByMinix<
 
         const tm = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
 
-        geo.transformStack.stack.push({
+        stack.push({
           transformMatrix: tm,
           transformName,
           transformType
         });
       }
 
+      //  cwarn(' Warning -> just to debug composing in finalizeTransform');
       const composedMat = this.#composeTransforms(true) as DOMMatrix;
       const { a, b, m31, c, d, m32, e, f } = composedMat;
 
@@ -237,10 +229,10 @@ export function InheritTransformationClassByMinix<
 
       const finalizedMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
 
-      geo.transformStack.stack[0].transformMatrix = finalizedMatrix;
+      stack[0].transformMatrix = finalizedMatrix;
 
       (transformType != 'batched' &&
-        (temporaryState = this.#matrixProductTxM(composedMat, true))) ||
+        (temporaryState = this.#matrixProductTxM(composedMat, false))) ||
         (temporaryState = this.#matrixProductTxM(composedMat, false));
 
       if (callback && typeof callback === 'function') {
@@ -257,58 +249,45 @@ export function InheritTransformationClassByMinix<
       }
     }
 
-    #composeTransforms(required: boolean = false) {
+    #composeTransforms(required = false) {
       const { stack, skip } = (
         this.#geometry as { transformStack: transformStack }
       ).transformStack;
 
       if (!required) {
         const t = stack[0].transformMatrix as Float32Array;
-        const dm = new DOMMatrix([
-          t[0],
-          t[1], // a , b , 0
-          t[3],
-          t[4], // c , d , 0
-          t[6],
-          t[7] // e , f , 1
-        ]);
 
-        return dm;
+        this.#resetMatrix(this.#__tempTMatrix);
+        // Load into reusable DOMMatrix
+        this.#__tempTMatrix.a = t[0];
+        this.#__tempTMatrix.b = t[1];
+        this.#__tempTMatrix.c = t[3];
+        this.#__tempTMatrix.d = t[4];
+        this.#__tempTMatrix.e = t[6];
+        this.#__tempTMatrix.f = t[7];
+
+        return this.#__tempTMatrix;
       }
 
-      let res = new DOMMatrix();
+      // reset reusable _res matrix to identity
 
+      this.#resetMatrix();
       for (let i = 1; i < stack.length - skip; i++) {
-        const T = stack[i];
-        const t = T.transformMatrix as Float32Array;
-        // convert your column-major 3×3 into DOMMatrix
-        const dm = new DOMMatrix([
-          t[0],
-          t[1], // a , b , 0
-          t[3],
-          t[4], // c , d , 0
-          t[6],
-          t[7] // e , f , 1
-        ]);
+        const t = stack[i].transformMatrix as Float32Array;
 
-        // correct multiplication order
-        res = dm.multiply(res);
+        // load into scratch matrix (no allocation)
+        this.#__tempTMatrix.a = t[0];
+        this.#__tempTMatrix.b = t[1];
+        this.#__tempTMatrix.c = t[3];
+        this.#__tempTMatrix.d = t[4];
+        this.#__tempTMatrix.e = t[6];
+        this.#__tempTMatrix.f = t[7];
+
+        // multiply into reusable matrix
+        this.#__composeTMatrix.multiplySelf(this.#__tempTMatrix);
       }
 
-      const cm = stack[0].transformMatrix;
-      const [da, db, dc, dd, de, df] = [
-        Math.abs(cm[0] - res.a),
-        Math.abs(cm[1] - res.b),
-        Math.abs(cm[3] - res.c),
-        Math.abs(cm[4] - res.d),
-        Math.abs(cm[6] - res.e),
-        Math.abs(cm[7] - res.f)
-      ];
-      console.log(
-        `Floating Point Drinfts : a : ${da} , b : ${db} , c : ${dc} , d : ${dd} , e : ${de} , f : ${df} `
-      );
-
-      return res;
+      return this.#__composeTMatrix;
     }
 
     public getCMatrix(key: symbol) {
@@ -366,7 +345,7 @@ export function InheritTransformationClassByMinix<
       if (this.#isBatching) {
         this.#batchCallback = callbacks as Function;
 
-        this.#batchTMatrix(transformMatrix);
+        this.#batch__composeTMatrix(transformMatrix);
         return this;
       }
 
@@ -387,7 +366,7 @@ export function InheritTransformationClassByMinix<
     public Translate({
       x,
       y,
-      type = 'a',
+      tType = 'a',
       px = 0,
       py = 0,
       isEffect = true,
@@ -395,21 +374,40 @@ export function InheritTransformationClassByMinix<
       isVEffect = true
     }: TranslateProps): void | this | DOMMatrix {
       try {
+        tType = tType == 'c' || tType == 'center' ? 'c' : typeCheck(tType);
+
         parameterTypeValidator(
-          { x, y, type, px, py, isEffect, isVEffect },
+          { x, y, tType, px, py, isEffect, isVEffect },
           propTypes,
           {},
           {},
           ''
         );
 
-        const Buffer = this.#geometry.sharedBuffer as Float32Array;
-        const buffer = Buffer.subarray(Buffer.length - 12);
-        const transformMatrix = Translate({ x, y, type, px, py, buffer });
+        if (
+          tType == 'a' ||
+          tType == 'absolute' ||
+          tType == 'c' ||
+          tType == 'center'
+        ) {
+          const obb = this.getBBox(false) as {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          };
+
+          (tType == 'a' || tType == 'absolute') && ([px, py] = [obb.x, obb.y]);
+
+          (tType == 'c' || tType == 'center') &&
+            ([px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2]);
+        }
+
+        const transformMatrix = Translate({ x, y, tType, px, py });
 
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix,
-          transformType: type,
+          transformType: tType,
           isEffect,
           isVEffect,
           transformName: 'translate',
@@ -427,7 +425,7 @@ export function InheritTransformationClassByMinix<
     public Scale({
       sx,
       sy,
-      type = 'a',
+      tType = 'a',
       px = 0,
       py = 0,
       isEffect = true,
@@ -435,21 +433,31 @@ export function InheritTransformationClassByMinix<
       isVEffect = true
     }: ScaleProps): void | this | DOMMatrix {
       try {
+        tType = typeCheck(tType);
         parameterTypeValidator(
-          { sx, sy, type, px, py, isEffect, isVEffect },
+          { sx, sy, tType, px, py, isEffect, isVEffect },
           propTypes,
           {},
           {},
           ''
         );
 
-        const Buffer = this.#geometry.sharedBuffer as Float32Array;
-        const buffer = Buffer.subarray(Buffer.length - 12);
-        const transformMatrix = Scale({ sx, sy, type, px, py, buffer });
+        if (tType == 'a' || tType == 'absolute') {
+          const obb = this.getBBox(false) as {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          };
+
+          [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
+        }
+
+        const transformMatrix = Scale({ sx, sy, tType, px, py });
 
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix,
-          transformType: type,
+          transformType: tType,
           isEffect,
           isVEffect,
           transformName: 'scale',
@@ -466,7 +474,7 @@ export function InheritTransformationClassByMinix<
 
     public Rotate({
       angle,
-      type = 'a',
+      tType = 'a',
       px = 0,
       py = 0,
       isEffect = true,
@@ -474,8 +482,9 @@ export function InheritTransformationClassByMinix<
       isVEffect = true
     }: RotateProps): void | this | DOMMatrix {
       try {
+        tType = typeCheck(tType);
         parameterTypeValidator(
-          { angle, type, px, py, isEffect, isVEffect },
+          { angle, tType, px, py, isEffect, isVEffect },
           propTypes,
           {},
           {},
@@ -484,13 +493,22 @@ export function InheritTransformationClassByMinix<
 
         angle = angle % 360;
 
-        const Buffer = this.#geometry.sharedBuffer as Float32Array;
-        const buffer = Buffer.subarray(Buffer.length - 12);
-        const transformMatrix = Rotate({ angle, type, px, py, buffer });
+        if (tType == 'a' || tType == 'absolute') {
+          const obb = this.getBBox(false) as {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          };
+
+          [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
+        }
+
+        const transformMatrix = Rotate({ angle, tType, px, py });
 
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix,
-          transformType: type,
+          transformType: tType,
           isEffect,
           isVEffect,
           transformName: 'rotate',
@@ -508,7 +526,7 @@ export function InheritTransformationClassByMinix<
     public Skew({
       sx,
       sy,
-      type = 'a',
+      tType = 'a',
       px = 0,
       py = 0,
       isEffect = true,
@@ -516,8 +534,9 @@ export function InheritTransformationClassByMinix<
       isVEffect = true
     }: SkewProps): void | this | DOMMatrix {
       try {
+        tType = typeCheck(tType);
         parameterTypeValidator(
-          { sx, sy, type, px, py, isEffect, isVEffect },
+          { sx, sy, tType, px, py, isEffect, isVEffect },
           propTypes,
           {},
           {},
@@ -526,13 +545,22 @@ export function InheritTransformationClassByMinix<
 
         [sx, sy] = [sx % 360, sy % 360];
 
-        const Buffer = this.#geometry.sharedBuffer as Float32Array;
-        const buffer = Buffer.subarray(Buffer.length - 12);
-        const transformMatrix = Skew({ sx, sy, type, px, py, buffer });
+        if (tType == 'a' || tType == 'absolute') {
+          const obb = this.getBBox(false) as {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+          };
+
+          [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
+        }
+
+        const transformMatrix = Skew({ sx, sy, tType, px, py });
 
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix,
-          transformType: type,
+          transformType: tType,
           isEffect,
           isVEffect,
           transformName: 'skew',
@@ -651,8 +679,8 @@ export function InheritTransformationClassByMinix<
             results.push(parsed);
             transformation += parsed.tName + ' -> ';
             'data' in parsed &&
-              'type' in parsed.data &&
-              (Ttype += parsed.data.type + ' -> ');
+              'tType' in parsed.data &&
+              (Ttype += parsed.data.tType + ' -> ');
           } else {
             throw new Error(
               `Invalid expression , Check there may be something missing parameter or mismatch data types : ${expr}`

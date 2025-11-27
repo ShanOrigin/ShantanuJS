@@ -120,7 +120,7 @@ export function checkParent(
  * - The returned matrix data is not properly structured.
  * - The shared buffer is too small to store the data.
  */
-
+/*
 export function assignBBoxMatrix(
   g: any,
   fn: Function,
@@ -200,6 +200,7 @@ export function assignBBoxMatrix(
     throw e;
   }
 }
+*/
 
 /**
  * Prepares and validates the properties of a graphical shape by separating them into
@@ -394,7 +395,7 @@ export function parameterTypeValidator(
  *
  * @note The `TList` acts like a hybrid stack: index 0 contains the cumulative result of all other transformations.
  */
-
+/*
 export function trackTransformation(
   g: any,
   MatrixType: string,
@@ -411,6 +412,7 @@ export function trackTransformation(
     throw e;
   }
 }
+*/
 
 /**
  * Checks whether a given matrix is valid by verifying its structure and contents.
@@ -699,6 +701,7 @@ export function animationChecks(
   }
 }
 
+/*
 export function getChannelMatrix(g: any, fn: Function, sw: number) {
   try {
     //
@@ -742,6 +745,7 @@ export function getChannelMatrix(g: any, fn: Function, sw: number) {
     throw e;
   }
 }
+*/
 
 /**
  * Retrieves a specific transformation matrix from a list of transformations.
@@ -846,7 +850,7 @@ export function getTransformationMatrix(
  * @param restoreFN - A function that performs effect restoration (framework-specific).
  * @param rendererFN - A function that handles rendering updates for the object.
  */
-
+/*
 export function restore({
   g,
   geo,
@@ -861,7 +865,7 @@ export function restore({
   rendererFN
 }: {
   g: object;
-  geo: object;
+geo: object;
   tmat: DOMMatrix;
   transformation: string;
   type: string;
@@ -894,6 +898,7 @@ export function restore({
       isProjections
     });
 }
+*/
 
 /**
  * Computes the axis-aligned bounding box (AABB) for a graphical object.
@@ -919,6 +924,7 @@ export function restore({
  * @throws Error if `geo` is not an object or `fn` is not a function.
  */
 
+/*
 export function computeBBox(geo: any, fn: Function) {
   if (typeof geo !== 'object' && typeof fn !== 'function') {
     throw new Error(' Check parameters Of Function types are wrong  ');
@@ -962,3 +968,5 @@ export function computeBBox(geo: any, fn: Function) {
     matrix: bboxMatrix
   };
 }
+
+*/

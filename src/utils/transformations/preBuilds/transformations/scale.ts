@@ -33,13 +33,12 @@ import type { ScaleProps } from '../../../../types/transformations';
 export function Scale({
   sx,
   sy,
-  type = 'a',
+  tType = 'a',
   px = 0,
-  py = 0,
-  buffer
-}: ScaleProps & { buffer: Float32Array }): DOMMatrix {
+  py = 0
+}: ScaleProps): DOMMatrix {
   try {
-    const mode = typeCheck(type);
+    const mode = typeCheck(tType);
 
     const matrix = new DOMMatrix([
       1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
@@ -48,7 +47,6 @@ export function Scale({
     switch (mode) {
       case 'absolute':
       case 'a': {
-        [px, py] = getCentre(buffer);
         matrix.scaleSelf(sx, sy, 1, px, py);
         break;
       }

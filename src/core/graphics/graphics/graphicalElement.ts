@@ -66,8 +66,8 @@ export abstract class GraphicalElement<
       GraphicalElement.prototype.attrs.call(this, {
         'stroke-width': 0.5,
         stroke: new Colors('rgb(0,0,0)').isColor(),
-        fill: new Colors('none').isColor()
-        //'vector-effect': 'non-scaling-stroke'
+        fill: new Colors('none').isColor(),
+        'vector-effect': 'non-scaling-stroke'
       });
 
       //setting id property of style or HTML constant

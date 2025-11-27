@@ -31,18 +31,13 @@ import type { RotateProps } from '../../../../types/transformations';
 
 export function Rotate({
   angle,
-  type = 'a',
+  tType = 'a',
   px = 0,
-  py = 0,
-  buffer
-}: RotateProps & { buffer: Float32Array }): DOMMatrix {
+  py = 0
+}: RotateProps): DOMMatrix {
   try {
-    const mode = typeCheck(type);
+    const mode = typeCheck(tType);
 
-    // Determine pivot point for absolute mode
-    if (mode === 'a' || mode === 'absolute') {
-      [px, py] = getCentre(buffer);
-    }
     // Start with identity matri
     const matrix = new DOMMatrix([
       1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1

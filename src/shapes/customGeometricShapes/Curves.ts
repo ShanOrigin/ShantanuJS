@@ -22,8 +22,8 @@ import {
   isValidMatrix,
   validProps,
   parameterTypeValidator,
-  autoFixGeometry,
-  computeBBox
+  autoFixGeometry
+  //  computeBBox
 } from '../../utils/providers/utils.js';
 
 import { generateCurvePoints } from '../../utils/curve/curveGenerator/generateCurvePoints.js';

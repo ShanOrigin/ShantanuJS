@@ -33,19 +33,16 @@ import type { SkewProps } from '../../../../types/transformations';
 export function Skew({
   sx,
   sy,
-  type = 'a',
+  tType = 'a',
   px = 0,
-  py = 0,
-  buffer
-}: SkewProps & { buffer: Float32Array }): DOMMatrix {
+  py = 0
+}: SkewProps): DOMMatrix {
   try {
-    const mode = typeCheck(type);
-
     const matrix = new DOMMatrix([
       1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
     ]);
 
-    switch (mode) {
+    switch (tType) {
       case 'relative':
       case 'r': {
         sx && matrix.skewXSelf(sx);
@@ -55,7 +52,6 @@ export function Skew({
 
       case 'absolute':
       case 'a': {
-        [px, py] = getCentre(buffer);
         matrix.translateSelf(px, py);
         sx && matrix.skewXSelf(sx);
         sy && matrix.skewYSelf(sy);
