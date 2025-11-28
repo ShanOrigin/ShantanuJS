@@ -400,3 +400,11 @@ Notes:
 - Added reset transform matrix method to reset transformation matrices.
 - Testing Line shape visual unit testes completed.
 
+[2025-11-28 | Friday | 20:32] [testing/Line | 0.5h] Combined testing of multiple transformations individually + DSL-style transform() with or without batching + attrs() manipulation. Completed.
+Notes:
+- Applied multiple transformations individually.
+- Applied multiple individual transforms with batching.
+- Applied DSL-style .transform() with or without batching.
+- Applied transformations + .transform() + .attrs() combined together.
+- Combined testing for Shape.Basic.Line completed.
+

@@ -17,7 +17,7 @@ export async function LineCombineTests() {
   const Canvas = new Shantanu.Canvas('testing', 200, 400);
 
   Canvas.attrs({
-    fill: 'rgba(118 , 30 , 201 , 0.3)',
+    fill: 'rgba( 255 , 255 , 255 , 0.9)',
     'stroke-width': 0
   });
 
@@ -84,24 +84,22 @@ export async function LineCombineTests() {
       Shape1.Translate({ x: 35, y: 50, tType: 'a' });
       Shape1.endT();
 
-      // Shape2.attrs({ width: 75, height: 40, x: 35, y: 50 });
-
       await visualTest(Canvas, Shape);
       await visualTest(Canvas, Shape1);
       await visualTest(Canvas, Shape2);
     }
   );
-  /*
+
   await vTest(
     ' testing manual chained ,  batched transformations , .attrs() method and .transform() method on each Different shapes  ',
     async () => {
       const Shape = new Shantanu.Shapes.Basic.Line(100, 40, 10, 10, {
-        x: 15,
-        y: 10,
-        width: 40,
-        height: 20,
+        x1: 15,
+        y1: 10,
+        x2: 40,
+        y2: 20,
 
-        stroke: 'rgba(78 , 130 , 190,0.5)',
+        stroke: 'rgba(78 , 30 , 190 , 1)',
         'stroke-width': 2
       });
 
@@ -109,7 +107,7 @@ export async function LineCombineTests() {
       await delay(time);
       // approch 1 : chain transformation execute one by one independentlly
       const Shape1 = new Shantanu.Shapes.Basic.Line(100, 50, 50, 30, {
-        stroke: 'rgba(178 , 130 , 190 , 0.4)',
+        stroke: 'rgba(18 , 130 , 180 , 1)',
         'stroke-width': 2
       });
 
@@ -118,7 +116,7 @@ export async function LineCombineTests() {
       // manual batching by user
       // approch 2 : chain transformation for batching by .beginT() starts batching .endT() execute batch as composed transformation at end
       const Shape2 = new Shantanu.Shapes.Basic.Line(100, 50, 50, 30, {
-        stroke: 'rgba(178 , 130 , 90 , 0.6)',
+        stroke: 'rgba(178 , 30 , 90 , 1)',
         'stroke-width': 2
       });
 
@@ -159,10 +157,13 @@ export async function LineCombineTests() {
       Shape1.Translate({ x: 100, y: 50, tType: 'a' });
       Shape1.endT();
 
-      Shape2.attrs({ width: 75, height: 40, x: 100, y: 50 });
+      Shape2.attrs({ x1: 75, y1: 40, x2: 100, y2: 50 });
 
       Shape3.transform('R(45,p,100,100) R(-45) S(1.5 , 1.25) R(45) T(100,50)');
       await visualTest(Canvas, Shape);
+      await visualTest(Canvas, Shape1);
+      await visualTest(Canvas, Shape2);
+      await visualTest(Canvas, Shape3);
 
       const Shape4 = new Shantanu.Shapes.Basic.Line(100, 50, 50, 30, {
         stroke: 'rgba(8 , 30 , 90 , 0.7)',
@@ -177,26 +178,26 @@ export async function LineCombineTests() {
     ' testing .transform() method with chained transformation and batched transformation ',
     async () => {
       const Shape = new Shantanu.Shapes.Basic.Line(20, 160, 10, 10, {
-        stroke: 'rgba(78 , 130 , 190,0.9)',
+        stroke: 'rgba(78 , 30 , 190,1)',
         'stroke-width': 2
       });
       Canvas.addTo(Shape);
       await delay(time);
 
       const Shape1 = new Shantanu.Shapes.Basic.Line(20, 160, 10, 10, {
-        stroke: 'rgba(178 , 130 , 190,0.7)',
+        stroke: 'rgba(178 , 130 , 90, 1)',
         'stroke-width': 2
       });
       Canvas.addTo(Shape1);
       await delay(time);
       const Shape2 = new Shantanu.Shapes.Basic.Line(20, 160, 10, 10, {
-        stroke: 'rgba(78 , 130 , 90,0.5)',
+        stroke: 'rgba(78 , 130 , 90, )',
         'stroke-width': 2
       });
       Canvas.addTo(Shape2);
       await delay(time);
       const Shape3 = new Shantanu.Shapes.Basic.Line(20, 160, 10, 10, {
-        stroke: 'rgba(78 , 30 , 0,0.3)',
+        stroke: 'rgba(78 , 30 , 0 , 1 )',
         'stroke-width': 2
       });
       Canvas.addTo(Shape3);
@@ -258,16 +259,16 @@ export async function LineCombineTests() {
       Canvas.addTo(Shape5);
       await delay(time);
 
-      Shape5.attrs({ x: 40, y: 90 });
+      Shape5.attrs({ x1: 40, y1: 90 });
       await delay(time);
-      Shape4.attrs({ x: 30, y: 50, width: 20, height: 10 }, 'r');
+      Shape4.attrs({ x1: 30, y1: 50, x2: 20, y2: 10 });
       await delay(time);
-      Shape5.attrs({ x: 40, y: 100 });
+      Shape5.attrs({ x1: 40, y1: 100 });
       await delay(time);
-      Shape5.attrs({ x: 70 });
+      Shape5.attrs({ x2: 70 });
 
       await delay(time);
-      Shape4.attrs({ x: 30, width: -20, height: -10 }, 'r');
+      Shape4.attrs({ x1: 30, x2: -20, y2: -10 });
       Shape4.toFront();
     }
   );
@@ -299,7 +300,7 @@ export async function LineCombineTests() {
       await delay(time);
       Shape.Scale({ sx: 1.3, sy: 1.5 });
       await delay(time);
-      Shape.attrs({ stroke: 'red', x: 50, y: 100, width: 30, height: 40 });
+      Shape.attrs({ stroke: 'red', x1: 50, y1: 100, x2: 30, y2: 40 });
       await delay(time);
       Shape.transform('R(60)');
       await delay(time);
@@ -308,35 +309,35 @@ export async function LineCombineTests() {
 
       await delay(time);
 
-      Shape.attrs({ stroke: 'blue', x: 100, y: 160, width: 10, height: 10 });
+      Shape.attrs({ stroke: 'blue', x1: 100, y1: 160, x2: 10, y2: 10 });
       await delay(time);
       Shape.Rotate({ angle: -90, tType: 'p', px: 100, py: 160 });
 
       await delay(time);
       Shape1.Scale({ sx: 1.3, sy: 1.5 });
       await delay(time);
-      Shape1.attrs({ stroke: 'blue', x: 50, y: 100, width: 30, height: 40 });
+      Shape1.attrs({ stroke: 'blue', x1: 50, y1: 100, x2: 30, y2: 40 });
       await delay(time);
       Shape1.Rotate({ angle: 60 });
 
       await delay(time);
       Shape1.Rotate({ angle: 30 });
       await delay(time);
-      Shape1.attrs({ stroke: 'green', x: 100, y: 160, width: 10, height: 10 });
+      Shape1.attrs({ stroke: 'green', x1: 100, y1: 160, x2: 10, y2: 10 });
       await delay(time);
       Shape1.Rotate({ angle: -90, tType: 'p', px: 100, py: 160 });
 
       await delay(time);
       Shape2.Scale({ sx: 1.3, sy: 1.5 });
       await delay(time);
-      Shape2.attrs({ stroke: 'blue', x: 50, y: 100, width: 30, height: 40 });
+      Shape2.attrs({ stroke: 'blue', x1: 50, y1: 100, x2: 30, y2: 40 });
       await delay(time);
       Shape2.Rotate({ angle: 60 });
 
       await delay(time);
       Shape2.transform('R(30)');
       await delay(time);
-      Shape2.attrs({ stroke: 'purple', x: 100, y: 160, width: 10, height: 10 });
+      Shape2.attrs({ stroke: 'purple', x1: 100, y1: 160, x2: 10, y2: 10 });
       await delay(time);
       Shape2.Rotate({ angle: -90, tType: 'p', px: 100, py: 160 });
       await visualTest(Canvas, Shape);
@@ -349,8 +350,8 @@ export async function LineCombineTests() {
     ' testing .attrs() method in between batch mode .beginT() and .endT() ',
     async () => {
       const Shape = new Shantanu.Shapes.Basic.Line(100, 120, 10, 10, {
-        width: 40,
-        height: 20,
+        x2: 90,
+        y2: 80,
 
         stroke: 'rgba(78 , 130 , 190,0.5)',
         'stroke-width': 2
@@ -361,34 +362,9 @@ export async function LineCombineTests() {
         Shape.beginT().Scale({ sx: 1.3, sy: 1.5 });
         Shape.transform('R(60)T(10,10 ,r)');
         Shape.Rotate({ angle: 30 });
-        Shape.attrs({ stroke: 'red', x: 5 });
+        Shape.attrs({ stroke: 'red', x1: 5 });
         Shape.endT();
       });
     }
   );
-
-  /*
-  // ++++++++++++ set custom transformation matrix  ++++++++++++++++
-  await vTest(' set custom transformation matrix ', async () => {
-    const Shape = new Shantanu.Shapes.Basic.Line(90, 50, 40, 30, {
-      stroke: 'rgba(108 , 45 , 90 , 0.3)',
-      'stroke-width': 2
-    });
-
-    Canvas.addTo(Shape);
-
-    await delay(time);
-
-    Shape.setTMatrix([
-      [1.4, 0, 10],
-      [0, 0.5, 10],
-      [0, 0, 1]
-    ]);
-
-    console.log(Shape);
-    await visualTest(Canvas, Shape);
-    await delay(time);
-  });
-
-*/
 }
