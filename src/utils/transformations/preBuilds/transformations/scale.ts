@@ -35,36 +35,30 @@ export function Scale({
   sy,
   tType = 'a',
   px = 0,
-  py = 0
-}: ScaleProps): DOMMatrix {
+  py = 0,
+  oMatrix
+}: ScaleProps & { oMatrix: DOMMatrix }) {
   try {
-    const mode = typeCheck(tType);
-
-    const matrix = new DOMMatrix([
-      1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
-    ]);
-
-    switch (mode) {
+    switch (tType) {
       case 'absolute':
       case 'a': {
-        matrix.scaleSelf(sx, sy, 1, px, py);
+        oMatrix.scaleSelf(sx, sy, 1, px, py);
         break;
       }
 
       case 'pivot':
       case 'p': {
-        matrix.scaleSelf(sx, sy, 1, px, py);
+        oMatrix.scaleSelf(sx, sy, 1, px, py);
         break;
       }
 
       case 'relative':
       case 'r':
       default: {
-        matrix.scaleSelf(sx, sy);
+        oMatrix.scaleSelf(sx, sy);
         break;
       }
     }
-    return matrix;
   } catch (e) {
     throw e;
   }

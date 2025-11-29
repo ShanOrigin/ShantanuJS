@@ -12,18 +12,17 @@ const time = 1500;
 const choice = function <T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 };
-export async function RectFiltersTests() {
-  const Canvas = new Shantanu.Canvas('testing', 400, 400);
+export async function LineFiltersTests() {
+  const Canvas = new Shantanu.Canvas('testing', 250, 400);
   Canvas.attrs({
-    fill: 'rgb(201 , 201, 201)',
-    'stroke-width': 0
+    stroke: 'rgb(201 , 201, 201)',
+    'stroke-width': 2
   });
 
   // 🔹 BLUR
   await vTest('Blur filter test ', async () => {
-    const shape = new Shantanu.Rect(20, 20, 50, 50, {
-      fill: 'rgba(18,130,90,0.9)',
-      stroke: '#000'
+    const shape = new Shantanu.Shapes.Basic.Line(20, 20, 50, 50, {
+      stroke: 'rgba(18,130,90,0.9)'
     });
     Canvas.addTo(shape);
 
@@ -36,9 +35,8 @@ export async function RectFiltersTests() {
 
   // 🔹 GLOW
   await vTest('Blur filter test ', async () => {
-    const shape = new Shantanu.Rect(80, 20, 50, 50, {
-      fill: 'rgba(108,10,90,0.9)',
-      stroke: '#000'
+    const shape = new Shantanu.Shapes.Basic.Line(80, 20, 50, 50, {
+      stroke: 'rgba(108,10,90,0.9)'
     });
     Canvas.addTo(shape);
 
@@ -51,9 +49,8 @@ export async function RectFiltersTests() {
 
   // 🔹 BOX SHADOW
   await vTest('Box shadow filter test ', async () => {
-    const shape = new Shantanu.Rect(140, 20, 50, 50, {
-      fill: 'rgba(108,10,190,0.7)',
-      stroke: '#000'
+    const shape = new Shantanu.Shapes.Basic.Line(140, 20, 50, 50, {
+      stroke: 'rgba(108,10,190,0.7)'
     });
     Canvas.addTo(shape);
 
@@ -76,9 +73,8 @@ export async function RectFiltersTests() {
 
   // 🔹 INNER SHADOW
   await vTest('inner shadow filter test ', async () => {
-    const shape = new Shantanu.Rect(20, 80, 50, 50, {
-      fill: 'rgba(200, 10,60,0.9)',
-      stroke: '#000'
+    const shape = new Shantanu.Shapes.Basic.Line(20, 80, 50, 50, {
+      stroke: 'rgba(200, 10,60,0.9)'
     });
     Canvas.addTo(shape);
 
@@ -99,9 +95,8 @@ export async function RectFiltersTests() {
 
   // 🔹 LINEAR GRADIANT
   await vTest('Linear Gradiant filter test ', async () => {
-    const shape = new Shantanu.Rect(80, 80, 50, 50, {
-      fill: 'rgba(218,200,200,0.9)',
-      stroke: '#000'
+    const shape = new Shantanu.Shapes.Basic.Line(80, 80, 50, 50, {
+      stroke: 'rgba(218,200,200,0.9)'
     });
     Canvas.addTo(shape);
 
@@ -133,9 +128,8 @@ export async function RectFiltersTests() {
 
   // 🔹 RADICAL GRADIANT
   await vTest('Radical Gradiant filter test ', async () => {
-    const shape = new Shantanu.Rect(140, 80, 50, 50, {
-      fill: 'rgba(150,150,150,0.9)',
-      stroke: '#000'
+    const shape = new Shantanu.Shapes.Basic.Line(140, 80, 50, 50, {
+      stroke: 'rgba(150,150,150,0.9)'
     });
     Canvas.addTo(shape);
 
@@ -160,9 +154,8 @@ export async function RectFiltersTests() {
 
     // 🔹 LIGHTNING
     await vTest('Lightning filter test ', async () => {
-      const shape = new Shantanu.Rect(20, 150, 50, 50, {
-        fill: 'rgba(18,10,90,1)',
-        stroke: '#000'
+      const shape = new Shantanu.Shapes.Basic.Line(20, 150, 50, 50, {
+        stroke: 'rgba(18,10,90,1)'
       });
       Canvas.addTo(shape);
 
@@ -183,9 +176,8 @@ export async function RectFiltersTests() {
 
     // 🔹 DISPLACEMENT
     await vTest('Displacement filter test', async () => {
-      const shape = new Shantanu.Rect(80, 150, 50, 50, {
-        fill: 'rgba(80,120,170,1)',
-        stroke: '#000'
+      const shape = new Shantanu.Shapes.Basic.Line(80, 150, 50, 50, {
+        stroke: 'rgba(80,120,170,1)'
       });
       Canvas.addTo(shape);
 
@@ -206,10 +198,10 @@ export async function RectFiltersTests() {
 
     // 🔹 NEO OUTER MORPH
     await vTest('Neo Morph filter test', async () => {
-      const shape = new Shantanu.Rect(250, 20, 50, 50, 10, 10, {
-        fill: '#e6eef6',
-        stroke: '#000',
-        'stroke-width': 0
+      const shape = new Shantanu.Shapes.Basic.Line(250, 20, 50, 50, {
+        stroke: '#e6eef6',
+
+        'stroke-width': 2
       });
       Canvas.addTo(shape);
 
@@ -246,10 +238,10 @@ export async function RectFiltersTests() {
 
     // 🔹 NEO INNER MORPH
     await vTest('Neo Morph filter test', async () => {
-      const shape = new Shantanu.Rect(250, 100, 50, 50, 10, 10, {
-        fill: '#e6eef6',
-        stroke: '#000',
-        'stroke-width': 0
+      const shape = new Shantanu.Shapes.Basic.Line(250, 100, 50, 50, {
+        stroke: '#e6eef6',
+
+        'stroke-width': 2
       });
       Canvas.addTo(shape);
 
@@ -286,10 +278,10 @@ export async function RectFiltersTests() {
 
     // 🔹 NEO FULL MORPH
     await vTest('Neo Morph filter test', async () => {
-      const shape = new Shantanu.Rect(250, 180, 50, 50, 10, 10, {
-        fill: '#e6eef6',
-        stroke: '#000',
-        'stroke-width': 0
+      const shape = new Shantanu.Shapes.Basic.Line(250, 180, 50, 50, {
+        stroke: '#e6eef6',
+
+        'stroke-width': 2
       });
       Canvas.addTo(shape);
 
@@ -326,10 +318,10 @@ export async function RectFiltersTests() {
 
     // 🔹 GLASS MORPH
     await vTest('inner shadow filter test ', async () => {
-      const shape = new Shantanu.Rect(20, 250, 50, 50, {
-        fill: 'rgba(200, 10,60,0.6)',
-        stroke: '#000',
-        'stroke-width': 0
+      const shape = new Shantanu.Shapes.Basic.Line(20, 250, 50, 50, {
+        stroke: 'rgba(200, 10,60,0.6)',
+
+        'stroke-width': 2
       });
       Canvas.addTo(shape);
 

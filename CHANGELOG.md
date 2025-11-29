@@ -408,3 +408,12 @@ Notes:
 - Applied transformations + .transform() + .attrs() combined together.
 - Combined testing for Shape.Basic.Line completed.
 
+[2025-11-30 | Sunday | 01:16] [transformations | 2h] Optimized transformation pipeline (reduced matrix memory footprint) , reduced repeated creation and multiplications of DOMMatrix , heavy reuse of matrix memory for storing and matrix multiply 
+Notes:
+- Created Two globle DOMMatrix for each shape for faster multiplication and less memory use.
+-  #__composeTMatrix for composition of all transform stack .
+-  #__tempTMatrix for holding temporary incoming transform matrix.
+-  Passed __tempTMatrix as reference to all transformation method so they can mutate and perform operation.
+-  After Before every transform __temp/composer matrix get reset for next operations.
+- Both matrixs are used repetitively for memory reduction and faster matrix multiplications. 
+

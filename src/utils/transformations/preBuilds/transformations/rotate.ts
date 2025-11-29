@@ -33,20 +33,14 @@ export function Rotate({
   angle,
   tType = 'a',
   px = 0,
-  py = 0
-}: RotateProps): DOMMatrix {
+  py = 0,
+  oMatrix
+}: RotateProps & { oMatrix: DOMMatrix }) {
   try {
-    const mode = typeCheck(tType);
-
-    // Start with identity matri
-    const matrix = new DOMMatrix([
-      1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
-    ]);
-
-    switch (mode) {
+    switch (tType) {
       case 'relative':
       case 'r': {
-        matrix.rotateSelf(angle); // Simple rotation around current center
+        oMatrix.rotateSelf(angle); // Simple rotation around current center
         break;
       }
 
@@ -56,12 +50,10 @@ export function Rotate({
       case 'p':
       default: {
         // Simulate pivot-based rotation
-        matrix.translateSelf(px, py).rotateSelf(angle).translateSelf(-px, -py);
+        oMatrix.translateSelf(px, py).rotateSelf(angle).translateSelf(-px, -py);
         break;
       }
     }
-
-    return matrix;
   } catch (e) {
     throw e;
   }

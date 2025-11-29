@@ -540,6 +540,10 @@ export async function LineUnitTests() {
       Shape.Flip(c as any);
       await visualTest(Canvas, Shape);
       await delay(time);
+      Shape.setSMatrix([
+        [50, 230],
+        [30, 30]
+      ]);
     }
   });
 

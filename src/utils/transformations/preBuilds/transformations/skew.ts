@@ -2,10 +2,10 @@ import { getCentre, typeCheck } from '../helpers/helpers.js';
 import type { SkewProps } from '../../../../types/transformations';
 
 /**
- * Creates a skew (shear) transformation matrix for 2D objects.
+ * Creates a skew (shear) transformation oMatrix for 2D objects.
  *
  * Purpose:
- * This function generates a `DOMMatrix` to skew an object along the X and/or Y axes.
+ * This function generates a `DOMoMatrix` to skew an object along the X and/or Y axes.
  * It supports different modes for applying the skew:
  * - Absolute: skew relative to the object's center.
  * - Pivot: skew around a specific pivot point.
@@ -24,10 +24,10 @@ import type { SkewProps } from '../../../../types/transformations';
  * @param buffer - Float32Array representing the object's coordinates or bounding points.
  *
  * Returns:
- * - A `DOMMatrix` representing the skew transformation.
+ * - A `DOMoMatrix` representing the skew transformation.
  *
  * Dependencies:
- * - Requires `DOMMatrix` (browser API) and `getCentre` helper function for absolute mode.
+ * - Requires `DOMoMatrix` (browser API) and `getCentre` helper function for absolute mode.
  */
 
 export function Skew({
@@ -35,42 +35,37 @@ export function Skew({
   sy,
   tType = 'a',
   px = 0,
-  py = 0
-}: SkewProps): DOMMatrix {
+  py = 0,
+  oMatrix
+}: SkewProps & { oMatrix: DOMMatrix }) {
   try {
-    const matrix = new DOMMatrix([
-      1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
-    ]);
-
     switch (tType) {
       case 'relative':
       case 'r': {
-        sx && matrix.skewXSelf(sx);
-        sy && matrix.skewYSelf(sy);
+        sx && oMatrix.skewXSelf(sx);
+        sy && oMatrix.skewYSelf(sy);
         break;
       }
 
       case 'absolute':
       case 'a': {
-        matrix.translateSelf(px, py);
-        sx && matrix.skewXSelf(sx);
-        sy && matrix.skewYSelf(sy);
-        matrix.translateSelf(-px, -py);
+        oMatrix.translateSelf(px, py);
+        sx && oMatrix.skewXSelf(sx);
+        sy && oMatrix.skewYSelf(sy);
+        oMatrix.translateSelf(-px, -py);
         break;
       }
 
       case 'pivot':
       case 'p':
       default: {
-        matrix.translateSelf(px, py);
-        sx && matrix.skewXSelf(sx);
-        sy && matrix.skewYSelf(sy);
-        matrix.translateSelf(-px, -py);
+        oMatrix.translateSelf(px, py);
+        sx && oMatrix.skewXSelf(sx);
+        sy && oMatrix.skewYSelf(sy);
+        oMatrix.translateSelf(-px, -py);
         break;
       }
     }
-
-    return matrix;
   } catch (e) {
     throw e;
   }

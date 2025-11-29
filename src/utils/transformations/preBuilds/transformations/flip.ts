@@ -33,13 +33,15 @@ export function Flip({
   x,
   y,
   width,
-  height
+  height,
+  oMatrix
 }: FlipProps & {
   x: number;
   y: number;
   width: number;
   height: number;
-}): DOMMatrix {
+  oMatrix: DOMMatrix;
+}) {
   try {
     if (!flipX && !flipY) {
       throw new Error(
@@ -67,17 +69,11 @@ export function Flip({
       dy = dirY === 'y-' ? 2 * (y + height - yCenter) : 2 * (y - yCenter);
     }
 
-    const matrix = new DOMMatrix([
-      1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1
-    ]);
-
-    matrix
+    oMatrix
       .translateSelf(xCenter, yCenter)
       .scaleSelf(flipX ? -1 : 1, flipY ? -1 : 1)
       .translateSelf(-xCenter, -yCenter)
       .translateSelf(dx, dy);
-
-    return matrix;
   } catch (e) {
     throw e;
   }

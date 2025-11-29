@@ -254,6 +254,7 @@ export function InheritTransformationClassByMinix<
         this.#geometry as { transformStack: transformStack }
       ).transformStack;
 
+      this.#resetMatrix(this.#__tempTMatrix);
       if (!required) {
         const t = stack[0].transformMatrix as Float32Array;
 
@@ -403,10 +404,11 @@ export function InheritTransformationClassByMinix<
             ([px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2]);
         }
 
-        const transformMatrix = Translate({ x, y, tType, px, py });
+        this.#resetMatrix(this.#__tempTMatrix);
+        Translate({ x, y, tType, px, py, oMatrix: this.#__tempTMatrix });
 
         this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
+          transformMatrix: this.#__tempTMatrix,
           transformType: tType,
           isEffect,
           isVEffect,
@@ -453,10 +455,11 @@ export function InheritTransformationClassByMinix<
           [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
         }
 
-        const transformMatrix = Scale({ sx, sy, tType, px, py });
+        this.#resetMatrix(this.#__tempTMatrix);
+        Scale({ sx, sy, tType, px, py, oMatrix: this.#__tempTMatrix });
 
         this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
+          transformMatrix: this.#__tempTMatrix,
           transformType: tType,
           isEffect,
           isVEffect,
@@ -504,10 +507,11 @@ export function InheritTransformationClassByMinix<
           [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
         }
 
-        const transformMatrix = Rotate({ angle, tType, px, py });
+        this.#resetMatrix(this.#__tempTMatrix);
+        Rotate({ angle, tType, px, py, oMatrix: this.#__tempTMatrix });
 
         this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
+          transformMatrix: this.#__tempTMatrix,
           transformType: tType,
           isEffect,
           isVEffect,
@@ -556,10 +560,11 @@ export function InheritTransformationClassByMinix<
           [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
         }
 
-        const transformMatrix = Skew({ sx, sy, tType, px, py });
+        this.#resetMatrix(this.#__tempTMatrix);
+        Skew({ sx, sy, tType, px, py, oMatrix: this.#__tempTMatrix });
 
         this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
+          transformMatrix: this.#__tempTMatrix,
           transformType: tType,
           isEffect,
           isVEffect,
@@ -600,7 +605,8 @@ export function InheritTransformationClassByMinix<
           y: number;
         };
 
-        const transformMatrix = Flip({
+        this.#resetMatrix(this.#__tempTMatrix);
+        Flip({
           flipX,
           flipY,
           dirX,
@@ -608,11 +614,12 @@ export function InheritTransformationClassByMinix<
           x,
           y,
           width,
-          height
+          height,
+          oMatrix: this.#__tempTMatrix
         });
 
         this.#batchingAndFinalizeTransformHandler({
-          transformMatrix,
+          transformMatrix: this.#__tempTMatrix,
           transformType: `${dirX}${dirY}`,
           isEffect,
           isVEffect,

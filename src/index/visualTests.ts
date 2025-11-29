@@ -1,6 +1,8 @@
 import { LineUnitTests } from '../tests/shapes/basicShapes/line/visualTest/visualUnitTest.js';
 
 import { LineCombineTests } from '../tests/shapes/basicShapes/line/visualTest/visualCombineTest.js';
+import { LineEventsTests } from '../tests/shapes/basicShapes/line/visualTest/visualEvent.js';
+import { LineFiltersTests } from '../tests/shapes/basicShapes/line/visualTest/visualFilters.js';
 
 // Rect imports
 import { RectUnitTests } from '../tests/shapes/basicShapes/rect/visualTest/visualUnitTest.js';
@@ -34,11 +36,11 @@ async function LineClassTester(testType: string) {
       break;
 
     case 'events':
-      await RectEventsTests();
+      await LineEventsTests();
       break;
 
     case 'filters':
-      await RectFiltersTests();
+      await LineFiltersTests();
       break;
   }
 }
@@ -144,5 +146,5 @@ async function Tester(classes: string, types: string) {
 }
 
 setTimeout(async () => {
-  await Tester('line', 'combine');
+  await Tester('line', 'filters');
 }, 5000);
