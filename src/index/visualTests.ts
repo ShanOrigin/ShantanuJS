@@ -3,6 +3,7 @@ import { LineUnitTests } from '../tests/shapes/basicShapes/line/visualTest/visua
 import { LineCombineTests } from '../tests/shapes/basicShapes/line/visualTest/visualCombineTest.js';
 import { LineEventsTests } from '../tests/shapes/basicShapes/line/visualTest/visualEvent.js';
 import { LineFiltersTests } from '../tests/shapes/basicShapes/line/visualTest/visualFilters.js';
+import { LineAnimationTests } from '../tests/shapes/basicShapes/line/visualTest/visualAnimations.js';
 
 // Rect imports
 import { RectUnitTests } from '../tests/shapes/basicShapes/rect/visualTest/visualUnitTest.js';
@@ -32,7 +33,7 @@ async function LineClassTester(testType: string) {
       await LineCombineTests();
       break;
     case 'animation':
-      await RectAnimationTests();
+      await LineAnimationTests();
       break;
 
     case 'events':
@@ -146,5 +147,5 @@ async function Tester(classes: string, types: string) {
 }
 
 setTimeout(async () => {
-  await Tester('line', 'filters');
+  await Tester('line', 'animation');
 }, 5000);

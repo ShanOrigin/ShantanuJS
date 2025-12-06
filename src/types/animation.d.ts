@@ -6,21 +6,6 @@
 
 import { ty } from '../utils/animations/preBuilds/helpers/helpers';
 
-export type IcommonGeometryAnimatableProperties = {
-  translate?: { x?: number; y?: number };
-  scale?: {
-    sx?: number;
-    sy?: number;
-  };
-  rotate?: {
-    angle?: number;
-  };
-  skew?: {
-    sx?: number;
-    sy?: number;
-  };
-};
-
 export type EasingType =
   | 'linear'
   | 'easeInQuad'
@@ -36,6 +21,21 @@ export type EasingType =
 export type EasingFunction = (t: number) => number;
 
 // animation module
+
+export type IcommonGeometryAnimatableProperties = {
+  translate?: { x?: number; y?: number };
+  scale?: {
+    sx?: number;
+    sy?: number;
+  };
+  rotate?: {
+    angle?: number;
+  };
+  skew?: {
+    sx?: number;
+    sy?: number;
+  };
+};
 
 export type anchors =
   | 'TL'
@@ -74,6 +74,12 @@ export type pivotParams = {
   commonPivot?: pivotOptions;
 };
 
+export type controlsParams = {
+  loop?: boolean;
+  direction?: directions;
+  optimizationTechnique?: opt;
+};
+
 // new version
 
 export type deltasParams = {
@@ -85,15 +91,9 @@ export type deltasParams = {
   translate?: number[];
 };
 
-export type controlsParams = {
-  loop?: boolean;
-  direction?: directions;
-  optimizationTechnique?: opt;
-};
-
 // these are advance propes taken by animation module method animate from user you want control lets take not only control but control itself
 export type IadvanceProps = {
-  animationMode?: 'deltas-based' | 'time-based'; // by default it is 'time-based'
+  //  animationMode?: 'deltas-based' | 'time-based'; // by default it is 'time-based' experimental
   physics?: physicsParams;
   curve?: curveParams;
   pivot?: pivotParams;
@@ -101,6 +101,7 @@ export type IadvanceProps = {
   // deltas?: deltasParams;
 };
 
+/*
 // old version
 export type advanceProps = {
   physics?: physicsParams;
@@ -110,6 +111,7 @@ export type advanceProps = {
   direction?: directions;
   optimizationTechnique?: opt;
 };
+*/
 
 export interface Geometry {
   Skew?: number[];

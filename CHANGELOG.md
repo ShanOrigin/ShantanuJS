@@ -417,3 +417,15 @@ Notes:
 -  After Before every transform __temp/composer matrix get reset for next operations.
 - Both matrixs are used repetitively for memory reduction and faster matrix multiplications. 
 
+[2025-12-06 | Saturday | 22:09] [utils/transformations | 3h]  added createTransformMatrix() for creating transform matrix
+Notes:
+- it takes one object as parameter and it comtaines { { skew , scale , rotate , translates }// as transformations modules standered , major , arrayType ,  baseTMatrix , multiplyWithBase  }.
+- it returns row or column major based on parameter major  and float32 or normal 2d  transform matrix based on parameter arrayType.
+- it can multiple given base Transform matrix controled by parameter multiplyWithBase and baseTMatrix is of Float32Array
+
+[2025-12-06 | Saturday | 22:12] [utils/animation | 3h] used createTransformMatrix() from transformation module in animations submodule preOptimizations
+Notes:
+- it takes one object as parameter and it comtaines { { skew , scale , rotate , translates }// as transformations modules standered , major , arrayType ,  baseTMatrix , multiplyWithBase  }.
+- it returns row or column major based on parameter major  and float32 or normal 2d  transform matrix based on parameter arrayType.
+- it can multiple given base Transform matrix controled by parameter multiplyWithBase and baseTMatrix is of Float32Array
+

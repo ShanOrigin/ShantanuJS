@@ -6,6 +6,12 @@ import {
 } from '../../../../types/animation';
 
 import { interpolateAlongCurve } from '../../../curve/curveGenerator/interpolateAlongCurve.js';
+import {
+  RotateProps,
+  ScaleProps,
+  SkewProps,
+  TranslateProps
+} from '../../../../types/transformations.js';
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -116,23 +122,89 @@ export function precomputeFramesRaw(
   start: TransformGeometry,
   end: TransformGeometryWithPivot,
   base: Float32Array,
-  steps: number = 100
+  steps: number = 100,
+  composeFn?: Function
 ): Float32Array {
   const frames = new Float32Array((steps + 1) * 6);
 
-  console.log(start, end);
-  const { rotatePivot, scalePivot, skewPivot } = end;
+  //  console.log(start, end);
+  const { rotatePivot, scalePivot, skewPivot }: TransformGeometryWithPivot =
+    end;
 
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
     const params = lerpParams(start, end, t);
 
-    const [a, b, c, d, e, f] = composeWithBase(base, {
+    const transformsObject = {
       ...params,
       rotatePivot,
       scalePivot,
       skewPivot
-    });
+    };
+
+    let a!: number, b!: number, c!: number, d!: number, e!: number, f!: number;
+    //  [a, b, c, d, e, f] = composeWithBase(base, transformsObject);
+    /*
+		 {
+    Scale?: [number, number];
+    Skew?: [number, number]; // degrees
+    Rotate?: number; // degrees
+    Translate?: [number, number]; // translation
+    scalePivot?: [number, number];
+    rotatePivot?: [number, number];
+    skewPivot?: [number, number];
+  };
+		**/
+
+    if (composeFn && typeof composeFn == 'function') {
+      // console.log('pivot = ', rotatePivot, scalePivot, skewPivot);
+      // console.log('create frame of animation');
+      [a, b, , c, d, , e, f] = composeFn({
+        transformations: {
+          rotate: {
+            angle: params.Rotate,
+            tType: 'p',
+            px: rotatePivot?.[0] ?? 0,
+            py: rotatePivot?.[1] ?? 0
+          },
+          scale: {
+            sx: params.Scale[0],
+            sy: params.Scale[1],
+            tType: 'p',
+            px: scalePivot?.[0] ?? 0,
+            py: scalePivot?.[1] ?? 0
+          },
+          skew: {
+            sx: params.Skew[0],
+            sy: params.Skew[1],
+            tType: 'p',
+            px: skewPivot?.[0] ?? 0,
+            py: skewPivot?.[1] ?? 0
+          }
+        },
+        major: 'column',
+        arrayType: 'float32',
+        baseTMatrix: base,
+        multiplyWithBase: true
+      } as {
+        transformations: {
+          rotate?: RotateProps;
+          skew?: SkewProps;
+          scale?: ScaleProps;
+          translate?: TranslateProps;
+        };
+        major?: 'row' | 'column';
+        arrayType?: 'normal' | 'float32';
+        baseTMatrix?: Float32Array;
+        multiplyWithBase?: boolean;
+      }) as Float32Array;
+
+      // console.log('stored animation frame');
+      //  console.log(com);
+      //  console.log('by teansform = \n', com);
+      // console.log('by custom ');
+      // console.log(a, b, c, d, e, f);
+    }
 
     const offset = i * 6;
     frames[offset] = a;

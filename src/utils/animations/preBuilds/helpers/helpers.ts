@@ -533,9 +533,12 @@ export function ivotSetter(
  */
 export function pivotSetter(
   mode: modes | anchors | undefined,
-  OBB: Float32Array
+  OBB: number[][] // Float32Array
 ): [number, number] {
-  const [x1, y1, , x2, y2, , x3, y3, , x4, y4] = OBB;
+  const [x1, y1] = OBB[0];
+  const [x2, y2] = OBB[1];
+  const [x3, y3] = OBB[2];
+  const [x4, y4] = OBB[3];
 
   // Precompute sums used multiple times
   const sumX = [x1 + x2, x2 + x3, x3 + x4, x1 + x4];

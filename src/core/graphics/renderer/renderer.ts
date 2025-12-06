@@ -176,14 +176,10 @@ export class Renderer {
         const hStr = this.#numToStr(height);
 
         // Only set if changed (use geoCache? for cheap comparison)
-        if (geoCache?.__width !== wStr) {
-          desiredAttrs.width = wStr;
-          // (geoCache?).__width = wStr;
-        }
-        if (geoCache?.__height !== hStr) {
-          desiredAttrs.height = hStr;
-          // (geoCache?).__height = hStr;
-        }
+        geoCache?.__width !== wStr && (desiredAttrs.width = wStr);
+
+        geoCache?.__height !== hStr && (desiredAttrs.height = hStr);
+
         break;
       }
 
@@ -195,18 +191,12 @@ export class Renderer {
         const cyStr = this.#numToStr(cy);
         const rStr = this.#numToStr(cr);
 
-        if (geoCache?.__cx !== cxStr) {
-          desiredAttrs.cx = cxStr;
-          //  (geoCache?).__cx = cxStr;
-        }
-        if (geoCache?.__cy !== cyStr) {
-          desiredAttrs.cy = cyStr;
-          // (geoCache?).__cy = cyStr;
-        }
-        if (geoCache?.__r !== rStr) {
-          desiredAttrs.r = rStr;
-          // (geoCache?).__r = rStr;
-        }
+        geoCache?.__cx !== cxStr && (desiredAttrs.cx = cxStr);
+
+        geoCache?.__cy !== cyStr && (desiredAttrs.cy = cyStr);
+
+        geoCache?.__r !== rStr && (desiredAttrs.r = rStr);
+
         break;
       }
 
@@ -222,22 +212,14 @@ export class Renderer {
         const x2s = this.#numToStr(x2);
         const y2s = this.#numToStr(y2);
 
-        if (geoCache?.__x1 !== x1s) {
-          desiredAttrs.x1 = x1s;
-          //  (geoCache?).__x1 = x1s;
-        }
-        if (geoCache?.__y1 !== y1s) {
-          desiredAttrs.y1 = y1s;
-          //   (geoCache?).__y1 = y1s;
-        }
-        if (geoCache?.__x2 !== x2s) {
-          desiredAttrs.x2 = x2s;
-          // (geoCache?).__x2 = x2s;
-        }
-        if (geoCache?.__y2 !== y2s) {
-          desiredAttrs.y2 = y2s;
-          // (geoCache?).__y2 = y2s;
-        }
+        geoCache?.__x1 !== x1s && (desiredAttrs.x1 = x1s);
+
+        geoCache?.__y1 !== y1s && (desiredAttrs.y1 = y1s);
+
+        geoCache?.__x2 !== x2s && (desiredAttrs.x2 = x2s);
+
+        geoCache?.__y2 !== y2s && (desiredAttrs.y2 = y2s);
+
         break;
       }
 
@@ -247,18 +229,12 @@ export class Renderer {
         const cys = this.#numToStr(cy);
         const rs = this.#numToStr(r);
 
-        if (geoCache?.__cx !== cxs) {
-          desiredAttrs.cx = cxs;
-          // (geoCache?).__cx = cxs;
-        }
-        if (geoCache?.__cy !== cys) {
-          desiredAttrs.cy = cys;
-          // (geoCache?).__cy = cys;
-        }
-        if (geoCache?.__r !== rs) {
-          desiredAttrs.r = rs;
-          // (geoCache?).__r = rs;
-        }
+        geoCache?.__cx !== cxs && (desiredAttrs.cx = cxs);
+
+        geoCache?.__cy !== cys && (desiredAttrs.cy = cys);
+
+        geoCache?.__r !== rs && (desiredAttrs.r = rs);
+
         break;
       }
 
@@ -274,22 +250,14 @@ export class Renderer {
         const rxs = this.#numToStr(rx);
         const rys = this.#numToStr(ry);
 
-        if (geoCache?.__cx !== cxs) {
-          desiredAttrs.cx = cxs;
-          // (geoCache?).__cx = cxs;
-        }
-        if (geoCache?.__cy !== cys) {
-          desiredAttrs.cy = cys;
-          // (geoCache?).__cy = cys;
-        }
-        if (geoCache?.__rx !== rxs) {
-          desiredAttrs.rx = rxs;
-          //  (geoCache?).__rx = rxs;
-        }
-        if (geoCache?.__ry !== rys) {
-          desiredAttrs.ry = rys;
-          //  (geoCache?).__ry = rys;
-        }
+        geoCache?.__cx !== cxs && (desiredAttrs.cx = cxs);
+
+        geoCache?.__cy !== cys && (desiredAttrs.cy = cys);
+
+        geoCache?.__rx !== rxs && (desiredAttrs.rx = rxs);
+
+        geoCache?.__ry !== rys && (desiredAttrs.ry = rys);
+
         break;
       }
 
@@ -316,30 +284,18 @@ export class Renderer {
         const rxs = this.#numToStr(rx);
         const rys = this.#numToStr(ry);
 
-        if (geoCache?.__x !== xs) {
-          desiredAttrs.x = xs;
-          //  (geoCache?).__x = xs;
-        }
-        if (geoCache?.__y !== ys) {
-          desiredAttrs.y = ys;
-          ///   (geoCache?).__y = ys;
-        }
-        if (geoCache?.__width !== ws) {
-          desiredAttrs.width = ws;
-          //  (geoCache?).__width = ws;
-        }
-        if (geoCache?.__height !== hs) {
-          desiredAttrs.height = hs;
-          //  (geoCache?).__height = hs;
-        }
-        if (geoCache?.__rx !== rxs) {
-          desiredAttrs.rx = rxs;
-          //  (geoCache?).__rx = rxs;
-        }
-        if (geoCache?.__ry !== rys) {
-          desiredAttrs.ry = rys;
-          //  (geoCache?).__ry = rys;
-        }
+        geoCache?.__x !== xs && (desiredAttrs.x = xs);
+
+        geoCache?.__y !== ys && (desiredAttrs.y = ys);
+
+        geoCache?.__width !== ws && (desiredAttrs.width = ws);
+
+        geoCache?.__height !== hs && (desiredAttrs.height = hs);
+
+        geoCache?.__rx !== rxs && (desiredAttrs.rx = rxs);
+
+        geoCache?.__ry !== rys && (desiredAttrs.ry = rys);
+
         break;
       }
 
@@ -363,8 +319,6 @@ export class Renderer {
           }
           const pointsStr = parts.join(' ');
           desiredAttrs.points = pointsStr;
-          //  (geoCache?).__points = pointsStr;
-          // (geoCache?).__matrixRef = matrix;
         } else {
           // reference same => no geometry change => do nothing
         }
@@ -377,7 +331,6 @@ export class Renderer {
         if (typeof d === 'string') {
           if (geoCache?.__d !== d) {
             desiredAttrs.d = d;
-            //  (geoCache?).__d = d;
           }
         }
         break;
@@ -411,18 +364,6 @@ export class Renderer {
           styleCache[k] = vStr;
         }
       }
-
-      /*
-      // remove stale style attributes that were previously set by renderer
-      for (const prevKey in styleCache) {
-        if (!Object.prototype.hasOwnProperty.call(styleCache, prevKey))
-          continue;
-        if (!(prevKey in styleObj)) {
-          figRef.removeAttribute(prevKey);
-          delete styleCache[prevKey];
-        }
-      }
-    */
     }
   }
 }

@@ -77,3 +77,10 @@ Below is a checklist of tasks to complete before finalizing the project structur
 ---
 
 ✅ Once all these are checked, the project will be **ready for release/demo**.
+
+## Very IMPORTANT :
+
+   - implement context based canvas support
+
+   - Write comments to everywhere where according to context code going to change 
+       - Write detailed comment so future self thanks us.

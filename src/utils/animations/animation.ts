@@ -27,6 +27,8 @@ import type {
   controlsParams
 } from '../../types/animation';
 
+import type { iShape } from '../../shapes/provider/shapesTypes';
+
 // ----- Runtime Imports -----
 
 import Colors from '../colors/colors.js';
@@ -103,7 +105,7 @@ const GraphicsSource = 'http://www.w3.org/2000/svg';
 //++++++++++ Animation Class   ++++++++++++
 export class Animation<T extends GShpesTages> {
   // #el is animator class Instance  which shape going to animate in SAnimation class
-  #el!: GEC<keyof IG, keyof IG>;
+  #el!: iShape; //  GEC<keyof IG, keyof IG>;
 
   // it holds only Graphics elements or Figure of a Instance
   #elFig!: SVGElement;
@@ -140,7 +142,7 @@ export class Animation<T extends GShpesTages> {
   #reverseCycle: boolean = false;
 
   // shape store which class Object is Going to animate
-  #shape!: T;
+  #shape!: string; //T;
 
   // start time is time whem animation stared
   #startTime!: number;
@@ -182,7 +184,7 @@ export class Animation<T extends GShpesTages> {
       smoothness: 0 // controls smoothness of forming curve vai stepness
     },
     pivot: {
-      mode: 'center', // controls animation transformation mode  a - geometric center ( exept translate)  , r - relative to top left , p - piviot eble px, py  , c - center( translate only)
+      mode: 'relative', // controls animation transformation mode  a - geometric center ( exept translate)  , r - relative to top left , p - piviot eble px, py  , c - center( translate only)
       rotatePivot: 'C', // be default center
       scalePivot: 'C', // be default center
       skewPivot: 'C' // be default center
@@ -226,7 +228,7 @@ export class Animation<T extends GShpesTages> {
     | ReturnType<typeof fitTransformPolynomialsFast>;
 
   constructor(
-    GElement: GEC<keyof IG, keyof IG>,
+    GElement: iShape, // GEC<keyof IG, keyof IG>,
     isAnimation: (t: boolean) => boolean | undefined,
     cleanUp: Function
   ) {
@@ -237,8 +239,10 @@ export class Animation<T extends GShpesTages> {
       shape: string;
       buffer: Float32Array;
     };
+
     const style = GElement.getIStyle(DEV_INTERNAL_ACCESS);
-    this.#shape = geo?.shape as T;
+    this.#shape = geo?.shape as string;
+
     this.#isAnimation = isAnimation;
     this.#el = GElement;
 
@@ -309,6 +313,7 @@ export class Animation<T extends GShpesTages> {
     );
     fP['transform'] = tMatrix;
 
+    console.log(tMatrix);
     // ++++++ Transforming Style of Shape +++++
 
     const iS = this.#initialStyle as object,
@@ -364,6 +369,7 @@ export class Animation<T extends GShpesTages> {
     this.pause();
     this.#resetAllStates();
   }
+  /*
   #resetAllStates() {
     // #el is animator class object which shape going to animate
     (this.#el as any) = null;
@@ -389,7 +395,7 @@ export class Animation<T extends GShpesTages> {
     (this.#Tmatrix as any) = null;
 
     // shared matrix of the shape which represent shape Matrix and oriented bounding box matrix
-    (this.#sharedSMatrix as any) = null;
+(this.#sharedSMatrix as any) = null;
 
     // progress represent how much animation completed from 0 to 1
     (this.#progress as any) = null;
@@ -448,6 +454,42 @@ export class Animation<T extends GShpesTages> {
     (this.#interpolateFunction as any) = null;
 
     (this.#preComputeFranesOrPolynomial as any) = null;
+  }
+*/
+
+  #resetAllStates() {
+    for (const k of [
+      '#el',
+      '#elFig',
+      '#arcTable',
+      '#totalLength',
+      '#curvePoints',
+      '#initialGeometry',
+      '#initialStyle',
+      '#Tmatrix',
+      '#sharedSMatrix',
+      '#progress',
+      '#reverseCycle',
+      '#shape',
+      '#startTime',
+      '#elapsedTime',
+      '#totalTime',
+      '#animationState',
+      '#isAnimation',
+      '#finalGeometry',
+      '#finalStyle',
+      '#advInfo',
+      '#easingFunction',
+      '#onComplete',
+      '#animationFrameId',
+      '#cleanUp',
+      '#isTranslation',
+      '#completionPromise',
+      '#completionResolve',
+      '#interpolateFunction',
+      '#preComputeFranesOrPolynomial'
+    ])
+      (this as any)[k] = null;
   }
 
   //+++++++++++++++++++++++++++
@@ -549,7 +591,7 @@ export class Animation<T extends GShpesTages> {
     } else {
       const time = Math.min((elapsed * clampedSpeed) / this.#totalTime, 1);
       this.#progress = this.#easingFunction(time);
-      console.log('in non physics mode');
+      // console.log('in non physics mode');
     }
 
     // Flip for alternate direction
@@ -639,35 +681,6 @@ export class Animation<T extends GShpesTages> {
 
     isToCompose > 0 && (s.beginT() as Function);
 
-    // appling scale with linear interpolation in Initial values to final values  with respect to progress with respective Scale Pivots
-    isS &&
-      s.Scale({
-        sx: lerp(IS[0], FS[0], progress),
-        sy: lerp(IS[1], FS[1], progress),
-        type: 'p',
-        px: SP[0],
-        py: SP[1]
-      });
-
-    // appling skew with linear interpolation in Initial values to final values  with respect to progress with respective Skew or Shear  Pivots
-    isSK &&
-      s.Skew({
-        sx: lerp(ISK[0], FSK[0], progress),
-        sy: lerp(ISK[1], FSK[1], progress),
-        type: 'p',
-        px: SK[0],
-        py: SK[1]
-      });
-
-    // appling rotate with linear interpolation in Initial value to final value  with respect to progress with respective Rotation Pivots
-    isR &&
-      s.Rotate({
-        angle: lerp(IR, FR, progress),
-        type: 'pivot',
-        px: RP[0],
-        py: RP[1]
-      });
-
     // appling translate with linear interpolation in Initial values to final values  with respect to progress with respective type for  Pivots menagement
 
     if (this.#isTranslation) {
@@ -677,12 +690,42 @@ export class Animation<T extends GShpesTages> {
 
       const p = interpolateAlongCurve(this.#curvePoints, progress);
 
+      // console.log(' x , y ', p.x, p.y);
       s.Translate({
         x: p.x,
         y: p.y,
-        type: 'r' //  this.#advInfo?.pivot?.mode // may be 'r' or 'c'
+        tType: 'r' //  this.#advInfo?.pivot?.mode // may be 'r' or 'c'
       });
     }
+
+    // appling skew with linear interpolation in Initial values to final values  with respect to progress with respective Skew or Shear  Pivots
+    isSK &&
+      s.Skew({
+        sx: lerp(ISK[0], FSK[0], progress),
+        sy: lerp(ISK[1], FSK[1], progress),
+        tType: 'p',
+        px: SK[0],
+        py: SK[1]
+      });
+
+    // appling scale with linear interpolation in Initial values to final values  with respect to progress with respective Scale Pivots
+    isS &&
+      s.Scale({
+        sx: lerp(IS[0], FS[0], progress),
+        sy: lerp(IS[1], FS[1], progress),
+        tType: 'p',
+        px: SP[0],
+        py: SP[1]
+      });
+
+    // appling rotate with linear interpolation in Initial value to final value  with respect to progress with respective Rotation Pivots
+    isR &&
+      s.Rotate({
+        angle: lerp(IR, FR, progress),
+        tType: 'pivot',
+        px: RP[0],
+        py: RP[1]
+      });
 
     // appling composed transformation matrix to perticular shape
 
@@ -752,6 +795,8 @@ export class Animation<T extends GShpesTages> {
       modes
     ];
 
+    // console.log(this.#advInfo.pivot, translateMode, this.#isTranslation);
+
     // step 6 - if direction is given by user than riversing the animation props if direction is reverse
     this.#advInfo?.controls?.direction == 'reverse' &&
       this.#reverseAnimationProps();
@@ -773,6 +818,8 @@ export class Animation<T extends GShpesTages> {
     } = this.#advInfo.pivot as pivotParams;
 
     this.#finalGeometry = { ...this.#finalGeometry, ...pivots };
+
+    // console.log(' this.#finalGeometry = ', this.#finalGeometry);
 
     // step 9 - doing pre optimization according to the user chosen that may be pre computer frame optimisation or fit polynomial coefficient optimization for smooth animation and translation
 
@@ -800,7 +847,9 @@ export class Animation<T extends GShpesTages> {
       ((this.#preComputeFranesOrPolynomial = precomputeFramesRaw(
         this.#initialGeometry,
         this.#finalGeometry,
-        baseTransformationMatrix
+        baseTransformationMatrix,
+        100,
+        this.#el.createTransformMatrix.bind(this.#el)
       )) as optFuncType,
       (this.#interpolateFunction = setPreComputedFrame));
 
@@ -858,7 +907,7 @@ export class Animation<T extends GShpesTages> {
 
     // --- Get object bounding info ---
     const N = this.#sharedSMatrix.length;
-    const OBB = this.#sharedSMatrix.subarray(N - 12); // last 12 elements
+    const OBB = (this.#el.getBBox() as { matrix: number[][] }).matrix; // last 12 elements
 
     // --- Check if translation exists ---
     const { Translate } = this.#finalGeometry as TransformGeometryWithPivot;
@@ -957,16 +1006,16 @@ export class Animation<T extends GShpesTages> {
 
     curve.stepness == 0 && (curve.curvePath = 'linear'); // even though animation following curve but stiffness is zero then it will be directly linear path and even though stiffness is given but karo path not then by default it is also linear
 
-    const { p1, p2 } = this.#getControlPointsOfCurve(translateMode as string);
+    // const { p1, p2 } = this.#getControlPointsOfCurve(translateMode as string);
 
     // --- Get object bounding info ---
-    const N = this.#sharedSMatrix.length;
-    const OBB = this.#sharedSMatrix.subarray(N - 12); // last 12 elements
 
+    const OBB = (this.#el.getBBox() as { matrix: number[][] }).matrix;
+    const [tx, ty] = this.#finalGeometry.Translate as number[];
     [this.#curvePoints, this.#arcTable, this.#totalLength] =
       generateCurvePoints({
-        P1: p1,
-        P2: p2,
+        P1: { x: 0, y: 0 },
+        P2: { x: tx, y: ty },
         bend: (curve.stepness as number) * -1,
         smoothness: curve.smoothness,
         curveName: curve.curvePath as CurveType,
@@ -976,28 +1025,34 @@ export class Animation<T extends GShpesTages> {
       }) as [Point[], ArcTableEntry[], number];
 
     const p = { px: 0, py: 0 };
-    if (translateMode == 'r' || translateMode == 'relative') {
-      p.px = OBB[0];
-      p.py = OBB[1];
-    } else if (translateMode == 'c' || translateMode == 'center') {
-      p.px = (OBB[0] + OBB[3] + OBB[6] + OBB[9]) / 4;
-      p.py = (OBB[1] + OBB[4] + OBB[7] + OBB[10]) / 4;
-    }
 
+    const mode =
+      translateMode == 'r' || translateMode == 'relative' ? 'TL' : 'C';
+
+    /*
+    if (translateMode == 'r' || translateMode == 'relative') {
+      [p.px, p.py] = pivotSetter('TL', OBB);
+    } else if (translateMode == 'c' || translateMode == 'center') {
+      [p.px, p.py] = pivotSetter('C', OBB);
+    }
+*/
+    [p.px, p.py] = pivotSetter(mode, OBB);
     this.#curveFormation(this.#elFig, this.#curvePoints, p);
 
+    /*
     console.log(
       ' curve point =  ',
       this.#curvePoints,
       this.#arcTable,
       this.#totalLength
     );
+		*/
   }
 
   //+++++++++++++++++++++++++++
   // Function to get absolute  control points of curve to create curve in between that two points
   //+++++++++++++++++++++++++++
-
+  /*
   #getControlPointsOfCurve(mode: string): { p1: Point; p2: Point } {
     let p1: Point = { x: 0, y: 0 },
       p2: Point = { x: 0, y: 0 };
@@ -1020,6 +1075,7 @@ export class Animation<T extends GShpesTages> {
 
     return { p1, p2 };
   }
+*/
 
   #lerpColor(p: string, o: object) {
     const isP = typeof o == 'object' && p in o;

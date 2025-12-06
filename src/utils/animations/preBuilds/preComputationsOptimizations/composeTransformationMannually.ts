@@ -1,5 +1,4 @@
 import { TransformGeometryWithPivot } from '../../../../types/animation';
-
 type Mat = [number, number, number, number, number, number];
 
 /**
