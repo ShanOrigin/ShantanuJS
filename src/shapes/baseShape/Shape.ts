@@ -412,7 +412,10 @@ Description : taking original shape data ( which is local geometry ) and then ap
     tType = 'a',
     px = 0,
     py = 0
-  }: TranslateMethodProps): this {
+  }: Required<Pick<TranslateMethodProps, 'x' | 'y'>> &
+    Partial<Omit<TranslateMethodProps, 'x' | 'y'>>): /*
+    
+     Omit<TranslateMethodProps, 'isEffect' | 'isVEffect'> */ this {
     try {
       if (this.#isAnimations) {
         cwarn(
@@ -444,7 +447,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
     tType = 'a',
     px = 0,
     py = 0
-  }: ScaleMethodProps): this {
+  }: Omit<ScaleMethodProps, 'isEffect' | 'isVEffect'>): this {
     try {
       if (this.#isAnimations) {
         cwarn(
@@ -475,7 +478,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
     tType = 'a',
     px = 0,
     py = 0
-  }: RotateMethodProps): this {
+  }: Omit<RotateMethodProps, 'isEffect' | 'isVEffect'>): this {
     try {
       if (this.#isAnimations) {
         cwarn(
@@ -506,7 +509,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
     tType = 'a',
     px = 0,
     py = 0
-  }: SkewMethodProps): this {
+  }: Omit<SkewMethodProps, 'isEffect' | 'isVEffect'>): this {
     try {
       if (this.#isAnimations) {
         cwarn(
@@ -536,7 +539,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
     flipY,
     dirX = 'x+',
     dirY = 'y+'
-  }: FlipMethodProps): this {
+  }: Omit<FlipMethodProps, 'isEffect' | 'isVEffect'>): this {
     try {
       if (this.#isAnimations) {
         cwarn(

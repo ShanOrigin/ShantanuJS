@@ -114,6 +114,259 @@ export function InheritTransformationClassByMinix<
       }
     }
 
+    public createTransformMatrix({
+      transformations,
+      baseTMatrix,
+      multiplyWithBase = false,
+      major = 'row',
+      arrayType = 'normal'
+    }: {
+      transformations: {
+        rotate?: RotateProps;
+        skew?: SkewProps;
+        scale?: ScaleProps;
+        translate?: TranslateProps;
+      };
+      major?: 'row' | 'column';
+      arrayType?: 'normal' | 'float32';
+      baseTMatrix?: Float32Array;
+      multiplyWithBase?: boolean;
+    }): Float32Array | number[][] {
+      // quick flags
+      const hasTransforms = !!transformations;
+      const doScale =
+        hasTransforms && 'scale' in transformations && transformations.scale;
+      const doSkew =
+        hasTransforms && 'skew' in transformations && transformations.skew;
+      const doRotate =
+        hasTransforms && 'rotate' in transformations && transformations.rotate;
+      const doTranslate =
+        hasTransforms &&
+        'translate' in transformations &&
+        transformations.translate;
+
+      // reset temp matrices once up-front and begin batching only if needed
+
+      this.#resetMatrix(this.#__batchedComposeTMatrix);
+      this.#resetMatrix(this.#__tempTMatrix);
+      if (doScale || doSkew || doRotate || doTranslate) {
+        this.beginT();
+        doSkew && this.Skew(transformations.skew as SkewProps);
+
+        doScale && this.Scale(transformations.scale as ScaleProps);
+        doRotate && this.Rotate(transformations.rotate as RotateProps);
+        doTranslate &&
+          this.Translate(transformations.translate as TranslateProps);
+      }
+
+      // Extract composed matrix elements from the batched DOMMatrix (single source of truth)
+      // DOMMatrix 2D properties: a, b, c, d, e, f (and m31,m32 for translation in 3x3 form)
+      const composed = this.#__batchedComposeTMatrix as DOMMatrix;
+      // If no transforms were applied, composed should be identity; still safe to read properties.
+      let a = composed.a as number;
+      let b = composed.b as number;
+      let c = composed.c as number;
+      let d = composed.d as number;
+      let e = composed.e as number;
+      let f = composed.f as number;
+      let m31 = composed.m31 as number;
+      let m32 = composed.m32 as number;
+
+      // If baseTMatrix is provided and we must multiply with base, do a 3x3 multiplication:
+      // result = base * composed
+      if (baseTMatrix instanceof Float32Array && multiplyWithBase) {
+        // Interpret baseTMatrix as 'column' major 1D matrix
+
+        // COLUMN-major output layout (major === 'column'):
+        //  [ a, b, m31,
+        //    c, d, m32,
+        //    e, f, 1 ]
+        //
+        // We'll extract base elements consistently into baseA..baseM32 and perform base * composed.
+        let ba: number,
+          bb: number,
+          bc: number,
+          bd: number,
+          be: number,
+          bf: number,
+          bm31: number,
+          bm32: number;
+
+        // column-major layout
+        // index mapping:
+        // [0]=a_b, [1]=b_b, [2]=m31_b, [3]=c_b, [4]=d_b, [5]=m32_b, [6]=e_b, [7]=f_b, [8]=1
+        ba = baseTMatrix[0];
+        bb = baseTMatrix[1];
+        bm31 = baseTMatrix[2];
+        bc = baseTMatrix[3];
+        bd = baseTMatrix[4];
+        bm32 = baseTMatrix[5];
+        be = baseTMatrix[6];
+        bf = baseTMatrix[7];
+
+        // Build base 3x3:
+        // base 3x3 matrix (row-major conceptual):
+        // [ ba  bc  be ]
+        // [ bb  bd  bf ]
+        // [ bm31 bm32 1 ]
+
+        // composed 3x3 matrix (row-major conceptual):
+        // [ a  c  e ]
+        // [ b  d  f ]
+        // [ m31 m32 1 ]
+
+        // Multiply base * composed (3x3)
+        const r00 = ba * a + bc * b + be * m31;
+        const r01 = ba * c + bc * d + be * m32;
+        const r02 = ba * e + bc * f + be * 1;
+
+        const r10 = bb * a + bd * b + bf * m31;
+        const r11 = bb * c + bd * d + bf * m32;
+        const r12 = bb * e + bd * f + bf * 1;
+
+        const r20 = bm31 * a + bm32 * b + 1 * m31;
+        const r21 = bm31 * c + bm32 * d + 1 * m32;
+        const r22 = bm31 * e + bm32 * f + 1 * 1;
+
+        // Now assign back to the a..f,m31,m32 in the same variable names expected later
+        a = r00;
+        c = r01;
+        e = r02;
+
+        b = r10;
+        d = r11;
+        f = r12;
+
+        m31 = r20;
+        m32 = r21;
+        // r22 should be 1 (or close), ignore
+      }
+
+      // Clean-up batching state once
+      this.#resetMatrix(this.#__batchedComposeTMatrix);
+      this.#resetMatrix(this.#__tempTMatrix);
+      this.#isBatching = false;
+
+      // Build output in requested format
+      if (arrayType === 'float32') {
+        let out!: Float32Array;
+
+        major === 'row' &&
+          (out = new Float32Array([a, c, e, b, d, f, m31, m32, 1]));
+        major === 'column' &&
+          (out = new Float32Array([a, b, m31, c, d, m32, e, f, 1]));
+
+        return out;
+      } else {
+        // normal nested arrays
+        const tM: number[][] = [];
+
+        if (major === 'row') {
+          // rows: [ [a, c, e], [b, d, f], [m31, m32, 1] ]
+          tM[0] = [a, c, e];
+          tM[1] = [b, d, f];
+          tM[2] = [m31, m32, 1];
+        } else {
+          // columns interpreted as rows here: [ [a, b, m31], [c, d, m32], [e, f, 1] ]
+          tM[0] = [a, b, m31];
+          tM[1] = [c, d, m32];
+          tM[2] = [e, f, 1];
+        }
+        return tM;
+      }
+    }
+
+    public reateTransformMatrix({
+      transformations,
+      baseTMatrix,
+      multiplyWithBase = false,
+      major = 'row',
+      arrayType = 'normal'
+    }: {
+      transformations: {
+        rotate: RotateProps;
+        skew: SkewProps;
+        scale: ScaleProps;
+        translate: TranslateProps;
+      };
+      major?: 'row' | 'column';
+      arrayType?: 'normal' | 'float32';
+      baseTMatrix?: Float32Array;
+      multiplyWithBase?: boolean;
+    }): Float32Array | number[][] {
+      const isS = transformations && 'scale' in transformations;
+      const isSk = transformations && 'skew' in transformations;
+      const isR = transformations && 'rotate' in transformations;
+      const isT = transformations && 'translate' in transformations;
+
+      this.#resetMatrix(this.#__batchedComposeTMatrix);
+      this.#resetMatrix(this.#__tempTMatrix);
+      this.beginT();
+
+      isS && this.Scale(transformations.scale as ScaleProps);
+
+      isSk && this.Skwe(transformations.skew as SkewProps);
+
+      isR && this.Rotate(transformations.rotate as RotateProps);
+
+      isT && this.Translate(transformations.translate as TranslateProps);
+
+      console.log(' transformation = ', transformations);
+
+      let a, b, c, d, e, f, m31, m32;
+
+      if (baseTMatrix instanceof Float32Array && multiplyWithBase) {
+        const m = baseTMatrix as Float32Array;
+        const cm = new DOMMatrix([m[0], m[1], m[3], m[4], m[6], m[7]]);
+        cm.multiplySelf(this.#__batchedComposeTMatrix);
+
+        ({ a, b, c, d, e, f, m31, m32 } = cm as DOMMatrix);
+      } else {
+        ({ a, b, c, d, e, f, m31, m32 } = this
+          .#__batchedComposeTMatrix as DOMMatrix);
+      }
+
+      this.#resetMatrix(this.#__batchedComposeTMatrix);
+      this.#resetMatrix(this.#__tempTMatrix);
+      this.#isBatching = false;
+
+      let tM;
+      if (arrayType == 'normal') {
+        tM = [];
+        major == 'row' &&
+          ((tM[0] = [a, c, e]), (tM[1] = [b, d, f]), (tM[2] = [m31, m32, 1]));
+
+        major == 'column' &&
+          ((tM[0] = [a, b, m31]), (tM[1] = [c, d, m32]), (tM[2] = [e, f, 1]));
+      } else if (arrayType == 'float32') {
+        tM = new Float32Array(9);
+
+        major == 'row' &&
+          ((tM[0] = a),
+          (tM[1] = c),
+          (tM[2] = e),
+          (tM[3] = b),
+          (tM[4] = d),
+          (tM[5] = f),
+          (tM[6] = m31),
+          (tM[7] = m32),
+          (tM[8] = 1));
+
+        major == 'column' &&
+          ((tM[0] = a),
+          (tM[1] = b),
+          (tM[2] = m31),
+          (tM[3] = c),
+          (tM[4] = d),
+          (tM[5] = m32),
+          (tM[6] = e),
+          (tM[7] = f),
+          (tM[8] = 1));
+      }
+
+      return tM as number[][] | Float32Array;
+    }
+
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //++++++++++++++ Healper  Methods +++++++++++++++
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

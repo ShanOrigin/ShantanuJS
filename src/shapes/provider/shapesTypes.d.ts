@@ -32,6 +32,7 @@ export type {
 */
 // src/shapes/provider/shapesTypes.d.ts
 
+export type iShape = InstanceType<typeof import('./../baseShape/Shape').Shape>;
 export type iPoint = InstanceType<typeof import('./shapes').Point>;
 export type iLine = InstanceType<typeof import('./shapes').Line>;
 export type iPolyline = InstanceType<typeof import('./shapes').Polyline>;
