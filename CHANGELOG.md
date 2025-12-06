@@ -435,3 +435,10 @@ Notes:
 - Added Canvas module responsibilities.
 - Added any shape responsibilities
 
+[2025-12-07 | Sunday | 00:08] [core | 1h] Added context , renderer as private variables and getter and setter for these private variables to support Context based architecture
+Notes:
+- Added #context for holding context of shape.
+- Added #renderer reference variable to render related things.
+-  Added getters and setters for those 2 variables with sefty check.
+- Only these variables can be modified through secret key. 
+

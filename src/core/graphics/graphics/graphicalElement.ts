@@ -19,6 +19,7 @@ import type {
   getAttrsMethodsReturnTypes,
   attrsMethodReturnTypes
 } from '../../../types/index';
+import type { Renderer } from '../renderer/renderer';
 
 export type GShpesTages = keyof IGraphicalElementProperties;
 
@@ -33,6 +34,8 @@ export abstract class GraphicalElement<
   S extends GShpesTages = 'path'
 > {
   #fig!: SVGElement; // | HTMLCanvasElement;
+  #context!: string;
+  #renderer!: Renderer;
   #geometry: ICommonGeometricProperties['geometry'] &
     IGraphicalElementProperties[T] = {};
 
@@ -45,7 +48,6 @@ export abstract class GraphicalElement<
   public style: StyleForGShapeTag<T> = {} as StyleForGShapeTag<T>;
   // #SVGSRC = 'http://www.w3.org/2000/svg';
 
-  #parent!: HTMLElement;
   constructor(shapeName: T, tagName?: S, ID: string = '') {
     try {
       // Now it's safe
@@ -99,6 +101,24 @@ export abstract class GraphicalElement<
     }
   }
 
+  public setIContext(accessKey: symbol, context: string) {
+    assertAccess(accessKey);
+    return (this.#context = context);
+  }
+  public setIRenderer(accessKey: symbol, renderer: Renderer) {
+    assertAccess(accessKey);
+    this.#renderer = renderer;
+  }
+
+  public getIContext(accessKey: symbol) {
+    assertAccess(accessKey);
+    return this.#context;
+  }
+  public getIRenderer(accessKey: symbol) {
+    assertAccess(accessKey);
+    return this.#renderer;
+  }
+
   public getIFig(accessKey: symbol) {
     assertAccess(accessKey);
     return this.#fig;
@@ -116,14 +136,6 @@ export abstract class GraphicalElement<
     return this.#style;
   }
 
-  public setParent(accessKey: symbol, parent: HTMLElement) {
-    assertAccess(accessKey);
-    this.#setParent(accessKey, parent);
-  }
-  #setParent(accessKey: symbol, parent: HTMLElement) {
-    assertAccess(accessKey);
-    this.#parent = parent as HTMLElement;
-  }
   #createReadonlyProxy<T extends object>(obj: T): T {
     const cache = new WeakMap<object, any>();
     const seen = new WeakSet<object>(); // prevent re-wrapping during deep get()
@@ -288,7 +300,7 @@ export abstract class GraphicalElement<
   /*
    *private function for getting attribute for property of svg element
    */
-
+  /*
   protected etAttr(key: string): string | number | undefined {
     try {
       return (
@@ -307,6 +319,7 @@ export abstract class GraphicalElement<
       throw e;
     }
   }
+*/
 
   protected getAttr(key: string): getAttrsMethodsReturnTypes {
     try {
