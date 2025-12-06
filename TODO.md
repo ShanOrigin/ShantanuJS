@@ -82,5 +82,31 @@ Below is a checklist of tasks to complete before finalizing the project structur
 
    - implement context based canvas support
 
-   - Write comments to everywhere where according to context code going to change 
-       - Write detailed comment so future self thanks us.
+   - Write comments everywhere where something will change according to context and specific shape.
+       - Write detailed , discritive comments about what would change so future self thanks us.
+
+### 06 - 12 - 2025 -> started adding context based architecture into entire library
+
+# core class
+   - there would be private variable context which is going to hold the context of the Canvas .
+   - there would be renderar  private variable which is going to hold the renderar for Canvas itself and all elements which will be going to add in Canvas for rendering perpose.
+   - there is already fig private variable which is going to hold shape specific elements in 'svg' context or canvasNode in HTMLCanvas or in other backends.
+
+   - all these context , renderar , fig  are initially unset or null and  only in 'svg'  or  'HTMLCanvas' going to create then these three variable get set by its proper values
+   - except canvas creation in all other shapes these 3 variable will be null or unset initially 
+
+# Canvas 
+   - when any element going to add a particular Canvas then first Canvas will check is there context available if available then it will not add thst element to this canvas   - otherwise it will do below steps ,
+   - Canvas then Canvas will give its context as value  and renderar as reference  to that elements.
+   - Then Canvas will create a proper element according to the given context for that element and it will assigned that element to  fig private variable  of that element.
+   - eg . consider element is rect 
+          In 'svg' context it should be <rect> element node of svg .
+          In 'HTMLCanvas' context it should be 'HTMLCanvas' node itself.
+
+   - then Canvas will add that element into canvas itself for tracking.
+
+# Any Shape of Shape Module 
+   - Now any shape can render itself into the Canvas according to the given context.
+   - That particular shape only can call that renderer to render , but  it cannot render itself directly into Canvas , it will just call randerar and renderar will handle rest all thing according to given context.
+   - entire model is working on single policy i.e ,
+       one shape can reside in one Canvas only at a time

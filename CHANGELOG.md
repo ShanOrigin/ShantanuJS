@@ -429,3 +429,9 @@ Notes:
 - it returns row or column major based on parameter major  and float32 or normal 2d  transform matrix based on parameter arrayType.
 - it can multiple given base Transform matrix controled by parameter multiplyWithBase and baseTMatrix is of Float32Array
 
+[2025-12-06 | Saturday | 23:12] [root | 0.5h] Added description about context based architecture in the TODO file so anyone can undertand by reading.
+Notes:
+- Added core modue responsibilities.
+- Added Canvas module responsibilities.
+- Added any shape responsibilities
+
