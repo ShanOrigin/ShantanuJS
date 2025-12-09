@@ -446,3 +446,7 @@ Notes:
 Notes:
 - adding support for multi backend support
 
+[2025-12-09 | Tuesday | 11:23] [git/scripts | 0.5h] added multi branch selection
+Notes:
+- added multi branch selection so user can push any branch.
+
