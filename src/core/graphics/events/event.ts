@@ -1,6 +1,8 @@
 import { GraphicalElement, GShpesTages } from '../graphics/graphicalElement.js';
 import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
 
+import { SVG_CONTEXT } from '../backends/svg/core/core.js';
+
 type SVGEventType = keyof SVGElementEventMap;
 
 interface CustomEventOptions extends AddEventListenerOptions {
@@ -20,19 +22,18 @@ type SupportedEvents =
   | 'touchstart'
   | 'touchmove'
   | 'touchend'
-  | 'enterMouse'
-  | 'leaveMouse';
+  | 'mouseenter'
+  | 'mouseleave';
 
 export abstract class Events<
-  T extends GShpesTages,
-  S extends GShpesTages
-> extends GraphicalElement<T, S> {
+  T extends GShpesTages
+> extends GraphicalElement<T> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
   #listener: {
-    type: SVGEventType;
+    type: SupportedEvents;
     handler: EventListener;
     options?: CustomEventOptions;
-    use?: string;
+    uid?: string;
   }[] = [];
 
   /**
@@ -49,7 +50,7 @@ export abstract class Events<
     eventType: SupportedEvents,
     callback: (e: E) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
     if (eventType == ('drag' as SupportedEvents)) {
       console.warn(
@@ -57,25 +58,25 @@ export abstract class Events<
       );
     }
     if (typeof (this as any)[eventType] === 'function') {
-      this.#addEvent(eventType as SVGEventType, callback, props, useC);
+      this.#addEvent(eventType as SupportedEvents, callback, props, uid);
     } else {
       console.warn(`Unsupported event type: ${eventType}`);
     }
   }
 
-  public off(eventType: SupportedEvents, useC: string = 'default') {
+  public off(eventType: SupportedEvents, uid: string = 'default') {
     if (typeof (this as any)[`un${eventType}`] === 'function') {
-      this.#removeEvent(eventType as SVGEventType, useC);
+      this.#removeEvent(eventType as SupportedEvents, uid);
     } else {
       console.warn(`Unsupported event type: ${eventType}`);
     }
   }
 
   #addEvent<E extends Event>(
-    type: SVGEventType,
+    type: SupportedEvents,
     callback: (e: E) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ): void {
     const {
       preventDefault = false,
@@ -92,77 +93,40 @@ export abstract class Events<
     };
 
     const existing = this.#listener.find(
-      (l) => l.type === type && l.use === useC
+      (l) => l.type === type && l.uid === uid
     );
 
-    if (existing) {
-      this.#fig.removeEventListener(
-        existing.type,
-        existing.handler,
-        existing.options
-      );
-      this.#listener = this.#listener.filter((l) => l.type !== type);
-    }
-
-    this.#fig.addEventListener(type, handler, listenerOptions);
-    this.#listener.push({ type, handler, options: props, use: useC });
-  }
-
-  #aaddEvent(
-    type: SVGEventType,
-    callback: (e: Event | PointerEvent) => void,
-    props: CustomEventOptions = {},
-    useC: string = 'default'
-  ): void {
-    const {
-      preventDefault = false,
-      stopPropagation = false,
-      ...listenerOptions
-    } = props;
-
-    if (this.#fig) {
-      const handler: EventListener = (e) => {
-        preventDefault && e.preventDefault();
-        stopPropagation && e.stopPropagation();
-        callback(e);
-      };
-
-      const existing = this.#listener.find(
-        (l) => l.type === type && l.use === useC
-      );
-
-      console.log('exits : ', existing);
+    if (this.getIContext() == SVG_CONTEXT) {
       if (existing) {
         this.#fig.removeEventListener(
           existing.type,
           existing.handler,
           existing.options
         );
-        this.#listener = this.#listener.filter((l) => l.type !== type);
       }
+      this.#listener = this.#listener.filter((l) => l.type !== type);
 
       this.#fig.addEventListener(type, handler, listenerOptions);
-      this.#listener.push({
-        type,
-        handler,
-        options: props,
-        use: useC
-      });
-
-      console.log(type, 'event added');
+      this.#listener.push({ type, handler, options: props, uid });
     }
   }
 
-  #removeEvent(type: SVGEventType, useC: string = 'default'): void {
+  #removeEvent(type: SupportedEvents, uid: string = 'default'): void {
     if (this.#fig) {
       const existing = this.#listener.find(
-        (l) => l.type === type && l.use === useC
+        (l) => l.type === type && l.uid === uid
       );
-      if (existing) {
-        this.#fig.removeEventListener(type, existing.handler, existing.options);
-        this.#listener = this.#listener.filter(
-          (l) => l.type !== type && l.use === useC
-        );
+      if (this.getIContext() == SVG_CONTEXT) {
+        if (existing) {
+          this.#fig.removeEventListener(
+            type,
+            existing.handler,
+            existing.options
+          );
+          this.#listener = this.#listener.filter(
+            (l) => l.type !== type && l.uid === uid
+          );
+        }
       }
     }
   }
@@ -170,121 +134,121 @@ export abstract class Events<
   public click(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('click', callback, props, useC);
+    this.#addEvent('click', callback, props, uid);
   }
 
-  public unclick(useC: string = 'default') {
-    this.#removeEvent('click', useC);
+  public unclick(uid: string = 'default') {
+    this.#removeEvent('click', uid);
   }
 
   public dblclick(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('dblclick', callback, props, useC);
+    this.#addEvent('dblclick', callback, props, uid);
   }
 
-  public undblclick(useC: string = 'default') {
-    this.#removeEvent('dblclick', useC);
+  public undblclick(uid: string = 'default') {
+    this.#removeEvent('dblclick', uid);
   }
 
   public mouseDown(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('mousedown', callback, props, useC);
+    this.#addEvent('mousedown', callback, props, uid);
   }
 
-  public unmouseDown(useC: string = 'default') {
-    this.#removeEvent('mousedown', useC);
+  public unmouseDown(uid: string = 'default') {
+    this.#removeEvent('mousedown', uid);
   }
 
   public mouseUp(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('mouseup', callback, props, useC);
+    this.#addEvent('mouseup', callback, props, uid);
   }
 
-  public unmouseUp(useC: string = 'default') {
-    this.#removeEvent('mouseup', useC);
+  public unmouseUp(uid: string = 'default') {
+    this.#removeEvent('mouseup', uid);
   }
 
   public mouseMove(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('mousemove', callback, props, useC);
+    this.#addEvent('mousemove', callback, props, uid);
   }
 
-  public unmouseMove(useC: string = 'default') {
-    this.#removeEvent('mousemove', useC);
+  public unmouseMove(uid: string = 'default') {
+    this.#removeEvent('mousemove', uid);
   }
 
   public touchStart(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('touchstart', callback, props, useC);
+    this.#addEvent('touchstart', callback, props, uid);
   }
 
-  public untouchStart(useC: string = 'default') {
-    this.#removeEvent('touchstart', useC);
+  public untouchStart(uid: string = 'default') {
+    this.#removeEvent('touchstart', uid);
   }
 
   public touchEnd(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('touchend', callback, props, useC);
+    this.#addEvent('touchend', callback, props, uid);
   }
 
-  public untouchEnd(useC: string = 'default') {
-    this.#removeEvent('touchend', useC);
+  public untouchEnd(uid: string = 'default') {
+    this.#removeEvent('touchend', uid);
   }
 
   public touchMove(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('touchmove', callback, props, useC);
+    this.#addEvent('touchmove', callback, props, uid);
   }
 
-  public untouchMove(useC: string = 'default') {
-    this.#removeEvent('touchmove', useC);
+  public untouchMove(uid: string = 'default') {
+    this.#removeEvent('touchmove', uid);
   }
 
   public enterMouse(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('mouseenter', callback, props, useC);
+    this.#addEvent('mouseenter', callback, props, uid);
   }
 
   public leaveMouse(
     callback: (e: Event) => void,
     props: CustomEventOptions = {},
-    useC: string = 'default'
+    uid: string = 'default'
   ) {
-    this.#addEvent('mouseleave', callback, props, useC);
+    this.#addEvent('mouseleave', callback, props, uid);
   }
 
-  public unenterMouse(useC: string = 'default'): void {
-    this.#removeEvent('mouseenter', useC);
+  public unenterMouse(uid: string = 'default'): void {
+    this.#removeEvent('mouseenter', uid);
   }
 
-  public unleaveMouse(useC: string = 'default'): void {
-    this.#removeEvent('mouseleave', useC);
+  public unleaveMouse(uid: string = 'default'): void {
+    this.#removeEvent('mouseleave', uid);
   }
 
   public hover(enter: (e: Event) => void, leave: (e: Event) => void) {
@@ -350,266 +314,45 @@ export abstract class Events<
   public pointerdown(
     callback: (e: PointerEvent) => void,
     props: CustomEventOptions = {},
-    useC = 'default'
+    uid = 'default'
   ) {
     this.#fig.style.touchAction = 'none';
     props['preventDefault'] = true;
     this.#fig.setAttribute('pointer-events', 'all');
-    this.#addEvent('pointerdown', callback, props, useC);
+    this.#addEvent('pointerdown', callback, props, uid);
   }
 
   public pointermove(
     callback: (e: PointerEvent) => void,
     props: CustomEventOptions = {},
-    useC = 'default'
+    uid = 'default'
   ) {
     props['preventDefault'] = true;
     this.#fig.style.touchAction = 'none';
     this.#fig.setAttribute('pointer-events', 'all');
-    this.#addEvent('pointermove', callback, props, useC);
+    this.#addEvent('pointermove', callback, props, uid);
   }
 
   public pointerup(
     callback: (e: PointerEvent) => void,
     props: CustomEventOptions = {},
-    useC = 'default'
+    uid = 'default'
   ) {
     this.#fig.style.touchAction = 'none';
     props['preventDefault'] = true;
     this.#fig.setAttribute('pointer-events', 'all');
-    this.#addEvent('pointerup', callback, props, useC);
+    this.#addEvent('pointerup', callback, props, uid);
   }
 
-  public unpointerdown(useC: string = 'default') {
-    this.#removeEvent('pointerdown', useC);
+  public unpointerdown(uid: string = 'default') {
+    this.#removeEvent('pointerdown', uid);
   }
 
-  public unpointermove(useC: string = 'default') {
-    this.#removeEvent('pointermove', useC);
+  public unpointermove(uid: string = 'default') {
+    this.#removeEvent('pointermove', uid);
   }
 
-  public unpointerup(useC: string = 'default') {
-    this.#removeEvent('pointerup', useC);
-  }
-}
-
-/*
- *
- *
-  public ddrag(
-    start?: (x: number, y: number, ...args: any[]) => void,
-    move?: (x: number, y: number, ...args: any[]) => void,
-    end?: (e: Event, ...args: any[]) => void,
-    ...args: any[]
-  ) {
-    let isMouseDown = false;
-    let mouseX: number, mouseY: number;
-
-    const updateMouseCoordinates = (event: any) => {
-      const { clientX, clientY } = event.touches ? event.touches[0] : event;
-      mouseX = clientX;
-      mouseY = clientY;
-      return { x: mouseX, y: mouseY };
-    };
-
-    const eventsMap = [
-      ['mousedown', 'touchstart'],
-      ['mousemove', 'touchmove'],
-      ['mouseup', 'touchend']
-    ];
-
-    eventsMap.forEach((types, i) => {
-      types.forEach((type) => {
-        const handler = (e: Event) => {
-          e.preventDefault();
-          e.stopPropagation();
-
-          if (i === 0) {
-            isMouseDown = true;
-            const { x, y } = updateMouseCoordinates(e);
-            if (start) start(x, y, ...args);
-          } else if (i === 1 && isMouseDown) {
-            const { x, y } = updateMouseCoordinates(e);
-            if (move) move(x, y, ...args);
-          } else if (i === 2) {
-            isMouseDown = false;
-            if (end) end(e, ...args);
-          }
-        };
-
-        // Add listener
-        this.#fig.#addEventListener(type, handler);
-        this.listener.push({ type: type as SVGEventType, handler });
-      });
-    });
-  }
-
-
- *
- *
- *
- */
-
-/*
-type SVGEventType = keyof SVGElementEventMap;
-
-export default class Events {
-  private fig: SVGElement;
-
-  private listener: {
-    type: SVGEventType;
-    handler: EventListener;
-    options?: CustomEventOptions;
-  }[] = [];
-
-  constructor(svgElement: SVGElement) {
-    this.#fig = svgElement;
-  }
-
-  private #addEvent(
-    type: SVGEventType,
-    callback: (e: Event) => void,
-    time: number = 0,
-    props: CustomEventOptions = {}
-  ): void {
-    const existing = this.listener.find((l) => l.type === type);
-    if (existing) {
-      this.#fig.#removeEventListener(existing.type, existing.handler, existing.options);
-      this.listener = this.listener.filter((l) => l.type !== type);
-    }
-
-    const handler: EventListener =
-      time === 0
-        ? (e) => callback(e)
-        : (e) => setTimeout(() => callback(e), time);
-
-    this.#fig.#addEventListener(type, handler, props);
-    this.listener.push({ type, handler, options: props });
-  }
-
-  private #removeEvent(type: SVGEventType): void {
-    const existing = this.listener.find((l) => l.type === type);
-    if (existing) {
-      this.#fig.#removeEventListener(type, existing.handler, existing.options);
-      this.listener = this.listener.filter((l) => l.type !== type);
-    }
-  }
-
-  public click(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('click', callback, time, props);
-  }
-
-  public unclick() {
-    this.#removeEvent('click');
-  }
-
-  public dbclick(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('dblclick', callback, time, props);
-  }
-
-  public undbclick() {
-    this.#removeEvent('dblclick');
-  }
-
-  public mouseDown(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('mousedown', callback, time, props);
-  }
-
-  public unmouseDown() {
-    this.#removeEvent('mousedown');
-  }
-
-  public mouseUp(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('mouseup', callback, time, props);
-  }
-
-  public unmouseUp() {
-    this.#removeEvent('mouseup');
-  }
-
-  public mouseMove(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('mousemove', callback, time, props);
-  }
-
-  public unmouseMove() {
-    this.#removeEvent('mousemove');
-  }
-
-  public touchStart(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('touchstart', callback, time, props);
-  }
-
-  public untouchStart() {
-    this.#removeEvent('touchstart');
-  }
-
-  public touchEnd(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('touchend', callback, time, props);
-  }
-
-  public untouchEnd() {
-    this.#removeEvent('touchend');
-  }
-
-  public touchMove(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('touchmove', callback, time, props);
-  }
-
-  public untouchMove() {
-    this.#removeEvent('touchmove');
-  }
-
-  public contextMenu(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('contextmenu', callback, time, props);
-  }
-
-  public uncontextMenu() {
-    this.#removeEvent('contextmenu');
-  }
-
-  public wheel(callback: (e: Event) => void, time = 0, props: CustomEventOptions = {}) {
-    this.#addEvent('wheel', callback, time, props);
-  }
-
-  public unwheel() {
-    this.#removeEvent('wheel');
-  }
-
-
-// Add mouseenter and mouseleave individually
-public enterMouse(
-  callback: (e: Event) => void,
-  time: number = 0,
-  props: CustomEventOptions = {}
-): void {
-  this.#addEvent('mouseenter', callback, time, props);
-}
-
-public leaveMouse(
-  callback: (e: Event) => void,
-  time: number = 0,
-  props: CustomEventOptions = {}
-): void {
-  this.#addEvent('mouseleave', callback, time, props);
-}
-
-
-
-public unenterMouse(): void { this.#removeEvent('mouseenter'); }
-public unleaveMouse(): void { this.#removeEvent('mouseleave'); }
-
-
-  public hover(enter: (e: Event) => void, leave: (e: Event) => void) {
-
-		this.enterMouse( enter , 0 , {}  );
-		this.leaveMouse(leave , 0 , {});
-  }
-
-  public unhover() {
-		this.unenterMouse();
-		this.unleaveMouse();
-
+  public unpointerup(uid: string = 'default') {
+    this.#removeEvent('pointerup', uid);
   }
 }
-
-*/

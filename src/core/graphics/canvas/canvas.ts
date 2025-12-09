@@ -11,16 +11,17 @@ import { Group as GR } from '../../../utils/collection/group.js';
 import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
 
 import { renderer } from '../renderer/renderer.js';
+import { CONTEXT } from '../../../types/graphicsElements.js';
 
 type shapeType = keyof IG;
 
-type GType = G<shapeType, keyof IG>;
-type NGType = NG<keyof ING>;
-type allowedSVG = GType | NGType;
+type GType = G<shapeType>;
+// type NGType = NG<keyof ING>;
+type allowedShapes = GType;
 
-export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
+export default class Canvas extends GraphicalElementComposer<'canvas'> {
   #parent: HTMLElement | null; // Accept all valid SVG types generically
-  #canvasElements: Array<allowedSVG> = [];
+  #canvasElements: Array<allowedShapes> = [];
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
   #style = this.getIStyle(DEV_INTERNAL_ACCESS);
   protected x: number = 0;
@@ -29,10 +30,11 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
     id: string,
     width: number,
     height: number,
+    context: CONTEXT,
     posX: number = 0,
     posY: number = 0
   ) {
-    super('svg', `${id}-Canvas`, 'svg');
+    super('canvas', context, `${id}-Canvas`);
     try {
       //   super.attrs({ width: width, height: height });
 
@@ -200,32 +202,28 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
     }
   }
 
-  public contain(svg: allowedSVG): boolean {
+  public contain(svg: allowedShapes): boolean {
     const isInSVGDOM =
       svg.getIFig(DEV_INTERNAL_ACCESS).parentNode === this.#fig;
     let isInSVGA = false;
     const CA = this.#canvasElements;
 
-    const [eGT, eNGT] = [svg as GType, svg as NGType];
+    //    const [eGT, eNGT] = [svg as GType, svg as NGType];
+    const eGT = svg as GType;
     const GEI = eGT?.style?.id; // element id if graphical element
-    const NGEI = eNGT?.attributes?.id; // element id if non graphical element
+
+    //    const NGEI = eNGT?.attributes?.id; // element id if non graphical element
 
     // finding the exact location of the element which we want to delete
     for (let f = 0, l = CA.length - 1; f <= l; f++, l--) {
       const [fe, le] = [CA[f], CA[l]];
 
-      if (
-        (fe instanceof G && fe?.style?.id === GEI) ||
-        (fe instanceof NG && fe?.attributes?.id === NGEI)
-      ) {
+      if (fe instanceof G && fe?.style?.id === GEI) {
         isInSVGA = true;
         break;
       }
 
-      if (
-        (le instanceof G && le?.style?.id === GEI) ||
-        (le instanceof NG && le?.attributes?.id === NGEI)
-      ) {
+      if (le instanceof G && le?.style?.id === GEI) {
         isInSVGA = true;
         break;
       }
@@ -242,7 +240,7 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
    * @param rest One or more SVG containers to add this element to.
    * @returns The current instance for chaining.
    */
-  public addTo(track: boolean, ...rest: allowedSVG[]): this;
+  public addTo(track: boolean, ...rest: allowedShapes[]): this;
 
   /**
    * Adds this element to one or more SVG containers.
@@ -252,22 +250,22 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
    * @param rest Additional SVG Element.
    * @returns The current instance for chaining.
    */
-  public addTo(svg: allowedSVG, ...rest: allowedSVG[]): this;
+  public addTo(svg: allowedShapes, ...rest: allowedShapes[]): this;
 
-  public addTo(first: boolean | allowedSVG, ...rest: allowedSVG[]): this {
+  public addTo(first: boolean | allowedShapes, ...rest: allowedShapes[]): this {
     if (!this.#fig)
       throw new Error(
         `Canvas is not initialized or may have been deleted: ${this.#fig}`
       );
 
     const addToTrackByCanvas = typeof first === 'boolean' ? first : true;
-    const elements: allowedSVG[] = !addToTrackByCanvas
+    const elements: allowedShapes[] = !addToTrackByCanvas
       ? rest
-      : [first as allowedSVG, ...rest];
+      : [first as allowedShapes, ...rest];
 
     for (let index = 0; index < elements.length; index++) {
       const el = elements[index];
-      if (!(el instanceof G || el instanceof NG))
+      if (!(el instanceof G))
         throw new Error(`Invalid SVG element: ${el}. Must be G or NG.`);
 
       if (!el.getIFig(DEV_INTERNAL_ACCESS))
@@ -285,7 +283,7 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
     return this;
   }
 
-  #removeSameElementFromContainingGR(element: allowedSVG) {
+  #removeSameElementFromContainingGR(element: allowedShapes) {
     const parentId = (
       element.getIFig(DEV_INTERNAL_ACCESS).parentNode as HTMLElement
     ).getAttribute('id');
@@ -343,7 +341,9 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
       }
       // now delete all elements for children's which were the part of group which we want to delete from the array we have got
 
-      this.remove(...ge, element);
+      // +++++ important read carefully ++++
+
+      //   this.remove(...ge, element);
 
       return;
     }
@@ -351,14 +351,14 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
     // if given element is instance of graphical class or non graphical class then just u group it from its respective group
     // it will  come out that element into Canvas then Canvas method will handle its deletion
 
-    if (REGI !== -1 && (element instanceof G || element instanceof NG)) {
+    if (REGI !== -1 && element instanceof G) {
       // element.attrs({ roleOfSVG: 'deleted' });
 
       (CA[REGI] as GR)?.remove(element);
     }
   }
 
-  public remove(...elements: allowedSVG[]): this {
+  public remove(...elements: allowedShapes[]): this {
     try {
       /*
 			 remove(element):
@@ -396,29 +396,20 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
           );
 
         let index = -1;
-        const [eGT, eNGT] = [RE as GType, RE as NGType];
+        const eGT = RE as GType;
         const GEI = eGT?.style?.id; // element id if graphical element
-        const NGEI = eNGT?.attributes?.id; // element id if non graphical element
-        const inside =
-          (RE instanceof G && eGT.style?.inside) ||
-          (RE instanceof NG && eNGT.attributes.inside);
+        const inside = RE instanceof G && eGT.style?.inside;
 
         // finding the exact location of the element which we want to delete
         for (let f = 0, l = CA.length - 1; f <= l; f++, l--) {
           const [fe, le] = [CA[f], CA[l]];
 
-          if (
-            (fe instanceof G && fe?.style?.id === GEI) ||
-            (fe instanceof NG && fe?.attributes?.id === NGEI)
-          ) {
+          if (fe instanceof G && fe?.style?.id === GEI) {
             index = f;
             break;
           }
 
-          if (
-            (le instanceof G && le?.style?.id === GEI) ||
-            (le instanceof NG && le?.attributes?.id === NGEI)
-          ) {
+          if (le instanceof G && le?.style?.id === GEI) {
             index = l;
             break;
           }
@@ -505,7 +496,7 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
     }
   }
 
-  public getAllElements(): Array<allowedSVG> {
+  public getAllElements(): Array<allowedShapes> {
     try {
       return this.#canvasElements;
     } catch (e) {

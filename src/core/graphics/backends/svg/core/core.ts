@@ -4,6 +4,8 @@ import { Renderer } from '../../../renderer/renderer.js';
 // dom.ts
 export const SVGSOURCE = 'http://www.w3.org/2000/svg';
 
+export const SVG_CONTEXT = 'svg';
+
 export const doc: Document = document;
 
 // Safe wrapper for createElementNS

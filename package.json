@@ -23,7 +23,7 @@
     "tsc:watch": "tsc -w --preserveWatchOutput",
     "tsc:watch-pre-sync": "npm run gitsmartsync && npm run tsc:watch",
 
-    "mzip": "zip -r -0 \"Shantanujs-backup-$(date +%Y-%m-%d-%H-%M-%S).zip\" scripts src README.md index.html package.json CHANGELOG.md Custom_LICENSE.md COMMERCIAL_LICENSE.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md tsconfig.json",
+    "mzip": "zip -r -0 \"Shantanujs-backup-new-$(date +%Y-%m-%d-%H-%M-%S).zip\" scripts src README.md index.html package.json CHANGELOG.md Custom_LICENSE.md COMMERCIAL_LICENSE.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md tsconfig.json",
     "cirdep:path": "dpdm -T --circular --warning --tsconfig tsconfig.json",
     "cirdep:visual": "dpdm -T --circular --warning --tsconfig tsconfig.json ./src/tests/shapes/rect/visualTest/visualAnimations.ts",
     "cirdep:index": "dpdm -T --circular --warning --tsconfig tsconfig.json ./src/index/index.ts",

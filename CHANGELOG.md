@@ -450,3 +450,10 @@ Notes:
 Notes:
 - added multi branch selection so user can push any branch.
 
+[2025-12-10 | Wednesday | 00:29] [Entire/Project | 7h] Heavy refactors , improving mixin , inheritance , folder structures , patterns
+Notes:
+- Heavy refactors of multiple modules.
+-  added mixin module for mixin patterns support.
+-  Improving Inheritance and mixin behaviours.
+- Improving Folder structures + all other things
+
