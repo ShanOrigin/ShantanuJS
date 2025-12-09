@@ -280,6 +280,7 @@ export abstract class GraphicalElementComposer<
       throw e;
     }
   }
+  /*
   public blur(
     rx: number = 0,
     ry: number = 0,
@@ -298,6 +299,7 @@ export abstract class GraphicalElementComposer<
       throw e;
     }
   }
+*/
 
   /*
    * method to add css class or css properties on svg element

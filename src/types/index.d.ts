@@ -2,7 +2,7 @@ export type getAttrsMethodsReturnTypes =
   | string
   | number
   | Float32Array
-  | Float32Array[]
+  | object
   | undefined;
 
 export type attrsMethodReturnTypes =
