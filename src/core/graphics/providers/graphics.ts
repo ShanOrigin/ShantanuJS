@@ -2,9 +2,9 @@
 
 import { NonGraphicalElement } from '../graphics/nonGraphicalElement.js';
 
-import { GraphicalElementComposer } from '../graphics/graphicalElementComposer.js';
+import { GraphicalElement, GShpesTages } from '../graphics/graphicalElement.js';
 import { renderer } from '../renderer/renderer.js';
 
 //export default Canvas;
 
-export { NonGraphicalElement, GraphicalElementComposer, renderer };
+export { NonGraphicalElement, GraphicalElement, renderer, type GShpesTages };

@@ -1,7 +1,7 @@
 // Utility type for deep partial
 //type which create deep partial or deep interface of a nested object like the below ones
 
-type DeepPartial<T> = {
+export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object
     ? T[P] extends Function
       ? T[P]

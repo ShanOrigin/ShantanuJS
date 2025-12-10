@@ -1,3 +1,4 @@
+/*
 import { LineUnitTests } from '../tests/shapes/basicShapes/line/visualTest/visualUnitTest.js';
 
 import { LineCombineTests } from '../tests/shapes/basicShapes/line/visualTest/visualCombineTest.js';
@@ -147,5 +148,7 @@ async function Tester(classes: string, types: string) {
 }
 
 setTimeout(async () => {
-  await Tester('line', 'unit');
+  //  await Tester('line', 'unit');
 }, 5000);
+
+*/

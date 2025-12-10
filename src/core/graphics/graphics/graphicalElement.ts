@@ -37,7 +37,7 @@ import type { CONTEXT, DeepReadonly } from '../../../types/graphicsElements';
 // unused by this file
 export type GShpesTages = keyof IGraphicalElementProperties;
 
-type ValidKeys = Extract<
+export type ValidKeys = Extract<
   keyof IGraphicalElementProperties,
   keyof TagToGShapeStyleKeyMap
 >;
@@ -276,7 +276,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
    *function for setting attributes for properties of element also geometry and also style
    */
 
-  protected setAttrs(prop: { [key: string]: string | number }): void {
+  #setAttrs(prop: { [key: string]: string | number }): void {
     try {
       if (!this.#geometry) return;
 
@@ -311,7 +311,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
     }
   }
 
-  protected getAttr(key: string): getAttrsMethodsReturnTypes {
+  #getAttr(key: string): getAttrsMethodsReturnTypes {
     try {
       if (!key) return undefined;
 
@@ -364,7 +364,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
         const entries = Object.entries(props);
         for (let i = 0; i < entries.length; i++) {
           const [key, value] = entries[i];
-          this.setAttrs({ [key]: value });
+          this.#setAttrs({ [key]: value });
         }
 
         // +++ Setter Part End +++
@@ -378,16 +378,16 @@ export abstract class GraphicalElement<T extends ValidKeys> {
         if (result.length > 1) {
           for (let f = 0, l = result.length - 1; f <= l; f++, l--) {
             if (f == l) {
-              result[f] = this.getAttr((result[f] as string).trim());
+              result[f] = this.#getAttr((result[f] as string).trim());
               break;
             }
-            result[f] = this.getAttr((result[f] as string).trim());
-            result[l] = this.getAttr((result[l] as string).trim());
+            result[f] = this.#getAttr((result[f] as string).trim());
+            result[l] = this.#getAttr((result[l] as string).trim());
           }
 
           return result.length > 1 ? result : result[0];
         }
-        return this.getAttr((result[0] as string).trim());
+        return this.#getAttr((result[0] as string).trim());
         // +++ Getter Part End +++
         // +++++++++++++++++++++++++++++++++++++++++++++++++++++
       }

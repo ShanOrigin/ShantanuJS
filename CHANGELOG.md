@@ -464,3 +464,9 @@ Notes:
 - event module migrated from core to mixin module.
 - filter submodule migrated from utils to mixin module.
 
+[2025-12-10 | Wednesday | 23:27] [Entire library | 10h] New architecture failed due to some dynamic Mixin class generation , So rollback to privious version
+Notes:
+- Dynamic Mixin class generation is not working.
+- 4 different mixin class generation not working.
+- lack of my knowledge of TS and Generics
+

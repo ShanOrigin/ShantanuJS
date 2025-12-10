@@ -105,8 +105,11 @@ const GraphicsSource = 'http://www.w3.org/2000/svg';
 //++++++++++ Animation Class   ++++++++++++
 //export class Animation<T extends GShpesTages> {
 
-import type { GraphicalElement } from '../../core/graphics/graphics/graphicalElement';
-import type { Constructor } from '../mixinConstructor';
+import type {
+  ValidKeys,
+  GraphicalElement
+} from '../../core/graphics/graphics/graphicalElement';
+import type { Constructor } from '../mixinConstructor/mixinConstructor';
 
 /**
  * Adds transformation-related capabilities to any base class.
@@ -123,8 +126,17 @@ import type { Constructor } from '../mixinConstructor';
  * @param Base  Any class that should gain transformation behavior.
  * @returns     A new class extending Base with transform APIs added.
  */
+
+/*
 export function AnimationMixin<
-  TBase extends Constructor<GraphicalElement<any>>
+  T extends ValidKeys,
+  TBase extends Constructor<GraphicalElement<T>>
+>(Base: TBase) {
+
+	*/
+
+export function AnimationMixin<
+  TBase extends abstract new (...args: any[]) => any
 >(Base: TBase) {
   abstract class Animatable extends Base {
     constructor(...rest: any[]) {
@@ -184,7 +196,7 @@ export function AnimationMixin<
     #animationState: boolean = false;
 
     // it tells animation allready available or not to --- avoid multiple animations can not run on same shape at same time it holds parent class isAnimation method to determine  ---
-    #isAnimation: (t: boolean) => boolean | undefined;
+    #isAnimation!: (t: boolean) => boolean | undefined;
 
     // object to store final Geometry and respective Pivot data of Animation Shape in the transformed state
 
@@ -880,7 +892,7 @@ export function AnimationMixin<
           this.#finalGeometry,
           baseTransformationMatrix,
           100,
-          this.#el.createTransformMatrix.bind(this.#el)
+          this.createTransformMatrix.bind(this)
         )) as optFuncType,
         (this.#interpolateFunction = setPreComputedFrame));
 
@@ -1187,9 +1199,12 @@ export function AnimationMixin<
     }
   }
 
+  return Animatable;
+  /*
   return Animatable as unknown as abstract new (
     ...args: ConstructorParameters<TBase>
   ) => InstanceType<TBase> & Animatable;
+	*/
 }
 //++++++++++++++++++++++++++++++++++++
 // GroupAnimation Class

@@ -29,8 +29,11 @@ import type {
 } from '../../types/transformations';
 import type { transformStack } from '../../types/index';
 
-import type { GraphicalElement } from '../../core/graphics/graphics/graphicalElement';
-import type { Constructor } from '../mixinConstructor';
+import type {
+  ValidKeys,
+  GraphicalElement
+} from '../../core/graphics/graphics/graphicalElement';
+import type { Constructor } from '../mixinConstructor/mixinConstructor';
 
 /**
  * Adds transformation-related capabilities to any base class.
@@ -47,8 +50,15 @@ import type { Constructor } from '../mixinConstructor';
  * @param Base  Any class that should gain transformation behavior.
  * @returns     A new class extending Base with transform APIs added.
  */
+/*
 export function TransformMixin<
-  TBase extends Constructor<GraphicalElement<any>>
+  T extends ValidKeys,
+  TBase extends Constructor<GraphicalElement<T>>
+>(Base: TBase) {
+*/
+
+export function TransformMixin<
+  TBase extends abstract new (...args: any[]) => any
 >(Base: TBase) {
   abstract class Transformable extends Base {
     constructor(...rest: any[]) {
@@ -924,7 +934,8 @@ export function TransformMixin<
             ...element.data
           };
 
-          this[element.tName](Data);
+          // +++++++
+          (this as any)[element.tName](Data);
         }
       } catch (e) {
         throw e;
@@ -986,7 +997,9 @@ export function TransformMixin<
     }
   }
 
-  return Transformable as unknown as abstract new (
+  return Transformable;
+  /* return Transformable as unknown as abstract new (
     ...args: ConstructorParameters<TBase>
   ) => InstanceType<TBase> & Transformable;
+	*/
 }

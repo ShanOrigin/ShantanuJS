@@ -4,22 +4,28 @@ import {
 } from '../../../properties/specific/specificProperties.js';
 import { Colors, createSVGElement } from '../../../utils/providers/utils.js';
 
-import { GraphicalElement as G } from '../graphics/graphicalElement.js';
-import { NonGraphicalElement as NG } from '../graphics/nonGraphicalElement.js';
-import { GraphicalElementComposer } from '../graphics/graphicalElementComposer.js';
 import { Group as GR } from '../../../utils/collection/group.js';
 import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
 
-import { renderer } from '../renderer/renderer.js';
+import type { Renderer } from '../renderer/renderer';
 import { CONTEXT } from '../../../types/graphicsElements.js';
 
 type shapeType = keyof IG;
 
-type GType = G<shapeType>;
 // type NGType = NG<keyof ING>;
 type allowedShapes = GType;
 
-export default class Canvas extends GraphicalElementComposer<'canvas'> {
+import { EventsMixin, TransformMixin } from '../../../mixins/provider/mixin.js';
+
+import {
+  GraphicalElement as G,
+  GShpesTages
+} from '../graphics/graphicalElement.js';
+type GType = G<shapeType>;
+
+const EventFulCanvas = EventsMixin(G<'canvas'>);
+
+export default class Canvas extends EventFulCanvas {
   #parent: HTMLElement | null; // Accept all valid SVG types generically
   #canvasElements: Array<allowedShapes> = [];
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
@@ -195,7 +201,7 @@ export default class Canvas extends GraphicalElementComposer<'canvas'> {
         return attrValue.length > 1 ? attrValue : attrValue[0];
       }
 
-      renderer.render({ el: this, isEffect: true });
+      //      renderer.render({ el: this, isEffect: true });
       return undefined;
     } catch (e) {
       throw e;
@@ -323,7 +329,7 @@ export default class Canvas extends GraphicalElementComposer<'canvas'> {
     if (element instanceof G && (element as GType)?.geometry?.shape == 'g') {
       //if given element is group then gets all its children which may include single element or group itself also
 
-      const ge = (element as GR).getElements();
+      // IMP     const ge = (element as GR).getElements();
       /*
       for (let f = 0, l = ge.length - 1; f <= l; f++, l--) {
         const [e1, e2] = [ge[f], ge[l]];
@@ -332,12 +338,12 @@ export default class Canvas extends GraphicalElementComposer<'canvas'> {
      //   e2.attrs({ roleOfSVG: 'deleted' });
       }*/
       // if element is group then on a group all its children which will delete all the childrens and children maybe group also from that particular group and reinsert into Canvas
-      (element as GR)?.ungroup();
+      // IMP     (element as GR)?.ungroup();
 
       //return to the original method so original method can remove group itself on which this method is called
       if (REGI !== -1) {
-        const parentGR = CA[REGI] as GR;
-        parentGR?.remove(element);
+        // IMP  const parentGR = CA[REGI] as GR;
+        // IMP  parentGR?.remove(element);
       }
       // now delete all elements for children's which were the part of group which we want to delete from the array we have got
 
@@ -353,8 +359,7 @@ export default class Canvas extends GraphicalElementComposer<'canvas'> {
 
     if (REGI !== -1 && element instanceof G) {
       // element.attrs({ roleOfSVG: 'deleted' });
-
-      (CA[REGI] as GR)?.remove(element);
+      // IMP (CA[REGI] as GR)?.remove(element);
     }
   }
 
@@ -446,7 +451,7 @@ export default class Canvas extends GraphicalElementComposer<'canvas'> {
   }
 
   #unGroupToDeleteGroup(g: GR) {
-    if (g?.geometry?.shape !== 'g') return;
+    // IMP    if (g?.geometry?.shape !== 'g') return;
 
     const ge = g.getElements();
     /*

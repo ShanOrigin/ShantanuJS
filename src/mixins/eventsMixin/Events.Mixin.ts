@@ -2,7 +2,7 @@ import { DEV_INTERNAL_ACCESS } from '../..//utils/providers/accesskeys.js';
 
 import { SVG_CONTEXT } from '../../core/graphics/backends/svg/core/core.js';
 
-interface CustomEventOptions extends AddEventListenerOptions {
+export interface CustomEventOptions extends AddEventListenerOptions {
   preventDefault?: boolean;
   stopPropagation?: boolean;
 }
@@ -28,8 +28,11 @@ export abstract class Events<
 
 */
 
-import type { GraphicalElement } from '../../core/graphics/graphics/graphicalElement';
-import type { Constructor } from '../mixinConstructor';
+import type {
+  ValidKeys,
+  GraphicalElement
+} from '../../core/graphics/graphics/graphicalElement';
+import type { Constructor } from '../mixinConstructor/mixinConstructor';
 
 /**
  * Adds event-handling capabilities to any base class.
@@ -50,7 +53,15 @@ import type { Constructor } from '../mixinConstructor';
  * @param Base  Any class needing event capabilities.
  * @returns     A new class extending Base with event APIs added.
  */
-export function EventsMixin<TBase extends Constructor<GraphicalElement<any>>>(
+/*
+export function EventsMixin<
+  T extends ValidKeys,
+  TBase extends Constructor<GraphicalElement<T>>
+>(Base: TBase) {
+
+	*/
+
+export function EventsMixin<TBase extends abstract new (...args: any[]) => any>(
   Base: TBase
 ) {
   abstract class Eventful extends Base {
@@ -383,7 +394,10 @@ export function EventsMixin<TBase extends Constructor<GraphicalElement<any>>>(
     }
   }
 
+  return Eventful;
+  /*
   return Eventful as unknown as abstract new (
     ...args: ConstructorParameters<TBase>
   ) => InstanceType<TBase> & Eventful;
+	*/
 }

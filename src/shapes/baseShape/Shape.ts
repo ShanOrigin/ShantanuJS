@@ -1,7 +1,4 @@
-import {
-  GraphicalElementComposer,
-  renderer
-} from '../../core/graphics/providers/graphics.js';
+import { renderer } from '../../core/graphics/providers/graphics.js';
 
 import {
   GraphicalElementProperties,
@@ -63,71 +60,113 @@ import {
 } from '../../types/filters';
 
 import type { IGraphicalElementProperties as IG } from '../../properties/provider/shapeProperties';
-import type { GShpesTages } from '../../core/graphics/graphics/graphicalElement';
 import { CMATH } from '../../webAsm/interface/TS/CMATH_Interface.js';
 
-const combinationOfSVGAndTransformationsClasses =
-  InheritTransformationClassByMinix(GraphicalElementComposer);
+// You can then export a specific instance, or let other files import the factory.
+// Example: export const BaseShape = createShapeClass<...>(); // If you had a default type
 
-export abstract class Shape<
-  T extends GShpesTages,
-  S extends GShpesTages
-> extends combinationOfSVGAndTransformationsClasses<T, S> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
-  #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
-  // #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
+import {
+  GraphicalElement,
+  GShpesTages,
+  ValidKeys
+} from '../../core/graphics/graphics/graphicalElement';
+import { createShapeClass } from './gen.js';
+import { TransformMixin } from '../../mixins/transformationMixin/Transformation.Mixin.js';
+import { EventsMixin } from '../../mixins/eventsMixin/Events.Mixin.js';
+import { AnimationMixin } from '../../mixins/animationMixin/Animation.Mixin.js';
+import { FilterMixin } from '../../mixins/filterMixin/Filter.Mixin.js';
 
-  // #deferedTaskes : Function[]  = [];
+import type { Constructor } from '../../mixins/mixinConstructor/mixinConstructor';
 
-  //#Animations!: Animation<T>[]; // for timeline support but not implementated yet
-  #isAnimations: boolean = false; // animation control to avoid multiple animation do not run at same time
+/**
+ * Adds transformation-related capabilities to any base class.
+ *
+ * This mixin is responsible for attaching the transformation system to
+ * graphical elements. It **does not** define what a graphical element is;
+ * it only injects transformation behavior into whatever class is given.
+ *
+ * What it does:
+ * - Adds a `transformStack` to track applied transforms
+ * - Adds transformation manipulation methods (setTransform, reset, etc.)
+ * - Preserves the generic types and constructor signature of the base class
+ *
+ * @param Base  Any class that should gain transformation behavior.
+ * @returns     A new class extending Base with transform APIs added.
+ */
 
-  #classProp: {
-    selectable: boolean;
-    hasCanvasSelectable: boolean;
-  } = {
-    selectable: false,
-    hasCanvasSelectable: false
-  }; // future use
+type finalClass = ReturnType<typeof TransformMixin> & GraphicalElement<any>;
 
+/*
+export function ShapeMixin<
+  T extends ValidKeys,
+  TBase extends Constructor<finalClass>
+>(Base: TBase) {
+
+*/
+
+export function Shape<TBase extends abstract new (...args: any[]) => any>(
+  Base: TBase
+) {
+  abstract class Shape extends Base {
+    constructor(...rest: any[]) {
+      super(...rest);
+    }
+
+    #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+    #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
+    // #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
+
+    // #deferedTaskes : Function[]  = [];
+
+    //#Animations!: Animation<T>[]; // for timeline support but not implementated yet
+    #isAnimations: boolean = false; // animation control to avoid multiple animation do not run at same time
+
+    #classProp: {
+      selectable: boolean;
+      hasCanvasSelectable: boolean;
+    } = {
+      selectable: false,
+      hasCanvasSelectable: false
+    }; // future use
+    /*
   // Actual implementation
   constructor(shape: T, id: string, tagname: S) {
     super(shape, id, tagname); // ( shape generics , id , rander generics by default = 'path' )
   }
+*/
+    public getClassProps(accessKey: symbol) {
+      assertAccess(accessKey);
 
-  protected getClassProps(accessKey: symbol) {
-    assertAccess(accessKey);
+      return this.#classProp;
+    }
+    //++++++++++++++++++++++++++++++ Child Class Going to Override this below methods  ++++±+++++++++++++++++++++++++++++
 
-    return this.#classProp;
-  }
-  //++++++++++++++++++++++++++++++ Child Class Going to Override this below methods  ++++±+++++++++++++++++++++++++++++
+    // In this function the code of matrix generation for that particular shape should be implementated.
+    // According to the how are generating that shape matrix
+    public abstract generateMatrix(accessKeys: symbol): void;
 
-  // In this function the code of matrix generation for that particular shape should be implementated.
-  // According to the how are generating that shape matrix
-  protected abstract generateMatrix(accessKeys: symbol): void;
+    // in this function the code of restore dimensions according to the particular shape should be implemented.
+    // Restore dimension code should be according to the shape
+    public abstract restoreDimension(
+      accessKeys: symbol,
+      temporaryState: Float32Array,
+      basic?: boolean
+    ): void;
 
-  // in this function the code of restore dimensions according to the particular shape should be implemented.
-  // Restore dimension code should be according to the shape
-  protected abstract restoreDimension(
-    accessKeys: symbol,
-    temporaryState: Float32Array,
-    basic?: boolean
-  ): void;
+    // In this function the the validation code of that particular shape matrix should be implementated on which this method is going to be  override.
+    // According to the implementation of shape Matrix in that class
 
-  // In this function the the validation code of that particular shape matrix should be implementated on which this method is going to be  override.
-  // According to the implementation of shape Matrix in that class
+    // Example - Rect class  should validate rect matrix
+    // Example - Ellipe class should validate Ellipse matrix
+    public abstract validateShapeMatrix(
+      accessKeys: symbol,
+      matrix: Float32Array[],
+      outputn?: boolean
+    ): boolean | number[] | number;
 
-  // Example - Rect class  should validate rect matrix
-  // Example - Ellipe class should validate Ellipse matrix
-  protected abstract validateShapeMatrix(
-    accessKeys: symbol,
-    matrix: Float32Array[],
-    outputn?: boolean
-  ): boolean | number[] | number;
+    //++++++++++++++++++++++++++++++++++±+++++++++++++++++++++++++++++
 
-  //++++++++++++++++++++++++++++++++++±+++++++++++++++++++++++++++++
-
-  /*
+    /*
 Flattening = Taking your local canonical points + applying the ENTIRE transform stack → rewriting those points in world space → making that the new canonical
 
 
@@ -158,190 +197,47 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
 */
 
-  #flattenTransforms(
-    applyUserParams: Function,
-    userParams: Record<string, string | number>
-  ) {
-    console.log('in Flattening');
-    const composedMatrix = this.getCMatrix(DEV_INTERNAL_ACCESS)() as DOMMatrix;
+    #flattenTransforms(
+      applyUserParams: Function,
+      userParams: Record<string, string | number>
+    ) {
+      console.log('in Flattening');
+      const composedMatrix = this.getCMatrix(
+        DEV_INTERNAL_ACCESS
+      )() as DOMMatrix;
 
-    const { a, b, m31, c, d, m32, e, f } = composedMatrix;
+      const { a, b, m31, c, d, m32, e, f } = composedMatrix;
 
-    // column major because shape matrix is row major and for clearity
+      // column major because shape matrix is row major and for clearity
 
-    const transformMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
+      const transformMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
 
-    //  console.log('transforMatrix ', transformMatrix);
-    const updatedBuffer = this.getMProduct(
-      DEV_INTERNAL_ACCESS,
-      composedMatrix
-    )() as Float32Array;
+      //  console.log('transforMatrix ', transformMatrix);
+      const updatedBuffer = this.getMProduct(
+        DEV_INTERNAL_ACCESS,
+        composedMatrix
+      )() as Float32Array;
 
-    // create world view parameters of local geometry and reflects that new world view parameters in Actual current state of this shape geometry which are current parameters of shape.
+      // create world view parameters of local geometry and reflects that new world view parameters in Actual current state of this shape geometry which are current parameters of shape.
 
-    // console.log('updatedBuffer = ', updatedBuffer);
-    this.#restore({
-      transformMatrix,
-      temporaryState: updatedBuffer,
-      isEffect: true,
-      isVEffect: false
-    });
+      // console.log('updatedBuffer = ', updatedBuffer);
+      this.#restore({
+        transformMatrix,
+        temporaryState: updatedBuffer,
+        isEffect: true,
+        isVEffect: false
+      });
 
-    // apply or add user given parameters to world view parameters .
-    applyUserParams({ ...userParams, transform: '' });
+      // apply or add user given parameters to world view parameters .
+      applyUserParams({ ...userParams, transform: '' });
 
-    // this use world view parameters + user Parameters created by restore to create new local or canonical representation of shape with respect to world parameters and new user given attrs parameters
-    this.generateMatrix(DEV_INTERNAL_ACCESS);
-
-    const geo = this.#geometry as {
-      transformStack: transformStack;
-    };
-
-    geo.transformStack.stack.length = 1;
-    // assinging identity matrix to composed or cumulative  matrix
-
-    (geo.transformStack.stack[0].transformMatrix as Float32Array).set(
-      [1, 0, 0, 0, 1, 0, 0, 0, 1],
-      0
-    );
-  }
-
-  public attrs(props: shapesPropsType | string): attrsMethodReturnTypes {
-    try {
-      const shape = this.#geometry?.shape;
-      if (!shape || shape == '') {
-        throw new Error('Shape is not difined');
-      }
-
-      if (typeof props === 'object') {
-        if ('initial' in props && props.initial) {
-          delete props.initial;
-          console.log('initial');
-          super.attrs(props);
-          this.generateMatrix(DEV_INTERNAL_ACCESS);
-        } else {
-          checkParent(this.#fig, shape);
-
-          parameterTypeValidator(
-            props,
-            GraphicalElementProperties,
-            AllGShapeStyleProperties,
-            this.#classProp,
-            shape
-          );
-
-          //ToDo : autoFixGeometry according to shape
-          //autoFixGeometry(props, ['rx', 'ry', 'stroke-width']);
-
-          const elementProps = GraphicalElementProperties[shape as keyof IG];
-          const styleProps =
-            AllGShapeStyleProperties[
-              shape as keyof typeof AllGShapeStyleProperties
-            ];
-
-          // g for storing Geometry specific properties
-          const g: Record<string, number | string> = {};
-          // s for storing Style specific properties
-          const s: Record<string, string | number | undefined> = {};
-
-          for (const key in props) {
-            if (key in elementProps) {
-              const k = key as keyof typeof elementProps;
-
-              g[k] = props[k]; // TS now knows k is valid
-            } else if (key in styleProps) {
-              const k = key as keyof typeof styleProps;
-              s[k] = props[k]; // TS now knows k is valid
-            }
-          }
-          if (shape === 'rect') {
-            'rx' in g && ((s['rx'] = g['rx']), delete g['rx']);
-            'ry' in g && ((s['ry'] = g['ry']), delete g['ry']);
-          }
-
-          // applying style properties only
-          super.attrs(s);
-
-          // applying geometric perperties with respect to shape if any property available
-
-          Object.keys(g).length > 0 &&
-            this.#flattenTransforms(super.attrs.bind(this), g);
-
-          // renderering new updated geometry and style
-
-          renderer.render({ el: this });
-        }
-      } else if (typeof props === 'string') {
-        let result = super.attrs(props);
-        if (result != null) {
-          return result;
-        }
-      }
-
-      return undefined;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  public setSMatrix(m: number[][], rollback: boolean = false): void {
-    try {
-      if (this.#isAnimations) {
-        cwarn('Animation is Going on So can not set matrix seperataly...!');
-        return;
-      }
-
-      cwarn(
-        'setSMatrix: All previous transformations are cleared , becarefull , you might loose all privouse dara of shape.'
-      );
+      // this use world view parameters + user Parameters created by restore to create new local or canonical representation of shape with respect to world parameters and new user given attrs parameters
+      this.generateMatrix(DEV_INTERNAL_ACCESS);
 
       const geo = this.#geometry as {
         transformStack: transformStack;
-        buffer: Float32Array;
-        shape: string;
       };
 
-      if (!geo) {
-        throw new Error('Geometry not initialized');
-      }
-      const shape = geo.shape as keyof typeof dimensions;
-
-      const [rowSize, columnSize] = dimensions[shape];
-
-      checkParent(this.#fig, shape);
-
-      const sb = [] as Float32Array[];
-      const prev = new Float32Array(geo.buffer.slice(0, columnSize * rowSize)); // backup
-
-      for (let i = 0; i < rowSize; i++) {
-        sb[i] = new Float32Array(3);
-        for (let j = 0; j < columnSize; j++) {
-          const e = m[i]?.[j] ?? 1;
-          geo.buffer[i * columnSize + j] = e;
-          sb[i][j] = e;
-        }
-      }
-
-      if (
-        !Array.isArray(sb) ||
-        !this.validateShapeMatrix(DEV_INTERNAL_ACCESS, sb)
-      ) {
-        if (rollback) {
-          geo.buffer.set(prev, 0); // rollback
-        } else {
-          throw new Error(
-            'given Matrix for Rectangle is invalid maybe it is not actually the shape which you want to give'
-          );
-        }
-      }
-
-      console.log('before  matrix update ', JSON.stringify(this.#geometry));
-      this.restoreDimension(DEV_INTERNAL_ACCESS, geo.buffer);
-      renderer.render({ el: this });
-      console.log('after  matrix update ', JSON.stringify(this.#geometry));
-      // setting '' to transform attribute of svg
-      this.attrs({ transform: '' });
-      // clearing all transformations stack history
       geo.transformStack.stack.length = 1;
       // assinging identity matrix to composed or cumulative  matrix
 
@@ -349,400 +245,562 @@ Description : taking original shape data ( which is local geometry ) and then ap
         [1, 0, 0, 0, 1, 0, 0, 0, 1],
         0
       );
-    } catch (e) {
-      throw e;
     }
-  }
 
-  // returning a transformation Matrix applied by user
+    public attrs(props: shapesPropsType | string): attrsMethodReturnTypes {
+      try {
+        const shape = this.#geometry?.shape;
+        if (!shape || shape == '') {
+          throw new Error('Shape is not difined');
+        }
 
-  public getTMatrix(
-    which: string | number = 0,
-    major: 'r' | 'c' = 'r'
-  ): number[][] {
-    return getTransformationMatrix(
-      (this.#geometry as { transformStack: transformStack }).transformStack
-        .stack,
-      which,
-      major
-    ) as number[][];
-  }
+        if (typeof props === 'object') {
+          if ('initial' in props && props.initial) {
+            delete props.initial;
+            console.log('initial');
+            super.attrs(props);
+            this.generateMatrix(DEV_INTERNAL_ACCESS);
+          } else {
+            checkParent(this.#fig, shape);
 
-  #restore({
-    transformMatrix,
-    temporaryState,
-    isEffect,
-    isVEffect = true
-  }: {
-    transformMatrix: Float32Array;
-    temporaryState: Float32Array;
-    isEffect: boolean;
-    isVEffect: boolean;
-  }) {
-    isEffect && this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
+            parameterTypeValidator(
+              props,
+              GraphicalElementProperties,
+              AllGShapeStyleProperties,
+              this.#classProp,
+              shape
+            );
 
-    //cwarn('in restore ', isVEffect);
-    isVEffect &&
-      renderer.render({
-        el: this,
-        finalMatrix: transformMatrix,
-        isEffect: isVEffect
-      });
-  }
+            //ToDo : autoFixGeometry according to shape
+            //autoFixGeometry(props, ['rx', 'ry', 'stroke-width']);
 
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Transformations Section
-  //++++++++++++++++++++++++++++++++++++++++++++
-  #preChecks(mode: string, px: number, py: number) {
-    checkParent(this.#fig, 'Rect');
-    //  this.#geometry && !this.#geometry.Obbox && this.getBBox();
+            const elementProps = GraphicalElementProperties[shape as keyof IG];
+            const styleProps =
+              AllGShapeStyleProperties[
+                shape as keyof typeof AllGShapeStyleProperties
+              ];
 
-    if ((mode == 'p' || mode == 'pivot') && px == 0 && py == 0) {
-      cwarn(
-        "pivot px , py both are zero so effect is same as relative transformation even if type is 'pivot' or 'p' , falling to 'relative' type to save computations."
-      );
-      mode = 'r';
+            // g for storing Geometry specific properties
+            const g: Record<string, number | string> = {};
+            // s for storing Style specific properties
+            const s: Record<string, string | number | undefined> = {};
+
+            for (const key in props) {
+              if (key in elementProps) {
+                const k = key as keyof typeof elementProps;
+
+                g[k] = props[k]; // TS now knows k is valid
+              } else if (key in styleProps) {
+                const k = key as keyof typeof styleProps;
+                s[k] = props[k]; // TS now knows k is valid
+              }
+            }
+            if (shape === 'rect') {
+              'rx' in g && ((s['rx'] = g['rx']), delete g['rx']);
+              'ry' in g && ((s['ry'] = g['ry']), delete g['ry']);
+            }
+
+            // applying style properties only
+            super.attrs(s);
+
+            // applying geometric perperties with respect to shape if any property available
+
+            Object.keys(g).length > 0 &&
+              this.#flattenTransforms(super.attrs.bind(this), g);
+
+            // renderering new updated geometry and style
+
+            renderer.render({ el: this });
+          }
+        } else if (typeof props === 'string') {
+          let result = super.attrs(props);
+          if (result != null) {
+            return result;
+          }
+        }
+
+        return undefined;
+      } catch (e) {
+        throw e;
+      }
     }
-    return mode;
-  }
 
-  public override Translate({
-    x,
-    y,
-    tType = 'a',
-    px = 0,
-    py = 0
-  }: Required<Pick<TranslateMethodProps, 'x' | 'y'>> &
-    Partial<Omit<TranslateMethodProps, 'x' | 'y'>>): /*
+    public setSMatrix(m: number[][], rollback: boolean = false): void {
+      try {
+        if (this.#isAnimations) {
+          cwarn('Animation is Going on So can not set matrix seperataly...!');
+          return;
+        }
+
+        cwarn(
+          'setSMatrix: All previous transformations are cleared , becarefull , you might loose all privouse dara of shape.'
+        );
+
+        const geo = this.#geometry as {
+          transformStack: transformStack;
+          buffer: Float32Array;
+          shape: string;
+        };
+
+        if (!geo) {
+          throw new Error('Geometry not initialized');
+        }
+        const shape = geo.shape as keyof typeof dimensions;
+
+        const [rowSize, columnSize] = dimensions[shape];
+
+        checkParent(this.#fig, shape);
+
+        const sb = [] as Float32Array[];
+        const prev = new Float32Array(
+          geo.buffer.slice(0, columnSize * rowSize)
+        ); // backup
+
+        for (let i = 0; i < rowSize; i++) {
+          sb[i] = new Float32Array(3);
+          for (let j = 0; j < columnSize; j++) {
+            const e = m[i]?.[j] ?? 1;
+            geo.buffer[i * columnSize + j] = e;
+            sb[i][j] = e;
+          }
+        }
+
+        if (
+          !Array.isArray(sb) ||
+          !this.validateShapeMatrix(DEV_INTERNAL_ACCESS, sb)
+        ) {
+          if (rollback) {
+            geo.buffer.set(prev, 0); // rollback
+          } else {
+            throw new Error(
+              'given Matrix for Rectangle is invalid maybe it is not actually the shape which you want to give'
+            );
+          }
+        }
+
+        console.log('before  matrix update ', JSON.stringify(this.#geometry));
+        this.restoreDimension(DEV_INTERNAL_ACCESS, geo.buffer);
+        renderer.render({ el: this });
+        console.log('after  matrix update ', JSON.stringify(this.#geometry));
+        // setting '' to transform attribute of svg
+        this.attrs({ transform: '' });
+        // clearing all transformations stack history
+        geo.transformStack.stack.length = 1;
+        // assinging identity matrix to composed or cumulative  matrix
+
+        (geo.transformStack.stack[0].transformMatrix as Float32Array).set(
+          [1, 0, 0, 0, 1, 0, 0, 0, 1],
+          0
+        );
+      } catch (e) {
+        throw e;
+      }
+    }
+
+    // returning a transformation Matrix applied by user
+
+    public getTMatrix(
+      which: string | number = 0,
+      major: 'r' | 'c' = 'r'
+    ): number[][] {
+      return getTransformationMatrix(
+        (this.#geometry as { transformStack: transformStack }).transformStack
+          .stack,
+        which,
+        major
+      ) as number[][];
+    }
+
+    #restore({
+      transformMatrix,
+      temporaryState,
+      isEffect,
+      isVEffect = true
+    }: {
+      transformMatrix: Float32Array;
+      temporaryState: Float32Array;
+      isEffect: boolean;
+      isVEffect: boolean;
+    }) {
+      isEffect && this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
+
+      //cwarn('in restore ', isVEffect);
+      isVEffect &&
+        renderer.render({
+          el: this,
+          finalMatrix: transformMatrix,
+          isEffect: isVEffect
+        });
+    }
+
+    //++++++++++++++++++++++++++++++++++++++++++++
+    // Transformations Section
+    //++++++++++++++++++++++++++++++++++++++++++++
+    #preChecks(mode: string, px: number, py: number) {
+      checkParent(this.#fig, 'Rect');
+      //  this.#geometry && !this.#geometry.Obbox && this.getBBox();
+
+      if ((mode == 'p' || mode == 'pivot') && px == 0 && py == 0) {
+        cwarn(
+          "pivot px , py both are zero so effect is same as relative transformation even if type is 'pivot' or 'p' , falling to 'relative' type to save computations."
+        );
+        mode = 'r';
+      }
+      return mode;
+    }
+
+    public override Translate({
+      x,
+      y,
+      tType = 'a',
+      px = 0,
+      py = 0
+    }: Required<Pick<TranslateMethodProps, 'x' | 'y'>> &
+      Partial<Omit<TranslateMethodProps, 'x' | 'y'>>): /*
     
      Omit<TranslateMethodProps, 'isEffect' | 'isVEffect'> */ this {
-    try {
-      if (this.#isAnimations) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
-        );
-        return this;
-      }
-      tType = this.#preChecks(tType, px, py);
+      try {
+        if (this.#isAnimations) {
+          cwarn(
+            'Animation is Going on So can not apply transformation seperataly...!'
+          );
+          return this;
+        }
+        tType = this.#preChecks(tType, px, py);
 
-      super.Translate({
-        x,
-        y,
-        tType,
-        px,
-        py,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
-      });
-      return this;
-    } catch (e) {
-      throw e;
+        super.Translate({
+          x,
+          y,
+          tType,
+          px,
+          py,
+          isEffect: true,
+          callbacks: this.#restore.bind(this),
+          isVEffect: true
+        });
+        return this;
+      } catch (e) {
+        throw e;
+      }
     }
-  }
 
-  public override Scale({
-    sx = 1,
-    sy = 1,
-    tType = 'a',
-    px = 0,
-    py = 0
-  }: Omit<ScaleMethodProps, 'isEffect' | 'isVEffect'>): this {
-    try {
-      if (this.#isAnimations) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
-        );
+    public override Scale({
+      sx = 1,
+      sy = 1,
+      tType = 'a',
+      px = 0,
+      py = 0
+    }: Omit<ScaleMethodProps, 'isEffect' | 'isVEffect'>): this {
+      try {
+        if (this.#isAnimations) {
+          cwarn(
+            'Animation is Going on So can not apply transformation seperataly...!'
+          );
+          return this;
+        }
+
+        tType = this.#preChecks(tType, px, py);
+        super.Scale({
+          sx,
+          sy,
+          tType,
+          px,
+          py,
+          isEffect: true,
+          callbacks: this.#restore.bind(this),
+          isVEffect: true
+        });
         return this;
+      } catch (e) {
+        throw e;
       }
-
-      tType = this.#preChecks(tType, px, py);
-      super.Scale({
-        sx,
-        sy,
-        tType,
-        px,
-        py,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
-      });
-      return this;
-    } catch (e) {
-      throw e;
     }
-  }
 
-  public override Rotate({
-    angle,
-    tType = 'a',
-    px = 0,
-    py = 0
-  }: Omit<RotateMethodProps, 'isEffect' | 'isVEffect'>): this {
-    try {
-      if (this.#isAnimations) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
-        );
+    public override Rotate({
+      angle,
+      tType = 'a',
+      px = 0,
+      py = 0
+    }: Omit<RotateMethodProps, 'isEffect' | 'isVEffect'>): this {
+      try {
+        if (this.#isAnimations) {
+          cwarn(
+            'Animation is Going on So can not apply transformation seperataly...!'
+          );
+          return this;
+        }
+
+        tType = this.#preChecks(tType, px, py);
+
+        super.Rotate({
+          angle,
+          tType,
+          px,
+          py,
+          isEffect: true,
+          callbacks: this.#restore.bind(this),
+          isVEffect: true
+        });
         return this;
+      } catch (e) {
+        throw e;
       }
-
-      tType = this.#preChecks(tType, px, py);
-
-      super.Rotate({
-        angle,
-        tType,
-        px,
-        py,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
-      });
-      return this;
-    } catch (e) {
-      throw e;
     }
-  }
-  public override Skew({
-    sx,
-    sy,
-    tType = 'a',
-    px = 0,
-    py = 0
-  }: Omit<SkewMethodProps, 'isEffect' | 'isVEffect'>): this {
-    try {
-      if (this.#isAnimations) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
-        );
-        return this;
-      }
-      tType = this.#preChecks(tType, px, py);
+    public override Skew({
+      sx,
+      sy,
+      tType = 'a',
+      px = 0,
+      py = 0
+    }: Omit<SkewMethodProps, 'isEffect' | 'isVEffect'>): this {
+      try {
+        if (this.#isAnimations) {
+          cwarn(
+            'Animation is Going on So can not apply transformation seperataly...!'
+          );
+          return this;
+        }
+        tType = this.#preChecks(tType, px, py);
 
-      super.Skew({
-        sx,
-        sy,
-        tType,
-        px,
-        py,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
-      });
-      return this;
-    } catch (e) {
-      throw e;
-    }
-  }
-  public override Flip({
-    flipX,
-    flipY,
-    dirX = 'x+',
-    dirY = 'y+'
-  }: Omit<FlipMethodProps, 'isEffect' | 'isVEffect'>): this {
-    try {
-      if (this.#isAnimations) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
-        );
+        super.Skew({
+          sx,
+          sy,
+          tType,
+          px,
+          py,
+          isEffect: true,
+          callbacks: this.#restore.bind(this),
+          isVEffect: true
+        });
         return this;
+      } catch (e) {
+        throw e;
       }
+    }
+    public override Flip({
+      flipX,
+      flipY,
+      dirX = 'x+',
+      dirY = 'y+'
+    }: Omit<FlipMethodProps, 'isEffect' | 'isVEffect'>): this {
+      try {
+        if (this.#isAnimations) {
+          cwarn(
+            'Animation is Going on So can not apply transformation seperataly...!'
+          );
+          return this;
+        }
+        this.#preChecks('', 1, 1);
+
+        super.Flip({
+          flipX,
+          flipY,
+          dirX,
+          dirY,
+          isEffect: true,
+          callbacks: this.#restore.bind(this),
+          isVEffect: true
+        });
+        return this;
+      } catch (e) {
+        throw e;
+      }
+    }
+
+    public override transform(input: string): this {
+      try {
+        if (this.#isAnimations) {
+          cwarn(
+            'Animation is Going on So can not apply transformation seperataly...!'
+          );
+          return this;
+        }
+        this.#preChecks('', 1, 1);
+        super.transform(input, [this.#restore.bind(this)]);
+        return this;
+      } catch (e) {
+        throw e;
+      }
+    }
+
+    //++++++++++++++++++++++++++++++++++++++++++++
+    // Animation Section
+    //++++++++++++++++++++++++++++++++++++++++++++
+
+    #isAnimationsGoingOn(arg: boolean): boolean | undefined {
+      if (!arg) return this.#isAnimations;
+      this.#isAnimations = !this.#isAnimations;
+    }
+
+    public animate(
+      attrs: animatableProps & IG['rect'],
+      avdProp: IadvanceProps | null,
+      duration: number,
+      ease: EasingFunction | EasingType | null = null,
+      onComplete: Function | null = null
+    ): void | Promise<void> {
       this.#preChecks('', 1, 1);
+      animationChecks(attrs, avdProp, duration, ease, onComplete);
 
-      super.Flip({
-        flipX,
-        flipY,
-        dirX,
-        dirY,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
-      });
-      return this;
-    } catch (e) {
-      throw e;
+      const animation = new Animation<'rect'>(
+        this,
+        this.#isAnimationsGoingOn.bind(this),
+        function () {}
+      );
+      return animation.animate(
+        attrs,
+        avdProp,
+        duration,
+        ease,
+        onComplete,
+        true
+      );
     }
-  }
 
-  public override transform(input: string): this {
-    try {
-      if (this.#isAnimations) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
-        );
-        return this;
-      }
+    public animatia(
+      attrs: animatableProps & IG['rect'],
+      avdProp: IadvanceProps | null,
+      duration: number,
+      ease: EasingFunction | EasingType | null = null,
+      onComplete: Function | null = null
+    ): {
+      start: () => void | Promise<void>;
+      pause: () => void;
+      resume: () => Promise<void>;
+      isPaused: () => boolean;
+      isRunning: () => boolean;
+    } {
       this.#preChecks('', 1, 1);
-      super.transform(input, [this.#restore.bind(this)]);
-      return this;
-    } catch (e) {
-      throw e;
+      animationChecks(attrs, avdProp, duration, ease, onComplete);
+      const animation = new Animation<'rect'>(
+        this,
+        this.#isAnimationsGoingOn.bind(this),
+        function () {}
+      );
+      animation.animate(attrs, avdProp, duration, ease, onComplete, false);
+
+      return {
+        start: animation.start.bind(animation),
+        pause: animation.pause.bind(animation),
+        resume: animation.resume.bind(animation),
+        isPaused: animation.isPaused.bind(animation),
+        isRunning: animation.isRunning.bind(animation)
+      };
+    }
+
+    //++++++++++++++++++++++++++++++++++++++++++++
+    // Filter Section
+    //++++++++++++++++++++++++++++++++++++++++++++
+    public boxShadow(props: boxShadowProps) {
+      new Filter().boxShadow(this.#fig, props);
+    }
+
+    public innerShadow(props: innerShadowProps) {
+      new Filter().innerShadow(this.#fig, props);
+    }
+
+    public blur(blur: number) {
+      new Filter().blur(this.#fig, blur);
+    }
+
+    public glow(bright: number) {
+      new Filter().glow(this.#fig, bright);
+    }
+
+    public linearGradient(
+      props: linearGradientProps = { direction: 'LR', stops: [] }
+    ) {
+      new Filter().linearGradient(this.#fig, props);
+    }
+
+    public radialGradient(
+      props: radialGradientProps = {
+        direction: 'CENTER',
+        stops: []
+      }
+    ) {
+      new Filter().radialGradient(this.#fig, props);
+    }
+
+    public lightEffect(
+      props: lightEffectProps = {
+        lightingColor: 'red',
+        surfaceScale: 1,
+        intensityOfLight: 1,
+        horizontalAngleOfLight: 45,
+        verticalAngleOfLight: 45
+      }
+    ) {
+      new Filter().lightEffect(this.#fig, props);
+    }
+
+    public displacementEffect(
+      props: displacementEffectProps = {
+        patternStyle: 'turbulence',
+        waveFrequency: 0.6,
+        detailLevel: 3,
+        distortionAmount: 5,
+        distortDirectionX: 'B',
+        distortDirectionY: 'G'
+      }
+    ) {
+      new Filter().displacementEffect(this.#fig, props);
+    }
+
+    public colorMatrixTransformation(
+      props: colorMatrixProps = {
+        type: 'saturate',
+        values: 1,
+        inSource: 'SourceGraphic'
+      }
+    ) {
+      new Filter().colorMatrixTransformation(this.#fig, props);
+    }
+
+    public neuMorph(
+      props: neuMorphProps = {
+        backgroundColor: '#e6eef6',
+        outerShadowColor: '#b8c9db',
+        highlightColor: '#ffffff',
+        innerShadowColor: '#000000',
+
+        outerBlur: 10,
+        outerOffsetX: 8,
+        outerOffsetY: 8,
+        outerShadowOpacity: 0.85,
+
+        highlightBlur: 6,
+        highlightOffsetX: -6,
+        highlightOffsetY: -6,
+        highlightOpacity: 0.9,
+
+        innerBlur: 6,
+        innerOffsetX: 4,
+        innerOffsetY: 4,
+        innerShadowOpacity: 0.12
+      }
+    ) {
+      new Filter().neuMorph(this.#fig, props);
+    }
+
+    public glassMorph(
+      props: glassMorphProps = {
+        blurAmount: 10,
+        frostOpacity: 0.05,
+        edgeBlur: 1.2,
+        edgeHighlightOpacity: 0.35
+      }
+    ) {
+      new Filter().glassMorph(this.#fig, props);
     }
   }
 
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Animation Section
-  //++++++++++++++++++++++++++++++++++++++++++++
-
-  #isAnimationsGoingOn(arg: boolean): boolean | undefined {
-    if (!arg) return this.#isAnimations;
-    this.#isAnimations = !this.#isAnimations;
-  }
-
-  public animate(
-    attrs: animatableProps & IG['rect'],
-    avdProp: IadvanceProps | null,
-    duration: number,
-    ease: EasingFunction | EasingType | null = null,
-    onComplete: Function | null = null
-  ): void | Promise<void> {
-    this.#preChecks('', 1, 1);
-    animationChecks(attrs, avdProp, duration, ease, onComplete);
-
-    const animation = new Animation<'rect'>(
-      this,
-      this.#isAnimationsGoingOn.bind(this),
-      function () {}
-    );
-    return animation.animate(attrs, avdProp, duration, ease, onComplete, true);
-  }
-
-  public animatia(
-    attrs: animatableProps & IG['rect'],
-    avdProp: IadvanceProps | null,
-    duration: number,
-    ease: EasingFunction | EasingType | null = null,
-    onComplete: Function | null = null
-  ): {
-    start: () => void | Promise<void>;
-    pause: () => void;
-    resume: () => Promise<void>;
-    isPaused: () => boolean;
-    isRunning: () => boolean;
-  } {
-    this.#preChecks('', 1, 1);
-    animationChecks(attrs, avdProp, duration, ease, onComplete);
-    const animation = new Animation<'rect'>(
-      this,
-      this.#isAnimationsGoingOn.bind(this),
-      function () {}
-    );
-    animation.animate(attrs, avdProp, duration, ease, onComplete, false);
-
-    return {
-      start: animation.start.bind(animation),
-      pause: animation.pause.bind(animation),
-      resume: animation.resume.bind(animation),
-      isPaused: animation.isPaused.bind(animation),
-      isRunning: animation.isRunning.bind(animation)
-    };
-  }
-
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Filter Section
-  //++++++++++++++++++++++++++++++++++++++++++++
-  public boxShadow(props: boxShadowProps) {
-    new Filter().boxShadow(this.#fig, props);
-  }
-
-  public innerShadow(props: innerShadowProps) {
-    new Filter().innerShadow(this.#fig, props);
-  }
-
-  public blur(blur: number) {
-    new Filter().blur(this.#fig, blur);
-  }
-
-  public glow(bright: number) {
-    new Filter().glow(this.#fig, bright);
-  }
-
-  public linearGradient(
-    props: linearGradientProps = { direction: 'LR', stops: [] }
-  ) {
-    new Filter().linearGradient(this.#fig, props);
-  }
-
-  public radialGradient(
-    props: radialGradientProps = {
-      direction: 'CENTER',
-      stops: []
-    }
-  ) {
-    new Filter().radialGradient(this.#fig, props);
-  }
-
-  public lightEffect(
-    props: lightEffectProps = {
-      lightingColor: 'red',
-      surfaceScale: 1,
-      intensityOfLight: 1,
-      horizontalAngleOfLight: 45,
-      verticalAngleOfLight: 45
-    }
-  ) {
-    new Filter().lightEffect(this.#fig, props);
-  }
-
-  public displacementEffect(
-    props: displacementEffectProps = {
-      patternStyle: 'turbulence',
-      waveFrequency: 0.6,
-      detailLevel: 3,
-      distortionAmount: 5,
-      distortDirectionX: 'B',
-      distortDirectionY: 'G'
-    }
-  ) {
-    new Filter().displacementEffect(this.#fig, props);
-  }
-
-  public colorMatrixTransformation(
-    props: colorMatrixProps = {
-      type: 'saturate',
-      values: 1,
-      inSource: 'SourceGraphic'
-    }
-  ) {
-    new Filter().colorMatrixTransformation(this.#fig, props);
-  }
-
-  public neuMorph(
-    props: neuMorphProps = {
-      backgroundColor: '#e6eef6',
-      outerShadowColor: '#b8c9db',
-      highlightColor: '#ffffff',
-      innerShadowColor: '#000000',
-
-      outerBlur: 10,
-      outerOffsetX: 8,
-      outerOffsetY: 8,
-      outerShadowOpacity: 0.85,
-
-      highlightBlur: 6,
-      highlightOffsetX: -6,
-      highlightOffsetY: -6,
-      highlightOpacity: 0.9,
-
-      innerBlur: 6,
-      innerOffsetX: 4,
-      innerOffsetY: 4,
-      innerShadowOpacity: 0.12
-    }
-  ) {
-    new Filter().neuMorph(this.#fig, props);
-  }
-
-  public glassMorph(
-    props: glassMorphProps = {
-      blurAmount: 10,
-      frostOpacity: 0.05,
-      edgeBlur: 1.2,
-      edgeHighlightOpacity: 0.35
-    }
-  ) {
-    new Filter().glassMorph(this.#fig, props);
-  }
+  return Shape;
+  /*
+  return Shape as unknown as abstract new (
+    ...args: ConstructorParameters<TBase>
+  ) => InstanceType<TBase> & Shape;
+	*/
 }
 
 /*

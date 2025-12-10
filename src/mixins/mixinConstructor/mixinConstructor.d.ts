@@ -9,3 +9,8 @@
  */
 
 export type Constructor<T = {}> = abstract new (...args: any[]) => T;
+
+// mixinConstructor.ts
+export type AbstractConstructor<any = {}> = abstract new (
+  ...args: any[]
+) => any;
