@@ -457,3 +457,10 @@ Notes:
 -  Improving Inheritance and mixin behaviours.
 - Improving Folder structures + all other things
 
+[2025-12-10 | Wednesday | 08:03] [mixin | 3h] Added mixin modules to simulate multiple inheritance or to control behaiourof final classes , added transformation , event , animation , filter and many more in future
+Notes:
+- transformation submodule migrated from utils to mixin module.
+-  animation submodule migrated from utils to mixin module.
+- event module migrated from core to mixin module.
+- filter submodule migrated from utils to mixin module.
+
