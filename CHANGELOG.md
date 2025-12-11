@@ -442,3 +442,15 @@ Notes:
 -  Added getters and setters for those 2 variables with sefty check.
 - Only these variables can be modified through secret key. 
 
+
+
+[2025-12-11 | Thursday | 20:44] [Architecture/Model | 2h] Added new file  ARCHITECTURE.MODEL in the root directory so it is directly conveying and expressing how the rendering architecture model of the entire library is and how the actual rendering model works exactly like all graphics engines and libraries work in the real world... when Canvas gets created it will initialize the Renderer and the array of all elements which is going to be in the Canvas, which is a Canvas Stack, and then it will initialize the Engine and pass the Canvas Stack and Renderer to the Engine, and then Canvas will start the Engine and everything else will be handled by Engine......
+Notes:
+- When Canvas gets created it initializes the Canvas Stack which holds all Shapes.
+- Canvas initializes the Renderer which will be responsible for drawing all Shapes in the Canvas.
+- Canvas initializes the Engine and provides Engine with the Canvas Stack and Renderer.
+- Canvas starts the Engine immediately after initialization so the rendering model begins running.
+- Engine uses a centralized Engine rendering loop to update Shape internals and render them.
+- In the first step Engine only updates all required internal data of Shapes available in the Canvas.
+- In the second step Engine will call the Renderer to render all updated Shapes in the Canvas
+

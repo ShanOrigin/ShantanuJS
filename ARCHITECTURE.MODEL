@@ -1,0 +1,196 @@
+⭐ FINAL, CORRECT, SCALABLE ENGINE ARCHITECTURE
+
+Canvas Class
+
+Responsible for:
+
+Creating DOM <canvas> or <svg>
+
+Holding the list of shapes (this.shapes = [])
+
+Creating the Engine
+
+Creating the Renderer
+
+Starting the engine automatically
+
+
+class Canvas {
+    constructor(config) {
+        this.shapes = [];
+        this.renderer = new Renderer(this);
+        this.engine = new Engine(this.shapes, this.renderer);
+
+        this.engine.start();  
+    }
+
+    addShape(shape) { this.shapes.push(shape); }
+    removeShape(shape) { ... }
+}
+
+This matches your idea exactly.
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+⭐ Engine Class
+
+Responsible for:
+
+Running ONE global requestAnimationFrame loop
+
+Updating all animations
+
+Updating transforms
+
+Marking dirty flags
+
+Calling renderer once per frame
+
+
+class Engine {
+    constructor(shapes, renderer) {
+        this.shapes = shapes;
+        this.renderer = renderer;
+        this.running = false;
+    }
+
+    start() {
+        if (this.running) return;
+        this.running = true;
+        requestAnimationFrame(this.loop.bind(this));
+    }
+
+    loop(time) {
+        // 1. Update animations
+        for (const shape of this.shapes) {
+            if (shape.animation) {
+                shape.animation.update(time);  
+            }
+        }
+
+        // 2. Render entire scene once
+        this.renderer.render(this.shapes);
+
+        // Continue loop
+        requestAnimationFrame(this.loop.bind(this));
+    }
+}
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+⭐ Renderer Class
+
+Renderer does ONLY drawing.
+
+SVG Renderer:
+
+Loops through shapes
+
+Checks shape.dirty or similar something like that 
+
+Updates only the changed DOM attributes
+
+Never touches animation logic
+
+Never touches state updates
+
+
+Canvas Renderer:
+
+Clears the canvas
+
+Redraws all shapes in correct order
+
+Shapes are already updated by the engine
+
+No animation logic inside
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+⭐ Shape Class
+
+Shape stores ONLY:
+
+geometry
+
+transform
+
+styling
+
+dirty flag
+
+animation reference (just one pointer) or object 
+
+
+Shape does NOT:
+
+run rAF
+
+call renderer
+
+call animation itself
+
+render itself
+
+compute anything unrelated to data
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+⭐ Animation Class
+
+Animation stored in shape:
+
+shape.animation = new Animation(shape, options);
+
+Animation stores:
+
+precomputed frames or polynomial fit
+
+duration
+
+timing
+
+easing
+
+reference to shape
+
+update(time) method 
+
+all required data 
+
+
+Animation NEVER calls rAF.
+Animation NEVER calls renderer.
+
+Engine calls:
+
+shape.animation.update(time);
+
+Animation updates shape.transform.
+Shape marks dirty = true.
+
+That’s it.
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+⭐ “Whenever adding a shape, deleting a shape, applying transform, applying animation → everything happens automatically.”
+
+
+Because the engine loop will always do:
+
+UPDATE → RENDER → UPDATE → RENDER → ...
+
+So ANY state change triggers correct rendering automatically.
+
+We have a self-running scene graph.
+
