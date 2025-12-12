@@ -454,3 +454,11 @@ Notes:
 - In the first step Engine only updates all required internal data of Shapes available in the Canvas.
 - In the second step Engine will call the Renderer to render all updated Shapes in the Canvas
 
+[2025-12-12 | Friday | 12:00] [Core/graphics/graphics | 3h] Added and deleted several files. Shifted the responsibility of the graphicalElementComposer class into the graphicalElement class and removed the graphicalElementComposer class completely, eliminating one inheritance level. Added context-based switching paths in the graphicalElement core class everywhere applicable, where context can switch. Added comments indicating that this code may change in the future depending on context. Implementing context-based paths across all modules and files and updating all possible areas to support context-based path switching. Removed one generic parameter from the entire inheritance chain and now use the second constructor parameter of the graphicalElement class as the Context.
+Notes:
+- Shifted graphicalElementComposer functionality into graphicalElement class 
+-  Implementing context-based paths across all modules and files 
+-  Updating all modules to fully support context switching 
+-  Ensured consistency of Context parameter usage 
+-  Eliminated redundant inheritance complexity
+
