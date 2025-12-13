@@ -2,6 +2,11 @@
 import { execSync } from 'child_process';
 import readline from 'readline';
 
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
 function output(cmd) {
   return execSync(cmd, { encoding: 'utf8' }).trim();
 }
@@ -24,11 +29,6 @@ const REGEX = /^\[[^\]]+\] - .+$/;
 
 // Ask commit message ONLY if needed
 function askCommitMessage(callback) {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
   function ask() {
     rl.question(`📝 Enter commit message\n${FORMAT_HINT}\n> `, (msg) => {
       const trimmed = msg.trim();
@@ -38,7 +38,6 @@ function askCommitMessage(callback) {
         return ask(); // Ask again
       }
 
-      rl.close();
       callback(trimmed);
     });
   }
@@ -69,47 +68,77 @@ function start(commitMsg) {
     process.exit(1);
   }
 
-  // Detect branch
-  let branch = '';
+  // Instead of detecting HEAD, list all branches and let user choose
+  let allBranches = [];
   try {
-    branch = output('git rev-parse --abbrev-ref HEAD');
+    allBranches = output('git branch --format="%(refname:short)"')
+      .trim()
+      .split('\n')
+      .map((b) => b.trim());
   } catch {
-    console.error('❌ Cannot detect branch.');
+    console.error('❌ Cannot list branches.');
     process.exit(1);
   }
 
-  // Print info FIRST (your requirement)
   console.log('===================================================');
-  console.log('🚀  Ready to push changes');
-  console.log('📦 Repository :', repoUrl);
-  console.log('🌿 Branch     :', branch);
-  console.log('📝 Commit     :', commitMsg || '(none)');
+  console.log('🌿 Available Git Branches:\n');
+  allBranches.forEach((br, index) => {
+    console.log(`  ${index + 1}) ${br}`);
+  });
   console.log('===================================================\n');
 
-  // If commit message missing → ask AFTER printing info
-  if (!commitMsg) {
-    askCommitMessage((msg) => {
-      commitMessage = msg;
-      continueFlow();
-    });
-  } else {
-    continueFlow();
-  }
+  let branch = '';
 
-  function continueFlow() {
-    askConfirmation((confirmed) => {
-      if (!confirmed) {
-        console.log('❌ Push cancelled.');
-        process.exit(0);
+  function askBranchChoice(callback) {
+    rl.question('👉 Enter branch number to push: ', (num) => {
+      let choice = parseInt(num, 10);
+
+      if (isNaN(choice) || choice < 1 || choice > allBranches.length) {
+        console.log('❌ Invalid selection. Try again.\n');
+        return askBranchChoice(callback);
       }
 
-      run('git add -A');
-      run(`git commit -m "${commitMessage}"`);
-      run(`git push origin ${branch}`);
-
-      console.log('✅ Git changes pushed successfully!');
+      callback(allBranches[choice - 1]);
     });
   }
+
+  askBranchChoice((selectedBranch) => {
+    branch = selectedBranch;
+
+    console.log('===================================================');
+    console.log('🚀  Ready to push changes');
+    console.log('📦 Repository :', repoUrl);
+    console.log('🌿 Branch     :', branch);
+    console.log('📝 Commit     :', commitMsg || '(none)');
+    console.log('===================================================\n');
+
+    if (!commitMsg) {
+      askCommitMessage((msg) => {
+        commitMessage = msg;
+        continueFlow();
+      });
+    } else {
+      continueFlow();
+    }
+
+    function continueFlow() {
+      askConfirmation((confirmed) => {
+        if (!confirmed) {
+          console.log('❌ Push cancelled.');
+          rl.close();
+          process.exit(0);
+        }
+
+        run(`git checkout ${branch}`);
+        run('git add -A');
+        run(`git commit -m "${commitMessage}"`);
+        run(`git push origin ${branch}`);
+
+        console.log('✅ Git changes pushed successfully!');
+        rl.close();
+      });
+    }
+  });
 }
 
 // Start workflow
