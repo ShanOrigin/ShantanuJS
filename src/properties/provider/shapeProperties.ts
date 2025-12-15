@@ -1,39 +1,3 @@
-/*
-
-import {
-  CommonStyleProperties,
-  CommonGeometricProperties,
-  ICommonStyleProperties,
-  ICommonGeometricProperties,
-  AllGShapeStyleProperties,
-  IAllGShapeStyleProperties
-} from '../common/commonProperties.js';
-
-
-
-import {
-  GraphicalElementProperties,
-  IGraphicalElementProperties,
-  NonGraphicalElementProperties,
-  INonGraphicalElementProperties
-} from '../specific/specificProperties.js';
-
-
-export {
-  CommonStyleProperties,
-  ICommonStyleProperties,
-  CommonGeometricProperties,
-  ICommonGeometricProperties,
-  AllGShapeStyleProperties,
-  IAllGShapeStyleProperties,
-  GraphicalElementProperties,
-  IGraphicalElementProperties,
-  NonGraphicalElementProperties,
-  INonGraphicalElementProperties
-};
-
-*/
-
 // Importing Values
 import {
   //  CommonStyleProperties,
@@ -62,7 +26,7 @@ import type {
   IGraphicalElementProperties,
   INonGraphicalElementProperties,
   ipDot,
-  ipSvg,
+  ipCanvas,
   ipLine,
   ipRect,
   ipText,
@@ -101,7 +65,7 @@ export type {
   ipPolygon,
   ipPolyline,
   ipPath,
-  ipSvg,
+  ipCanvas,
   ipText,
   ipImage
 };

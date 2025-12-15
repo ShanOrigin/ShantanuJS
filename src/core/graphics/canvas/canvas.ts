@@ -1,40 +1,59 @@
-import {
-  IGraphicalElementProperties as IG,
-  INonGraphicalElementProperties as ING
-} from '../../../properties/specific/specificProperties.js';
-import { Colors, createSVGElement } from '../../../utils/providers/utils.js';
+import { IGraphicalElementProperties as IG } from '../../../properties/specific/specificProperties.js';
+import { Colors } from '../../../utils/providers/utils.js';
+import { createSVGElement } from '../backends/svg/core/core.js';
 
 import { GraphicalElement as G } from '../graphics/graphicalElement.js';
-import { NonGraphicalElement as NG } from '../graphics/nonGraphicalElement.js';
-import { GraphicalElementComposer } from '../graphics/graphicalElementComposer.js';
+
+import { Events } from '../events/event.js';
 import { Group as GR } from '../../../utils/collection/group.js';
 import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
 
-import { renderer } from '../renderer/renderer.js';
+import { Renderer } from '../renderer/renderer.js';
+import { Engine } from '../engine/engine.js';
+import { SVG_CONTEXT } from '../backends/svg/core/core.js';
 
+import type { CONTEXT } from '../../../types/graphicsElements';
 type shapeType = keyof IG;
 
-type GType = G<shapeType, keyof IG>;
-type NGType = NG<keyof ING>;
-type allowedSVG = GType | NGType;
+type GType = G<shapeType>;
 
-export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
+type allowedShapes = GType;
+
+export default class Canvas extends Events<'canvas'> {
   #parent: HTMLElement | null; // Accept all valid SVG types generically
-  #canvasElements: Array<allowedSVG> = [];
+  #canvasElements: Array<allowedShapes> = [];
+  #renderer!: Renderer;
+  #engine!: Engine;
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
   #style = this.getIStyle(DEV_INTERNAL_ACCESS);
+  #geometry = this.getIGeo(DEV_INTERNAL_ACCESS);
   protected x: number = 0;
   protected y: number = 0;
   constructor(
     id: string,
     width: number,
     height: number,
-    posX: number = 0,
-    posY: number = 0
+    context: CONTEXT = SVG_CONTEXT,
+    x: number = 0,
+    y: number = 0
   ) {
-    super('svg', `${id}-Canvas`, 'svg');
+    super('canvas', `${id}-Canvas`);
     try {
-      //   super.attrs({ width: width, height: height });
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+      //  This code may change According to context
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+      if (context != SVG_CONTEXT) {
+        throw new Error(
+          'This version only Supports SVG Context...! . HTMLCanvas Supports will come in future...!'
+        );
+      }
+
+      Object.defineProperty(this.#geometry, 'context', {
+        value: context,
+        writable: false,
+        configurable: false,
+        enumerable: true
+      });
 
       this.#parent = document.getElementById(id);
 
@@ -48,55 +67,65 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
         (this.#parent?.appendChild(this.#fig),
         (this.#parent.style.position = 'relative'));
 
-      this.#style &&
-        this.#setCanvasParams(
-          posX,
-          posY,
-          this.#style.stroke ?? 'rbg(0,0,0)',
-          this.#style['stroke-width'] ?? 0
-        );
-      this.x = posX;
-      this.y = posY;
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+      // This code may change According to context
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-      //Only SVG specific for filter effects
-
-      const def = createSVGElement('defs');
-      this.#fig.appendChild(def);
-
+      if (this.#geometry?.context == SVG_CONTEXT) {
+        if (!this.#fig) {
+          this.#fig = createSVGElement(SVG_CONTEXT) as SVGSVGElement;
+        }
+        const def = createSVGElement('defs');
+        this.#fig.appendChild(def);
+      }
       console.log('applying dim to canvas ');
       this.attrs({
-        width: width,
-        height: height,
-        x: posX,
-        y: posY,
+        width,
+        height,
+        x,
+        y,
         stroke: this.#style.stroke ?? 'rbg(0,0,0)',
         'stroke-width': this.#style['stroke-width'] ?? 0
       });
+
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+      // This code may change According to context
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+      // initialized generalized render
+      this.#renderer = new Renderer();
+      // initialized generalized rendering engine
+      this.#engine = new Engine(this.#canvasElements, this.#renderer);
+      // started rendering engine
+      this.#engine.start();
     } catch (e) {
       throw e;
     }
   }
 
-  #setCanvasParams(
-    posX: number,
-    posY: number,
-    stroke: string,
-    strokeWidth: number = 0.5,
-    fill: string = 'white'
-  ): void {
+  #setCanvasParams(): void {
     try {
+      const { x, y } = this.#geometry as { x: number; y: number };
+      const {
+        stroke = 'black',
+        fill = 'white',
+        'stroke-width': sw = 0
+      } = this.#style as {
+        stroke: string;
+        fill: string;
+        'stroke-width': number;
+      };
+
       const c = new Colors(fill);
 
-      this.x = posX;
-      this.y = posY;
       Object.assign(this.#fig.style, {
         position: 'absolute',
-        left: `${posX}px`,
-        top: `${posY}px`,
+        left: `${x}px`,
+        top: `${y}px`,
         borderColor: c.isColor(stroke),
         background: c.isColor(fill),
-        borderWidth: strokeWidth,
-        borderStyle: strokeWidth > 0 ? 'solid' : 'none'
+        borderWidth: sw,
+        borderStyle: sw > 0 ? 'solid' : 'none'
       });
     } catch (e) {
       throw e;
@@ -127,47 +156,16 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
 
       // Handle object props
       if (typeof props === 'object') {
-        const safeProps = props as {
-          width?: number;
-          height?: number;
-          x?: number;
-          y?: number;
-          stroke?: string;
-          'stroke-width'?: number;
-          selectable?: boolean;
-          fill?: string;
-        };
-        const propsA = Object.entries(safeProps);
+        super.attrs(props);
 
-        /*
-        for (let i = 0; i < propsA.length; i++) {
-          const [k, v] = propsA[i];
-          (k == 'width' ||
-            k == 'height' ||
-            k == 'stroke' ||
-            k == 'stroke-width' ||
-            k == 'selectable') &&
-            super.attrs({ [k]: v });
-        }
-				*/
-
-        super.attrs(safeProps);
-
-        // Set canvas parameters
-        this.#setCanvasParams(
-          safeProps.x ?? this.x,
-          safeProps.y ?? this.y,
-          safeProps.stroke ?? 'rgb(0,0,0)',
-          safeProps['stroke-width'] ?? 1,
-          safeProps.fill
-        );
+        this.#setCanvasParams();
+        return;
       }
 
       let attrValue:
         | void
         | (string | number | undefined)[]
         | (string | number | undefined) = [];
-      // updated code
 
       if (typeof props === 'string' && props.length >= 1) {
         const arg = props.trim().split(' ');
@@ -175,13 +173,6 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
         for (let i = 0; i < arg.length; i++) {
           const e = arg[i].trim();
           if (e !== '') {
-            if (e === 'x' || e === 'y') {
-              const index = arg.indexOf(e);
-              attrValue[index] === undefined &&
-                (attrValue[index] = this[e as 'x' | 'y'] as number);
-              continue;
-            }
-
             const r = super.attrs(e);
             attrValue[i] =
               typeof r === 'string' || typeof r === 'number' ? r : undefined;
@@ -193,99 +184,88 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
         return attrValue.length > 1 ? attrValue : attrValue[0];
       }
 
-      renderer.render({ el: this, isEffect: true });
       return undefined;
     } catch (e) {
       throw e;
     }
   }
 
-  public contain(svg: allowedSVG): boolean {
-    const isInSVGDOM =
-      svg.getIFig(DEV_INTERNAL_ACCESS).parentNode === this.#fig;
-    let isInSVGA = false;
+  public contain(shape: allowedShapes): boolean {
+    let isInDOM = false;
+
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //  This code may change According to context
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+    this.#geometry?.context == SVG_CONTEXT &&
+      (isInDOM = shape.getIFig(DEV_INTERNAL_ACCESS).parentNode === this.#fig);
+
+    let isInCanvas = false;
     const CA = this.#canvasElements;
 
-    const [eGT, eNGT] = [svg as GType, svg as NGType];
-    const GEI = eGT?.style?.id; // element id if graphical element
-    const NGEI = eNGT?.attributes?.id; // element id if non graphical element
+    const GEI = shape?.style?.id; // element id if graphical element
 
     // finding the exact location of the element which we want to delete
     for (let f = 0, l = CA.length - 1; f <= l; f++, l--) {
       const [fe, le] = [CA[f], CA[l]];
 
-      if (
-        (fe instanceof G && fe?.style?.id === GEI) ||
-        (fe instanceof NG && fe?.attributes?.id === NGEI)
-      ) {
-        isInSVGA = true;
+      if (fe instanceof G && fe?.style?.id === GEI) {
+        isInCanvas = true;
         break;
       }
 
-      if (
-        (le instanceof G && le?.style?.id === GEI) ||
-        (le instanceof NG && le?.attributes?.id === NGEI)
-      ) {
-        isInSVGA = true;
+      if (le instanceof G && le?.style?.id === GEI) {
+        isInCanvas = true;
         break;
       }
     }
 
-    return isInSVGDOM && isInSVGA;
+    return isInDOM && isInCanvas;
   }
 
-  /**
-   * Adds this element to one or more SVG containers.
-   *
-   * **Overload 1:** Control tracking behavior explicitly.
-   * @param track If `true`, the element will be tracked by the canvas. If `false`, it will not.
-   * @param rest One or more SVG containers to add this element to.
-   * @returns The current instance for chaining.
-   */
-  public addTo(track: boolean, ...rest: allowedSVG[]): this;
-
-  /**
-   * Adds this element to one or more SVG containers.
-   *
-   * **Overload 2:** Automatically tracks the element.
-   * @param svg The first SVG Element .
-   * @param rest Additional SVG Element.
-   * @returns The current instance for chaining.
-   */
-  public addTo(svg: allowedSVG, ...rest: allowedSVG[]): this;
-
-  public addTo(first: boolean | allowedSVG, ...rest: allowedSVG[]): this {
+  public addTo(...rest: allowedShapes[]): this {
     if (!this.#fig)
       throw new Error(
         `Canvas is not initialized or may have been deleted: ${this.#fig}`
       );
 
-    const addToTrackByCanvas = typeof first === 'boolean' ? first : true;
-    const elements: allowedSVG[] = !addToTrackByCanvas
-      ? rest
-      : [first as allowedSVG, ...rest];
+    const canvasContext = this.#geometry?.context;
 
-    for (let index = 0; index < elements.length; index++) {
-      const el = elements[index];
-      if (!(el instanceof G || el instanceof NG))
-        throw new Error(`Invalid SVG element: ${el}. Must be G or NG.`);
+    for (let index = 0; index < rest.length; index++) {
+      const shapeEl = rest[index];
+      if (!(shapeEl instanceof G)) throw new Error(`Invalid Shape : `, shapeEl);
 
-      if (!el.getIFig(DEV_INTERNAL_ACCESS))
-        throw new Error(`SVG element is deleted or uninitialized: ${el}`);
+      const { shape, context = null } = shapeEl.geometry as {
+        shape: string;
+        context: string | undefined;
+      };
 
-      this.#fig!.appendChild(el.getIFig(DEV_INTERNAL_ACCESS));
+      if (context) {
+        console.warn(
+          'This shape is Already added in other , Canvas check properly'
+        );
+        return this;
+      }
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+      //  This code may change According to context
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+      if (canvasContext == SVG_CONTEXT) {
+        const gEl = createSVGElement(shape);
+        shapeEl.setIFig(DEV_INTERNAL_ACCESS, canvasContext, gEl);
+        this.#fig!.appendChild(gEl);
+      }
 
-      addToTrackByCanvas && this.#canvasElements.push(el);
-
-      el.attrs({
-        inside: `svg,${this.#style?.id}`
-      });
+      this.#canvasElements.push(shapeEl);
+      this.#style['inside'] = `canvas,${this.#style.id}`;
     }
 
     return this;
   }
 
-  #removeSameElementFromContainingGR(element: allowedSVG) {
+  /* Very important method work on it later
+	 *
+	 *
+	 *
+  #removeSameElementFromContainingGR(element: allowedShapes) {
     const parentId = (
       element.getIFig(DEV_INTERNAL_ACCESS).parentNode as HTMLElement
     ).getAttribute('id');
@@ -326,13 +306,13 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
       //if given element is group then gets all its children which may include single element or group itself also
 
       const ge = (element as GR).getElements();
-      /*
-      for (let f = 0, l = ge.length - 1; f <= l; f++, l--) {
-        const [e1, e2] = [ge[f], ge[l]];
+      
+     // for (let f = 0, l = ge.length - 1; f <= l; f++, l--) {
+       // const [e1, e2] = [ge[f], ge[l]];
 
       //  e1.attrs({ roleOfSVG: 'deleted' });
      //   e2.attrs({ roleOfSVG: 'deleted' });
-      }*/
+     // }
       // if element is group then on a group all its children which will delete all the childrens and children maybe group also from that particular group and reinsert into Canvas
       (element as GR)?.ungroup();
 
@@ -343,7 +323,9 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
       }
       // now delete all elements for children's which were the part of group which we want to delete from the array we have got
 
-      this.remove(...ge, element);
+      // +++++ important read carefully ++++
+
+      //   this.remove(...ge, element);
 
       return;
     }
@@ -351,14 +333,16 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
     // if given element is instance of graphical class or non graphical class then just u group it from its respective group
     // it will  come out that element into Canvas then Canvas method will handle its deletion
 
-    if (REGI !== -1 && (element instanceof G || element instanceof NG)) {
+    if (REGI !== -1 && element instanceof G) {
       // element.attrs({ roleOfSVG: 'deleted' });
 
       (CA[REGI] as GR)?.remove(element);
     }
   }
 
-  public remove(...elements: allowedSVG[]): this {
+	*/
+
+  public remove(...elements: allowedShapes[]): this {
     try {
       /*
 			 remove(element):
@@ -390,47 +374,39 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
       for (let i = 0; i < elements.length; i++) {
         const RE = elements[i]; // element to be removed
 
-        if (!CF.contains(RE.getIFig(DEV_INTERNAL_ACCESS)))
-          throw new Error(
-            `Possibly this SVG Element is deleted Already :${RE} `
-          );
-
         let index = -1;
-        const [eGT, eNGT] = [RE as GType, RE as NGType];
-        const GEI = eGT?.style?.id; // element id if graphical element
-        const NGEI = eNGT?.attributes?.id; // element id if non graphical element
-        const inside =
-          (RE instanceof G && eGT.style?.inside) ||
-          (RE instanceof NG && eNGT.attributes.inside);
+
+        const { id, inside = null } = (RE as GType)?.style as {
+          id: string;
+          inside: string;
+        }; // element id if graphical element
 
         // finding the exact location of the element which we want to delete
         for (let f = 0, l = CA.length - 1; f <= l; f++, l--) {
           const [fe, le] = [CA[f], CA[l]];
 
-          if (
-            (fe instanceof G && fe?.style?.id === GEI) ||
-            (fe instanceof NG && fe?.attributes?.id === NGEI)
-          ) {
+          if (fe instanceof G && fe?.style?.id === id) {
             index = f;
             break;
           }
 
-          if (
-            (le instanceof G && le?.style?.id === GEI) ||
-            (le instanceof NG && le?.attributes?.id === NGEI)
-          ) {
+          if (le instanceof G && le?.style?.id === id) {
             index = l;
             break;
           }
         }
 
-        const parentId = (
-          RE.getIFig(DEV_INTERNAL_ACCESS).parentNode as HTMLElement
-        ).getAttribute('id');
+        if (index == -1 || !inside)
+          console.warn(`Possibly this SVG Element is deleted Already :`, RE);
 
+        /* Ver Very important
+				 * Mostly SVG CONTEXT based logic
+				 *
+				 *
         //        const pid = RE?.style?.inside ;
         // checking that is the element which is given to remove instance of a group or it is not directly child of Canvas itself then use method which remove element from respective group
 
+				const [ elementInside , parentId ] = (inside as string)?.split(',');
         if (
           this?.style?.id !== parentId ||
           (RE instanceof GR && (RE as GR)?.getElements().length > 0)
@@ -446,6 +422,7 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
             CF?.removeChild(RE.getIFig(DEV_INTERNAL_ACCESS)) &&
             CA.splice(index, 1);
         }
+				*/
       }
 
       return this;
@@ -455,17 +432,18 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
   }
 
   #unGroupToDeleteGroup(g: GR) {
-    if (g?.geometry?.shape !== 'g') return;
-
-    const ge = g.getElements();
-    /*
-    for (let f = 0, l = ge.length - 1; f <= l; f++, l--) {
-      const [e1, e2] = [ge[f], ge[l]];
-      e1.attrs({ roleOfSVG: 'deleted' });
-      e2.attrs({ roleOfSVG: 'deleted' });
-    }
-*/
-    g.ungroup();
+    /* Very important
+		 *
+		 *
+		if (g?.geometry?.shape !== 'g') return;
+     const ge = g.getElements();
+    // for (let f = 0, l = ge.length - 1; f <= l; f++, l--) {
+    // const [e1, e2] = [ge[f], ge[l]];
+    //  e1.attrs({ roleOfSVG: 'deleted' });
+    // e2.attrs({ roleOfSVG: 'deleted' });
+    //}
+   g.ungroup();
+	 */
   }
   public clear(): this {
     try {
@@ -484,28 +462,27 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
         }
       }
 
-      for (let f = 0, l = CA.length - 1; f <= l; f++, l--) {
-        const [fe, le] = [CA[f], CA[l]];
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+      // This code may change According to context
+      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-        if (
-          fe.getIFig(DEV_INTERNAL_ACCESS) &&
-          fe.getIFig(DEV_INTERNAL_ACCESS).parentNode === this.#fig
-        )
-          this.#fig.removeChild(fe.getIFig(DEV_INTERNAL_ACCESS));
-        if (
-          le.getIFig(DEV_INTERNAL_ACCESS) &&
-          le.getIFig(DEV_INTERNAL_ACCESS).parentNode === this.#fig
-        )
-          this.#fig.removeChild(le.getIFig(DEV_INTERNAL_ACCESS));
+      if (this.#geometry?.context == SVG_CONTEXT) {
+        for (let f = 0, l = CA.length - 1; f <= l; f++, l--) {
+          const fe = CA[f].getIFig(DEV_INTERNAL_ACCESS);
+          const le = CA[l].getIFig(DEV_INTERNAL_ACCESS);
+
+          if (fe && fe.parentNode === this.#fig) this.#fig.removeChild(fe);
+          if (le && le.parentNode === this.#fig) this.#fig.removeChild(le);
+        }
       }
-      this.#canvasElements = [];
+      this.#canvasElements.length = 0;
       return this;
     } catch (e) {
       throw e;
     }
   }
 
-  public getAllElements(): Array<allowedSVG> {
+  public getAllElements(): Array<allowedShapes> {
     try {
       return this.#canvasElements;
     } catch (e) {
@@ -513,75 +490,3 @@ export default class Canvas extends GraphicalElementComposer<'svg', 'svg'> {
     }
   }
 }
-
-/*
-  #addControls() {
-    // ---------- RECTANGULAR CONTROLS ----------
-    const controlPathRect = new Rect(0, 0, 0, 0, {
-      id: `${this.#style && this.#style.id}pathrect`
-    });
-    this.addTo(controlPathRect, false);
-
-    const controlGRRect = new Group(
-      `${this.#style && this.#style.id}controls`
-    );
-    this.addTo(controlGRRect, false);
-
-    const controlThreadGRRect = new Group(
-      `${this.#style && this.#style.id}thread`
-    );
-    this.addTo(controlThreadGRRect, false);
-
-    controlThreadGRRect.add(controlPathRect);
-
-    const lineRect = new Line(0, 0, 0, 0, {
-      id: `${this.#style && this.#style.id}connector`
-    });
-    this.addTo(lineRect, false);
-
-    controlGRRect.add(controlThreadGroupRect, lineRect);
-
-    for (let index = 0; index < 9; index++) {
-      const rect = new Rect(0, 0, 0, 0, {
-        id: `${this.#style && this.#style.id}control${index}`
-      });
-      this.addTo(rect, false);
-      controlGRRect.add(rect);
-    }
-
-    // ---------- CIRCULAR CONTROLS ----------
-    const controlPathCircle = new Rect(0, 0, 0, 0, {
-      id: `${this.#style && this.#style.id}pathcircle`
-    });
-    this.addTo(controlPathCircle, false);
-
-    const controlGRCircle = new Group(
-      `${this.#style && this.#style.id}controlscircle`
-    );
-    this.addTo(controlGRCircle, false);
-
-    const controlThreadGRCircle = new Group(
-      `${this.#style && this.#style.id}threadcircle`
-    );
-    this.addTo(controlThreadGRCircle, false);
-
-    controlThreadGRCircle.add(controlPathCircle);
-
-    const lineCircle = new Line(0, 0, 0, 0, {
-      id: `${this.#style && this.#style.id}connectorcircle`
-    });
-    this.addTo(lineCircle, false);
-
-    controlGRCircle.add(controlThreadGroupCircle, lineCircle);
-
-    for (let index = 0; index < 9; index++) {
-      const circle = new Circle(0, 0, 0, {
-        id: `${this.#style && this.#style.id}controlcircle${index}`
-      });
-      this.addTo(circle, false);
-      controlGRCircle.add(circle);
-    }
-  }
-
-}
-*/

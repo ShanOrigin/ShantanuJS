@@ -4,7 +4,10 @@ import {
   GraphicalElementProperties
 } from '../../../properties/provider/shapeProperties.js';
 
-import { assertAccess } from '../../../utils/providers/accesskeys.js';
+import {
+  assertAccess,
+  DEV_INTERNAL_ACCESS
+} from '../../../utils/providers/accesskeys.js';
 
 import {
   checkParent,
@@ -25,12 +28,7 @@ import type {
   transformStack
 } from '../../../types/index';
 
-import {
-  SVG_CONTEXT,
-  createSVGContext,
-  setSVGAttrs
-} from '../backends/svg/core/core.js';
-import { Renderer } from '../renderer/renderer.js';
+import { SVG_CONTEXT } from '../backends/svg/core/core.js';
 
 import type { CONTEXT, DeepReadonly } from '../../../types/graphicsElements';
 
@@ -42,13 +40,14 @@ type ValidKeys = Extract<
   keyof TagToGShapeStyleKeyMap
 >;
 
+type GRAPHICS_TYPES = SVGElement;
 export abstract class GraphicalElement<T extends ValidKeys> {
   // in future #fig may hold HTMLCanvasElement , WebGl Elements
-  #fig!: SVGElement;
+  #fig!: GRAPHICS_TYPES;
   // int future #context may hold SVG_CONTEXT , 'htmlcanvas' , 'webgl' contexts
   #context!: string;
   // in future #renderer may hold different Renderer according to contexts.
-  #renderer!: Renderer;
+  //  #renderer!: Renderer;
   // #geometry is holding all Shape specific geometric properties and + some common properties
 
   #geometry: ICommonGeometricProperties['geometry'] &
@@ -57,12 +56,13 @@ export abstract class GraphicalElement<T extends ValidKeys> {
   // #style is holding all html+css  style properties for a node
   #style: StyleForGShapeTag<T> = {} as StyleForGShapeTag<T>;
 
+  #isChanged: boolean = false;
   public geometry!: ICommonGeometricProperties['geometry'] &
     IGraphicalElementProperties[T]; //  = {};
 
   public style!: StyleForGShapeTag<T>; // as StyleForGShapeTag<T>;
 
-  constructor(shapeName: T, context: CONTEXT = null, ID: string = '') {
+  constructor(shapeName: T, ID: string = '') {
     // context would be SVG_CONTEXT right now but in future it may be 'htmlcanvas' or in very long future 'webgl'
     try {
       this.#geometry as {
@@ -75,22 +75,12 @@ export abstract class GraphicalElement<T extends ValidKeys> {
 
       const id = generateId(ID);
 
-      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
-      //  This code may change According to context
-      // +++++++++++++++++++++++++++++++++++++++++++++++++++++
-      // Only canvas of that perticular context will be created no any other elements of any contexts
-
-      if (context && context == SVG_CONTEXT && shapeName == 'canvas') {
-        [this.#context, this.#fig, this.#renderer] = createSVGContext(
-          context as string,
-          shapeName as string
-        );
-
-        setSVGAttrs(this.#fig, 'id', id);
-      }
-
       // private
-      this.#geometry && (this.#geometry['shape'] = '');
+      if (!this.#geometry) {
+        throw new Error('Initialization problem');
+      }
+      this.#geometry['context'] = undefined;
+      this.#geometry['shape'] = '';
 
       Object.defineProperty(this.#geometry, 'shape', {
         value: shapeName,
@@ -115,7 +105,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
         enumerable: true
       });
 
-      this.#geometry.transformStack = {
+      this.#geometry['transformStack'] = {
         stack: [
           {
             transformName: 'composed',
@@ -139,21 +129,21 @@ export abstract class GraphicalElement<T extends ValidKeys> {
     }
   }
 
+  public requestDraw(accessKey: symbol) {
+    assertAccess(accessKey);
+    this.#isChanged = !this.#isChanged;
+  }
+
+  public needDraw(): boolean {
+    return this.#isChanged;
+  }
   public setIContext(accessKey: symbol, context: string) {
     assertAccess(accessKey);
     return (this.#context = context);
   }
-  public setIRenderer(accessKey: symbol, renderer: Renderer) {
-    assertAccess(accessKey);
-    this.#renderer = renderer;
-  }
 
   public getIContext() {
     return this.#context;
-  }
-  public getIRenderer(accessKey: symbol) {
-    assertAccess(accessKey);
-    return this.#renderer;
   }
 
   public getIFig(accessKey: symbol) {
@@ -161,6 +151,22 @@ export abstract class GraphicalElement<T extends ValidKeys> {
     return this.#fig;
   }
 
+  public setIFig(accessKey: symbol, context: CONTEXT, shape: GRAPHICS_TYPES) {
+    assertAccess(accessKey);
+
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //  This code may change According to context
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    if (context == SVG_CONTEXT) {
+      if (!(shape instanceof SVGElement)) {
+        throw new Error(
+          'Invalid Geaphical Element : mismatch of element context and canvas context.'
+        );
+      }
+      this.#fig = shape;
+    }
+  }
   public getIGeo(
     accessKey: symbol
   ): ICommonGeometricProperties['geometry'] & IGraphicalElementProperties[T] {
@@ -252,9 +258,9 @@ export abstract class GraphicalElement<T extends ValidKeys> {
 
     if (!prop) return false;
 
-    if (prop == 'id')
+    if (prop == 'id' || prop == 'inside')
       throw new Error(
-        'id should be constant , you can set id only when you are instanceting a shape'
+        ` ${prop} should be constant , you can set ${prop} only when you are instanceting a shape`
       );
 
     if (prop == 'd' && shape != 'path')
@@ -285,26 +291,10 @@ export abstract class GraphicalElement<T extends ValidKeys> {
 
       if (this.#isGeometricProp(key)) {
         (this.#geometry as Record<string, string | number>)[key] = value;
-
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++++
-        //  This code may change According to context
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-        if (this.#context == SVG_CONTEXT) {
-          setSVGAttrs(this.#fig, key, value);
-        }
       }
 
       if (typeof this.#style == 'object' && this.#isStyleProp(key)) {
         (this.#style as Record<string, string | number>)[key] = value;
-
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++++
-        //  This code may change According to context
-        // +++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-        if (this.#context == SVG_CONTEXT) {
-          setSVGAttrs(this.#fig, key, value);
-        }
       }
     } catch (e) {
       throw e;
@@ -366,7 +356,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
           const [key, value] = entries[i];
           this.setAttrs({ [key]: value });
         }
-
+        this.requestDraw(DEV_INTERNAL_ACCESS);
         // +++ Setter Part End +++
         // +++++++++++++++++++++++++++++++++++++++++++++++++++++
 

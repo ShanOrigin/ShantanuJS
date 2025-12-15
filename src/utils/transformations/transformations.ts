@@ -26,7 +26,7 @@ import type {
 } from '../../types/transformations';
 import { transformStack } from '../../types/index.js';
 
-export function InheritTransformationClassByMinix<
+export function TransformMinix<
   TBase extends abstract new (...args: any[]) => any
 >(Base: TBase) {
   abstract class MixedClass extends Base {

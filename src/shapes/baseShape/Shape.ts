@@ -1,7 +1,4 @@
-import {
-  GraphicalElementComposer,
-  renderer
-} from '../../core/graphics/providers/graphics.js';
+import { renderer } from '../../core/graphics/providers/graphics.js';
 
 import {
   GraphicalElementProperties,
@@ -23,7 +20,7 @@ import {
 
 import { Animation } from '../../utils/providers/utils.js';
 import { Filter } from '../../utils/providers/utils.js';
-import { InheritTransformationClassByMinix } from '../../utils/providers/utils.js';
+import { TransformMinix } from '../../utils/providers/utils.js';
 
 import {
   DEV_INTERNAL_ACCESS,
@@ -63,16 +60,13 @@ import {
 } from '../../types/filters';
 
 import type { IGraphicalElementProperties as IG } from '../../properties/provider/shapeProperties';
-import type { GShpesTages } from '../../core/graphics/graphics/graphicalElement';
+import type { GShpesTages } from '../../core/graphics/graphics/graphicalElement.js';
+import { Events } from '../../core/graphics/events/event.js';
 import { CMATH } from '../../webAsm/interface/TS/CMATH_Interface.js';
 
-const combinationOfSVGAndTransformationsClasses =
-  InheritTransformationClassByMinix(GraphicalElementComposer);
-
-export abstract class Shape<
-  T extends GShpesTages,
-  S extends GShpesTages
-> extends combinationOfSVGAndTransformationsClasses<T, S> {
+export abstract class Shape<T extends GShpesTages> extends TransformMinix(
+  Events
+)<T> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   // #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
@@ -91,8 +85,8 @@ export abstract class Shape<
   }; // future use
 
   // Actual implementation
-  constructor(shape: T, id: string, tagname: S) {
-    super(shape, id, tagname); // ( shape generics , id , rander generics by default = 'path' )
+  constructor(shape: T, id: string) {
+    super(shape, id); // ( shape generics , id , rander generics by default = 'path' )
   }
 
   protected getClassProps(accessKey: symbol) {

@@ -17,7 +17,7 @@ export const CommonGeometricProperties = Object.seal({
   geometry: {
     buffer: new Float32Array(0), // shape + OBB matrix in 1d combined
     shape: '', // shape which shape
-
+    context: '',
     transformStack: {
       stack: [
         // transformations list
@@ -51,7 +51,7 @@ export interface ICommonGeometricProperties
 export type ICommonStylePropertie = typeof CommonStylePropertie;
 
 export const CommonStylePropertie = Object.seal({
-  roleOfSVG: '', // Custom semantic property
+  'role-of-el': '', // Custom semantic property
   inside: '', // Custom layout property
   id: '', // Unique identifier
   name: '', // Optional name (non-standard)
@@ -164,7 +164,7 @@ export interface IAllStyleProperties
     IFilterPrimitiveProperties {}
 
 export const AllGShapeStyleProperties = {
-  svg: shapeStyle,
+  canvas: shapeStyle,
   dot: shapeStyle,
   line: shapeStyle,
   polyline: shapeStyle,
@@ -180,7 +180,7 @@ export const AllGShapeStyleProperties = {
 };
 
 export interface IAllGShapeStyleProperties {
-  svg: IShapeStyleProperties & ICommonStylePropertie;
+  canvas: IShapeStyleProperties & ICommonStylePropertie;
   dot: IShapeStyleProperties & ICommonStylePropertie;
   line: IShapeStyleProperties & ICommonStylePropertie;
   polyline: IShapeStyleProperties & ICommonStylePropertie;
@@ -207,7 +207,7 @@ export type TagToGShapeStyleKeyMap = {
   polygon: 'polygon';
   text: 'text';
   image: 'image';
-  svg: 'svg';
+  canvas: 'canvas';
   path: 'dot';
   tspan: 'text';
   g: 'g';

@@ -1,5 +1,3 @@
-import { Triangle } from '../../shapes/customGeometricShapes/Triangle';
-
 // aur type which create deep partial of a nested object for example below 1
 type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object
@@ -15,16 +13,16 @@ export const dimensions = {
   ellipse: [3, 3],
   dot: [1, 3],
   line: [2, 3],
-  polyline: [4, 3],
-  polygon: [4, 3],
-  path: [4, 3],
+  polyline: [Infinity, 3],
+  polygon: [Infinity, 3],
+  //  path: [4, 3],
   text: [1, 3],
   image: [4, 3],
   g: [4, 3]
 };
 
 export const GraphicalElementProperties = Object.seal({
-  svg: { width: 0, height: 0 },
+  canvas: { x: 0, y: 0, width: 0, height: 0 },
   dot: { cx: 0, cy: 0, r: 0 },
   line: { x1: 0, y1: 0, x2: 0, y2: 0 },
   polyline: { points: '' },
@@ -43,7 +41,7 @@ export const GraphicalElementProperties = Object.seal({
     textLength: 0,
     lengthAdjust: '' // 'spacing' , 'spacingAndGlyphs' , none
   },
-
+  /*
   tspan: {
     dx: 0,
     dy: 0,
@@ -52,7 +50,7 @@ export const GraphicalElementProperties = Object.seal({
     textLength: 0,
     lengthAdjust: '' // 'spacing' , 'spacingAndGlyphs' , none
   },
-
+*/
   image: { href: '', x: 0, y: 0, width: 0, height: 0 },
   g: {},
   triangle: { a: 0, b: 0, c: 0, A: 0, B: 0, C: 0 },
@@ -357,7 +355,7 @@ export type ipPolyline = keyof (typeof GraphicalElementProperties)['polyline'];
 export type ipPolygon = keyof (typeof GraphicalElementProperties)['polygon'];
 export type ipPath = keyof (typeof GraphicalElementProperties)['path'];
 
-export type ipSvg = keyof (typeof GraphicalElementProperties)['svg'];
+export type ipCanvas = keyof (typeof GraphicalElementProperties)['canvas'];
 export type ipText = keyof (typeof GraphicalElementProperties)['text'];
 export type ipImage = keyof (typeof GraphicalElementProperties)['image'];
 

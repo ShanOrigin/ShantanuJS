@@ -24,7 +24,7 @@ import {
 } from '../helpers/helpers.js';
 
 // importing transformations mixier class module from sub module of utils
-import { InheritTransformationClassByMinix } from '../transformations/transformations.js';
+import { TransformMinix } from '../transformations/transformations.js';
 
 // importing animation module from sub module of utils
 import { Animation } from '../animations/animation.js';
@@ -62,7 +62,7 @@ export {
 };
 
 // exporting transformations mixier class
-export { InheritTransformationClassByMinix };
+export { TransformMinix };
 
 // exporting Animation module
 export { Animation };

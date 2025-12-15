@@ -1,7 +1,9 @@
-import { GraphicalElementComposer } from '../graphics/graphicalElementComposer.js';
+import {
+  GraphicalElement,
+  type GShpesTages
+} from '../graphics/graphicalElement.js';
 
 import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
-import type { GShpesTages } from '../graphics/graphicalElement';
 
 import type {
   iPoint,
@@ -127,12 +129,12 @@ export class Renderer {
     finalMatrix,
     isEffect = true
   }: {
-    el: GraphicalElementComposer<GShpesTages, GShpesTages>;
+    el: GraphicalElement<GShpesTages>;
     finalMatrix?: Float32Array;
     isEffect?: boolean;
   }): void {
     // Validate the wrapper
-    if (!(el instanceof GraphicalElementComposer))
+    if (!(el instanceof GraphicalElement))
       throw new Error(
         'Given Shape is not Renderable: necessary parameters are not provided'
       );
