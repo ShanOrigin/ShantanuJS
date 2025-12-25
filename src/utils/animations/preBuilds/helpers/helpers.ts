@@ -2,7 +2,7 @@ import { DEV_INTERNAL_ACCESS } from '../../../../utils/providers/accesskeys.js';
 
 import type { IGraphicalElementProperties as IG } from '../../../../properties/provider/shapeProperties';
 
-import type { GraphicalElementComposer as GEC } from '../../../../core/graphics/graphics/graphicalElementComposer';
+import type { GraphicalElement as GEC } from '../../../../core/providers/graphics';
 
 import type {
   IcommonGeometryAnimatableProperties,
@@ -65,7 +65,7 @@ export const CommonStyleAnimatableProperties = {
  * commonGeometryAnimatableProperties.skew → { sx: 0, sy: 0 }
  */
 
-export const commonGeometryAnimatableProperties: IcommonGeometryAnimatableProperties =
+const commonGeometryAnimatableProperties: IcommonGeometryAnimatableProperties =
   {
     translate: { x: 0, y: 0 },
     scale: { sx: 1, sy: 1 },
@@ -89,7 +89,7 @@ export const commonGeometryAnimatableProperties: IcommonGeometryAnimatableProper
  * ShapeSpecificAnimatableProperties.rect → ['x', 'y', 'width', 'height', 'rx', 'ry']
  */
 
-export const ShapeSpecificAnimatableProperties = {
+const ShapeSpecificAnimatableProperties = {
   dot: ['cx', 'cy', 'r'],
   circle: ['cx', 'cy', 'r'],
   rect: ['x', 'y', 'width', 'height', 'rx', 'ry'],
@@ -187,35 +187,6 @@ export const map = {
  */
 export function lerp(start: number, end: number, t: number) {
   return start + (end - start) * t;
-}
-
-export function getAdaptiveSmoothness(
-  el: GEC<keyof IG, keyof IG>,
-  curveDistance: number,
-  minSamples: number = 4,
-  maxSamples: number = 100
-): number {
-  const canvas = el.getIFig(DEV_INTERNAL_ACCESS).ownerSVGElement;
-
-  const rawCanvasWidth = canvas?.getAttribute('width');
-  const rawCanvasHeight = canvas?.getAttribute('height');
-  let width: number = 0,
-    height: number = 0;
-
-  if (rawCanvasWidth && rawCanvasHeight) {
-    width = parseFloat(rawCanvasWidth);
-    height = parseFloat(rawCanvasHeight);
-  }
-
-  const canvasDiagonal = Math.hypot(width, height) || curveDistance * 1.5;
-  const relativeSize = curveDistance / canvasDiagonal;
-
-  // Map relative size (0–1) to sample count (e.g. 4 to 100)
-  const samples = Math.round(
-    minSamples + (maxSamples - minSamples) * relativeSize
-  );
-
-  return Math.max(minSamples, Math.min(samples, maxSamples));
 }
 
 /**
@@ -467,49 +438,6 @@ export function deepMerge<T extends object, S extends Partial<T>>(
     } else if (sourceValue !== undefined) {
       (target[typedKey as keyof T] as any) = sourceValue;
     }
-  }
-}
-
-export function ivotSetter(
-  mode: modes | anchors | undefined,
-  OBB: Float32Array
-): [number, number] {
-  const [x1, y1, , x2, y2, , x3, y3, , x4, y4] = OBB;
-
-  switch (mode) {
-    case 'r':
-    case 'relative':
-    case 'TL':
-      return [x1, y1];
-
-    case 'c':
-    case 'center':
-    case 'C':
-      return [(x1 + x2 + x3 + x4) / 4, (y1 + y2 + y3 + y4) / 4];
-
-    case 'TM':
-      return [(x1 + x2) / 2, (y1 + y2) / 2];
-
-    case 'TR':
-      return [x2, y2];
-
-    case 'RM':
-      return [(x2 + x3) / 2, (y2 + y3) / 2];
-
-    case 'BR':
-      return [x3, y3];
-
-    case 'BM':
-      return [(x3 + x4) / 2, (y3 + y4) / 2];
-
-    case 'BL':
-      return [x4, y4];
-
-    case 'LM':
-      return [(x1 + x4) / 2, (y1 + y4) / 2];
-
-    default:
-      return [x1, y1];
   }
 }
 

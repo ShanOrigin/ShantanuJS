@@ -1,4 +1,4 @@
-export type BBoxPoints = {
+type BBoxPoints = {
   minX: number;
   minY: number;
   maxX: number;

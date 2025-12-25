@@ -18,17 +18,15 @@
     "test:ui": "vitest --ui",
     "test:one": "vitest run",
     "lint": "eslint ./src --ext .ts",
-    "gitsmartsync": "node scripts/gitSmartSync.js" ,
+    "gitsmartsync": "node scripts/gitSmartSync.js",
     "gitsmartpush": "node scripts/gitSmartPush.js",
     "tsc:watch": "tsc -w --preserveWatchOutput",
     "tsc:watch-pre-sync": "npm run gitsmartsync && npm run tsc:watch",
-
     "mzip": "zip -r -0 \"Shantanujs-backup-new-arc$(date +%Y-%m-%d-%H-%M-%S).zip\" scripts src README.md index.html package.json CHANGELOG.md FUTURE_FEATURES_LIST.md ARCHITECTURE.MODEL Custom_LICENSE.md COMMERCIAL_LICENSE.md CONTRIBUTING.md CODE_OF_CONDUCT.md SECURITY.md ROADMAP.md tsconfig.json",
     "cirdep:path": "dpdm -T --circular --warning --tsconfig tsconfig.json",
     "cirdep:visual": "dpdm -T --circular --warning --tsconfig tsconfig.json ./src/tests/shapes/rect/visualTest/visualAnimations.ts",
     "cirdep:index": "dpdm -T --circular --warning --tsconfig tsconfig.json ./src/index/index.ts",
     "bs": "browser-sync start --server --files './index.html,./dist' --ignore 'node_modules' --no-cache --reload-delay 200",
-
     "live": "live-server --watch=dist  --ignore=node_modules --no-browser --port=3000",
     "dev": "npm-run-all --parallel tsc:watch live",
     "dev:sync": "npm run gitsmartsync && npm run dev"
@@ -53,11 +51,13 @@
     "eslint": "^9.27.0",
     "happy-dom": "^18.0.1",
     "jsdom": "^26.1.0",
+    "madge": "^8.0.0",
     "npm-run-all": "^4.1.5",
     "rollup": "^3.29.5",
     "rollup-plugin-esbuild": "^6.2.1",
     "rollup-plugin-typescript2": "^0.36.0",
     "ts-node": "^10.9.2",
+    "ts-prune": "^0.10.3",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
   }

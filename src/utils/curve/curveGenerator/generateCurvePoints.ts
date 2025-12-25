@@ -9,34 +9,13 @@ import type {
   CurveInfo,
   ArcTableEntry
 } from '../../../types/animation';
-import {
-  getAdaptiveSmoothness,
-  getCurveAdaptiveSmoothness
-} from '../../animations/preBuilds/helpers/helpers.js';
+import { getCurveAdaptiveSmoothness } from '../../animations/preBuilds/helpers/helpers.js';
 //import type { IGraphicalElementProperties as IG } from '../../../../properties/provider/shapeProperties';
 //import type { GraphicalElementComposer as GEC } from '../../../../core/graphics/graphics/graphicalElementComposer';
 
 //+++++++++++++++++++++++++++
 // Function  to generate control points and store and Calculate arc length parameterizati       on  on curve
 //+++++++++++++++++++++++++++
-
-/**
- * Clamps a bend value to the range [-1, 1].
- *
- * Purpose:
- * - Ensures the curvature factor stays within a valid range for curve generation.
- * - Prevents extreme or invalid curve behavior.
- *
- * Dependency:
- * - Uses only basic JavaScript math functions; no graphics API or DOM API required.
- *
- * @param bend - The input bend factor.
- * @returns A number constrained to the range [-1, 1].
- */
-
-export function clampBend(bend: number): number {
-  return Math.max(-1, Math.min(1, bend));
-}
 
 /**
  * Generates points along a specified curve between two points.

@@ -1,8 +1,10 @@
-import type { Renderer } from '../renderer/renderer';
-import type {
+import { DEV_INTERNAL_ACCESS } from '../../utils/internals/accessKeys.js';
+import type { Renderer } from '../graphics/backends/renderers';
+import {
   GraphicalElement,
-  GShpesTages
-} from '../graphics/graphicalElement';
+  type GShpesTages
+} from '../graphics/graphicsElement/graphicsElement.js';
+
 /**
  * Engine
  * -------
@@ -84,10 +86,28 @@ export class Engine {
         shape.animation.update(time);
       }
 			*/
+
+      if (!(shape instanceof GraphicalElement))
+        throw new Error(
+          'Given Shape is not Renderable: necessary parameters are not provided'
+        );
+
+      // get geometry/style/DOM handle
+      const geoRef = shape.getIGeo(DEV_INTERNAL_ACCESS) as Partial<{
+        dirty: boolean;
+
+        shape: string;
+      }>;
+
+      if (!geoRef)
+        throw new Error('Shape geometry or canonicalMatrix is missing');
+
+      // Render Only that shapes which actually needs to be rendered avoid unchanged shapes
+      if (!geoRef.dirty) continue;
     }
 
     // 2. Render entire scene once
-    //   this.#renderer.render(this.#shapes);
+    this.#renderer.render(this.#shapes);
 
     // Continue loop
     this.#rafId = requestAnimationFrame(this.loop.bind(this));

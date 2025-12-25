@@ -6,18 +6,9 @@ import {
   isValidMatrix,
   validProps,
   parameterTypeValidator,
-  checkParent,
-  //  restore,
-  triangleAreaByShoelaceFormula,
   animationChecks,
   autoFixGeometry,
-  // assignBBoxMatrix,
-  // trackTransformation,
-  determinant,
-  linearEquation,
-  //  getChannelMatrix,
   getTransformationMatrix,
-  //  computeBBox,
   cwarn,
   cerrors,
   generateId
@@ -28,9 +19,6 @@ import { TransformMinix } from '../transformations/transformations.js';
 
 // importing animation module from sub module of utils
 import { Animation } from '../animations/animation.js';
-
-// importing dom specific
-import { createSVGElement, SVGSOURCE } from '../dom/dom.js';
 
 // importing filter module from sub module of utils
 import { Filter } from '../filters/filters.js';
@@ -44,18 +32,9 @@ export {
   isValidMatrix,
   validProps,
   parameterTypeValidator,
-  checkParent,
-  //  restore,
-  triangleAreaByShoelaceFormula,
   animationChecks,
   autoFixGeometry,
-  //  assignBBoxMatrix,
-  //  trackTransformation,
-  determinant,
-  linearEquation,
-  //  getChannelMatrix,
   getTransformationMatrix,
-  //  computeBBox,
   cwarn,
   cerrors,
   generateId
@@ -66,9 +45,6 @@ export { TransformMinix };
 
 // exporting Animation module
 export { Animation };
-
-// exporting dom specific
-export { createSVGElement, SVGSOURCE };
 
 // exporting Filter module
 export { Filter };

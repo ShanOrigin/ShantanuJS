@@ -1,7 +1,10 @@
-import { GraphicalElement, GShpesTages } from '../graphics/graphicalElement.js';
-import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
+import {
+  GraphicalElement,
+  GShpesTages
+} from '../graphics/graphicsElement/graphicsElement.js';
+import { DEV_INTERNAL_ACCESS } from '../../utils/providers/accesskeys.js';
 
-import { SVG_CONTEXT } from '../backends/svg/core/core.js';
+import { SVG_CONTEXT } from '../graphics/backends/svg/core/core.js';
 
 type SVGEventType = keyof SVGElementEventMap;
 
@@ -25,7 +28,7 @@ type SupportedEvents =
   | 'mouseenter'
   | 'mouseleave';
 
-export abstract class Events<
+export abstract class EventsSystem<
   T extends GShpesTages
 > extends GraphicalElement<T> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
@@ -96,7 +99,7 @@ export abstract class Events<
       (l) => l.type === type && l.uid === uid
     );
 
-    if (this.getIContext() == SVG_CONTEXT) {
+    if (this.getContext() == SVG_CONTEXT) {
       if (existing) {
         this.#fig.removeEventListener(
           existing.type,
@@ -116,7 +119,7 @@ export abstract class Events<
       const existing = this.#listener.find(
         (l) => l.type === type && l.uid === uid
       );
-      if (this.getIContext() == SVG_CONTEXT) {
+      if (this.getContext() == SVG_CONTEXT) {
         if (existing) {
           this.#fig.removeEventListener(
             type,

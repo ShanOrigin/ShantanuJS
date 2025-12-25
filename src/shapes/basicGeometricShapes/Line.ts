@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -16,7 +16,6 @@ import {
 } from '../../properties/provider/shapeProperties';
 
 import {
-  checkParent,
   isValidMatrix,
   validProps,
   parameterTypeValidator
@@ -25,8 +24,8 @@ import {
 type propsType = Partial<IGraphicalElementProperties['line']> &
   Partial<StyleForGShapeTag<'line'>>;
 
-export class Line extends Shape<'line', 'line'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+export class Line extends Shape<'line'> {
+  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
@@ -40,7 +39,7 @@ export class Line extends Shape<'line', 'line'> {
     y2: number,
     props: propsType = {}
   ) {
-    super('line', props?.id ?? '', 'line');
+    super('line', props?.id ?? '');
 
     parameterTypeValidator(
       props as propsType,
@@ -88,8 +87,6 @@ export class Line extends Shape<'line', 'line'> {
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Line {
-    checkParent(this.#fig, 'Rect');
-
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -153,7 +150,7 @@ export class Line extends Shape<'line', 'line'> {
         ];
       }
 */
-      renderer.render({ el: this });
+      //     renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;

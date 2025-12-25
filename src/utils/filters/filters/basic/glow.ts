@@ -1,5 +1,5 @@
 import { propertyUpdate, appendChildren } from '../../helpers/helpers.js';
-import { createSVGElement } from '../../../dom/dom.js';
+import { createSVGElement } from '../../../../core/providers/svgSpecific.js';
 import { generateId } from '../../../helpers/helpers.js';
 
 export function glow(bright: number) {

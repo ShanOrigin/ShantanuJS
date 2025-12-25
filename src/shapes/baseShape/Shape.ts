@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+// import { renderer } from '../../core/graphics/providers/graphics.js';
 
 import {
   GraphicalElementProperties,
@@ -8,7 +8,6 @@ import {
 
 import {
   // utils helpers functions
-  checkParent,
   parameterTypeValidator,
   animationChecks,
   //  computeBBox,
@@ -60,12 +59,13 @@ import {
 } from '../../types/filters';
 
 import type { IGraphicalElementProperties as IG } from '../../properties/provider/shapeProperties';
-import type { GShpesTages } from '../../core/graphics/graphics/graphicalElement.js';
-import { Events } from '../../core/graphics/events/event.js';
+
+import { EventsSystem } from '../../core/providers/eventsSystem.js';
+import { GShpesTages } from '../../core/providers/graphics.js';
 import { CMATH } from '../../webAsm/interface/TS/CMATH_Interface.js';
 
 export abstract class Shape<T extends GShpesTages> extends TransformMinix(
-  Events
+  EventsSystem
 )<T> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
@@ -214,8 +214,6 @@ Description : taking original shape data ( which is local geometry ) and then ap
           super.attrs(props);
           this.generateMatrix(DEV_INTERNAL_ACCESS);
         } else {
-          checkParent(this.#fig, shape);
-
           parameterTypeValidator(
             props,
             GraphicalElementProperties,
@@ -263,7 +261,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
           // renderering new updated geometry and style
 
-          renderer.render({ el: this });
+          // renderer.render({ el: this });
         }
       } else if (typeof props === 'string') {
         let result = super.attrs(props);
@@ -302,8 +300,6 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
       const [rowSize, columnSize] = dimensions[shape];
 
-      checkParent(this.#fig, shape);
-
       const sb = [] as Float32Array[];
       const prev = new Float32Array(geo.buffer.slice(0, columnSize * rowSize)); // backup
 
@@ -331,7 +327,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
       console.log('before  matrix update ', JSON.stringify(this.#geometry));
       this.restoreDimension(DEV_INTERNAL_ACCESS, geo.buffer);
-      renderer.render({ el: this });
+      // renderer.render({ el: this });
       console.log('after  matrix update ', JSON.stringify(this.#geometry));
       // setting '' to transform attribute of svg
       this.attrs({ transform: '' });
@@ -375,6 +371,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
   }) {
     isEffect && this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
 
+    /*
     //cwarn('in restore ', isVEffect);
     isVEffect &&
       renderer.render({
@@ -382,13 +379,13 @@ Description : taking original shape data ( which is local geometry ) and then ap
         finalMatrix: transformMatrix,
         isEffect: isVEffect
       });
+			*/
   }
 
   //++++++++++++++++++++++++++++++++++++++++++++
   // Transformations Section
   //++++++++++++++++++++++++++++++++++++++++++++
   #preChecks(mode: string, px: number, py: number) {
-    checkParent(this.#fig, 'Rect');
     //  this.#geometry && !this.#geometry.Obbox && this.getBBox();
 
     if ((mode == 'p' || mode == 'pivot') && px == 0 && py == 0) {

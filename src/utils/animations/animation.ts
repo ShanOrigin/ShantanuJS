@@ -1,9 +1,7 @@
 // ----- Types Imports -----
-import type { GraphicalElementComposer as GEC } from '../../core/graphics/graphics/graphicalElementComposer';
+
 import type {
   IGraphicalElementProperties as IG,
-  //  INonGraphicalElementProperties as NIG,
-  //  ICommonStyleProperties as IS
   IAllStyleProperties as IS
 } from '../../properties/provider/shapeProperties';
 import type {
@@ -33,13 +31,7 @@ import type { iShape } from '../../shapes/provider/shapesTypes';
 
 import Colors from '../colors/colors.js';
 import { DEV_INTERNAL_ACCESS } from '../providers/accesskeys.js';
-import {
-  //  GraphicalElementProperties as G,
-  //  NonGraphicalElementProperties as NG,
-  //  CommonStyleProperties as S
-  AllStyleProperties as S,
-  IAllGShapeStyleProperties
-} from '../../properties/provider/shapeProperties.js';
+import { AllStyleProperties as S } from '../../properties/provider/shapeProperties.js';
 
 import {
   //----- impoting data -----

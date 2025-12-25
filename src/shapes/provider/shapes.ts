@@ -1,5 +1,3 @@
-// basic geometry shapes
-//
 import { Point } from '../basicGeometricShapes/Point.js';
 import { Rect } from '../basicGeometricShapes/Rectangle.js';
 import { Circle } from '../basicGeometricShapes/Circle.js';
@@ -11,8 +9,13 @@ import { Path } from '../basicGeometricShapes/Path.js';
 
 //composite geometry shapes
 import { Triangle } from '../customGeometricShapes/Triangle.js';
-//export { Line, Path, Polyline, Polygon, Rect, Ellipse, Circle };
+import { Curve } from '../customGeometricShapes/Curves.js';
+import { CubicCurve } from '../customGeometricShapes/cubicCurves.js';
+import { QuadraticCurve } from '../customGeometricShapes/quadraticCurves.js';
+import { ArcCurve } from '../customGeometricShapes/arcCurves.js';
+import { EarcCurve } from '../customGeometricShapes/earcCurves.js';
 
+import { Text } from '../textMediaElements/Text.js';
 export {
   Point,
   Line,
@@ -22,22 +25,11 @@ export {
   Rect,
   Circle,
   Ellipse,
-  Triangle
+  Text,
+  Triangle,
+  Curve,
+  CubicCurve,
+  QuadraticCurve,
+  ArcCurve,
+  EarcCurve
 };
-
-/*
-export const shapeRegistry = new Map<string, any>();
-export function registerShape(name: string, shape: any) {
-  shapeRegistry.set(name, shape);
-}
-
-
-
-
-import { registerShape } from '../provider/shapeRegistry.ts';
-
-class Circle {  ...  }
-
-registerShape('Circle', Circle);
-
- */

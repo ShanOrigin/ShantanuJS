@@ -72,36 +72,3 @@ export function getTForDistance(
   }
   return 1; // if distance exceeds total arc length
 }
-
-export function getTForDistanceD(
-  distance: number,
-  arcTable: ArcTableEntry[],
-  allowOvershoot = false
-): number {
-  const totalDistance = arcTable[arcTable.length - 1].distance;
-
-  if (!allowOvershoot) {
-    distance = Math.min(Math.max(distance, 0), totalDistance);
-  }
-
-  for (let i = 1; i < arcTable.length; i++) {
-    const prev = arcTable[i - 1];
-    const next = arcTable[i];
-    if (distance <= next.distance) {
-      const segment = next.distance - prev.distance;
-      const ratio = segment === 0 ? 0 : (distance - prev.distance) / segment;
-      return prev.t + ratio * (next.t - prev.t);
-    }
-  }
-
-  // If distance > totalDistance and overshoot allowed
-  if (allowOvershoot) {
-    const last = arcTable[arcTable.length - 1];
-    const secondLast = arcTable[arcTable.length - 2];
-    const segment = last.distance - secondLast.distance;
-    const ratio = segment === 0 ? 1 : (distance - last.distance) / segment;
-    return last.t + ratio * (last.t - secondLast.t);
-  }
-
-  return 1; // fallback clamp
-}

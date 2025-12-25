@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -16,7 +16,6 @@ import {
 } from '../../properties/provider/shapeProperties';
 
 import {
-  checkParent,
   isValidMatrix,
   validProps,
   parameterTypeValidator,
@@ -27,8 +26,8 @@ import {
 type propsType = Partial<IGraphicalElementProperties['polyline']> &
   Partial<StyleForGShapeTag<'polyline'>>;
 
-export class Polyline extends Shape<'polyline', 'polyline'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+export class Polyline extends Shape<'polyline'> {
+  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
@@ -39,7 +38,7 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
   // Constructor 2: points as 2D array
   constructor(points: number[][], props?: propsType);
   constructor(points: string | number[][], props: propsType = {}) {
-    super('polyline', props?.id ?? '', 'polyline');
+    super('polyline', props?.id ?? '');
 
     try {
       let pointsAttr: string = '';
@@ -104,8 +103,6 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Polyline {
-    checkParent(this.#fig, 'polyline');
-
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -227,7 +224,7 @@ export class Polyline extends Shape<'polyline', 'polyline'> {
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
-      renderer.render({ el: this });
+      //     renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;

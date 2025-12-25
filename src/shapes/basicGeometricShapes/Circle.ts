@@ -4,14 +4,12 @@ import {
 } from '../../properties/provider/shapeProperties';
 
 import {
-  checkParent,
-  isValidMatrix,
   validProps,
   parameterTypeValidator,
   autoFixGeometry
 } from '../../utils/providers/utils.js';
 
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 
 import {
   DEV_INTERNAL_ACCESS,
@@ -27,7 +25,7 @@ import {
 type propsType = Partial<IGraphicalElementProperties['circle']> &
   Partial<StyleForGShapeTag<'circle'>>;
 
-export class Circle extends Shape<'circle', 'circle'> {
+export class Circle extends Shape<'circle'> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
@@ -37,7 +35,7 @@ export class Circle extends Shape<'circle', 'circle'> {
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
 
   constructor(cx: number, cy: number, r: number, props: propsType = {}) {
-    super('circle', props?.id ?? '', 'circle');
+    super('circle', props?.id ?? '');
     try {
       const { cx: dcx = 0, cy: dcy = 0, r: dr = 0, ...rest } = props;
 
@@ -90,8 +88,6 @@ export class Circle extends Shape<'circle', 'circle'> {
     offsetY: number = 10,
     visibleRadius?: number
   ): Circle {
-    checkParent(this.#fig, 'dot');
-
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -153,7 +149,7 @@ export class Circle extends Shape<'circle', 'circle'> {
           new Float32Array(sb.buffer, 3 * 4, 3)
         ];
       }
-      renderer.render({ el: this });
+      //     renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;

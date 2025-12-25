@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -16,8 +16,6 @@ import {
 } from '../../properties/provider/shapeProperties';
 
 import {
-  checkParent,
-  isValidMatrix,
   validProps,
   parameterTypeValidator
 } from '../../utils/providers/utils.js';
@@ -32,7 +30,7 @@ type transformCommonProps = {
   isEffect?: boolean;
 };
 
-export class Text extends Shape<'text', 'text'> {
+export class Text extends Shape<'text'> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
@@ -46,7 +44,7 @@ export class Text extends Shape<'text', 'text'> {
     props: propsType = {},
     spans: object = {}
   ) {
-    super('text', props.id ?? '', 'text');
+    super('text', props.id ?? '');
     try {
       const { x: dx = 0, y: dy = 0, ...rest } = props;
 
@@ -88,8 +86,6 @@ export class Text extends Shape<'text', 'text'> {
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Text {
-    checkParent(this.#fig, 'text');
-
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&

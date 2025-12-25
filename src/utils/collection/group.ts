@@ -1,49 +1,4 @@
-/*
- import { GSVGElements, randerer } from '../../core/svg/svgManager/svg.js';
- import { multipleClass } from '../../utils/transformations/Transformations.js';
-
-
- import {
-   GraphicalElementProperties,
-   CommonGeometricProperties,
-   AllGShapeStyleProperties
- } from '../../properties/provider/shapeProperties.js';                                                    
-
-
-
- import {
-   IGraphicalElementProperties,
-   StyleForGShapeTag
- } from '../../properties/provider/shapeProperties';                                                      
-
- import {
-    checkParent,
-   isValidMatrix,
-   validProps,
-   parameterTypeValidator,
-   autoFixGeometry,                                                                                       
-   animationChecks,                                                                                       
-   computeBBox,
-   restore,
-   getTransformationMatrix                                                                               
- } from '../../utils/healpers/healpers.js';
-
- import { SAnimation } from '../../utils/animations/Animation.js';
-
- type propsType = Partial<IGraphicalElementProperties['text']> &
-   Partial<StyleForGShapeTag<'text'>>;
-
- type transformCommonProps = {
-   type?: string;
-   px?: number;
-   py?: number;
-   isEffect?: boolean;                                                                                  
- };
-*/
-
-import { NonGraphicalElement as NG } from '../../core/graphics/graphics/nonGraphicalElement.js';
-import { GraphicalElement as G } from '../../core/graphics/graphics/graphicalElement.js';
-//import { GraphicalElementComposer as GEC } from '../../core/graphics/graphics/graphicalElementComposer.js';
+import { GraphicalElement as G } from '../../core/providers/graphics.js';
 
 import {
   Shape,
@@ -53,8 +8,7 @@ import {
 
 import type {
   IGraphicalElementProperties,
-  StyleForGShapeTag,
-  INonGraphicalElementProperties
+  StyleForGShapeTag
 } from '../../properties/provider/shapeProperties';
 
 import {
@@ -63,14 +17,7 @@ import {
   AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
 
-import {
-  //  assignBBoxMatrix,
-  //  trackTransformation,
-  checkParent,
-  isValidMatrix,
-  validProps
-} from '../providers/utils.js';
-import { cmath } from '../../webAsm/interface/TS/CMATH_Interface.js';
+import { isValidMatrix, validProps } from '../providers/utils.js';
 
 type propsType = Partial<IGraphicalElementProperties['g']> &
   Partial<StyleForGShapeTag<'g'>>;
@@ -96,10 +43,9 @@ type shapeT =
   | iPath;
 
 type IG = keyof IGraphicalElementProperties;
-type ING = keyof INonGraphicalElementProperties;
 
-type GE = G<IG, IG>;
-export type AllowedFig = NG<ING> | GE;
+type GE = G<IG>;
+type AllowedFig = GE;
 
 type dimMObj = {
   [key: string]: {
@@ -123,7 +69,7 @@ type dimOObj = {
   };
 };
 
-export class Group extends Shape<'g', 'g'> {
+export class Group extends Shape<'g'> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS);
   #style = this.getIStyle(DEV_INTERNAL_ACCESS);
@@ -132,7 +78,7 @@ export class Group extends Shape<'g', 'g'> {
   #batches: Record<string, Array<AllowedFig>> = {};
 
   constructor(id: string) {
-    super('g', id, 'g');
+    super('g', id);
   }
 
   static validProps() {
@@ -145,8 +91,6 @@ export class Group extends Shape<'g', 'g'> {
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Group {
-    checkParent(this.#fig, 'text');
-
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -180,7 +124,7 @@ export class Group extends Shape<'g', 'g'> {
   public getBatches() {
     return this.#batches;
   }
-  #checkParent(svgCanvas: SVGSVGElement | null) {
+  #hasParent(svgCanvas: SVGSVGElement | null) {
     if (!(svgCanvas instanceof SVGSVGElement)) {
       throw new Error(
         'Possibly this Group is not added to the canvas. Please use canvas.addTo() to add this Group.'
@@ -190,7 +134,7 @@ export class Group extends Shape<'g', 'g'> {
 
   #addChild(child: AllowedFig) {
     return Boolean(
-      (child instanceof G || child instanceof NG) &&
+      child instanceof G &&
         this.#fig.appendChild(child.getIFig(DEV_INTERNAL_ACCESS))
     );
   }
@@ -200,21 +144,21 @@ export class Group extends Shape<'g', 'g'> {
 
     return Boolean(
       p &&
-        (node instanceof G || node instanceof NG) &&
+        node instanceof G &&
         parent.appendChild(node.getIFig(DEV_INTERNAL_ACCESS))
     );
   }
 
   #removeChild(child: AllowedFig) {
     return Boolean(
-      (child instanceof G || child instanceof NG) &&
+      child instanceof G &&
         this.#fig.removeChild(child.getIFig(DEV_INTERNAL_ACCESS))
     );
   }
 
   #removeTo(node: AllowedFig) {
     return Boolean(
-      (node instanceof G || node instanceof NG) &&
+      node instanceof G &&
         node
           .getIFig(DEV_INTERNAL_ACCESS)
           .parentNode?.removeChild(node.getIFig(DEV_INTERNAL_ACCESS))
@@ -559,7 +503,7 @@ let s = 0 ;
   public add(...shapes: AllowedFig[]): this | undefined {
     try {
       const svgCanvas = this.#fig.ownerSVGElement;
-      this.#checkParent(svgCanvas);
+      this.#hasParent(svgCanvas);
 
       for (let index = 0; index < shapes.length; index++) {
         const element: AllowedFig = shapes[index];
@@ -576,8 +520,8 @@ let s = 0 ;
           ).getAttribute('id') === (svgCanvas && svgCanvas.getAttribute('id'));
 
         const eG = element instanceof G && element?.geometry?.shape;
-        const eNG = element instanceof NG && element?.attributes?.tag;
-        const shape = eG || eNG;
+
+        const shape = eG;
 
         if (
           !svgCanvas?.contains(element.getIFig(DEV_INTERNAL_ACCESS)) ||
@@ -614,7 +558,7 @@ let s = 0 ;
   public remove(...shapes: AllowedFig[]): this | undefined {
     try {
       const svgCanvas = this.#fig.ownerSVGElement;
-      this.#checkParent(svgCanvas);
+      this.#hasParent(svgCanvas);
 
       for (let index = 0; index < shapes.length; index++) {
         const element: AllowedFig = shapes[index];
@@ -633,7 +577,6 @@ let s = 0 ;
 
         let removedElementIndex = -1;
         const isInstanceOfG = element instanceof G;
-        const isInstanceOfNG = element instanceof NG;
 
         //console.log('this.#groupElements length ', this.#groupElements.length);
         for (let index = 0; index < this.#groupElements.length; index++) {
@@ -647,14 +590,7 @@ let s = 0 ;
             e.style &&
             element.style.id === e.style.id;
 
-          const isNonGraphicalMatch =
-            isInstanceOfNG &&
-            e instanceof NG &&
-            element.attributes &&
-            e.attributes &&
-            element.attributes.id === e.attributes.id;
-
-          if (isGraphicalMatch || isNonGraphicalMatch) {
+          if (isGraphicalMatch) {
             removedElementIndex = index;
             break;
           }
@@ -683,7 +619,7 @@ let s = 0 ;
     try {
       const svgCanvas = this.#fig.ownerSVGElement;
 
-      this.#checkParent(svgCanvas);
+      this.#hasParent(svgCanvas);
 
       for (let index = 0; index < this.#groupElements.length; index++) {
         const element = this.#groupElements[index];
@@ -713,7 +649,6 @@ let s = 0 ;
   }
 
   #preChecks() {
-    checkParent(this.#fig, 'Group');
     return true;
   }
 

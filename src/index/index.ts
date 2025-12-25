@@ -1,25 +1,23 @@
 // importing canvas classes
-import Canvas from '../core/graphics/providers/canvas.js';
+import Canvas from '../core/providers/canvas.js';
 
-// importing basics Shapes classes
-import { Circle } from '../shapes/basicGeometricShapes/Circle.js';
-import { Ellipse } from '../shapes/basicGeometricShapes/Ellipse.js';
-import { Line } from '../shapes/basicGeometricShapes/Line.js';
-//import { Path } from '../shapes/basicGeometricShapes/Path.js';
-import { Point } from '../shapes/basicGeometricShapes/Point.js';
-import { Polygon } from '../shapes/basicGeometricShapes/Polygon.js';
-import { Polyline } from '../shapes/basicGeometricShapes/Polyline.js';
-import { Rect } from '../shapes/basicGeometricShapes/Rectangle.js';
-
-// importing custom Shapes classes
-import { Curve } from '../shapes/customGeometricShapes/Curves.js';
-import { QuadraticCurve } from '../shapes/customGeometricShapes/quadraticCurves.js';
-import { CubicCurve } from '../shapes/customGeometricShapes/cubicCurves.js';
-import { ArcCurve } from '../shapes/customGeometricShapes/arcCurves.js';
-import { EarcCurve } from '../shapes/customGeometricShapes/earcCurves.js';
-import { Triangle } from '../shapes/customGeometricShapes/Triangle.js';
-
-import { Text } from '../shapes/textMediaElements/Text.js';
+import {
+  Point,
+  Line,
+  Path,
+  Polyline,
+  Polygon,
+  Rect,
+  Circle,
+  Ellipse,
+  Triangle,
+  Text,
+  Curve,
+  CubicCurve,
+  QuadraticCurve,
+  ArcCurve,
+  EarcCurve
+} from '../shapes/provider/shapes.js';
 
 export const Shantanu = {
   Canvas,

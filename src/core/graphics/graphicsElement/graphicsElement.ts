@@ -4,16 +4,9 @@ import {
   GraphicalElementProperties
 } from '../../../properties/provider/shapeProperties.js';
 
-import {
-  assertAccess,
-  DEV_INTERNAL_ACCESS
-} from '../../../utils/providers/accesskeys.js';
+import { assertAccess } from '../../../utils/providers/accesskeys.js';
 
-import {
-  checkParent,
-  Colors,
-  generateId
-} from '../../../utils/providers/utils.js';
+import { Colors, generateId } from '../../../utils/providers/utils.js';
 
 import type {
   ICommonGeometricProperties,
@@ -45,7 +38,6 @@ export abstract class GraphicalElement<T extends ValidKeys> {
   // in future #fig may hold HTMLCanvasElement , WebGl Elements
   #fig!: GRAPHICS_TYPES;
   // int future #context may hold SVG_CONTEXT , 'htmlcanvas' , 'webgl' contexts
-  #context!: string;
   // in future #renderer may hold different Renderer according to contexts.
   //  #renderer!: Renderer;
   // #geometry is holding all Shape specific geometric properties and + some common properties
@@ -56,7 +48,6 @@ export abstract class GraphicalElement<T extends ValidKeys> {
   // #style is holding all html+css  style properties for a node
   #style: StyleForGShapeTag<T> = {} as StyleForGShapeTag<T>;
 
-  #isChanged: boolean = false;
   public geometry!: ICommonGeometricProperties['geometry'] &
     IGraphicalElementProperties[T]; //  = {};
 
@@ -81,6 +72,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
       }
       this.#geometry['context'] = undefined;
       this.#geometry['shape'] = '';
+      this.#geometry['dirty'] = true;
 
       Object.defineProperty(this.#geometry, 'shape', {
         value: shapeName,
@@ -129,21 +121,8 @@ export abstract class GraphicalElement<T extends ValidKeys> {
     }
   }
 
-  public requestDraw(accessKey: symbol) {
-    assertAccess(accessKey);
-    this.#isChanged = !this.#isChanged;
-  }
-
-  public needDraw(): boolean {
-    return this.#isChanged;
-  }
-  public setIContext(accessKey: symbol, context: string) {
-    assertAccess(accessKey);
-    return (this.#context = context);
-  }
-
-  public getIContext() {
-    return this.#context;
+  public getContext() {
+    return this.#geometry?.context || null;
   }
 
   public getIFig(accessKey: symbol) {
@@ -165,6 +144,10 @@ export abstract class GraphicalElement<T extends ValidKeys> {
         );
       }
       this.#fig = shape;
+
+      this.#geometry &&
+        this.#geometry.shape != 'canvas' &&
+        (this.#geometry['context'] = context);
     }
   }
   public getIGeo(
@@ -296,6 +279,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
       if (typeof this.#style == 'object' && this.#isStyleProp(key)) {
         (this.#style as Record<string, string | number>)[key] = value;
       }
+      this.#geometry.dirty = true;
     } catch (e) {
       throw e;
     }
@@ -356,7 +340,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
           const [key, value] = entries[i];
           this.setAttrs({ [key]: value });
         }
-        this.requestDraw(DEV_INTERNAL_ACCESS);
+
         // +++ Setter Part End +++
         // +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -391,9 +375,9 @@ export abstract class GraphicalElement<T extends ValidKeys> {
     // This code may change According to context
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++
     try {
-      const context = this.getIContext();
+      if (!this.#geometry) return;
+      const context = this.#geometry.context;
       if (context == SVG_CONTEXT) {
-        checkParent(this.#fig, context);
         this.setAttrs({ visibility: 'hidden' });
       }
     } catch (e) {
@@ -406,9 +390,9 @@ export abstract class GraphicalElement<T extends ValidKeys> {
     // This code may change According to context
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++
     try {
-      const context = this.getIContext();
+      if (!this.#geometry) return;
+      const context = this.#geometry.context;
       if (context == SVG_CONTEXT) {
-        checkParent(this.#fig, context);
         this.setAttrs({ visibility: 'visible' });
       }
     } catch (e) {
@@ -421,7 +405,8 @@ export abstract class GraphicalElement<T extends ValidKeys> {
     // This code may change According to context
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++
     try {
-      const context = this.getIContext();
+      if (!this.#geometry) return;
+      const context = this.#geometry.context;
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
       // This is applicable for both 'svg' 'html' Context
       // implement proper re-ordering canvas Array of element according to Front operation
@@ -429,7 +414,6 @@ export abstract class GraphicalElement<T extends ValidKeys> {
       // so toFront() method can modify canvas array .
       // ++++++++++++++++++++++++++++++++++++++++++++++++++++
       if (context == SVG_CONTEXT) {
-        checkParent(this.#fig, context);
         if (!this.#fig || !this.#fig.parentNode) return;
 
         const val = Math.abs(near);
@@ -473,7 +457,8 @@ export abstract class GraphicalElement<T extends ValidKeys> {
     // This code may change According to context
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++
     try {
-      const context = this.getIContext();
+      if (!this.#geometry) return;
+      const context = this.#geometry.context;
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
       // This is applicable for both 'svg' 'html' Context
       // implement proper re-ordering canvas Array of element according to Back operation
@@ -481,7 +466,6 @@ export abstract class GraphicalElement<T extends ValidKeys> {
       // so toFront() method can modify canvas array .
       // ++++++++++++++++++++++++++++++++++++++++++++++++++++
       if (context == SVG_CONTEXT) {
-        checkParent(this.#fig, context);
         if (!this.#fig || !this.#fig.parentNode) return;
 
         const val = Math.abs(far);

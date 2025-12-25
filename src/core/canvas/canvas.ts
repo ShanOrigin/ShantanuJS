@@ -1,25 +1,34 @@
-import { IGraphicalElementProperties as IG } from '../../../properties/specific/specificProperties.js';
-import { Colors } from '../../../utils/providers/utils.js';
-import { createSVGElement } from '../backends/svg/core/core.js';
+import { IGraphicalElementProperties as IG } from '../../properties/specific/specificProperties.js';
 
-import { GraphicalElement as G } from '../graphics/graphicalElement.js';
+import { Colors } from '../../utils/providers/utils.js';
+import { createSVGElement } from '../graphics/backends/svg/core/core.js';
 
-import { Events } from '../events/event.js';
-import { Group as GR } from '../../../utils/collection/group.js';
-import { DEV_INTERNAL_ACCESS } from '../../../utils/providers/accesskeys.js';
+import { GraphicalElement as G } from '../graphics/graphicsElement/graphicsElement.js';
 
-import { Renderer } from '../renderer/renderer.js';
+import { EventsSystem } from '../events/event.js';
+import { Group as GR } from '../../utils/collection/group.js';
+import { DEV_INTERNAL_ACCESS } from '../../utils/providers/accesskeys.js';
+
+import { initRenderer } from '../graphics/backends/renderer.js';
+import { Renderer } from '../graphics/backends/renderers';
+
 import { Engine } from '../engine/engine.js';
-import { SVG_CONTEXT } from '../backends/svg/core/core.js';
+import {
+  setSVGAttrs,
+  SVG_CONTEXT
+} from '../graphics/backends/svg/core/core.js';
 
-import type { CONTEXT } from '../../../types/graphicsElements';
+import type { CONTEXT } from '../../types/graphicsElements';
+
 type shapeType = keyof IG;
 
 type GType = G<shapeType>;
 
 type allowedShapes = GType;
 
-export default class Canvas extends Events<'canvas'> {
+declare const __SHANTANU_DEV__: boolean;
+
+export default class Canvas extends EventsSystem<'canvas'> {
   #parent: HTMLElement | null; // Accept all valid SVG types generically
   #canvasElements: Array<allowedShapes> = [];
   #renderer!: Renderer;
@@ -39,6 +48,12 @@ export default class Canvas extends Events<'canvas'> {
   ) {
     super('canvas', `${id}-Canvas`);
     try {
+      if (__SHANTANU_DEV__) {
+        console.warn(
+          'ShantanuJS is a pre-release build. Not recommended for production use.'
+        );
+      }
+
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
       //  This code may change According to context
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -63,21 +78,25 @@ export default class Canvas extends Events<'canvas'> {
         );
       }
 
-      this.#parent &&
-        (this.#parent?.appendChild(this.#fig),
-        (this.#parent.style.position = 'relative'));
-
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
       // This code may change According to context
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       if (this.#geometry?.context == SVG_CONTEXT) {
+        console.log('context is ', context);
         if (!this.#fig) {
-          this.#fig = createSVGElement(SVG_CONTEXT) as SVGSVGElement;
+          const canvas = createSVGElement(SVG_CONTEXT) as SVGSVGElement;
+          console.log(canvas);
+          const def = createSVGElement('defs');
+          canvas.appendChild(def);
+          this.setIFig(DEV_INTERNAL_ACCESS, context, canvas);
+          this.#fig = this.getIFig(DEV_INTERNAL_ACCESS);
         }
-        const def = createSVGElement('defs');
-        this.#fig.appendChild(def);
       }
+
+      this.#parent &&
+        (this.#parent?.appendChild(this.#fig),
+        (this.#parent.style.position = 'relative'));
       console.log('applying dim to canvas ');
       this.attrs({
         width,
@@ -93,7 +112,7 @@ export default class Canvas extends Events<'canvas'> {
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
 
       // initialized generalized render
-      this.#renderer = new Renderer();
+      this.#renderer = initRenderer(context);
       // initialized generalized rendering engine
       this.#engine = new Engine(this.#canvasElements, this.#renderer);
       // started rendering engine
@@ -159,6 +178,16 @@ export default class Canvas extends Events<'canvas'> {
         super.attrs(props);
 
         this.#setCanvasParams();
+
+        if (this.#geometry?.context == SVG_CONTEXT) {
+          const { width, height } = this.#geometry as {
+            width: number;
+            height: number;
+          };
+          'width' in props && setSVGAttrs(this.#fig, 'width', width);
+
+          'height' in props && setSVGAttrs(this.#fig, 'height', height);
+        }
         return;
       }
 
@@ -252,6 +281,8 @@ export default class Canvas extends Events<'canvas'> {
         const gEl = createSVGElement(shape);
         shapeEl.setIFig(DEV_INTERNAL_ACCESS, canvasContext, gEl);
         this.#fig!.appendChild(gEl);
+
+        this.#fig = this.getIFig(DEV_INTERNAL_ACCESS);
       }
 
       this.#canvasElements.push(shapeEl);

@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -16,7 +16,6 @@ import {
 } from '../../properties/provider/shapeProperties';
 
 import {
-  checkParent,
   isValidMatrix,
   validProps,
   parameterTypeValidator,
@@ -27,8 +26,8 @@ import {
 type propsType = Partial<IGraphicalElementProperties['polygon']> &
   Partial<StyleForGShapeTag<'polygon'>>;
 
-export class Polygon extends Shape<'polygon', 'polygon'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+export class Polygon extends Shape<'polygon'> {
+  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
@@ -40,7 +39,7 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
   constructor(points: number[][], props?: propsType);
 
   constructor(points: string | number[][], props: propsType = {}) {
-    super('polygon', props?.id ?? '', 'polygon');
+    super('polygon', props?.id ?? '');
 
     try {
       let pointsAttr: string = '';
@@ -110,8 +109,6 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Polygon {
-    checkParent(this.#fig, 'polygon');
-
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -239,7 +236,7 @@ export class Polygon extends Shape<'polygon', 'polygon'> {
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
-      renderer.render({ el: this });
+      //    renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS);
     } catch (e) {
       throw e;

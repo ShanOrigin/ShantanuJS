@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -18,7 +18,6 @@ import {
 import type { Point, CurveType } from '../../types/animation';
 
 import {
-  checkParent,
   isValidMatrix,
   validProps,
   parameterTypeValidator,
@@ -33,7 +32,7 @@ export type propsType = Partial<IGraphicalElementProperties['curve']> &
 
 import type { polylinePropsType, curvePropsType } from '../../types/shapes';
 
-export class Curve extends Shape<'curve', 'polyline'> {
+export class Curve extends Shape<'curve'> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
@@ -45,7 +44,7 @@ export class Curve extends Shape<'curve', 'polyline'> {
     curveName: CurveType,
     props: polylinePropsType & curvePropsType = {}
   ) {
-    super('curve', props?.id ?? '', 'polyline');
+    super('curve', props?.id ?? '');
 
     try {
       const {
@@ -130,7 +129,6 @@ export class Curve extends Shape<'curve', 'polyline'> {
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Curve {
-    checkParent(this.#fig, 'polyline');
     /*
     if (
       this.#geometry &&
@@ -256,7 +254,7 @@ export class Curve extends Shape<'curve', 'polyline'> {
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
-      renderer.render({ el: this });
+      //     renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;

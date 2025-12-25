@@ -62,7 +62,7 @@ function makeCubic(
  * @returns The interpolated numeric value at the given `t`.
  */
 
-export function evalCubic(poly: CubicPoly, t: number) {
+function evalCubic(poly: CubicPoly, t: number) {
   const t2 = t * t,
     t3 = t2 * t;
   return poly.a0 + poly.a1 * t + poly.a2 * t2 + poly.a3 * t3;

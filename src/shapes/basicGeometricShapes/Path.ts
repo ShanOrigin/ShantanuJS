@@ -14,7 +14,6 @@ import {
   StyleForGShapeTag
 } from '../../properties/provider/shapeProperties';
 import {
-  checkParent,
   validProps,
   parameterTypeValidator,
   autoFixGeometry,
@@ -26,8 +25,8 @@ import {
 type propsType = Partial<IGraphicalElementProperties['path']> &
   Partial<StyleForGShapeTag<'path'>>;
 
-export class Path extends Shape<'path', 'path'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+export class Path extends Shape<'path'> {
+  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
 
@@ -36,7 +35,7 @@ export class Path extends Shape<'path', 'path'> {
   //#Animations!: Animation<'path'>[]; // for timeline support but not implementated yet
   // Constructor 1: path as string (e.g., "M10 10 L50 50 L90 10 Z")
   constructor(d: string, props?: propsType) {
-    super('path', props?.id?.toString() ?? '', 'path');
+    super('path', props?.id?.toString() ?? '');
 
     try {
       props && 'id' in props && delete props.id;
@@ -73,7 +72,6 @@ export class Path extends Shape<'path', 'path'> {
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Path {
-    checkParent(this.#fig, 'Rect');
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&

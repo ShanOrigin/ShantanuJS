@@ -15,6 +15,7 @@ type DeepPartial<T> = {
 
 export const CommonGeometricProperties = Object.seal({
   geometry: {
+    dirty: true, // for rendering optimization purpose
     buffer: new Float32Array(0), // shape + OBB matrix in 1d combined
     shape: '', // shape which shape
     context: '',
@@ -48,9 +49,9 @@ export interface ICommonGeometricProperties
  * common style property object for reference
  */
 
-export type ICommonStylePropertie = typeof CommonStylePropertie;
+type ICommonStylePropertie = typeof CommonStylePropertie;
 
-export const CommonStylePropertie = Object.seal({
+const CommonStylePropertie = Object.seal({
   'role-of-el': '', // Custom semantic property
   inside: '', // Custom layout property
   id: '', // Unique identifier
@@ -71,7 +72,7 @@ export const CommonStylePropertie = Object.seal({
   'stroke-dashoffset': '' // Start offset for stroke dashes
 });
 
-export const ShapeStyleProperties = Object.seal({
+const ShapeStyleProperties = Object.seal({
   d: '', // Path data for <path>
   fill: 'none', // Fill color or gradient
   stroke: 'none', // Stroke color or gradient
@@ -87,7 +88,7 @@ export const ShapeStyleProperties = Object.seal({
 
 export type IShapeStyleProperties = typeof ShapeStyleProperties;
 
-export const TextStyleProperties = Object.seal({
+const TextStyleProperties = Object.seal({
   'font-family': 'arial', // Font name
   'font-size': '16', // Font size
   'font-size-adjust': 1, // Adjust size based on x-height
@@ -109,7 +110,7 @@ export const TextStyleProperties = Object.seal({
 
 export type ITextStyleProperties = typeof TextStyleProperties;
 
-export const ImageStyleProperties = Object.seal({
+const ImageStyleProperties = Object.seal({
   opacity: 1, // Transparency
   filter: '', // Filter effects
   mask: '', // Applied mask
@@ -123,46 +124,20 @@ export const ImageStyleProperties = Object.seal({
 
 export type IImageStyleProperties = typeof ImageStyleProperties;
 
-export const GradientAndPatternProperties = Object.seal({
-  'gradient-transform': '', // Transform on gradient space
-  'gradient-units': 'userSpaceOnUse', // Coordinate space for gradient
-  'spread-method': 'pad', // Fill outside gradient bounds
-  'pattern-transform': '', // Transform for pattern space
-  'pattern-units': 'userSpaceOnUse', // Pattern space definition
-  'pattern-content-units': 'userSpaceOnUse' // Coordinate space for pattern contents
-});
-
-export type IGradientAndPatternProperties = typeof GradientAndPatternProperties;
-
-export const FilterPrimitiveProperties = Object.seal({
-  'flood-color': '', // Color used in flooding filter
-  'flood-opacity': 1, // Opacity for flood
-  'lighting-color': '', // Light source color in lighting filters
-  'stop-color': '', // Color in gradient stop
-  'stop-opacity': 1 // Opacity at gradient stop
-});
-
-export type IFilterPrimitiveProperties = typeof FilterPrimitiveProperties;
-
 const shapeStyle = { ...ShapeStyleProperties, ...CommonStylePropertie };
 
 export const AllStyleProperties = {
   ...ShapeStyleProperties,
   ...CommonStylePropertie,
   ...TextStyleProperties,
-  ...ImageStyleProperties,
-  ...GradientAndPatternProperties,
-  ...FilterPrimitiveProperties
+  ...ImageStyleProperties
 };
 
 export interface IAllStyleProperties
   extends IShapeStyleProperties,
     ICommonStylePropertie,
     ITextStyleProperties,
-    IImageStyleProperties,
-    IGradientAndPatternProperties,
-    IFilterPrimitiveProperties {}
-
+    IImageStyleProperties {}
 export const AllGShapeStyleProperties = {
   canvas: shapeStyle,
   dot: shapeStyle,

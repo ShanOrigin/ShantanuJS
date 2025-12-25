@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -16,8 +16,6 @@ import {
 } from '../../properties/provider/shapeProperties';
 
 import {
-  checkParent,
-  isValidMatrix,
   validProps,
   parameterTypeValidator,
   autoFixGeometry
@@ -26,8 +24,8 @@ import {
 type propsType = Partial<IGraphicalElementProperties['dot']> &
   Partial<StyleForGShapeTag<'dot'>>;
 
-export class Point extends Shape<'dot', 'circle'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+export class Point extends Shape<'dot'> {
+  // #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
 
@@ -35,7 +33,7 @@ export class Point extends Shape<'dot', 'circle'> {
 
   // #Animations!: Animation<'dot'>[]; // for timeline support but not implementated yet
   constructor(cx: number, cy: number, r: number, props: propsType = {}) {
-    super('dot', props.id ?? '', 'circle');
+    super('dot', props.id ?? '');
     try {
       const { cx: dcx = 0, cy: dcy = 0, r: dr = 0, ...rest } = props;
 
@@ -82,8 +80,6 @@ export class Point extends Shape<'dot', 'circle'> {
     offsetY: number = 10,
     visibleRadius?: number
   ): Point {
-    checkParent(this.#fig, 'dot');
-
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -142,7 +138,7 @@ export class Point extends Shape<'dot', 'circle'> {
         geo.canonicalMatrix = [new Float32Array(sb.buffer, 0 * 4, 3)];
       }
 
-      renderer.render({ el: this });
+      //     renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;

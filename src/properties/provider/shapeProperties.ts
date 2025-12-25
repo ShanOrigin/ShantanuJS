@@ -1,6 +1,5 @@
 // Importing Values
 import {
-  //  CommonStyleProperties,
   CommonGeometricProperties,
   AllGShapeStyleProperties,
   AllStyleProperties
@@ -8,7 +7,6 @@ import {
 
 import {
   GraphicalElementProperties,
-  NonGraphicalElementProperties,
   dimensions
 } from '../specific/specificProperties.js';
 
@@ -22,28 +20,13 @@ import type {
   IAllStyleProperties
 } from '../common/commonProperties';
 
-import type {
-  IGraphicalElementProperties,
-  INonGraphicalElementProperties,
-  ipDot,
-  ipCanvas,
-  ipLine,
-  ipRect,
-  ipText,
-  ipImage,
-  ipCircle,
-  ipEllipse,
-  ipPolygon,
-  ipPolyline,
-  ipPath
-} from '../specific/specificProperties';
+import type { IGraphicalElementProperties } from '../specific/specificProperties';
 
 export {
   // CommonStyleProperties,
   CommonGeometricProperties,
   AllGShapeStyleProperties,
   GraphicalElementProperties,
-  NonGraphicalElementProperties,
   dimensions,
   AllStyleProperties
 };
@@ -55,17 +38,5 @@ export type {
   IAllGShapeStyleProperties,
   TagToGShapeStyleKeyMap,
   StyleForGShapeTag,
-  IGraphicalElementProperties,
-  INonGraphicalElementProperties,
-  ipDot,
-  ipLine,
-  ipRect,
-  ipCircle,
-  ipEllipse,
-  ipPolygon,
-  ipPolyline,
-  ipPath,
-  ipCanvas,
-  ipText,
-  ipImage
+  IGraphicalElementProperties
 };

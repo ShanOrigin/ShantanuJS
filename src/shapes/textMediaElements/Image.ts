@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -12,7 +12,6 @@ import {
 } from '../../properties/provider/shapeProperties.js';
 
 import {
-  checkParent,
   isValidMatrix,
   validProps,
   parameterTypeValidator,
@@ -21,8 +20,8 @@ import {
 
 import type { rectStyleTypes, rectPropsType } from '../../types/shapes';
 
-export class Image extends Shape<'rect', 'rect'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+export class Image extends Shape<'rect'> {
+  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
@@ -64,8 +63,9 @@ export class Image extends Shape<'rect', 'rect'> {
     arg6?: number | rectPropsType,
     arg7?: rectPropsType
   ) {
-    super('rect', Rect.#getParams(arg5, arg6, arg7, true) as string, 'rect'); // ( shape generics , id , rander generics by default = 'path' )
+    super('rect', ''); // ( shape generics , id , rander generics by default = 'path' )
     try {
+      /*
       const props: rectPropsType = Rect.#getParams(
         arg5,
         arg6,
@@ -126,6 +126,8 @@ export class Image extends Shape<'rect', 'rect'> {
 
       // console.log('safePropsprops ', safeProps);
       this.attrs(safeProps);
+
+			*/
     } catch (e) {
       throw e;
     }
@@ -205,9 +207,7 @@ export class Image extends Shape<'rect', 'rect'> {
     offsetY: number = 10,
     width?: number,
     height?: number
-  ): Rect {
-    checkParent(this.#fig, 'Rect');
-
+  ): Image {
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -261,24 +261,6 @@ export class Image extends Shape<'rect', 'rect'> {
     return { x, y, width, height };
   }
 
-  protected override getUpdatedGeometryAccordingToShape(accessKey: symbol): {
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-  } {
-    assertAccess(accessKey);
-
-    const { x, y, width, height } = this.#geometry as {
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-    };
-
-    return { x, y, width, height };
-  }
-
   protected override generateMatrix(accessKey: symbol): void {
     try {
       assertAccess(accessKey);
@@ -293,27 +275,29 @@ export class Image extends Shape<'rect', 'rect'> {
 
       // Allocate once and reuse
       if (
-        !this.#geometry.sharedBuffer ||
-        this.#geometry.sharedBuffer.length !== totalLength
+        !this.#geometry.buffer ||
+        this.#geometry.buffer.length !== totalLength
       ) {
-        this.#geometry.sharedBuffer = new Float32Array(totalLength);
+        this.#geometry.buffer = new Float32Array(totalLength);
       }
 
-      const sb = this.#geometry.sharedBuffer as Float32Array;
+      const sb = this.#geometry.buffer as Float32Array;
       sb.set([x, y, 1, x + w, y, 1, x + w, y + h, 1, x, y + h, 1], 0);
 
       // Only recreate views if buffer was reallocated
-      if (!this.#geometry.matrix) {
-        this.#geometry.matrix = [
+      if (!this.#geometry.buffer) {
+        /*
+				this.#geometry.buffer
           new Float32Array(sb.buffer, 0 * 4, 3),
           new Float32Array(sb.buffer, 3 * 4, 3),
           new Float32Array(sb.buffer, 6 * 4, 3),
           new Float32Array(sb.buffer, 9 * 4, 3)
         ];
+				*/
       }
 
       this.restoreDimension(DEV_INTERNAL_ACCESS);
-      renderer.render({ el: this });
+      //     renderer.render({ el: this });
     } catch (e) {
       throw e;
     }
@@ -427,44 +411,5 @@ export class Image extends Shape<'rect', 'rect'> {
     } catch (e) {
       throw e;
     }
-  }
-
-  static plugins: (string | symbol)[] = [];
-  // register plugins
-  static use(plugin: (proto: Rect) => void, accessKey: symbol) {
-    assertAccess(accessKey);
-
-    const proto = this.prototype;
-
-    // Wrap the prototype in a Proxy that throws if you overwrite
-    const guardedProto = new Proxy(proto, {
-      set(target, prop, value) {
-        if (prop in target) {
-          throw new Error(
-            `Plugin error: property "${String(prop)}" already exists on class`
-          );
-        }
-        Rect.plugins.push(prop);
-        return Reflect.set(target, prop, value);
-      },
-      defineProperty(target, prop, descriptor) {
-        if (prop in target) {
-          throw new Error(
-            `Plugin error: property "${String(prop)}" already exists on class`
-          );
-        }
-        Rect.plugins.push(prop);
-        return Reflect.defineProperty(target, prop, descriptor);
-      }
-    });
-
-    // Run plugin with guarded prototype
-    plugin(guardedProto);
-  }
-
-  static unload(prop: string | symbol, accessKey: symbol) {
-    assertAccess(accessKey);
-    delete (this.prototype as any)[prop];
-    this.plugins = this.plugins.filter((p) => p !== prop);
   }
 }

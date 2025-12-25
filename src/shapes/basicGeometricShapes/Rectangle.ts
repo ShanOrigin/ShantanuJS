@@ -1,4 +1,4 @@
-import { renderer } from '../../core/graphics/providers/graphics.js';
+//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -12,8 +12,6 @@ import {
 } from '../../properties/provider/shapeProperties.js';
 
 import {
-  checkParent,
-  isValidMatrix,
   validProps,
   parameterTypeValidator,
   autoFixGeometry
@@ -21,8 +19,8 @@ import {
 
 import type { rectStyleTypes, rectPropsType } from '../../types/shapes';
 
-export class Rect extends Shape<'rect', 'rect'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+export class Rect extends Shape<'rect'> {
+  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
@@ -64,7 +62,7 @@ export class Rect extends Shape<'rect', 'rect'> {
     arg6?: number | rectPropsType,
     arg7?: rectPropsType
   ) {
-    super('rect', Rect.#getParams(arg5, arg6, arg7, true) as string, 'rect'); // ( shape generics , id , rander generics by default = 'path' )
+    super('rect', Rect.#getParams(arg5, arg6, arg7, true) as string); // ( shape generics , id , rander generics by default = 'path' )
     try {
       const props: rectPropsType = Rect.#getParams(
         arg5,
@@ -206,8 +204,6 @@ export class Rect extends Shape<'rect', 'rect'> {
     width?: number,
     height?: number
   ): Rect {
-    checkParent(this.#fig, 'Rect');
-
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -284,7 +280,7 @@ export class Rect extends Shape<'rect', 'rect'> {
       }
 
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
-      renderer.render({ el: this });
+      //     renderer.render({ el: this });
     } catch (e) {
       throw e;
     }

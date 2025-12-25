@@ -29,7 +29,7 @@ import { transformStack } from '../../types/index.js';
 export function TransformMinix<
   TBase extends abstract new (...args: any[]) => any
 >(Base: TBase) {
-  abstract class MixedClass extends Base {
+  abstract class Transformable extends Base {
     constructor(...rest: any[]) {
       super(...rest);
     }
@@ -964,5 +964,10 @@ export function TransformMinix<
       }
     }
   }
-  return MixedClass;
+  return Transformable;
+  /*
+  return Transformable as unknown as abstract new (
+    ...args: ConstructorParameters<TBase>
+  ) => InstanceType<TBase> & Transformable;
+	*/
 }

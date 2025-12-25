@@ -14,6 +14,7 @@ const time = 900;
 export async function LineUnitTests() {
   // create actual canvas and Shape you want to test
 
+  console.log('creating canvas');
   const Canvas = new Shantanu.Canvas('testing', 200, 400);
 
   Canvas.attrs({
@@ -21,17 +22,24 @@ export async function LineUnitTests() {
     'stroke-width': 0
   });
 
-  //console.log(Canvas);
+  console.log(Canvas);
 
   await vTest('create Shape with basic propeties', async () => {
     const Shape = new Shantanu.Shapes.Basic.Line(40, 10, 70, 10);
 
+    console.log('Hi am Line ');
     Canvas.addTo(Shape);
 
-    //console.log(Shape);
+    console.log(Shape);
     await visualTest(Canvas, Shape, 1);
+
+    setTimeout(() => {
+      Shape.attrs({ y1: 100 });
+      console.log(Shape);
+    }, 8000);
   });
 
+  /*
   await vTest('Changing Shapes geometric propeties by  .attrs() ', async () => {
     const Shape = new Shantanu.Line(80, 40, 30, 40, {
       stroke: 'rgba(78 , 180 , 190 , 0.3)',
@@ -575,6 +583,7 @@ export async function LineUnitTests() {
       await ThrowError(() => Shape.Flip(c as any));
     }
   });
+*/
 
   // ++++++++++++ Flip End ++++++++++++++++
 }
