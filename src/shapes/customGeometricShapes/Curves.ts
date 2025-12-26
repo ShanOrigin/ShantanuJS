@@ -1,4 +1,3 @@
-//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -22,7 +21,6 @@ import {
   validProps,
   parameterTypeValidator,
   autoFixGeometry
-  //  computeBBox
 } from '../../utils/providers/utils.js';
 
 import { generateCurvePoints } from '../../utils/curve/curveGenerator/generateCurvePoints.js';
@@ -33,11 +31,7 @@ export type propsType = Partial<IGraphicalElementProperties['curve']> &
 import type { polylinePropsType, curvePropsType } from '../../types/shapes';
 
 export class Curve extends Shape<'curve'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
-  #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
-  #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
-
   //  #Animations!: Animation<'polyline'>[]; // for timeline support but not implementated yet
 
   constructor(

@@ -86,7 +86,7 @@ const ShapeStyleProperties = Object.seal({
   'marker-end': '' // Reference to end marker
 });
 
-export type IShapeStyleProperties = typeof ShapeStyleProperties;
+type IShapeStyleProperties = typeof ShapeStyleProperties;
 
 const TextStyleProperties = Object.seal({
   'font-family': 'arial', // Font name
@@ -108,7 +108,7 @@ const TextStyleProperties = Object.seal({
   'glyph-orientation-vertical': '' // Glyph orientation in vertical text
 });
 
-export type ITextStyleProperties = typeof TextStyleProperties;
+type ITextStyleProperties = typeof TextStyleProperties;
 
 const ImageStyleProperties = Object.seal({
   opacity: 1, // Transparency
@@ -122,7 +122,7 @@ const ImageStyleProperties = Object.seal({
   cursor: '' // Cursor type
 });
 
-export type IImageStyleProperties = typeof ImageStyleProperties;
+type IImageStyleProperties = typeof ImageStyleProperties;
 
 const shapeStyle = { ...ShapeStyleProperties, ...CommonStylePropertie };
 

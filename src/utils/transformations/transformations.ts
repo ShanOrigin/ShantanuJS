@@ -22,7 +22,8 @@ import type {
   RotateProps,
   SkewProps,
   FlipProps,
-  ParsedDaTa
+  ParsedDaTa,
+  createTransformationMatrixProps
 } from '../../types/transformations';
 import { transformStack } from '../../types/index.js';
 
@@ -120,18 +121,7 @@ export function TransformMinix<
       multiplyWithBase = false,
       major = 'row',
       arrayType = 'normal'
-    }: {
-      transformations: {
-        rotate?: RotateProps;
-        skew?: SkewProps;
-        scale?: ScaleProps;
-        translate?: TranslateProps;
-      };
-      major?: 'row' | 'column';
-      arrayType?: 'normal' | 'float32';
-      baseTMatrix?: Float32Array;
-      multiplyWithBase?: boolean;
-    }): Float32Array | number[][] {
+    }: createTransformationMatrixProps): Float32Array | number[][] {
       // quick flags
       const hasTransforms = !!transformations;
       const doScale =
@@ -274,97 +264,6 @@ export function TransformMinix<
         }
         return tM;
       }
-    }
-
-    public reateTransformMatrix({
-      transformations,
-      baseTMatrix,
-      multiplyWithBase = false,
-      major = 'row',
-      arrayType = 'normal'
-    }: {
-      transformations: {
-        rotate: RotateProps;
-        skew: SkewProps;
-        scale: ScaleProps;
-        translate: TranslateProps;
-      };
-      major?: 'row' | 'column';
-      arrayType?: 'normal' | 'float32';
-      baseTMatrix?: Float32Array;
-      multiplyWithBase?: boolean;
-    }): Float32Array | number[][] {
-      const isS = transformations && 'scale' in transformations;
-      const isSk = transformations && 'skew' in transformations;
-      const isR = transformations && 'rotate' in transformations;
-      const isT = transformations && 'translate' in transformations;
-
-      this.#resetMatrix(this.#__batchedComposeTMatrix);
-      this.#resetMatrix(this.#__tempTMatrix);
-      this.beginT();
-
-      isS && this.Scale(transformations.scale as ScaleProps);
-
-      isSk && this.Skwe(transformations.skew as SkewProps);
-
-      isR && this.Rotate(transformations.rotate as RotateProps);
-
-      isT && this.Translate(transformations.translate as TranslateProps);
-
-      console.log(' transformation = ', transformations);
-
-      let a, b, c, d, e, f, m31, m32;
-
-      if (baseTMatrix instanceof Float32Array && multiplyWithBase) {
-        const m = baseTMatrix as Float32Array;
-        const cm = new DOMMatrix([m[0], m[1], m[3], m[4], m[6], m[7]]);
-        cm.multiplySelf(this.#__batchedComposeTMatrix);
-
-        ({ a, b, c, d, e, f, m31, m32 } = cm as DOMMatrix);
-      } else {
-        ({ a, b, c, d, e, f, m31, m32 } = this
-          .#__batchedComposeTMatrix as DOMMatrix);
-      }
-
-      this.#resetMatrix(this.#__batchedComposeTMatrix);
-      this.#resetMatrix(this.#__tempTMatrix);
-      this.#isBatching = false;
-
-      let tM;
-      if (arrayType == 'normal') {
-        tM = [];
-        major == 'row' &&
-          ((tM[0] = [a, c, e]), (tM[1] = [b, d, f]), (tM[2] = [m31, m32, 1]));
-
-        major == 'column' &&
-          ((tM[0] = [a, b, m31]), (tM[1] = [c, d, m32]), (tM[2] = [e, f, 1]));
-      } else if (arrayType == 'float32') {
-        tM = new Float32Array(9);
-
-        major == 'row' &&
-          ((tM[0] = a),
-          (tM[1] = c),
-          (tM[2] = e),
-          (tM[3] = b),
-          (tM[4] = d),
-          (tM[5] = f),
-          (tM[6] = m31),
-          (tM[7] = m32),
-          (tM[8] = 1));
-
-        major == 'column' &&
-          ((tM[0] = a),
-          (tM[1] = b),
-          (tM[2] = m31),
-          (tM[3] = c),
-          (tM[4] = d),
-          (tM[5] = m32),
-          (tM[6] = e),
-          (tM[7] = f),
-          (tM[8] = 1));
-      }
-
-      return tM as number[][] | Float32Array;
     }
 
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

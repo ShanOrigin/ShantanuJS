@@ -1,4 +1,3 @@
-//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -10,10 +9,7 @@ import {
   AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
 
-import {
-  IGraphicalElementProperties,
-  StyleForGShapeTag
-} from '../../properties/provider/shapeProperties';
+import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
 
 import {
   validProps,
@@ -21,18 +17,16 @@ import {
   autoFixGeometry
 } from '../../utils/providers/utils.js';
 
-type propsType = Partial<IGraphicalElementProperties['dot']> &
-  Partial<StyleForGShapeTag<'dot'>>;
+import { pointPropsType } from '../../types/shapes';
 
 export class Point extends Shape<'dot'> {
-  // #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
 
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
 
   // #Animations!: Animation<'dot'>[]; // for timeline support but not implementated yet
-  constructor(cx: number, cy: number, r: number, props: propsType = {}) {
+  constructor(cx: number, cy: number, r: number, props: pointPropsType = {}) {
     super('dot', props.id ?? '');
     try {
       const { cx: dcx = 0, cy: dcy = 0, r: dr = 0, ...rest } = props;
@@ -102,7 +96,7 @@ export class Point extends Shape<'dot'> {
         offsetX + cx,
         offsetY + cy,
         (visibleRadius ?? 0) + r,
-        style as propsType
+        style as pointPropsType
       );
     }
 

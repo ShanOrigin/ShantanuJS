@@ -1,4 +1,3 @@
-//import { GSVGElements, randerer } from '../../core/svg/svgManager/svg.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -9,24 +8,17 @@ import {
   CommonGeometricProperties,
   AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
-import {
-  IGraphicalElementProperties,
-  StyleForGShapeTag
-} from '../../properties/provider/shapeProperties';
+import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
 import {
   validProps,
   parameterTypeValidator,
   autoFixGeometry,
-  //  computeBBox,
-  //  assignBBoxMatrix,
   isValidMatrix
 } from '../../utils/providers/utils.js';
 
-type propsType = Partial<IGraphicalElementProperties['path']> &
-  Partial<StyleForGShapeTag<'path'>>;
+import { pathPropsType } from '../../types/shapes';
 
 export class Path extends Shape<'path'> {
-  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
 
@@ -34,7 +26,7 @@ export class Path extends Shape<'path'> {
 
   //#Animations!: Animation<'path'>[]; // for timeline support but not implementated yet
   // Constructor 1: path as string (e.g., "M10 10 L50 50 L90 10 Z")
-  constructor(d: string, props?: propsType) {
+  constructor(d: string, props?: pathPropsType) {
     super('path', props?.id?.toString() ?? '');
 
     try {
@@ -88,7 +80,7 @@ export class Path extends Shape<'path'> {
         style.id = `${style.id}-c${nextCopies}`;
       }
       this.#geometry['copies'] = nextCopies;
-      const p = new Path(d, style as propsType);
+      const p = new Path(d, style as pathPropsType);
 
       //    p.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return p;

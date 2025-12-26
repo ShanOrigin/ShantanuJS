@@ -48,12 +48,11 @@ export type anchors =
   | 'LM'
   | 'C'; // according to OOBB
 export type modes = 'r' | 'c' | 'p' | 'relative' | 'pivot' | 'center';
-export type curvePaths = string | 'linear' | 'quadratic' | 'cubic' | 'arc';
-export type directions = 'normal' | 'reverse' | 'alternate';
+type curvePaths = string | 'linear' | 'quadratic' | 'cubic' | 'arc';
+type directions = 'normal' | 'reverse' | 'alternate';
 export type opt = 'fitPolynomialCofficient' | 'preComputeFrames';
 export type physicsParams = { physicsMotion?: boolean; speed?: number };
-
-export type pivotOptions = [number, number] | anchors;
+type pivotOptions = [number, number] | anchors;
 
 export type curveParams = {
   curvePathMotion?: boolean;
@@ -82,15 +81,6 @@ export type controlsParams = {
 
 // new version
 
-export type deltasParams = {
-  synchrony?: boolean; // by default synchrony is true so all start at onece and end at once
-  commonDelta?: number;
-  skew?: number[];
-  scale?: number[];
-  rotate?: number;
-  translate?: number[];
-};
-
 // these are advance propes taken by animation module method animate from user you want control lets take not only control but control itself
 export type IadvanceProps = {
   //  animationMode?: 'deltas-based' | 'time-based'; // by default it is 'time-based' experimental
@@ -98,27 +88,7 @@ export type IadvanceProps = {
   curve?: curveParams;
   pivot?: pivotParams;
   controls?: controlsParams;
-  // deltas?: deltasParams;
 };
-
-/*
-// old version
-export type advanceProps = {
-  physics?: physicsParams;
-  curve?: curveParams;
-  pivot?: pivotParams;
-  loop?: boolean;
-  direction?: directions;
-  optimizationTechnique?: opt;
-};
-*/
-
-export interface Geometry {
-  Skew?: number[];
-  Scale?: number[];
-  Rotate?: number;
-  Translate?: number[];
-}
 
 export type NumberType = [number, number];
 
@@ -149,67 +119,3 @@ export type CurveInfo = {
   arcCurveSign?: number;
 };
 export type ArcTableEntry = { t: number; distance: number };
-
-interface TrajectoryOptions {
-  /** Show or hide the trajectory line */
-  show: boolean; // default: false
-
-  /** Type of trajectory visualization */
-  type: 'line' | 'dashed' | 'dotted' | 'curve' | 'custom';
-
-  /** Stroke color of trajectory */
-  stroke: string; // e.g. '#000', 'red', 'rgba(0,0,0,0.5)'
-
-  /** Width of trajectory stroke */
-  strokeWidth: number; // default: 1
-
-  /** Dash pattern (if type is 'dashed' or 'dotted') */
-  dashArray?: string; // e.g. "5,5" or "2,6"
-
-  /** Opacity of trajectory */
-  opacity: number; // 0 to 1
-
-  /** Whether trajectory should animate as motion progresses */
-  progressiveReveal: boolean; // default: false
-
-  /** If true, trajectory disappears after animation finishes */
-  hideOnComplete: boolean; // default: false
-}
-
-interface TrajectoryStyleOptions {
-  /** Optional stroke gradient along path */
-  gradient?: {
-    type: 'linear' | 'radial';
-    stops: { offset: number; color: string; opacity?: number }[];
-  };
-
-  /** End markers for trajectory */
-  marker?: {
-    start?: 'arrow' | 'circle' | 'none';
-    mid?: 'dot' | 'none';
-    end?: 'arrow' | 'circle' | 'none';
-  };
-
-  /** Glow effect (blur filter) */
-  glow?: {
-    color: string;
-    intensity: number; // e.g. blur radius
-  };
-
-  /** Trajectory z-index priority */
-  zIndex?: number; // layering in SVG
-}
-
-interface TrajectoryMotionOptions {
-  /** Show trajectory only for forward motion */
-  onlyForward?: boolean;
-
-  /** Show trajectory only for backward motion */
-  onlyBackward?: boolean;
-
-  /** Reverse trajectory drawing direction */
-  reverse?: boolean;
-
-  /** Loop behavior (trajectory resets or accumulates) */
-  loopMode?: 'reset' | 'accumulate';
-}

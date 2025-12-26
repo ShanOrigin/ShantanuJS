@@ -48,7 +48,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
   ) {
     super('canvas', `${id}-Canvas`);
     try {
-      if (__SHANTANU_DEV__) {
+      if (typeof __SHANTANU_DEV__ !== 'undefined' && __SHANTANU_DEV__) {
         console.warn(
           'ShantanuJS is a pre-release build. Not recommended for production use.'
         );

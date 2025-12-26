@@ -10,7 +10,6 @@ import {
   autoFixGeometry,
   getTransformationMatrix,
   cwarn,
-  cerrors,
   generateId
 } from '../helpers/helpers.js';
 
@@ -36,7 +35,6 @@ export {
   autoFixGeometry,
   getTransformationMatrix,
   cwarn,
-  cerrors,
   generateId
 };
 

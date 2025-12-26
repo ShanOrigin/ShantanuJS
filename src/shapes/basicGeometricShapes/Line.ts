@@ -1,4 +1,3 @@
-//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -10,10 +9,7 @@ import {
   AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
 
-import {
-  IGraphicalElementProperties,
-  StyleForGShapeTag
-} from '../../properties/provider/shapeProperties';
+import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
 
 import {
   isValidMatrix,
@@ -21,11 +17,9 @@ import {
   parameterTypeValidator
 } from '../../utils/providers/utils.js';
 
-type propsType = Partial<IGraphicalElementProperties['line']> &
-  Partial<StyleForGShapeTag<'line'>>;
+import { linePropsType } from '../../types/shapes';
 
 export class Line extends Shape<'line'> {
-  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
@@ -37,12 +31,12 @@ export class Line extends Shape<'line'> {
     y1: number,
     x2: number,
     y2: number,
-    props: propsType = {}
+    props: linePropsType = {}
   ) {
     super('line', props?.id ?? '');
 
     parameterTypeValidator(
-      props as propsType,
+      props as linePropsType,
       GraphicalElementProperties,
       {},
       {},
@@ -54,7 +48,7 @@ export class Line extends Shape<'line'> {
       x2: dx2 = 0,
       y2: dy2 = 0,
       ...rest
-    } = props as propsType;
+    } = props as linePropsType;
 
     const safeProps = {
       'stroke-linecap': 'square',
@@ -110,7 +104,7 @@ export class Line extends Shape<'line'> {
         offsetY + y1,
         offsetX + x2,
         offsetY + y2,
-        style as propsType
+        style as linePropsType
       );
     }
 

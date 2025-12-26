@@ -1,4 +1,3 @@
-//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -18,40 +17,11 @@ import {
   autoFixGeometry
 } from '../../utils/providers/utils.js';
 
-import type { rectStyleTypes, rectPropsType } from '../../types/shapes';
+import type { rectStyleTypes, imagePropsType } from '../../types/shapes';
 
-export class Image extends Shape<'rect'> {
-  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
+export class Image extends Shape<'image'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
-  #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
-  constructor(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    props?: rectPropsType
-  );
-  // 2. rx and props
-  constructor(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    rx: number,
-    props?: rectPropsType
-  );
-
-  // 3. rx, ry and props
-  constructor(
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    rx: number,
-    ry: number,
-    props?: rectPropsType
-  );
 
   // Actual implementation
   constructor(
@@ -59,11 +29,10 @@ export class Image extends Shape<'rect'> {
     y: number,
     width: number,
     height: number,
-    arg5?: number | rectPropsType,
-    arg6?: number | rectPropsType,
-    arg7?: rectPropsType
+    href: String,
+    props: imagePropsType
   ) {
-    super('rect', ''); // ( shape generics , id , rander generics by default = 'path' )
+    super('image', ''); // ( shape generics , id , rander generics by default = 'path' )
     try {
       /*
       const props: rectPropsType = Rect.#getParams(

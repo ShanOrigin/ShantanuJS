@@ -74,19 +74,3 @@ type _IGraphicalElementPropertiesHelper = DeepPartial<
 >;
 export interface IGraphicalElementProperties
   extends _IGraphicalElementPropertiesHelper {}
-
-/*
-export type ipRect = keyof (typeof GraphicalElementProperties)['rect'];
-export type ipCircle = keyof (typeof GraphicalElementProperties)['circle'];
-export type ipEllipse = keyof (typeof GraphicalElementProperties)['ellipse'];
-export type ipDot = keyof (typeof GraphicalElementProperties)['dot'];
-export type ipLine = keyof (typeof GraphicalElementProperties)['line'];
-export type ipPolyline = keyof (typeof GraphicalElementProperties)['polyline'];
-export type ipPolygon = keyof (typeof GraphicalElementProperties)['polygon'];
-export type ipPath = keyof (typeof GraphicalElementProperties)['path'];
-
-export type ipCanvas = keyof (typeof GraphicalElementProperties)['canvas'];
-export type ipText = keyof (typeof GraphicalElementProperties)['text'];
-export type ipImage = keyof (typeof GraphicalElementProperties)['image'];
-*/
-// above interface something look like the below commented one

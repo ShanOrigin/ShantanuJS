@@ -74,98 +74,19 @@ export interface FlipProps extends EffectProps {
   dirY?: 'y+' | 'y-';
 }
 
-/*++++++++++++++++++++All Projections Types +++++++++++++++++++++*/
-// Perspective
-export interface PerspectiveProps extends BaseTransformMeta, EffectProps {
-  g: number;
-  h: number;
-}
-
-// Orthographic
-export interface OrthographicProps extends BaseTransformMeta, EffectProps {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-}
-
-// Oblique
-export interface ObliqueProps extends BaseTransformMeta, EffectProps {
-  depth: number;
-  angle: number;
-}
-
-// Isometric
-export interface IsometricProps extends BaseTransformMeta, EffectProps {
-  axisAngle?: number;
-  depthAngle?: number;
-  depth?: number;
-}
-
-// Cavalier
-export interface CavalierProps extends BaseTransformMeta, EffectProps {
-  angle: number;
-}
-
-// Cabinet
-export interface CabinetProps extends BaseTransformMeta, EffectProps {
-  angle: number;
-}
-
-// Stereographic
-export interface StereographicProps extends BaseTransformMeta, EffectProps {
-  z: number;
-}
-
 /*++++++++++++++++++++++*/
 
 export type ParsedDaTa = { tName: string; data: {} };
-export type Parsed = { transformation: Function; tName: string; data: {} };
-export type Vector2 = { x: number; y: number };
-
-export type Matrix3x3 = [number[], number[], number[]];
-
-// These are the valid method names on Matrix
-export type MatrixMethodName =
-  | 'multiply3x3By1x3'
-  | 'multiply3x3By2x3'
-  | 'multiply3x3By3x3'
-  | 'multiply3x3By4x3'
-  | 'multiply3x3By5x3'
-  | 'multiply3x3Bynx3';
-
-export type EffectMode = 'a' | 'v' | 'd' | 'all' | 'visual' | 'data';
-
-/*
-export type sl_sk_t_props = [
-  number,
-  number,
-  'a' | 'absolute' | 'r' | 'relative' | 'p' | 'pivot',
-  number,
-  number
-];
-
-export type r_props = [
-  number,
-  'a' | 'absolute' | 'r' | 'relative' | 'p' | 'pivot',
-  number,
-  number
-];
 
 export type createTransformationMatrixProps = {
-  scale?: Partial<sl_sk_t_props>;
-  skew?: Partial<sl_sk_t_props>;
-  rotate?: Partial<r_props>;
-  translate?: Partial<sl_sk_t_props>;
+  transformations: {
+    rotate?: RotateProps;
+    skew?: SkewProps;
+    scale?: ScaleProps;
+    translate?: TranslateProps;
+  };
+  major?: 'row' | 'column';
+  arrayType?: 'normal' | 'float32';
+  baseTMatrix?: Float32Array;
+  multiplyWithBase?: boolean;
 };
-
-*/
-
-export type createTransformationMatrixProps = {
-  scale?: ScaleMethodProps;
-  skew?: SkewMethodProps;
-  rotate?: RotateMethodProps;
-  translate?: TranslateMethodProps;
-};
-export type row = [number, number, number];
-export type tMatrixData = [row, row, row];

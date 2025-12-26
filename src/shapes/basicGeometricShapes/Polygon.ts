@@ -1,4 +1,3 @@
-//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -10,10 +9,7 @@ import {
   AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
 
-import {
-  IGraphicalElementProperties,
-  StyleForGShapeTag
-} from '../../properties/provider/shapeProperties';
+import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
 
 import {
   isValidMatrix,
@@ -23,22 +19,20 @@ import {
   //  computeBBox
 } from '../../utils/providers/utils.js';
 
-type propsType = Partial<IGraphicalElementProperties['polygon']> &
-  Partial<StyleForGShapeTag<'polygon'>>;
+import type { polygonPropsType } from '../../types/shapes';
 
 export class Polygon extends Shape<'polygon'> {
-  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
   //  #Animations!: Animation<'polygon'>[]; // for timeline support but not implementated yet
 
   // Constructor 1: points as string
-  constructor(points: string, props?: propsType);
+  constructor(points: string, props?: polygonPropsType);
   // Constructor 2: points as 2D array
-  constructor(points: number[][], props?: propsType);
+  constructor(points: number[][], props?: polygonPropsType);
 
-  constructor(points: string | number[][], props: propsType = {}) {
+  constructor(points: string | number[][], props: polygonPropsType = {}) {
     super('polygon', props?.id ?? '');
 
     try {
@@ -125,7 +119,7 @@ export class Polygon extends Shape<'polygon'> {
       }
       this.#geometry['copies'] = nextCopies;
 
-      const pl = new Polygon(points, style as propsType);
+      const pl = new Polygon(points, style as polygonPropsType);
       //  pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return pl;
     }
@@ -135,9 +129,6 @@ export class Polygon extends Shape<'polygon'> {
 
   #validatePolygonCoordinates(path: string) {
     // Match the pattern of "x,y" coordinates separated by spaces
-
-    const oordinateListRegex =
-      /^(-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)(\s+-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)*$/;
 
     const coordinateListRegex =
       /^(-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)(\s+-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)*(?:\s+[Zz])?$/;

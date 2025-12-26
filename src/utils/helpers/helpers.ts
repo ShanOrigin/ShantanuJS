@@ -34,19 +34,6 @@ export function cwarn(msg: string) {
 }
 
 /**
- * Purpose:
- * This functions Takes messages from user and simply print that messages as errors in console so user may get context.
- *
- * @param msg - string based message from user
- *
- * @returns
- */
-
-export function cerrors(msg: string) {
-  console.error(msg);
-}
-
-/**
  * Prepares and validates the properties of a graphical shape by separating them into
  * **read-only** and **modifiable** categories.
  *

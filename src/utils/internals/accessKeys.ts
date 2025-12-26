@@ -182,10 +182,3 @@ export function assertAccess(key: symbol): void {
   }
   // If both checks pass → access granted
 }
-
-export function access() {
-  console.log(_B64_ACCESS_KEY === _HEX_ACCESS_KEY); // should be true
-  console.log('Symbol ->', SYSTEM_INTERNAL_ACCESS == DEV_INTERNAL_ACCESS);
-  console.log(_B64_ACCESS_KEY);
-  console.log(_HEX_ACCESS_KEY);
-}

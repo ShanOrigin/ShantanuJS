@@ -1,4 +1,3 @@
-//import { renderer } from '../../core/graphics/providers/graphics.js';
 import {
   Shape,
   DEV_INTERNAL_ACCESS,
@@ -10,10 +9,7 @@ import {
   AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
 
-import {
-  IGraphicalElementProperties,
-  StyleForGShapeTag
-} from '../../properties/provider/shapeProperties';
+import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
 
 import {
   validProps,
@@ -21,10 +17,9 @@ import {
   autoFixGeometry
 } from '../../utils/providers/utils.js';
 
-type propsType = Partial<IGraphicalElementProperties['ellipse']> &
-  Partial<StyleForGShapeTag<'ellipse'>>;
+import type { ellipsePropsType } from '../../types/shapes';
+
 export class Ellipse extends Shape<'ellipse'> {
-  //  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
@@ -36,7 +31,7 @@ export class Ellipse extends Shape<'ellipse'> {
     cy: number,
     rx: number,
     ry: number,
-    props: propsType = {}
+    props: ellipsePropsType = {}
   ) {
     super('ellipse', props?.id ?? '');
     try {
@@ -121,7 +116,7 @@ export class Ellipse extends Shape<'ellipse'> {
         offsetY + cy,
         (visibleRadiusX ?? 0) + rx,
         (visibleRadiusY ?? 0) + ry,
-        style as propsType
+        style as ellipsePropsType
       );
     }
 

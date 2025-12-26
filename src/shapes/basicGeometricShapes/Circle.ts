@@ -1,15 +1,10 @@
-import {
-  IGraphicalElementProperties,
-  StyleForGShapeTag
-} from '../../properties/provider/shapeProperties';
+import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
 
 import {
   validProps,
   parameterTypeValidator,
   autoFixGeometry
 } from '../../utils/providers/utils.js';
-
-//import { renderer } from '../../core/graphics/providers/graphics.js';
 
 import {
   DEV_INTERNAL_ACCESS,
@@ -22,11 +17,9 @@ import {
   AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
 
-type propsType = Partial<IGraphicalElementProperties['circle']> &
-  Partial<StyleForGShapeTag<'circle'>>;
+import type { circlePropsType } from '../../types/shapes';
 
 export class Circle extends Shape<'circle'> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
 
@@ -34,7 +27,7 @@ export class Circle extends Shape<'circle'> {
 
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
 
-  constructor(cx: number, cy: number, r: number, props: propsType = {}) {
+  constructor(cx: number, cy: number, r: number, props: circlePropsType = {}) {
     super('circle', props?.id ?? '');
     try {
       const { cx: dcx = 0, cy: dcy = 0, r: dr = 0, ...rest } = props;
@@ -110,7 +103,7 @@ export class Circle extends Shape<'circle'> {
         offsetX + cx,
         offsetY + cy,
         (visibleRadius ?? 0) + r,
-        style as propsType
+        style as circlePropsType
       );
     }
 
