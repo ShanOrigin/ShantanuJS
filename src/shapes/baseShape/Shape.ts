@@ -1,5 +1,3 @@
-// import { renderer } from '../../core/graphics/providers/graphics.js';
-
 import {
   GraphicalElementProperties,
   AllGShapeStyleProperties,
@@ -7,13 +5,9 @@ import {
 } from '../../properties/provider/shapeProperties.js';
 
 import {
-  // utils helpers functions
   parameterTypeValidator,
   animationChecks,
-  //  computeBBox,
   getTransformationMatrix,
-  //  assignBBoxMatrix,
-  //  trackTransformation,
   cwarn
 } from '../../utils/providers/utils.js';
 
@@ -43,7 +37,7 @@ import type {
   SkewMethodProps,
   FlipMethodProps
 } from '../../types/transformations';
-import type { shapesPropsType, lineGeoTypes } from '../../types/shapes';
+import type { shapesPropsType } from '../../types/shapes';
 
 import {
   boxShadowProps,
@@ -54,25 +48,19 @@ import {
   linearGradientProps,
   radialGradientProps,
   neuMorphProps,
-  glassMorphProps,
-  SVGFiltersParams
+  glassMorphProps
 } from '../../types/filters';
 
 import type { IGraphicalElementProperties as IG } from '../../properties/provider/shapeProperties';
 
 import { EventsSystem } from '../../core/providers/eventsSystem.js';
 import { GShpesTages } from '../../core/providers/graphics.js';
-import { CMATH } from '../../webAsm/interface/TS/CMATH_Interface.js';
 
 export abstract class Shape<T extends GShpesTages> extends TransformMinix(
   EventsSystem
 )<T> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
-  // #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
-
-  // #deferedTaskes : Function[]  = [];
-
   //#Animations!: Animation<T>[]; // for timeline support but not implementated yet
   #isAnimations: boolean = false; // animation control to avoid multiple animation do not run at same time
 
