@@ -3,13 +3,7 @@ interface BaseTransformMeta {
   tType?: string;
   px?: number;
   py?: number;
-}
-
-// Effect-related props (used where needed)
-interface EffectProps {
-  isEffect?: boolean;
-  isVEffect?: boolean;
-  callbacks?: Function;
+  callback?: Function;
 }
 
 // Translate
@@ -41,40 +35,8 @@ export interface FlipMethodProps {
   flipY: boolean;
   dirX?: 'x+' | 'x-';
   dirY?: 'y+' | 'y-';
+  callback?: Function;
 }
-
-// Translate
-export interface TranslateProps extends BaseTransformMeta, EffectProps {
-  x: number;
-  y: number;
-}
-
-// Scale
-export interface ScaleProps extends BaseTransformMeta, EffectProps {
-  sx: number;
-  sy: number;
-}
-
-// Rotate
-export interface RotateProps extends BaseTransformMeta, EffectProps {
-  angle: number;
-}
-
-// Skew
-export interface SkewProps extends BaseTransformMeta, EffectProps {
-  sx: number;
-  sy: number;
-}
-
-// Flip (does not use isEffect or callbacks)
-export interface FlipProps extends EffectProps {
-  flipX: boolean;
-  flipY: boolean;
-  dirX?: 'x+' | 'x-';
-  dirY?: 'y+' | 'y-';
-}
-
-/*++++++++++++++++++++++*/
 
 export type ParsedDaTa = { tName: string; data: {} };
 

@@ -1,4 +1,4 @@
-import type { SkewProps } from '../../../../types/transformations';
+import type { SkewMethodProps } from '../../../../types/transformations';
 
 /**
  * Creates a skew (shear) transformation oMatrix for 2D objects.
@@ -36,7 +36,7 @@ export function Skew({
   px = 0,
   py = 0,
   oMatrix
-}: SkewProps & { oMatrix: DOMMatrix }) {
+}: SkewMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
       case 'relative':

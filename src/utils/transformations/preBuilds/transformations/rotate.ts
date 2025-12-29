@@ -1,4 +1,4 @@
-import type { RotateProps } from '../../../../types/transformations';
+import type { RotateMethodProps } from '../../../../types/transformations';
 
 /**
  * Creates a rotation matrix to rotate an object in 2D space.
@@ -34,7 +34,7 @@ export function Rotate({
   px = 0,
   py = 0,
   oMatrix
-}: RotateProps & { oMatrix: DOMMatrix }) {
+}: RotateMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
       case 'relative':

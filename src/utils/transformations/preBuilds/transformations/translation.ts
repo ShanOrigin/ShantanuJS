@@ -1,4 +1,4 @@
-import type { TranslateProps } from '../../../../types/transformations';
+import type { TranslateMethodProps } from '../../../../types/transformations';
 
 /**
  * Creates a translation oMatrix for moving an object in 2D space.
@@ -38,7 +38,7 @@ export function Translate({
   px = 0,
   py = 0,
   oMatrix
-}: TranslateProps & { oMatrix: DOMMatrix }) {
+}: TranslateMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
       case 'absolute':

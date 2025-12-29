@@ -1,4 +1,4 @@
-import type { FlipProps } from '../../../../types/transformations';
+import type { FlipMethodProps } from '../../../../types/transformations';
 
 /**
  * Creates a transformation matrix that flips an object horizontally and/or vertically.
@@ -35,7 +35,7 @@ export function Flip({
   width,
   height,
   oMatrix
-}: FlipProps & {
+}: FlipMethodProps & {
   x: number;
   y: number;
   width: number;

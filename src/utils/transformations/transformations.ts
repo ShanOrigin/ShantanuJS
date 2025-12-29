@@ -17,11 +17,11 @@ import { computeAABBPoints } from './preBuilds/boundingBoxes/axisAlignedBounding
 import { applyTransformToHomogeneousBuffer } from './preBuilds/matrix/matrixMultiplication.js';
 import { assertAccess, DEV_INTERNAL_ACCESS } from '../providers/accesskeys.js';
 import type {
-  TranslateProps,
-  ScaleProps,
-  RotateProps,
-  SkewProps,
-  FlipProps,
+  TranslateMethodProps,
+  ScaleMethodProps,
+  RotateMethodProps,
+  SkewMethodProps,
+  FlipMethodProps,
   ParsedDaTa,
   createTransformationMatrixProps
 } from '../../types/transformations';
@@ -88,9 +88,7 @@ export function TransformMinix<
         callback: this.#batchCallback,
         transformMatrix: this.#__batchedComposeTMatrix,
         transformName: 'cumulative',
-        transformType: 'batched',
-        isEffect: true,
-        isVEffect: true
+        transformType: 'batched'
       });
 
       this.#resetMatrix(this.#__batchedComposeTMatrix);
@@ -136,12 +134,12 @@ export function TransformMinix<
       this.#resetMatrix(this.#__tempTMatrix);
       if (doScale || doSkew || doRotate || doTranslate) {
         this.beginT();
-        doSkew && this.Skew(transformations.skew as SkewProps);
+        doSkew && this.Skew(transformations.skew as SkewMethodProps);
 
-        doScale && this.Scale(transformations.scale as ScaleProps);
-        doRotate && this.Rotate(transformations.rotate as RotateProps);
+        doScale && this.Scale(transformations.scale as ScaleMethodProps);
+        doRotate && this.Rotate(transformations.rotate as RotateMethodProps);
         doTranslate &&
-          this.Translate(transformations.translate as TranslateProps);
+          this.Translate(transformations.translate as TranslateMethodProps);
       }
 
       // Extract composed matrix elements from the batched DOMMatrix (single source of truth)
@@ -326,17 +324,12 @@ export function TransformMinix<
       callback,
       transformMatrix,
       transformName,
-      transformType,
-
-      isEffect,
-      isVEffect
+      transformType
     }: {
       callback: Function;
       transformMatrix: DOMMatrix | null;
       transformName: string;
       transformType: string;
-      isEffect: boolean;
-      isVEffect: boolean;
     }) {
       let temporaryState!: Float32Array;
 
@@ -372,11 +365,10 @@ export function TransformMinix<
 
       if (callback && typeof callback === 'function') {
         callback({
-          transformMatrix: finalizedMatrix,
-          temporaryState,
-          isEffect,
-          isVEffect
+          temporaryState
         });
+        const transform = `${a},${b},${c},${d},${e},${f}`;
+        this['attrs']({ transform });
       } else {
         throw new Error(
           `call back must be given by the over return method and it should be the function in ${transformName} method `
@@ -435,32 +427,25 @@ export function TransformMinix<
       transformMatrix,
       transformName,
       transformType,
-      isEffect,
-      isVEffect,
-      callbacks
+      callback
     }: {
       transformMatrix: DOMMatrix;
       transformName: string;
       transformType: string;
-      isEffect: boolean;
-      isVEffect: boolean;
-
-      callbacks: Function;
+      callback: Function;
     }): this | void {
       if (this.#isBatching) {
-        this.#batchCallback = callbacks as Function;
+        this.#batchCallback = callback as Function;
 
         this.#batch__composeTMatrix(transformMatrix);
         return this;
       }
 
       this.#finalizeTransform({
-        callback: callbacks as Function,
+        callback: callback as Function,
         transformMatrix,
         transformName,
-        transformType,
-        isEffect: isEffect ?? true,
-        isVEffect: isVEffect ?? true
+        transformType
       });
     }
 
@@ -474,20 +459,13 @@ export function TransformMinix<
       tType = 'a',
       px = 0,
       py = 0,
-      isEffect = true,
-      callbacks = function () {},
-      isVEffect = true
-    }: TranslateProps): void | this | DOMMatrix {
+
+      callback = function () {}
+    }: TranslateMethodProps): void | this | DOMMatrix {
       try {
         tType = tType == 'c' || tType == 'center' ? 'c' : typeCheck(tType);
 
-        parameterTypeValidator(
-          { x, y, tType, px, py, isEffect, isVEffect },
-          propTypes,
-          {},
-          {},
-          ''
-        );
+        parameterTypeValidator({ x, y, tType, px, py }, propTypes, {}, {}, '');
 
         if (
           tType == 'a' ||
@@ -514,10 +492,9 @@ export function TransformMinix<
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix: this.#__tempTMatrix,
           transformType: tType,
-          isEffect,
-          isVEffect,
+
           transformName: 'translate',
-          callbacks: callbacks as Function
+          callback: callback as Function
         });
       } catch (e) {
         throw e;
@@ -534,14 +511,13 @@ export function TransformMinix<
       tType = 'a',
       px = 0,
       py = 0,
-      isEffect = true,
-      callbacks = function () {},
-      isVEffect = true
-    }: ScaleProps): void | this | DOMMatrix {
+
+      callback = function () {}
+    }: ScaleMethodProps): void | this | DOMMatrix {
       try {
         tType = typeCheck(tType);
         parameterTypeValidator(
-          { sx, sy, tType, px, py, isEffect, isVEffect },
+          { sx, sy, tType, px, py },
           propTypes,
           {},
           {},
@@ -565,10 +541,9 @@ export function TransformMinix<
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix: this.#__tempTMatrix,
           transformType: tType,
-          isEffect,
-          isVEffect,
+
           transformName: 'scale',
-          callbacks: callbacks as Function
+          callback: callback as Function
         });
       } catch (e) {
         throw e;
@@ -584,19 +559,12 @@ export function TransformMinix<
       tType = 'a',
       px = 0,
       py = 0,
-      isEffect = true,
-      callbacks = function () {},
-      isVEffect = true
-    }: RotateProps): void | this | DOMMatrix {
+
+      callback = function () {}
+    }: RotateMethodProps): void | this | DOMMatrix {
       try {
         tType = typeCheck(tType);
-        parameterTypeValidator(
-          { angle, tType, px, py, isEffect, isVEffect },
-          propTypes,
-          {},
-          {},
-          ''
-        );
+        parameterTypeValidator({ angle, tType, px, py }, propTypes, {}, {}, '');
 
         angle = angle % 360;
 
@@ -617,10 +585,9 @@ export function TransformMinix<
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix: this.#__tempTMatrix,
           transformType: tType,
-          isEffect,
-          isVEffect,
+
           transformName: 'rotate',
-          callbacks: callbacks as Function
+          callback: callback as Function
         });
       } catch (e) {
         throw e;
@@ -637,14 +604,13 @@ export function TransformMinix<
       tType = 'a',
       px = 0,
       py = 0,
-      isEffect = true,
-      callbacks = function () {},
-      isVEffect = true
-    }: SkewProps): void | this | DOMMatrix {
+
+      callback = function () {}
+    }: SkewMethodProps): void | this | DOMMatrix {
       try {
         tType = typeCheck(tType);
         parameterTypeValidator(
-          { sx, sy, tType, px, py, isEffect, isVEffect },
+          { sx, sy, tType, px, py },
           propTypes,
           {},
           {},
@@ -670,10 +636,9 @@ export function TransformMinix<
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix: this.#__tempTMatrix,
           transformType: tType,
-          isEffect,
-          isVEffect,
+
           transformName: 'skew',
-          callbacks: callbacks as Function
+          callback: callback as Function
         });
       } catch (e) {
         throw e;
@@ -689,13 +654,12 @@ export function TransformMinix<
       flipY,
       dirX = 'x+',
       dirY = 'y+',
-      isEffect = true,
-      callbacks = function () {},
-      isVEffect = true
-    }: FlipProps): void | this | DOMMatrix {
+
+      callback = function () {}
+    }: FlipMethodProps): void | this | DOMMatrix {
       try {
         parameterTypeValidator(
-          { flipX, flipY, dirX, dirY, isEffect, isVEffect },
+          { flipX, flipY, dirX, dirY },
           propTypes,
           {},
           {},
@@ -725,10 +689,9 @@ export function TransformMinix<
         this.#batchingAndFinalizeTransformHandler({
           transformMatrix: this.#__tempTMatrix,
           transformType: `${dirX}${dirY}`,
-          isEffect,
-          isVEffect,
+
           transformName: 'flip',
-          callbacks: callbacks as Function
+          callback: callback as Function
         });
       } catch (e) {
         throw e;
@@ -750,7 +713,7 @@ export function TransformMinix<
           const Data = {
             isEffect: false,
             isVEffect: false,
-            callbacks: callback,
+            callback: callback,
             ...element.data
           };
 
@@ -764,7 +727,7 @@ export function TransformMinix<
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //++++++++++++++ method to apply combine transformations  +++++++++++++++
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    public transform(input: string, callbacks?: Function[]): void | this {
+    public transform(input: string, callback?: Function[]): void | this {
       try {
         const isBatching = this.#isBatching;
 
@@ -799,10 +762,10 @@ export function TransformMinix<
           }
         }
 
-        if (callbacks && typeof callbacks[0] === 'function') {
+        if (callback && typeof callback[0] === 'function') {
           !isBatching && this.beginT();
 
-          this.#applyTransformations(results, callbacks[0]);
+          this.#applyTransformations(results, callback[0]);
 
           !isBatching && this.endT();
         } else {

@@ -1,4 +1,4 @@
-import type { ScaleProps } from '../../../../types/transformations';
+import type { ScaleMethodProps } from '../../../../types/transformations';
 
 /**
  * Creates a scaling matrix to resize an object in 2D space.
@@ -36,7 +36,7 @@ export function Scale({
   px = 0,
   py = 0,
   oMatrix
-}: ScaleProps & { oMatrix: DOMMatrix }) {
+}: ScaleMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
       case 'absolute':

@@ -553,3 +553,16 @@ Notes:
 -  Distinguished genuine type-safety issues from cosmetic warnings 
 -  Prepared codebase for long-term correctness and refactor safety
 
+[2025-12-29 | Monday | 23:49] [Transformations / Pipeline Simplification | 1h] Removed internal effect-control flags (isEffect and isVEffect) from the transformation system after determining they introduced unnecessary complexity without providing real architectural value. Simplified the transformation model so that any applied transformation always updates internal state and visual output together, restoring a single coherent invariant. Refactored the entire transformation module and transformation pipeline to eliminate conditional branching between logical and visual effects. Cleaned up related code paths, flags, and assumptions across all transformation utilities to reduce over-engineering and improve correctness, readability, and maintainability.
+Notes:
+- Removed isEffect and isVEffect control flags 
+-  Unified internal state and visual transformation behavior 
+-  Simplified transformation pipeline logic 
+-  Eliminated unnecessary conditional branches 
+-  Reduced TypeScript complexity and undefined-state handling 
+-  Restored clear invariant: transformation affects both state and rendering 
+-  Improved maintainability of transformation module 
+-  Reduced mental overhead for future changes 
+-  Prevented divergence between logical and visual transformations 
+-  Strengthened architectural correctness by removing speculative design
+

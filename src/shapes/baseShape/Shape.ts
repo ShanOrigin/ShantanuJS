@@ -394,9 +394,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
         tType,
         px,
         py,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
+        callback: this.#restore.bind(this)
       });
       return this;
     } catch (e) {
@@ -426,9 +424,8 @@ Description : taking original shape data ( which is local geometry ) and then ap
         tType,
         px,
         py,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
+
+        callback: this.#restore.bind(this)
       });
       return this;
     } catch (e) {
@@ -457,9 +454,8 @@ Description : taking original shape data ( which is local geometry ) and then ap
         tType,
         px,
         py,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
+
+        callback: this.#restore.bind(this)
       });
       return this;
     } catch (e) {
@@ -488,9 +484,8 @@ Description : taking original shape data ( which is local geometry ) and then ap
         tType,
         px,
         py,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
+
+        callback: this.#restore.bind(this)
       });
       return this;
     } catch (e) {
@@ -517,9 +512,8 @@ Description : taking original shape data ( which is local geometry ) and then ap
         flipY,
         dirX,
         dirY,
-        isEffect: true,
-        callbacks: this.#restore.bind(this),
-        isVEffect: true
+
+        callback: this.#restore.bind(this)
       });
       return this;
     } catch (e) {
