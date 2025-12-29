@@ -32,7 +32,7 @@ export class Text extends Shape<'text'> {
       'id' in props && delete props.id;
       parameterTypeValidator(props, GraphicalElementProperties, {}, {}, 'text');
 
-      //     autoFixGeometry(props, ['width', 'height', 'rx', 'ry']);
+      // autoFixGeometry(props, ['width', 'height', 'rx', 'ry']);
 
       const safeProps = {
         initial: true,
@@ -50,7 +50,7 @@ export class Text extends Shape<'text'> {
         'text'
       );
 
-      //      autoFixGeometry(props, ['x', 'y', 'r', 'stroke-width']);
+      // autoFixGeometry(props, ['x', 'y', 'r', 'stroke-width']);
 
       this.attrs(safeProps);
     } catch (e) {
@@ -121,7 +121,6 @@ export class Text extends Shape<'text'> {
         geo.canonicalMatrix = [new Float32Array(sb.buffer, 0 * 4, 3)];
       }
 
-      //     renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;
@@ -136,14 +135,10 @@ export class Text extends Shape<'text'> {
       assertAccess(accessKey);
 
       if (!this.#geometry) return;
-      /*
-      const m = this.#geometry.matrix as Float32Array[];
 
-      if (!isValidMatrix(m, 1, 3)) return;
-			*/
       [this.#geometry.x, this.#geometry.y] = [
-        temporaryState[0],
-        temporaryState[1]
+        temporaryState[0]!,
+        temporaryState[1]!
       ]; // center if circle
     } catch (e) {
       throw e;
@@ -155,7 +150,7 @@ export class Text extends Shape<'text'> {
     matrix: Float32Array[]
   ): boolean {
     assertAccess(accessKey);
-    if (matrix.length != 3 || isNaN(matrix[0][0]) || isNaN(matrix[0][1]))
+    if (matrix.length != 3 || isNaN(matrix[0]![0]!) || isNaN(matrix[0]![1]!))
       return false;
 
     return true;

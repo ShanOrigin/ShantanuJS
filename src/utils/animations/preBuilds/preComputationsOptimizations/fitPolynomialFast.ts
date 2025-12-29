@@ -1,11 +1,10 @@
-import { composeWithBase } from './composeTransformationMannually.js';
 import {
-  opt,
   TransformGeometry,
   TransformGeometryWithPivot
 } from '../../../../types/animation';
 
 import { interpolateAlongCurve } from '../../../curve/curveGenerator/interpolateAlongCurve.js';
+import { createTransformationMatrixProps } from '../../../../types/transformations.js';
 
 // --- Cubic helper ---
 interface CubicPoly {
@@ -90,18 +89,86 @@ function evalCubic(poly: CubicPoly, t: number) {
 export function fitTransformPolynomialsFast(
   start: TransformGeometry,
   end: TransformGeometryWithPivot,
-  base: Float32Array
+  base: Float32Array,
+  composeFn: Function
 ) {
   // Compose start/end matrices
 
-  const [a0, b0, c0, d0, e0, f0] = composeWithBase(base, {
-    ...start,
-    scalePivot: end.scalePivot,
-    rotatePivot: end.rotatePivot,
-    skewPivot: end.skewPivot
-  });
+  let a0!: number,
+    b0!: number,
+    c0!: number,
+    d0!: number,
+    e0!: number,
+    f0!: number;
 
-  const [a1, b1, c1, d1, e1, f1] = composeWithBase(base, end);
+  if (composeFn && typeof composeFn == 'function') {
+    [a0 = 1, b0 = 0, , c0 = 0, d0 = 1, , e0 = 0, f0 = 0] = composeFn({
+      transformations: {
+        rotate: {
+          angle: start.Rotate,
+          tType: 'p',
+          px: end.rotatePivot?.[0] ?? 0,
+          py: end.rotatePivot?.[1] ?? 0
+        },
+        scale: {
+          sx: start.Scale[0],
+          sy: start.Scale[1],
+          tType: 'p',
+          px: end.scalePivot?.[0] ?? 0,
+          py: end.scalePivot?.[1] ?? 0
+        },
+        skew: {
+          sx: start.Skew[0],
+          sy: start.Skew[1],
+          tType: 'p',
+          px: end.skewPivot?.[0] ?? 0,
+          py: end.skewPivot?.[1] ?? 0
+        }
+      },
+      major: 'column',
+      arrayType: 'float32',
+      baseTMatrix: base,
+      multiplyWithBase: true
+    } as createTransformationMatrixProps) as Float32Array;
+  }
+
+  let a1!: number,
+    b1!: number,
+    c1!: number,
+    d1!: number,
+    e1!: number,
+    f1!: number;
+
+  if (composeFn && typeof composeFn == 'function') {
+    [a1 = 1, b1 = 0, , c1 = 0, d1 = 1, , e1 = 0, f1 = 0] = composeFn({
+      transformations: {
+        rotate: {
+          angle: end.Rotate,
+          tType: 'p',
+          px: end.rotatePivot?.[0] ?? 0,
+          py: end.rotatePivot?.[1] ?? 0
+        },
+        scale: {
+          sx: end.Scale[0],
+          sy: end.Scale[1],
+          tType: 'p',
+          px: end.scalePivot?.[0] ?? 0,
+          py: end.scalePivot?.[1] ?? 0
+        },
+        skew: {
+          sx: end.Skew[0],
+          sy: end.Skew[1],
+          tType: 'p',
+          px: end.skewPivot?.[0] ?? 0,
+          py: end.skewPivot?.[1] ?? 0
+        }
+      },
+      major: 'column',
+      arrayType: 'float32',
+      baseTMatrix: base,
+      multiplyWithBase: true
+    } as createTransformationMatrixProps) as Float32Array;
+  }
 
   // Build cubic per coefficient
   return {
@@ -152,6 +219,5 @@ export function transformUsingPolynomialFast(
   const e = evalCubic(polys.e, t) + tr.x;
   const f = evalCubic(polys.f, t) + tr.y;
 
-  //  el.setAttribute('transform', `matrix(${a} ${b} ${c} ${d} ${e} ${f})` );
   return `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
 }

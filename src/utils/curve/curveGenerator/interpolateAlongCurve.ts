@@ -22,7 +22,7 @@ import { lerp } from '../../animations/preBuilds/helpers/helpers.js';
 
 export function interpolateAlongCurve(points: Point[], t: number): Point {
   if (points.length === 0) throw new Error('No points to interpolate.');
-  if (points.length === 1) return points[0];
+  if (points.length === 1) return points[0]!;
 
   const easedT = Math.max(0, Math.min(1, t));
   const totalSegments = points.length - 1;
@@ -30,9 +30,9 @@ export function interpolateAlongCurve(points: Point[], t: number): Point {
   const segmentIndex = Math.floor(segmentFloat);
   const segmentT = segmentFloat - segmentIndex;
 
-  const p1 = points[segmentIndex];
+  const p1 = points[segmentIndex] as Point;
 
-  const p2 = points[Math.min(segmentIndex + 1, points.length - 1)];
+  const p2 = points[Math.min(segmentIndex + 1, points.length - 1)] as Point;
 
   return {
     x: lerp(p1.x, p2.x, segmentT),
@@ -62,8 +62,8 @@ export function getTForDistance(
   arcTable: ArcTableEntry[]
 ): number {
   for (let i = 1; i < arcTable.length; i++) {
-    const prev = arcTable[i - 1];
-    const next = arcTable[i];
+    const prev = arcTable[i - 1] as ArcTableEntry;
+    const next = arcTable[i] as ArcTableEntry;
     if (distance <= next.distance) {
       const segment = next.distance - prev.distance;
       const ratio = segment === 0 ? 0 : (distance - prev.distance) / segment;

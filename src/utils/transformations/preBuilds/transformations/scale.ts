@@ -1,4 +1,3 @@
-import { getCentre, typeCheck } from '../helpers/helpers.js';
 import type { ScaleProps } from '../../../../types/transformations';
 
 /**

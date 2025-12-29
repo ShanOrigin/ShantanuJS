@@ -19,7 +19,6 @@ import type { Point, CurveType } from '../../types/animation';
 import {
   isValidMatrix,
   validProps,
-  parameterTypeValidator,
   autoFixGeometry
 } from '../../utils/providers/utils.js';
 
@@ -59,13 +58,12 @@ export class Curve extends Shape<'curve'> {
       const points = generateCurvePoints({
         P1: { x: x1, y: y1 } as Point,
         P2: { x: x2, y: y2 } as Point,
-
-        bend: curvature * -1,
-        smoothness,
+        bend: (curvature * -1) as number,
+        smoothness: smoothness as number,
         curveName: curveName || (props.curveName! as CurveType),
         pointsOnly: true,
-        continuous,
-        continuousCount
+        continuous: continuous as boolean,
+        continuousCount: continuousCount as number
       }) as Point[];
       /*
       parameterTypeValidator(
@@ -94,7 +92,7 @@ export class Curve extends Shape<'curve'> {
       }
 
       for (let i = 0; i < points.length; i++) {
-        pointsAttr += `${points[i].x.toFixed(10)},${points[i].y.toFixed(10)}`;
+        pointsAttr += `${points[i]!.x.toFixed(10)},${points[i]!.y.toFixed(10)}`;
         if (i < points.length - 1) {
           pointsAttr += ' ';
         }
@@ -122,6 +120,7 @@ export class Curve extends Shape<'curve'> {
     );
   }
 
+  /*
   public clone(offsetX: number = 10, offsetY: number = 10): Curve {
     /*
     if (
@@ -144,15 +143,13 @@ export class Curve extends Shape<'curve'> {
       pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return pl;
     }
-*/
+
     throw new Error('Cannot clone: geometry or style is invalid.');
   }
+	*/
 
   #validatePolylineCoordinates(path: string) {
     // Match the pattern of "x,y" coordinates separated by spaces
-    const oordinateListRegex =
-      /^(-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)(\s+-?\d+(\.\d+)?\s*,\s*-?\d+(\.\d+)?)*$/;
-
     const coordinateListRegex =
       /^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?(?:\s+-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?)*$/;
 
@@ -166,7 +163,7 @@ export class Curve extends Shape<'curve'> {
     const Vertex = new Float32Array(rowVertex.length * 3); // 3 floats per vertex: x, y, 1
 
     for (let i = 0; i < rowVertex.length; i++) {
-      const pair = rowVertex[i].trim();
+      const pair = rowVertex[i]!.trim();
       const s = pair.indexOf(',');
       const x = parseFloat(pair.slice(0, s));
       const y = parseFloat(pair.slice(s + 1));
@@ -221,12 +218,6 @@ export class Curve extends Shape<'curve'> {
 
       // Allocate once and reuse
       if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        /*
-        if (setM && render) {
-          // only valid when setSMatrix Frist try went wrong
-          this.#geometry.sharedBuffer = vmat as Float32Array;
-        } else {
-					*/
         geo.sharedBuffer = new Float32Array(totalLength);
       }
 
@@ -270,24 +261,18 @@ export class Curve extends Shape<'curve'> {
   ) {
     try {
       assertAccess(accessKey);
-      /*
-      const m = this.#geometry?.matrix as Float32Array[];
-      if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
+
+      const m = temporaryState;
+      //  if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
 
       // Replacing reduce with traditional loop
       let points = '';
-      for (let i = 0; i < m.length; i++) {
-        points += `${m[i][0]},${m[i][1]} `;
+      for (let i = 0; i < m.length; i += 3) {
+        points += `${m[i]},${m[i + 1]} `;
       }
-      this.#geometry.points = points;
-			*/
+      this.#geometry!.points = points;
     } catch (e) {
       throw e;
     }
   }
-  /*
-  public getBBox() {
-    return computeBBox(this.#geometry, () => super.getBBox());
-  }
-	*/
 }

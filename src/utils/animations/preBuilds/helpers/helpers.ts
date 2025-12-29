@@ -1,9 +1,3 @@
-import { DEV_INTERNAL_ACCESS } from '../../../../utils/providers/accesskeys.js';
-
-import type { IGraphicalElementProperties as IG } from '../../../../properties/provider/shapeProperties';
-
-import type { GraphicalElement as GEC } from '../../../../core/providers/graphics';
-
 import type {
   IcommonGeometryAnimatableProperties,
   modes,
@@ -384,10 +378,10 @@ export function separateProperties(shape: string, input: Record<string, any>) {
   const isShapeRect = shape == 'rect';
   isShapeRect &&
     'rx' in geometryProps &&
-    ((styleProps['rx'] = geometryProps.rx), delete geometryProps.rx);
+    ((styleProps['rx'] = geometryProps['rx']), delete geometryProps['rx']);
   isShapeRect &&
     'ry' in geometryProps &&
-    ((styleProps['ry'] = geometryProps.ry), delete geometryProps.ry);
+    ((styleProps['ry'] = geometryProps['ry']), delete geometryProps['ry']);
 
   return {
     styleProps,
@@ -463,10 +457,10 @@ export function pivotSetter(
   mode: modes | anchors | undefined,
   OBB: number[][] // Float32Array
 ): [number, number] {
-  const [x1, y1] = OBB[0];
-  const [x2, y2] = OBB[1];
-  const [x3, y3] = OBB[2];
-  const [x4, y4] = OBB[3];
+  const [x1, y1] = OBB[0] as [number, number];
+  const [x2, y2] = OBB[1] as [number, number];
+  const [x3, y3] = OBB[2] as [number, number];
+  const [x4, y4] = OBB[3] as [number, number];
 
   // Precompute sums used multiple times
   const sumX = [x1 + x2, x2 + x3, x3 + x4, x1 + x4];
@@ -481,13 +475,13 @@ export function pivotSetter(
     c: [centerX, centerY],
     center: [centerX, centerY],
     C: [centerX, centerY],
-    TM: [sumX[0] / 2, sumY[0] / 2],
+    TM: [sumX[0]! / 2, sumY[0]! / 2],
     TR: [x2, y2],
-    RM: [sumX[1] / 2, sumY[1] / 2],
+    RM: [sumX[1]! / 2, sumY[1]! / 2],
     BR: [x3, y3],
-    BM: [sumX[2] / 2, sumY[2] / 2],
+    BM: [sumX[2]! / 2, sumY[2]! / 2],
     BL: [x4, y4],
-    LM: [sumX[3] / 2, sumY[3] / 2]
+    LM: [sumX[3]! / 2, sumY[3]! / 2]
   };
 
   return lookup[mode ?? 'TL'] ?? [x1, y1];
@@ -530,17 +524,7 @@ export function choosePivotAwareOptimization(
   // --- Check if rotation pivot is arbitrary ---
   const rotationArbitrary =
     Rotate !== 0 && (rotatePivot[0] !== 0 || rotatePivot[1] !== 0);
-  /*
-  // --- Check if scale pivot is arbitrary ---
-  const scaleArbitrary =                                                                     
-    (Scale[0] !== 1 || Scale[1] !== 1) &&                                                    
-    (scalePivot[0] !== 0 || scalePivot[1] !== 0);
 
-  // --- Check if skew pivot is arbitrary ---                                                
-  const skewArbitrary =
-    (Skew[0] !== 0 || Skew[1] !== 0) &&
-    (skewPivot[0] !== 0 || skewPivot[1] !== 0);                                             
-*/
   if (rotationArbitrary) {
     // --- If rotation with arbitrary pivot exists → must use precompute ---
     return 'preComputeFrames';

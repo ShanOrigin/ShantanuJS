@@ -147,10 +147,9 @@ export class Point extends Shape<'dot'> {
       assertAccess(accessKey);
       if (!this.#geometry) return;
 
-      // if (!isValidMatrix(m, 1, 3)) return;
       [this.#geometry.cx, this.#geometry.cy] = [
-        temporaryState[0],
-        temporaryState[1]
+        temporaryState[0] as number,
+        temporaryState[1] as number
       ]; // center if circle
     } catch (e) {
       throw e;
@@ -162,7 +161,7 @@ export class Point extends Shape<'dot'> {
     matrix: Float32Array[]
   ): boolean {
     assertAccess(accessKey);
-    if (matrix.length != 3 || isNaN(matrix[0][0]) || isNaN(matrix[0][1]))
+    if (matrix.length != 3 || isNaN(matrix[0]![0]!) || isNaN(matrix[0]![1]!))
       return false;
 
     return true;

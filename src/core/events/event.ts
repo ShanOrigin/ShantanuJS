@@ -6,7 +6,7 @@ import { DEV_INTERNAL_ACCESS } from '../../utils/providers/accesskeys.js';
 
 import { SVG_CONTEXT } from '../graphics/backends/svg/core/core.js';
 
-type SVGEventType = keyof SVGElementEventMap;
+//type SVGEventType = keyof SVGElementEventMap;
 
 interface CustomEventOptions extends AddEventListenerOptions {
   preventDefault?: boolean;

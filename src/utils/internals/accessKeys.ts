@@ -112,7 +112,8 @@ function decodeHex(hexDump: string): string {
   } else {
     // fallback for very old environments
     let out = '';
-    for (let i = 0; i < bytes.length; i++) out += String.fromCharCode(bytes[i]);
+    for (let i = 0; i < bytes.length; i++)
+      out += String.fromCharCode(bytes[i] as number);
     return out;
   }
 }

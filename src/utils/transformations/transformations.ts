@@ -1,5 +1,4 @@
-import { CMATH } from '../../webAsm/interface/TS/CMATH_Interface.js';
-import { cwarn, parameterTypeValidator } from '../helpers/helpers.js';
+import { parameterTypeValidator } from '../helpers/helpers.js';
 
 import {
   propTypes,
@@ -15,6 +14,7 @@ import { Flip } from './preBuilds/transformations/flip.js';
 
 import { parseExpression } from './preBuilds/transformDSL/parsingAndApply.js';
 import { computeAABBPoints } from './preBuilds/boundingBoxes/axisAlignedBoundingBox.js';
+import { applyTransformToHomogeneousBuffer } from './preBuilds/matrix/matrixMultiplication.js';
 import { assertAccess, DEV_INTERNAL_ACCESS } from '../providers/accesskeys.js';
 import type {
   TranslateProps,
@@ -35,10 +35,8 @@ export function TransformMinix<
       super(...rest);
     }
 
-    #cmath = new CMATH();
-
-    #geometry = this.getIGeo(DEV_INTERNAL_ACCESS);
-    #style = this.getIStyle(DEV_INTERNAL_ACCESS);
+    #geometry = this['getIGeo'](DEV_INTERNAL_ACCESS);
+    #style = this['getIStyle'](DEV_INTERNAL_ACCESS);
     //#isProjection: boolean = false;
     //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //++++++++++++++ Transformation Batching  Methods +++++++++++++++
@@ -108,10 +106,7 @@ export function TransformMinix<
         this.#__batchedComposeTMatrix &&
         this.#__batchedComposeTMatrix instanceof DOMMatrix
       ) {
-        // this.#matrixProductTxM(T, true);
-        this.#__batchedComposeTMatrix.multiplySelf(T); // = T.multiply(this.#__composeTMatrix);
-
-        //console.log(this.#__composeTMatrix.a, this.#__composeTMatrix.d);
+        this.#__batchedComposeTMatrix.multiplySelf(T);
       }
     }
 
@@ -185,14 +180,14 @@ export function TransformMinix<
         // column-major layout
         // index mapping:
         // [0]=a_b, [1]=b_b, [2]=m31_b, [3]=c_b, [4]=d_b, [5]=m32_b, [6]=e_b, [7]=f_b, [8]=1
-        ba = baseTMatrix[0];
-        bb = baseTMatrix[1];
-        bm31 = baseTMatrix[2];
-        bc = baseTMatrix[3];
-        bd = baseTMatrix[4];
-        bm32 = baseTMatrix[5];
-        be = baseTMatrix[6];
-        bf = baseTMatrix[7];
+        ba = baseTMatrix[0] as number;
+        bb = baseTMatrix[1] as number;
+        bm31 = baseTMatrix[2] as number;
+        bc = baseTMatrix[3] as number;
+        bd = baseTMatrix[4] as number;
+        bm32 = baseTMatrix[5] as number;
+        be = baseTMatrix[6] as number;
+        bf = baseTMatrix[7] as number;
 
         // Build base 3x3:
         // base 3x3 matrix (row-major conceptual):
@@ -216,7 +211,7 @@ export function TransformMinix<
 
         const r20 = bm31 * a + bm32 * b + 1 * m31;
         const r21 = bm31 * c + bm32 * d + 1 * m32;
-        const r22 = bm31 * e + bm32 * f + 1 * 1;
+        //const r22 = bm31 * e + bm32 * f + 1 * 1;
 
         // Now assign back to the a..f,m31,m32 in the same variable names expected later
         a = r00;
@@ -280,13 +275,13 @@ export function TransformMinix<
       const canonical = this.#geometry.buffer as Float32Array;
       const M = this.#composeTransforms(true) as DOMMatrix;
 
-      // console.log(' canonical = ', canonical, M, this.#geometry);
       // Transform all canonical points into screen space
-      const transformed = this.#cmath.multiplyMatrix(M, canonical);
+
+      const transformed = applyTransformToHomogeneousBuffer(M, canonical);
 
       this.#resetMatrix(this.#__composeTMatrix);
       this.#resetMatrix(this.#__tempTMatrix);
-      //  console.log('transformed = ', transformed);
+
       // Extract AABB
       const { minX, minY, maxX, maxY } = computeAABBPoints(transformed);
 
@@ -317,18 +312,7 @@ export function TransformMinix<
         );
       }
 
-      const updatedBuffer = this.#cmath.multiplyMatrix(T, buffer);
-
-      if (
-        !(updatedBuffer instanceof Float32Array) ||
-        updatedBuffer.length !== buffer.length
-      ) {
-        throw new Error('Matrix Multiplication went Wrong');
-      }
-
-      assing && buffer.set(updatedBuffer, 0);
-
-      return updatedBuffer;
+      return applyTransformToHomogeneousBuffer(T, buffer, assing);
     }
 
     public getMProduct(key: symbol, transformMatrix: DOMMatrix) {
@@ -373,7 +357,6 @@ export function TransformMinix<
         });
       }
 
-      //  cwarn(' Warning -> just to debug composing in finalizeTransform');
       const composedMat = this.#composeTransforms(true) as DOMMatrix;
       const { a, b, m31, c, d, m32, e, f } = composedMat;
 
@@ -412,12 +395,12 @@ export function TransformMinix<
 
         this.#resetMatrix(this.#__tempTMatrix);
         // Load into reusable DOMMatrix
-        this.#__tempTMatrix.a = t[0];
-        this.#__tempTMatrix.b = t[1];
-        this.#__tempTMatrix.c = t[3];
-        this.#__tempTMatrix.d = t[4];
-        this.#__tempTMatrix.e = t[6];
-        this.#__tempTMatrix.f = t[7];
+        this.#__tempTMatrix.a = t[0] as number;
+        this.#__tempTMatrix.b = t[1] as number;
+        this.#__tempTMatrix.c = t[3] as number;
+        this.#__tempTMatrix.d = t[4] as number;
+        this.#__tempTMatrix.e = t[6] as number;
+        this.#__tempTMatrix.f = t[7] as number;
 
         return this.#__tempTMatrix;
       }
@@ -426,15 +409,15 @@ export function TransformMinix<
 
       this.#resetMatrix();
       for (let i = 1; i < stack.length - skip; i++) {
-        const t = stack[i].transformMatrix as Float32Array;
+        const t = stack?.[i]?.transformMatrix as Float32Array;
 
         // load into scratch matrix (no allocation)
-        this.#__tempTMatrix.a = t[0];
-        this.#__tempTMatrix.b = t[1];
-        this.#__tempTMatrix.c = t[3];
-        this.#__tempTMatrix.d = t[4];
-        this.#__tempTMatrix.e = t[6];
-        this.#__tempTMatrix.f = t[7];
+        this.#__tempTMatrix.a = t[0] as number;
+        this.#__tempTMatrix.b = t[1] as number;
+        this.#__tempTMatrix.c = t[3] as number;
+        this.#__tempTMatrix.d = t[4] as number;
+        this.#__tempTMatrix.e = t[6] as number;
+        this.#__tempTMatrix.f = t[7] as number;
 
         // multiply into reusable matrix
         this.#__composeTMatrix.multiplySelf(this.#__tempTMatrix);
@@ -446,37 +429,6 @@ export function TransformMinix<
     public getCMatrix(key: symbol) {
       assertAccess(key);
       return () => this.#composeTransforms(true);
-    }
-
-    #undo(N: number = 1, callback: Function) {
-      const geo = this.#geometry as { transformStack: transformStack };
-      geo.transformStack.skip = Math.min(
-        geo.transformStack.skip + N,
-        geo.transformStack.stack.length
-      );
-
-      this.#finalizeTransform({
-        callback,
-        transformMatrix: null,
-        transformName: '',
-        transformType: '',
-        isEffect: true,
-        isVEffect: true
-      });
-    }
-
-    #redo(N: number = 1, callback: Function) {
-      const geo = this.#geometry as { transformStack: transformStack };
-      geo.transformStack.skip = Math.max(geo.transformStack.skip - N, 0);
-
-      this.#finalizeTransform({
-        callback,
-        transformMatrix: null,
-        transformName: '',
-        transformType: '',
-        isEffect: true,
-        isVEffect: true
-      });
     }
 
     #batchingAndFinalizeTransformHandler({
@@ -494,7 +446,7 @@ export function TransformMinix<
       isVEffect: boolean;
 
       callbacks: Function;
-    }) {
+    }): this | void {
       if (this.#isBatching) {
         this.#batchCallback = callbacks as Function;
 
@@ -793,7 +745,7 @@ export function TransformMinix<
     ): void {
       try {
         for (let index = 0; index < TranslateOptions.length; index++) {
-          const element = TranslateOptions[index];
+          const element = TranslateOptions[index] as ParsedDaTa;
 
           const Data = {
             isEffect: false,
@@ -864,9 +816,4 @@ export function TransformMinix<
     }
   }
   return Transformable;
-  /*
-  return Transformable as unknown as abstract new (
-    ...args: ConstructorParameters<TBase>
-  ) => InstanceType<TBase> & Transformable;
-	*/
 }

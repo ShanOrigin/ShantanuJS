@@ -35,7 +35,7 @@ export function linearGradient(props: linearGradientProps) {
 
   // Find first explicit offset index
   for (let i = 0; i < stops.length; i++) {
-    if (stops[i].offset !== undefined) {
+    if (stops[i]!.offset !== undefined) {
       nextExplicitIndex = i;
       break;
     }
@@ -45,12 +45,12 @@ export function linearGradient(props: linearGradientProps) {
     const stop = stops[i];
     let offset: number;
 
-    if (stop.offset !== undefined) {
-      offset = parseFloat(String(stop.offset));
+    if (stop!.offset !== undefined) {
+      offset = parseFloat(String(stop!.offset));
       lastOffset = offset;
       // Advance nextExplicitIndex
       for (let j = i + 1; j < stops.length; j++) {
-        if (stops[j].offset !== undefined) {
+        if (stops[j]!.offset !== undefined) {
           nextExplicitIndex = j;
           break;
         }
@@ -59,7 +59,7 @@ export function linearGradient(props: linearGradientProps) {
     } else {
       const nextOffset =
         nextExplicitIndex < stops.length
-          ? parseFloat(String(stops[nextExplicitIndex].offset!))
+          ? parseFloat(String(stops[nextExplicitIndex]!.offset!))
           : 100;
       const gaps =
         nextExplicitIndex < stops.length
@@ -71,7 +71,7 @@ export function linearGradient(props: linearGradientProps) {
 
     const stopEl = createSVGElement('stop');
     propertyUpdate(stopEl, {
-      'stop-color': stop.color,
+      'stop-color': stop!.color,
       offset: `${offset}%`
     });
 

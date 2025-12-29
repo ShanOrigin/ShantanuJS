@@ -70,7 +70,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
       if (!this.#geometry) {
         throw new Error('Initialization problem');
       }
-      this.#geometry['context'] = undefined;
+
       this.#geometry['shape'] = '';
       this.#geometry['dirty'] = true;
 
@@ -270,7 +270,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
       if (!this.#geometry) return;
 
       if (typeof prop !== 'object' || Object.keys(prop).length == 0) return;
-      let [key, value] = Object.entries(prop)[0];
+      let [key, value] = Object.entries(prop)[0]!;
 
       if (this.#isGeometricProp(key)) {
         (this.#geometry as Record<string, string | number>)[key] = value;
@@ -337,7 +337,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
       if (typeof props === 'object') {
         const entries = Object.entries(props);
         for (let i = 0; i < entries.length; i++) {
-          const [key, value] = entries[i];
+          const [key, value] = entries[i]!;
           this.setAttrs({ [key]: value });
         }
 
@@ -443,7 +443,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
         } else {
           // Insert after newIndex → insert before (newIndex + 1)
           const refNode = tree[newIndex + 1]; // +1 to insert *after* newIndex
-          this.#fig.parentNode.insertBefore(this.#fig, refNode);
+          this.#fig.parentNode.insertBefore(this.#fig, refNode!);
           // console.log('inserting to fromt at ', near);
         }
       }
@@ -498,7 +498,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
           const refNode = tree[newIndex]; // Insert before this node (to move back)
           // console.log('refNode', refNode);
 
-          this.#fig?.parentNode?.insertBefore(this.#fig, refNode);
+          this.#fig?.parentNode?.insertBefore(this.#fig, refNode!);
           //  console.log('inserting to back at ', far);
         }
       }

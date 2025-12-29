@@ -71,7 +71,7 @@ export function generateCurvePoints({
 
   const dx = x2 - x1;
   const dy = y2 - y1;
-  //  const dist = Math.hypot(dx, dy);
+
   // If continuous mode is active, precompute base distanc
   if (bend === 0) curveName = 'linear';
 
@@ -115,7 +115,6 @@ export function generateCurvePoints({
     }
 
     for (let i = 0; i <= smoothness; i++) {
-      //  const t = lastT +  i / smoothness;
       const t = i / smoothness;
       const absolute = interpolatePointOnCurve(
         x1,
@@ -130,8 +129,8 @@ export function generateCurvePoints({
       points.push({ x: absolute.x, y: absolute.y });
 
       if (points.length > 1 && !pointsOnly) {
-        const prev = points[points.length - 2];
-        const curr = points[points.length - 1];
+        const prev = points[points.length - 2] as Point;
+        const curr = points[points.length - 1] as Point;
         const segmentLength = Math.hypot(curr.x - prev.x, curr.y - prev.y);
         totalLength += segmentLength;
         const arct = (lastT * smoothness + i) / (smoothness * continuousCount);

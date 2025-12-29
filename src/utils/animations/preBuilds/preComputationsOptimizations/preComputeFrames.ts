@@ -1,17 +1,12 @@
 import { lerp } from '../helpers/helpers.js';
-import { composeWithBase } from './composeTransformationMannually.js';
+
 import {
   TransformGeometry,
   TransformGeometryWithPivot
 } from '../../../../types/animation';
 
 import { interpolateAlongCurve } from '../../../curve/curveGenerator/interpolateAlongCurve.js';
-import {
-  RotateProps,
-  ScaleProps,
-  SkewProps,
-  TranslateProps
-} from '../../../../types/transformations.js';
+import { createTransformationMatrixProps } from '../../../../types/transformations';
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -127,7 +122,6 @@ export function precomputeFramesRaw(
 ): Float32Array {
   const frames = new Float32Array((steps + 1) * 6);
 
-  //  console.log(start, end);
   const { rotatePivot, scalePivot, skewPivot }: TransformGeometryWithPivot =
     end;
 
@@ -135,31 +129,9 @@ export function precomputeFramesRaw(
     const t = i / steps;
     const params = lerpParams(start, end, t);
 
-    const transformsObject = {
-      ...params,
-      rotatePivot,
-      scalePivot,
-      skewPivot
-    };
-
     let a!: number, b!: number, c!: number, d!: number, e!: number, f!: number;
-    //  [a, b, c, d, e, f] = composeWithBase(base, transformsObject);
-    /*
-		 {
-    Scale?: [number, number];
-    Skew?: [number, number]; // degrees
-    Rotate?: number; // degrees
-    Translate?: [number, number]; // translation
-    scalePivot?: [number, number];
-    rotatePivot?: [number, number];
-    skewPivot?: [number, number];
-  };
-		**/
-
     if (composeFn && typeof composeFn == 'function') {
-      // console.log('pivot = ', rotatePivot, scalePivot, skewPivot);
-      // console.log('create frame of animation');
-      [a, b, , c, d, , e, f] = composeFn({
+      [a = 1, b = 0, , c = 0, d = 1, , e = 0, f = 0] = composeFn({
         transformations: {
           rotate: {
             angle: params.Rotate,
@@ -186,24 +158,7 @@ export function precomputeFramesRaw(
         arrayType: 'float32',
         baseTMatrix: base,
         multiplyWithBase: true
-      } as {
-        transformations: {
-          rotate?: RotateProps;
-          skew?: SkewProps;
-          scale?: ScaleProps;
-          translate?: TranslateProps;
-        };
-        major?: 'row' | 'column';
-        arrayType?: 'normal' | 'float32';
-        baseTMatrix?: Float32Array;
-        multiplyWithBase?: boolean;
-      }) as Float32Array;
-
-      // console.log('stored animation frame');
-      //  console.log(com);
-      //  console.log('by teansform = \n', com);
-      // console.log('by custom ');
-      // console.log(a, b, c, d, e, f);
+      } as createTransformationMatrixProps) as Float32Array;
     }
 
     const offset = i * 6;
@@ -248,7 +203,6 @@ export function precomputeFramesRaw(
  */
 
 export function setPreComputedFrame(
-  // elFig: SVGElement,
   preComputeFranes: Float32Array,
   curvePoints: { x: number; y: number }[],
   progress: number,
@@ -263,39 +217,37 @@ export function setPreComputedFrame(
   let i0 = Math.floor(exactIndex);
   const i1 = Math.min(i0 + 1, steps);
   const t = exactIndex - i0;
-  // i0 == 0 && (i0 = 1);
 
   const offset0 = i0 * 6;
   const offset1 = i1 * 6;
 
   // Interpolate each coefficient
-  const a = lerp(preComputeFranes[offset0], preComputeFranes[offset1], t);
+  const a = lerp(preComputeFranes[offset0]!, preComputeFranes[offset1]!, t);
   const b = lerp(
-    preComputeFranes[offset0 + 1],
-    preComputeFranes[offset1 + 1],
+    preComputeFranes[offset0 + 1]!,
+    preComputeFranes[offset1 + 1]!,
     t
   );
   const c = lerp(
-    preComputeFranes[offset0 + 2],
-    preComputeFranes[offset1 + 2],
+    preComputeFranes[offset0 + 2]!,
+    preComputeFranes[offset1 + 2]!,
     t
   );
   const d = lerp(
-    preComputeFranes[offset0 + 3],
-    preComputeFranes[offset1 + 3],
+    preComputeFranes[offset0 + 3]!,
+    preComputeFranes[offset1 + 3]!,
     t
   );
   const e = lerp(
-    preComputeFranes[offset0 + 4] + tr.x,
-    preComputeFranes[offset1 + 4] + tr.x,
+    preComputeFranes[offset0 + 4]! + tr.x,
+    preComputeFranes[offset1 + 4]! + tr.x,
     t
   );
   const f = lerp(
-    preComputeFranes[offset0 + 5] + tr.y,
-    preComputeFranes[offset1 + 5] + tr.y,
+    preComputeFranes[offset0 + 5]! + tr.y,
+    preComputeFranes[offset1 + 5]! + tr.y,
     t
   );
 
-  //  elFig.setAttribute('transform', `matrix(${a} ${b} ${c} ${d} ${e} ${f})`);
   return `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
 }

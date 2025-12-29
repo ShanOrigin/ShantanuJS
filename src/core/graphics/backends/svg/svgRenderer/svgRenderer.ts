@@ -44,7 +44,7 @@ export class SVGRenderer implements Renderer {
   // runtime-private caches (true JS private fields)
   #geoCache? = new WeakMap<Element, Record<string, unknown>>();
   #styleCache = new WeakMap<Element, Record<string, string>>();
-  #transformCache = new WeakMap<Element, string>();
+  // #transformCache = new WeakMap<Element, string>();
   /* -------------------------
    * Runtime-private helpers
    * ------------------------- */
@@ -70,6 +70,7 @@ export class SVGRenderer implements Renderer {
   /**
    * Set transform only if changed (uses transformCache).
    */
+  /*
   #setTransformIfChanged(fig: Element, matrixStr: string): void {
     const prev = this.#transformCache.get(fig);
     if (prev !== matrixStr) {
@@ -79,12 +80,11 @@ export class SVGRenderer implements Renderer {
     }
   }
 
-  /**
-   * Convert Float32Array canonical 3x3 -> SVG matrix(a,b,c,d,e,f)
-   */
+
   #matrixToSVG(matrix: Float32Array): string {
     return `matrix(${matrix[0]},${matrix[1]},${matrix[3]},${matrix[4]},${matrix[6]},${matrix[7]})`;
   }
+*/
 
   #numToStr(n: number): string {
     return String(n);
@@ -151,11 +151,11 @@ export class SVGRenderer implements Renderer {
           const cyStr = this.#numToStr(cy);
           const rStr = this.#numToStr(cr);
 
-          geoCache?.__cx !== cxStr && (desiredAttrs.cx = cxStr);
+          geoCache['__cx'] !== cxStr && (desiredAttrs['cx'] = cxStr);
 
-          geoCache?.__cy !== cyStr && (desiredAttrs.cy = cyStr);
+          geoCache['__cy'] !== cyStr && (desiredAttrs['cy'] = cyStr);
 
-          geoCache?.__r !== rStr && (desiredAttrs.r = rStr);
+          geoCache['__r'] !== rStr && (desiredAttrs['r'] = rStr);
 
           break;
         }
@@ -172,13 +172,13 @@ export class SVGRenderer implements Renderer {
           const x2s = this.#numToStr(x2);
           const y2s = this.#numToStr(y2);
 
-          geoCache?.__x1 !== x1s && (desiredAttrs.x1 = x1s);
+          geoCache['__x1'] !== x1s && (desiredAttrs['x1'] = x1s);
 
-          geoCache?.__y1 !== y1s && (desiredAttrs.y1 = y1s);
+          geoCache['__y1'] !== y1s && (desiredAttrs['y1'] = y1s);
 
-          geoCache?.__x2 !== x2s && (desiredAttrs.x2 = x2s);
+          geoCache['__x2'] !== x2s && (desiredAttrs['x2'] = x2s);
 
-          geoCache?.__y2 !== y2s && (desiredAttrs.y2 = y2s);
+          geoCache['__y2'] !== y2s && (desiredAttrs['y2'] = y2s);
 
           break;
         }
@@ -189,11 +189,11 @@ export class SVGRenderer implements Renderer {
           const cys = this.#numToStr(cy);
           const rs = this.#numToStr(r);
 
-          geoCache?.__cx !== cxs && (desiredAttrs.cx = cxs);
+          geoCache['__cx'] !== cxs && (desiredAttrs['cx'] = cxs);
 
-          geoCache?.__cy !== cys && (desiredAttrs.cy = cys);
+          geoCache['__cy'] !== cys && (desiredAttrs['cy'] = cys);
 
-          geoCache?.__r !== rs && (desiredAttrs.r = rs);
+          geoCache['__r'] !== rs && (desiredAttrs['r'] = rs);
 
           break;
         }
@@ -210,13 +210,13 @@ export class SVGRenderer implements Renderer {
           const rxs = this.#numToStr(rx);
           const rys = this.#numToStr(ry);
 
-          geoCache?.__cx !== cxs && (desiredAttrs.cx = cxs);
+          geoCache['__cx'] !== cxs && (desiredAttrs['cx'] = cxs);
 
-          geoCache?.__cy !== cys && (desiredAttrs.cy = cys);
+          geoCache['__cy'] !== cys && (desiredAttrs['cy'] = cys);
 
-          geoCache?.__rx !== rxs && (desiredAttrs.rx = rxs);
+          geoCache['__rx'] !== rxs && (desiredAttrs['rx'] = rxs);
 
-          geoCache?.__ry !== rys && (desiredAttrs.ry = rys);
+          geoCache['__ry'] !== rys && (desiredAttrs['ry'] = rys);
 
           break;
         }
@@ -244,17 +244,17 @@ export class SVGRenderer implements Renderer {
           const rxs = this.#numToStr(rx);
           const rys = this.#numToStr(ry);
 
-          geoCache?.__x !== xs && (desiredAttrs.x = xs);
+          geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
 
-          geoCache?.__y !== ys && (desiredAttrs.y = ys);
+          geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
 
-          geoCache?.__width !== ws && (desiredAttrs.width = ws);
+          geoCache['__width'] !== ws && (desiredAttrs['width'] = ws);
 
-          geoCache?.__height !== hs && (desiredAttrs.height = hs);
+          geoCache['__height'] !== hs && (desiredAttrs['height'] = hs);
 
-          geoCache?.__rx !== rxs && (desiredAttrs.rx = rxs);
+          geoCache['__rx'] !== rxs && (desiredAttrs['rx'] = rxs);
 
-          geoCache?.__ry !== rys && (desiredAttrs.ry = rys);
+          geoCache['__ry'] !== rys && (desiredAttrs['ry'] = rys);
 
           break;
         }
@@ -265,7 +265,7 @@ export class SVGRenderer implements Renderer {
           const matrix = (geoRef?.buffer ?? []) as Float32Array;
 
           // Fast reference check (case B): if reference didn't change, skip rebuild.
-          const prevMatrixRef = geoCache?.__buffer as Float32Array;
+          const prevMatrixRef = geoCache['__buffer'] as Float32Array;
           if (prevMatrixRef !== matrix) {
             // rebuild points string only when reference changed
             const len = matrix.length;
@@ -275,7 +275,7 @@ export class SVGRenderer implements Renderer {
               parts[i] = `${matrix[i]},${matrix[i + 1]}`;
             }
             const pointsStr = parts.join(' ');
-            desiredAttrs.points = pointsStr;
+            desiredAttrs['points'] = pointsStr;
           } else {
             // reference same => no geometry change => do nothing
           }
@@ -286,8 +286,8 @@ export class SVGRenderer implements Renderer {
           // use geoRef.d or geoRef.pathD if provided
           const d = (geoRef as any).d ?? (geoRef as any).pathD;
           if (typeof d === 'string') {
-            if (geoCache?.__d !== d) {
-              desiredAttrs.d = d;
+            if (geoCache['__d'] !== d) {
+              desiredAttrs['d'] = d;
             }
           }
           break;
@@ -304,7 +304,7 @@ export class SVGRenderer implements Renderer {
       for (const key in desiredAttrs) {
         if (!Object.prototype.hasOwnProperty.call(desiredAttrs, key)) continue;
 
-        const vStr = desiredAttrs[key];
+        const vStr = desiredAttrs[key]!;
         figRef.setAttribute(key, vStr);
         geoCache[key] = vStr;
       }

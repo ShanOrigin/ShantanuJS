@@ -239,7 +239,7 @@ export function isValidMatrix(
 
     // Validate each row in the matrix
     for (let i = 0; i < mat.length; i++) {
-      const row = mat[i];
+      const row = mat[i] as Float32Array;
 
       // Ensure each row is a Float32Array and has the correct length
       valid &&= row instanceof Float32Array && row.length === rowlen;
@@ -405,7 +405,8 @@ export function getTransformationMatrix(
       return TMat;
     }
 
-    const [a, b, g, c, d, h, e, f, i] = tmat;
+    const [a = 1, b = 0, g = 0, c = 0, d = 1, h = 0, e = 0, f = 0, i = 1] =
+      tmat;
 
     if (major === 'r') {
       // Row-major: [ [a c e], [b d f], [g h i] ]

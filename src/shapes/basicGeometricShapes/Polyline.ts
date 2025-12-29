@@ -58,7 +58,7 @@ export class Polyline extends Shape<'polyline'> {
         }
 
         for (let i = 0; i < points.length; i++) {
-          pointsAttr += points[i][0] + ',' + points[i][1];
+          pointsAttr += points[i]![0] + ',' + points[i]![1];
           if (i < points.length - 1) {
             pointsAttr += ' ';
           }
@@ -105,15 +105,27 @@ export class Polyline extends Shape<'polyline'> {
       typeof this.#style === 'object' &&
       this.#style !== null
     ) {
-      const { copies = 0, points = 'M 10 , 10 L 50 , 50 ' } = this.#geometry;
+      const {
+        copies = 0,
+
+        buffer
+      } = this.#geometry;
       const nextCopies = copies + 1;
+
+      const newPoints = [];
+      for (let i = 0; i < buffer!.length!; i += 3) {
+        const x = buffer![i]!;
+        const y = buffer![i + 1]!;
+        newPoints.push([x + offsetX, y + offsetY]);
+      }
+
       const style = { ...this.#style } as StyleForGShapeTag<'polyline'>;
       if ('id' in style && style.id !== '') {
         style.id = `${style.id}-c${nextCopies}`;
       }
       this.#geometry['copies'] = nextCopies;
 
-      const pl = new Polyline(points, style as polylinePropsType);
+      const pl = new Polyline(newPoints, style as polylinePropsType);
       //   pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return pl;
     }
@@ -136,7 +148,7 @@ export class Polyline extends Shape<'polyline'> {
     const Vertex = new Float32Array(rowVertex.length * 3); // 3 floats per vertex: x, y, 1
 
     for (let i = 0; i < rowVertex.length; i++) {
-      const pair = rowVertex[i].trim();
+      const pair = rowVertex[i]!.trim();
       const s = pair.indexOf(',');
       const x = parseFloat(pair.slice(0, s));
       const y = parseFloat(pair.slice(s + 1));
@@ -191,12 +203,6 @@ export class Polyline extends Shape<'polyline'> {
 
       // Allocate once and reuse
       if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        /*
-        if (setM && render) {
-          // only valid when setSMatrix Frist try went wrong
-          this.#geometry.sharedBuffer = vmat as Float32Array;
-        } else {
-					*/
         geo.sharedBuffer = new Float32Array(totalLength);
       }
 
@@ -218,7 +224,6 @@ export class Polyline extends Shape<'polyline'> {
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
-      //     renderer.render({ el: this });
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;
@@ -240,25 +245,18 @@ export class Polyline extends Shape<'polyline'> {
   ) {
     try {
       assertAccess(accessKey);
-      // const m = this.#geometry?.matrix as Float32Array[];
-      // if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
+      const m = temporaryState;
+      if (!this.#geometry) return;
 
       // Replacing reduce with traditional loop
-      /*
-      let points = '';
-      for (let i = 0; i < m.length; i++) {
-        points += `${m[i][0]},${m[i][1]} `;
-      }
-      this.#geometry.points = points;
 
-			*/
+      let points = '';
+      for (let i = 0; i < m.length; i += 3) {
+        points += `${m[i]!},${m[i + 1]!} `;
+      }
+      this.#geometry!.points = points;
     } catch (e) {
       throw e;
     }
   }
-  /*
-  public getBBox() {
-    return computeBBox(this.#geometry, () => super.getBBox());
-  }
-	*/
 }

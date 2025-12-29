@@ -19,8 +19,10 @@ import {
 
 import { isValidMatrix, validProps } from '../providers/utils.js';
 
+/*
 type propsType = Partial<IGraphicalElementProperties['g']> &
-  Partial<StyleForGShapeTag<'g'>>;
+ Partial<StyleForGShapeTag<'g'>>;
+*/
 
 import type {
   iPoint,
@@ -32,6 +34,7 @@ import type {
   iCircle,
   iPath
 } from '../../shapes/provider/shapesTypes';
+
 type shapeT =
   | iPoint
   | iLine
@@ -46,7 +49,7 @@ type IG = keyof IGraphicalElementProperties;
 
 type GE = G<IG>;
 type AllowedFig = GE;
-
+/*
 type dimMObj = {
   [key: string]: {
     matrix: {
@@ -68,7 +71,7 @@ type dimOObj = {
     };
   };
 };
-
+*/
 export class Group extends Shape<'g'> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS);
@@ -165,10 +168,12 @@ export class Group extends Shape<'g'> {
     );
   }
 
+  /*
   public allBatch() {
     return this.#flattenBatchAndGroups(this);
   }
 
+  
   #flattenBatchAndGroups(batch: Group): Record<string, Array<AllowedFig>> {
     const result: Record<string, Array<AllowedFig>> = {};
 
@@ -178,7 +183,7 @@ export class Group extends Shape<'g'> {
           if (!result[key]) {
             result[key] = [];
           }
-          result[key].push(...source.#batches[key]);
+          result[key].push(...source.#batches[key]!);
           for (const group of source.#batches.g) {
             collectShapes(group as Group);
           }
@@ -196,8 +201,6 @@ export class Group extends Shape<'g'> {
     return result;
   }
 
-  /*
-	 *
   public applyBatchTransformation(tran: string) {
     console.time('flattenBatches');
     const batches = this.#flattenBatchAndGroups(this);
@@ -506,7 +509,7 @@ let s = 0 ;
       this.#hasParent(svgCanvas);
 
       for (let index = 0; index < shapes.length; index++) {
-        const element: AllowedFig = shapes[index];
+        const element = shapes[index] as AllowedFig;
 
         if (!element.getIFig(DEV_INTERNAL_ACCESS)) {
           throw new Error(
@@ -561,7 +564,7 @@ let s = 0 ;
       this.#hasParent(svgCanvas);
 
       for (let index = 0; index < shapes.length; index++) {
-        const element: AllowedFig = shapes[index];
+        const element = shapes[index] as AllowedFig;
 
         if (!element.getIFig(DEV_INTERNAL_ACCESS)) {
           throw new Error(
@@ -578,11 +581,9 @@ let s = 0 ;
         let removedElementIndex = -1;
         const isInstanceOfG = element instanceof G;
 
-        //console.log('this.#groupElements length ', this.#groupElements.length);
         for (let index = 0; index < this.#groupElements.length; index++) {
           const e = this.#groupElements[index];
 
-          //console.log('element = ', e, '\n');
           const isGraphicalMatch =
             isInstanceOfG &&
             e instanceof G &&
@@ -622,7 +623,7 @@ let s = 0 ;
       this.#hasParent(svgCanvas);
 
       for (let index = 0; index < this.#groupElements.length; index++) {
-        const element = this.#groupElements[index];
+        const element = this.#groupElements[index] as AllowedFig;
         this.#removeChild(element);
         this.#addTo(svgCanvas as SVGSVGElement, element);
         element.attrs({
@@ -648,10 +649,7 @@ let s = 0 ;
     }
   }
 
-  #preChecks() {
-    return true;
-  }
-
+  /*
   public restore(
     tmat: Float32Array,
     tr: string,
@@ -662,6 +660,7 @@ let s = 0 ;
     //isEffect && this.#createPathFromMatrix();
     //isEffect && this.#restoreDimension();
   }
+	*/
 
   protected override generateMatrix(accessKeys: symbol): void {
     assertAccess(accessKeys);
@@ -675,11 +674,7 @@ let s = 0 ;
     return isValidMatrix(matrix, 4, 3);
   }
 
-  protected override restoreDimension(
-    accessKeys: symbol,
-    temporaryState: Float32Array,
-    basic?: boolean
-  ): void {
+  protected override restoreDimension(accessKeys: symbol): void {
     assertAccess(accessKeys);
   }
 }

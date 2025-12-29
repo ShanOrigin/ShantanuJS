@@ -43,9 +43,10 @@ export interface lightEffectProps {
   verticalAngleOfLight?: number;
 }
 
+export type stops = { color: string; offset?: number }[];
 export interface linearGradientProps {
   direction: GradientDirection;
-  stops: { color: string; offset?: number }[];
+  stops: stops;
 }
 export type GradientDirection =
   | 'LR' // Left → Right
@@ -69,7 +70,7 @@ export interface radialGradientProps {
   radius?: number;
   focalX?: number;
   focalY?: number;
-  stops: { color: string; offset?: number }[];
+  stops: stops;
 }
 export interface neuMorphProps {
   type?: 'outer' | 'inner' | 'full';

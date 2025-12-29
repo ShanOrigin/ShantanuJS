@@ -6,12 +6,10 @@ import {
 
 import {
   GraphicalElementProperties,
-  CommonGeometricProperties,
   AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
 
 import {
-  validProps,
   parameterTypeValidator,
   autoFixGeometry
 } from '../../utils/providers/utils.js';
@@ -76,8 +74,6 @@ export class Rect extends Shape<'rect'> {
         'rect'
       );
 
-      //    console.log('props ', props);
-
       autoFixGeometry(props, ['width', 'height', 'stroke-width']); // fix if any available and if any of  negative because its not valid
 
       const mendatoryProps = {
@@ -126,7 +122,7 @@ export class Rect extends Shape<'rect'> {
       throw e;
     }
   }
-
+  /*
   static #validProps() {
     return validProps(
       AllGShapeStyleProperties,
@@ -135,7 +131,7 @@ export class Rect extends Shape<'rect'> {
       'rect'
     );
   }
-
+*/
   static #getParams(
     arg5: number | rectPropsType | undefined,
     arg6: number | rectPropsType | undefined,
@@ -303,11 +299,17 @@ export class Rect extends Shape<'rect'> {
       if (!geo) return;
       const m = geo.canonicalMatrix as Float32Array[];
       //   if (!isValidMatrix(m, 4, 3)) return;
-      const dim = this.validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true);
+      const dim = this.validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true) as [
+        number,
+        number
+      ];
       basic &&
         Array.isArray(dim) &&
         (([geo.width, geo.height] = dim),
-        ([geo.x, geo.y] = [temporaryStatus[0], temporaryStatus[1]]));
+        ([geo.x, geo.y] = [
+          temporaryStatus[0] as number,
+          temporaryStatus[1] as number
+        ]));
     } catch (e) {
       throw e;
     }
@@ -321,22 +323,27 @@ export class Rect extends Shape<'rect'> {
     assertAccess(accessKey);
     if (matrix.length !== 4) return false;
 
-    const [A, B, C, D] = matrix;
+    const [A, B, C, D] = matrix as [
+      Float32Array,
+      Float32Array,
+      Float32Array,
+      Float32Array
+    ];
 
     // --- Utility functions ---
     const dist = ([x1, y1]: Float32Array, [x2, y2]: Float32Array): number =>
-      Math.hypot(x2 - x1, y2 - y1);
+      Math.hypot(x2! - x1!, y2! - y1!);
 
     const dot = ([x1, y1]: Float32Array, [x2, y2]: Float32Array): number =>
-      x1 * x2 + y1 * y2;
+      x1! * x2! + y1! * y2!;
 
     const vec = (
       [x1, y1]: Float32Array,
       [x2, y2]: Float32Array
-    ): Float32Array => new Float32Array([x2 - x1, y2 - y1]);
+    ): Float32Array => new Float32Array([x2! - x1!, y2! - y1!]);
 
     const cross = ([x1, y1]: Float32Array, [x2, y2]: Float32Array) =>
-      x1 * y2 - y1 * x2;
+      x1! * y2! - y1! * x2!;
 
     // --- Compute vectors for sides ---
     const AB = vec(A, B);
@@ -385,16 +392,16 @@ export class Rect extends Shape<'rect'> {
       const avgHeight = (BC_len + DA_len) / 2;
       // Recompute positions with snapped lengths
       B.set([
-        A[0] + AB[0] * (avgWidth / AB_len),
-        A[1] + AB[1] * (avgWidth / AB_len)
+        A[0]! + AB[0]! * (avgWidth / AB_len),
+        A[1]! + AB[1]! * (avgWidth / AB_len)
       ]);
       C.set([
-        B[0] + BC[0] * (avgHeight / BC_len),
-        B[1] + BC[1] * (avgHeight / BC_len)
+        B[0]! + BC[0]! * (avgHeight / BC_len),
+        B[1]! + BC[1]! * (avgHeight / BC_len)
       ]);
       D.set([
-        C[0] - AB[0] * (avgWidth / AB_len),
-        C[1] - AB[1] * (avgWidth / AB_len)
+        C[0]! - AB[0]! * (avgWidth / AB_len),
+        C[1]! - AB[1]! * (avgWidth / AB_len)
       ]);
     }
 

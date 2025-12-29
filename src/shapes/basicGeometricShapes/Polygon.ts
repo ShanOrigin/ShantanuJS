@@ -59,7 +59,7 @@ export class Polygon extends Shape<'polygon'> {
         }
 
         for (let i = 0; i < points.length; i++) {
-          pointsAttr += points[i][0] + ',' + points[i][1];
+          pointsAttr += points[i]![0] + ',' + points[i]![1];
           if (i < points.length - 1) {
             pointsAttr += ' ';
           }
@@ -67,7 +67,7 @@ export class Polygon extends Shape<'polygon'> {
         pointsAttr += ' Z';
       }
 
-      if (pointsAttr[pointsAttr.length - 1].toLowerCase() !== 'z') {
+      if (pointsAttr[pointsAttr.length - 1]!.toLowerCase() !== 'z') {
         throw new Error("Given Path is Not Closed please close path with 'Z'");
       }
 
@@ -111,15 +111,23 @@ export class Polygon extends Shape<'polygon'> {
       typeof this.#style === 'object' &&
       this.#style !== null
     ) {
-      const { copies = 0, points = 'M 10 , 10 L 50 , 50 Z' } = this.#geometry;
+      const { copies = 0, buffer } = this.#geometry;
       const nextCopies = copies + 1;
+
+      const newPoints = [];
+      for (let i = 0; i < buffer!.length!; i += 3) {
+        const x = buffer![i]!;
+        const y = buffer![i + 1]!;
+        newPoints.push([x + offsetX, y + offsetY]);
+      }
+
       const style = { ...this.#style } as StyleForGShapeTag<'polyline'>;
       if ('id' in style && style.id !== '') {
         style.id = `${style.id}-c${nextCopies}`;
       }
       this.#geometry['copies'] = nextCopies;
 
-      const pl = new Polygon(points, style as polygonPropsType);
+      const pl = new Polygon(newPoints, style as polygonPropsType);
       //  pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return pl;
     }
@@ -145,7 +153,7 @@ export class Polygon extends Shape<'polygon'> {
     const Vertex = new Float32Array((rowVertex.length - 1) * 3); // 3 floats per vertex: x, y, 1
 
     for (let i = 0; i < rowVertex.length - 1; i++) {
-      const pair = rowVertex[i].trim();
+      const pair = rowVertex[i]!.trim();
       const s = pair.indexOf(',');
       const x = parseFloat(pair.slice(0, s));
       const y = parseFloat(pair.slice(s + 1));
@@ -200,12 +208,6 @@ export class Polygon extends Shape<'polygon'> {
 
       // Allocate once and reuse
       if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        /*
-       if (setM && render) {
-         // only valid when setSMatrix Frist try went wrong
-         this.#geometry.sharedBuffer = vmat as Float32Array;
-       } else {
-         */
         geo.sharedBuffer = new Float32Array(totalLength);
       }
 
@@ -227,8 +229,7 @@ export class Polygon extends Shape<'polygon'> {
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
-      //    renderer.render({ el: this });
-      this.restoreDimension(DEV_INTERNAL_ACCESS);
+      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;
     }
@@ -242,20 +243,22 @@ export class Polygon extends Shape<'polygon'> {
     return isValidMatrix(m, m.length, 3);
   }
 
-  protected override restoreDimension(accessKey: symbol) {
+  protected override restoreDimension(
+    accessKey: symbol,
+    temporaryState: Float32Array
+  ) {
     try {
       assertAccess(accessKey);
-      /*
-      const m = this.#geometry?.matrix as Float32Array[];
-      if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
+      const m = temporaryState;
+      if (!this.#geometry) return;
+
+      // Replacing reduce with traditional loop
 
       let points = '';
-      for (let i = 0; i < m.length; i++) {
-        points += `${m[i][0]},${m[i][1]} `;
+      for (let i = 0; i < m.length; i += 3) {
+        points += `${m[i]!},${m[i + 1]!} `;
       }
-      points += 'Z';
-      this.#geometry.points = points;
-			*/
+      this.#geometry!.points = points;
     } catch (e) {
       throw e;
     }

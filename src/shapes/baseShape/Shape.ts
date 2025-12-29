@@ -147,11 +147,11 @@ Description : taking original shape data ( which is local geometry ) and then ap
     console.log('in Flattening');
     const composedMatrix = this.getCMatrix(DEV_INTERNAL_ACCESS)() as DOMMatrix;
 
-    const { a, b, m31, c, d, m32, e, f } = composedMatrix;
+    // const { a, b, m31, c, d, m32, e, f } = composedMatrix;
 
     // column major because shape matrix is row major and for clearity
 
-    const transformMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
+    //  const transformMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
 
     //  console.log('transforMatrix ', transformMatrix);
     const updatedBuffer = this.getMProduct(
@@ -163,10 +163,8 @@ Description : taking original shape data ( which is local geometry ) and then ap
 
     // console.log('updatedBuffer = ', updatedBuffer);
     this.#restore({
-      transformMatrix,
       temporaryState: updatedBuffer,
-      isEffect: true,
-      isVEffect: false
+      isEffect: true
     });
 
     // apply or add user given parameters to world view parameters .
@@ -188,7 +186,9 @@ Description : taking original shape data ( which is local geometry ) and then ap
     );
   }
 
-  public attrs(props: shapesPropsType | string): attrsMethodReturnTypes {
+  public override attrs(
+    props: shapesPropsType | string
+  ): attrsMethodReturnTypes {
     try {
       const shape = this.#geometry?.shape;
       if (!shape || shape == '') {
@@ -248,8 +248,6 @@ Description : taking original shape data ( which is local geometry ) and then ap
             this.#flattenTransforms(super.attrs.bind(this), g);
 
           // renderering new updated geometry and style
-
-          // renderer.render({ el: this });
         }
       } else if (typeof props === 'string') {
         let result = super.attrs(props);
@@ -289,14 +287,16 @@ Description : taking original shape data ( which is local geometry ) and then ap
       const [rowSize, columnSize] = dimensions[shape];
 
       const sb = [] as Float32Array[];
-      const prev = new Float32Array(geo.buffer.slice(0, columnSize * rowSize)); // backup
+      const prev = new Float32Array(
+        geo.buffer.slice(0, columnSize! * rowSize!)
+      ); // backup
 
-      for (let i = 0; i < rowSize; i++) {
+      for (let i = 0; i < rowSize!; i++) {
         sb[i] = new Float32Array(3);
-        for (let j = 0; j < columnSize; j++) {
+        for (let j = 0; j < columnSize!; j++) {
           const e = m[i]?.[j] ?? 1;
-          geo.buffer[i * columnSize + j] = e;
-          sb[i][j] = e;
+          geo.buffer[i * columnSize! + j] = e;
+          sb[i]![j]! = e;
         }
       }
 
@@ -313,10 +313,8 @@ Description : taking original shape data ( which is local geometry ) and then ap
         }
       }
 
-      console.log('before  matrix update ', JSON.stringify(this.#geometry));
       this.restoreDimension(DEV_INTERNAL_ACCESS, geo.buffer);
-      // renderer.render({ el: this });
-      console.log('after  matrix update ', JSON.stringify(this.#geometry));
+
       // setting '' to transform attribute of svg
       this.attrs({ transform: '' });
       // clearing all transformations stack history
@@ -347,27 +345,13 @@ Description : taking original shape data ( which is local geometry ) and then ap
   }
 
   #restore({
-    transformMatrix,
     temporaryState,
-    isEffect,
-    isVEffect = true
+    isEffect
   }: {
-    transformMatrix: Float32Array;
     temporaryState: Float32Array;
     isEffect: boolean;
-    isVEffect: boolean;
   }) {
     isEffect && this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
-
-    /*
-    //cwarn('in restore ', isVEffect);
-    isVEffect &&
-      renderer.render({
-        el: this,
-        finalMatrix: transformMatrix,
-        isEffect: isVEffect
-      });
-			*/
   }
 
   //++++++++++++++++++++++++++++++++++++++++++++
@@ -563,7 +547,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
   // Animation Section
   //++++++++++++++++++++++++++++++++++++++++++++
 
-  #isAnimationsGoingOn(arg: boolean): boolean | undefined {
+  #isAnimationsGoingOn(arg: boolean): boolean | undefined | void {
     if (!arg) return this.#isAnimations;
     this.#isAnimations = !this.#isAnimations;
   }
@@ -723,309 +707,3 @@ Description : taking original shape data ( which is local geometry ) and then ap
     new Filter().glassMorph(this.#fig, props);
   }
 }
-
-/*
- * // +++++++++++! Do not delete below code i  future we will going to use it +++++++++++
- *  #setEqa() {
-    try {
-      if (!this.#geometry) return;
-      const m = this.#geometry.matrix as Float32Array[]; // assume length >= 2
-      let str = '';
-
-      for (let i = 0; i < m.length; i++) {
-        const [x1, y1] = m[i] as Float32Array;
-        const [x2, y2] = m[(i + 1) % m.length] as Float32Array; // wraps to 0
-        str += linearEquation([x1, y1], [x2, y2]) + ' | ';
-      }
-
-      return str.slice(0, -3); // remove trailing " | "
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  #area() {
-    try {
-      let area = 0;
-      if (!this.#geometry || !this.#geometry.matrix) return;
-      const m = this.#geometry?.matrix as Float32Array[];
-
-      if (isValidMatrix(m, 4, 3)) {
-        area =
-          triangleAreaByShoelaceFormula([
-            this.#geometry.matrix[0] as Float32Array,
-            this.#geometry.matrix[1] as Float32Array,
-            this.#geometry.matrix[2] as Float32Array
-          ]) +
-          triangleAreaByShoelaceFormula([
-            this.#geometry.matrix[0] as Float32Array,
-            this.#geometry.matrix[3] as Float32Array,
-            this.#geometry.matrix[2] as Float32Array
-          ]);
-      }
-      return area;
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  #getData(): Float32Array {
-    return new Float32Array([
-      this.#geometry?.rx || this.#geometry?.ry ? 5 : 4,
-      4,
-      this.#geometry?.rx ?? 0,
-      this.#geometry?.ry ?? 0
-    ]);
-  }
-
-
- *
- *
- *  //++++++++++++++++++++++++++±++++++++
-
-  public override perspective({
-    g,
-    h,
-    type = 'r',
-    px = 0,
-    py = 0,
-    isEffect = true
-  }: {
-    g: number;
-    h: number;
-    type?: string;
-    px?: number;
-    py?: number;
-    isEffect?: boolean;
-  }): this {
-    super.perspective({
-      g,
-      h,
-      type,
-      px,
-      py,
-      isEffect,
-      callbacks: this.#restore.bind(this)
-    });
-
-    return this;
-  }
- *
- *
- *
- *  public getTMatrix(
-    which: string | number = 0,
-    major: 'r' | 'c' = 'r'
-  ): number[][] {
-    const TMat = [
-      [1, 0, 0],
-      [0, 1, 0],
-      [0, 0, 1]
-    ];
-
-    try {
-      const tList = this.#geometry?.TList;
-      if (!Array.isArray(tList) || tList.length === 0) {
-        //cwarn('No transformations applied yet.');
-        return TMat;
-      }
-
-      let index = typeof which === 'number' ? which : 0;
-      if (index === -1) index = tList.length - 1;
-      if (index < 0 || index >= tList.length) {
-        //cwarn(`Invalid transformation index: ${index}`);
-        return TMat;
-      }
-
-      const tmat = tList[index]?.TMatrix;
-      if (!(tmat instanceof Float32Array) || tmat.length < 9) {
-        //cwarn('Invalid transformation matrix.');
-        return TMat;
-      }
-
-      const [a, b, g, c, d, h, e, f, i] = tmat;
-
-      if (major === 'r') {
-        // Row-major: [ [a c e], [b d f], [g h i] ]
-        TMat[0] = [a, c, e];
-        TMat[1] = [b, d, f];
-        TMat[2] = [g, h, i];
-      } else {
-        // Column-major: [ [a b g], [c d h], [e f i] ]
-        TMat[0] = [a, b, g];
-        TMat[1] = [c, d, h];
-        TMat[2] = [e, f, i];
-      }
-
-      return TMat;
-    } catch (e) {
-      //cerror('getTMatrix() failed:', e);
-      return TMat;
-    }
-  }
-
-  #restore({
-    tmat,
-    transformation,
-    type,
-    isEffect,
-    isVEffect = true,
-    isProjections = true,
-    track = true
-  }: {
-    tmat: DOMMatrix;
-    transformation: string;
-    type: string;
-    isEffect: boolean;
-    isVEffect: boolean;
-    isProjections: boolean;
-    track: boolean;
-  }) {
-    const TM = new Float32Array([
-      tmat.a,
-      tmat.b,
-      0,
-      tmat.c,
-      tmat.d,
-      0,
-      tmat.e,
-      tmat.f,
-      1
-    ]); // column major because shape matrix is row major and for clearity
-
-    track &&
-      this.#geometry &&
-      trackTransformation(this.#geometry, transformation, type, TM);
-    isEffect && this.#restoreDimension();
-    isVEffect &&
-      randerer.rander({
-        el: this,
-        T: tmat,
-        isEffect: isVEffect,
-        isProjections
-      });
-  }
-
-  public getBBox() {
-    if (!this.#geometry?.Obbox) {
-      //console.log('Rect getBBox');
-      const g = () => super.getBBox();
-      assignBBoxMatrix(this.#geometry, g, 'Obbox');
-    }
-    const matrix = this.#geometry?.Obbox as Float32Array[];
-    let minX = Infinity,
-      minY = Infinity;
-    let maxX = -Infinity,
-      maxY = -Infinity;
-
-    for (let i = 0; i < matrix.length; i++) {
-      const [x, y] = matrix[i] as Float32Array;
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (x > maxX) maxX = x;
-      if (y > maxY) maxY = y;
-    }
-
-    const width = maxX - minX;
-    const height = maxY - minY;
-    const [cx, cy] = [minX + width / 2, minY + height / 2];
-    // Create the 4 corner points in canvas order (top-left, top-right, bottom-right, bottom-left)
-    const bboxMatrix = [
-      new Float32Array([minX, minY, 1]), // top-left
-      new Float32Array([maxX, minY, 1]), // top-right
-      new Float32Array([maxX, maxY, 1]), // bottom-right
-      new Float32Array([minX, maxY, 1]) // bottom-left
-    ];
-    return {
-      x: minX,
-      y: minY,
-      width,
-      height,
-      cx,
-      cy,
-      matrix: bboxMatrix
-    };
-  }
-
-
-
- *
- *
- */
-
-/*
-function getSuperMethod(obj: any, methodName: string): Function {
-  let proto = Object.getPrototypeOf(obj);
-  while (proto) {
-    if (proto.hasOwnProperty(methodName)) {
-      const parentProto = Object.getPrototypeOf(proto);
-      if (parentProto && typeof parentProto[methodName] === "function") {
-        return parentProto[methodName];
-      }
-    }
-    proto = Object.getPrototypeOf(proto);
-  }
-  throw new Error(`Parent method ${methodName} not found`);
-}
-
-const parentTranslate = getSuperMethod(Shape, "Translate");
-parentTranslate.call(Shape, { x: 20, y: 30 });
-
-
-
-function getSuperMethods(obj: any, methodNames: string[]): Record<string, Function> {
-  const result: Record<string, Function> = {};
-
-  for (const methodName of methodNames) {
-    let proto = Object.getPrototypeOf(obj);
-    while (proto) {
-      if (proto.hasOwnProperty(methodName)) {
-        const parentProto = Object.getPrototypeOf(proto);
-        if (parentProto && typeof parentProto[methodName] === "function") {
-          result[methodName] = parentProto[methodName].bind(obj);
-          break;
-        }
-      }
-      proto = Object.getPrototypeOf(proto);
-    }
-    if (!result[methodName]) {
-      throw new Error(`Parent method ${methodName} not found`);
-    }
-  }
-
-  return result;
-}
-
-// Usage
-const superMethods = getSuperMethods(Shape, ["Translate", "Rotate", "Scale"]);
-
-// Call parent methods directly
-superMethods.Translate({ x: 100, y: 50 });
-superMethods.Rotate({ angle: 45 });
-
-
-const RAW_KEY = "system_access_key";
-const SYSTEM_KEY_BASE64 = Buffer.from(RAW_KEY).toString("base64");
-
-class Child extends Base {
-  #restore() {
-    //console.log("Restore called!");
-  }
-
-  getPrivateMethod(methodName: string, keyBase64: string): Function | undefined {
-    const decoded = Buffer.from(keyBase64, "base64").toString("utf-8");
-    if (decoded !== RAW_KEY) throw new Error("Unauthorized access");
-    if (methodName === "restore") {
-      return this.#restore.bind(this);
-    }
-    throw new Error("Method not found");
-  }
-}
-
-// Usage
-const obj = new Child();
-const restoreMethod = obj.getPrivateMethod("restore", SYSTEM_KEY_BASE64);
-restoreMethod?.(); // Works
-
-
-*/

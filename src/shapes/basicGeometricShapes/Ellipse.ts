@@ -174,8 +174,14 @@ export class Ellipse extends Shape<'ellipse'> {
 
       if (!this.#geometry || matrix.length !== 3) return false;
       const [center, right, bottom] = matrix;
-      const crx = Math.hypot(right[0] - center[0], right[1] - center[1]);
-      const cry = Math.hypot(bottom[0] - center[0], bottom[1] - center[1]);
+      const crx = Math.hypot(
+        right![0]! - center![0]!,
+        right![1]! - center![1]!
+      );
+      const cry = Math.hypot(
+        bottom![0]! - center![0]!,
+        bottom![1]! - center![1]!
+      );
       const [rx, ry] = [this.#geometry.rx ?? 0, this.#geometry.ry ?? 0];
 
       const rValid = Math.abs(rx - crx) < 1e-6 && Math.abs(ry - cry) < 1e-6;
@@ -198,14 +204,12 @@ export class Ellipse extends Shape<'ellipse'> {
     try {
       assertAccess(accessKey);
       if (!this.#geometry) return;
-      //     const m = this.#geometry && (this.#geometry.matrix as Float32Array[]);
-      //    if (!isValidMatrix(m, 3, 3)) return;
 
-      const [cx, cy] = [temporaryState[0], temporaryState[1]]; // center of ellipse
+      const [cx, cy] = [temporaryState[0]!, temporaryState[1]!]; // center of ellipse
 
-      const a = Math.hypot(temporaryState[3] - cx, temporaryState[4] - cy);
+      const a = Math.hypot(temporaryState[3]! - cx, temporaryState[4]! - cy);
 
-      const b = Math.hypot(temporaryState[6] - cx, temporaryState[7] - cy);
+      const b = Math.hypot(temporaryState[6]! - cx, temporaryState[7]! - cy);
 
       basic &&
         (([this.#geometry.rx, this.#geometry.ry] = [a, b]),

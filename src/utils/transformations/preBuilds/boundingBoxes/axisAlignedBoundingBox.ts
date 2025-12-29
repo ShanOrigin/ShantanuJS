@@ -22,14 +22,14 @@ export function computeAABBPoints(
     return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
   }
 
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
+  let minX: number = Infinity,
+    minY: number = Infinity,
+    maxX: number = -Infinity,
+    maxY: number = -Infinity;
 
   for (let i = 0; i < len; i += 3) {
-    const x = shapeTransformedMat[i];
-    const y = shapeTransformedMat[i + 1];
+    const x = shapeTransformedMat[i] as number;
+    const y = shapeTransformedMat[i + 1] as number;
 
     x < minX && (minX = x);
     y < minY && (minY = y);

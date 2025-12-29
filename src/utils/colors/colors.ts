@@ -145,30 +145,6 @@ export default class Colors {
     );
   }
 
-  #isRGBo(color: string = ''): boolean {
-    return /^rgb\(\s*(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\s*,\s*(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\s*,\s*(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\s*\)$/i.test(
-      color
-    );
-  }
-
-  #isRGBAo(color: string = ''): boolean {
-    return /^rgba\(\s*(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\s*,\s*(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\s*,\s*(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]?[0-9])\s*(,\s*(0|1|0?\.\d+))?\s*\)$/i.test(
-      color
-    );
-  }
-
-  #isHSLo(color: string = ''): boolean {
-    return /^hsl\(\s*(360|[1-9]?\d{1,2}|1[0-9]{2})\s*,\s*(\d{1,2}|100)%\s*,\s*(\d{1,2}|100)%\s*\)$/i.test(
-      color
-    );
-  }
-
-  #isHSLAo(color: string = ''): boolean {
-    return /^hsla\(\s*(360|[1-9]?\d{1,2}|1[0-9]{2})\s*,\s*(\d{1,2}|100)%\s*,\s*(\d{1,2}|100)%\s*,?\s*(0|1|0?\.\d+)?\s*\)$/i.test(
-      color
-    );
-  }
-
   /**
    * Determines if a given string represents a valid color and optionally returns its type.
    *
@@ -277,10 +253,11 @@ export default class Colors {
         g: number,
         b: number,
         a = 1;
+
       if (color.length === 4) {
-        r = parseInt(color[1] + color[1], 16);
-        g = parseInt(color[2] + color[2], 16);
-        b = parseInt(color[3] + color[3], 16);
+        r = parseInt(color[1]! + color[1]!, 16);
+        g = parseInt(color[2]! + color[2]!, 16);
+        b = parseInt(color[3]! + color[3]!, 16);
       } else if (color.length === 7) {
         r = parseInt(color.slice(1, 3), 16);
         g = parseInt(color.slice(3, 5), 16);
@@ -302,9 +279,9 @@ export default class Colors {
     );
     if ((this.#isRGB(color) || this.#isRGBA(color)) && rgbMatch) {
       return [
-        parseFloat(rgbMatch[1]),
-        parseFloat(rgbMatch[2]),
-        parseFloat(rgbMatch[3]),
+        parseFloat(rgbMatch[1]!),
+        parseFloat(rgbMatch[2]!),
+        parseFloat(rgbMatch[3]!),
         rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1
       ];
     }
@@ -314,9 +291,9 @@ export default class Colors {
       /hsla?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%(?:\s*,\s*([\d.]+))?\s*\)/
     );
     if ((this.#isHSL(color) || this.#isHSLA(color)) && hslMatch) {
-      const h = parseFloat(hslMatch[1]);
-      const s = parseFloat(hslMatch[2]) / 100;
-      const l = parseFloat(hslMatch[3]) / 100;
+      const h = parseFloat(hslMatch[1]!);
+      const s = parseFloat(hslMatch[2]!) / 100;
+      const l = parseFloat(hslMatch[3]!) / 100;
       const a = hslMatch[4] ? parseFloat(hslMatch[4]) : 1;
 
       const c = (1 - Math.abs(2 * l - 1)) * s;
@@ -373,7 +350,12 @@ export default class Colors {
    */
 
   public convertColor(color: string, targetFormat: string): string | number[] {
-    const [r, g, b, a] = this.parseColor(color);
+    const [r, g, b, a] = this.parseColor(color) as [
+      number,
+      number,
+      number,
+      number
+    ];
     if (targetFormat == 'lerp') return [r, g, b, a];
     switch (targetFormat.toLowerCase()) {
       case 'hex':
@@ -428,33 +410,3 @@ export default class Colors {
     }
   }
 }
-
-/*
- *
-const named = new Colors('skyblue');
-const rgb = new Colors('rgba(23 , 46 , 67 , 0.6 )');
-
-
-console.log(named.isColor());
-console.log(rgb.isColor());
-
-console.log(named.isColor('', true));
-console.log(rgb.isColor('', true));
-
-console.log(named.isColor('#ffff'));
-console.log(rgb.isColor('rgb(77,34,56)'));
-
-console.log(named.isColor('#ffff', true));
-console.log(rgb.isColor('rgb(77,34,56)', true));
-
-console.log(named.parseColor('#fff'));
-console.log(rgb.parseColor('rgb(77,34,56)'));
-
-console.log(named.parseColor('hsla(120,70%,90% , 0.4)'));
-console.log(rgb.parseColor('rgba(2,84,58 , 0.7)'));
-
-console.log(named.convertColor('#fff', 'rgb'));
-
-console.log(named.convertColor('#fff', 'hsl'));
-
-*/

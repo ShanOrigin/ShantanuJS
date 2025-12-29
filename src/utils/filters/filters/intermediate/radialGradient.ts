@@ -1,10 +1,10 @@
 import { propertyUpdate, appendChildren } from '../../helpers/helpers.js';
 import { createSVGElement } from '../../../../core/providers/svgSpecific.js';
 
-import {
+import type {
   radialGradientProps,
   RadialPosition
-} from '../../../../types/filters.d';
+} from '../../../../types/filters';
 import { generateId } from '../../../helpers/helpers.js';
 
 export function radialGradient(props: radialGradientProps) {
@@ -47,7 +47,7 @@ export function radialGradient(props: radialGradientProps) {
     id,
     cx,
     cy,
-    //    r: typeof radius === 'number' ? `${radius}%` : radius,
+
     r: (direction === 'CENTER' && `${radius}%`) || '100%',
     fx: typeof focalX === 'number' ? `${focalX}%` : focalX,
     fy: typeof focalY === 'number' ? `${focalY}%` : focalY,
@@ -63,7 +63,7 @@ export function radialGradient(props: radialGradientProps) {
   let firstExplicit = -1;
   let lastExplicit = -1;
   for (let i = 0; i < total; i++) {
-    if (stops[i].offset !== undefined) {
+    if (stops?.[i]?.offset !== undefined) {
       if (firstExplicit === -1) firstExplicit = i;
       lastExplicit = i;
     }
@@ -74,7 +74,7 @@ export function radialGradient(props: radialGradientProps) {
     const stop = stops[i];
     let offset: number;
 
-    if (stop.offset !== undefined) {
+    if (stop?.offset !== undefined) {
       offset = parseFloat(String(stop.offset));
     } else {
       if (firstExplicit === -1) {
@@ -84,34 +84,37 @@ export function radialGradient(props: radialGradientProps) {
         // before first explicit
         offset =
           (i / firstExplicit) *
-          parseFloat(String(stops[firstExplicit].offset!));
+          parseFloat(String(stops[firstExplicit]?.offset!));
       } else if (i > lastExplicit) {
         // after last explicit
         offset =
-          parseFloat(String(stops[lastExplicit].offset!)) +
+          parseFloat(String(stops[lastExplicit]?.offset!)) +
           ((i - lastExplicit) / (total - 1 - lastExplicit)) *
-            (100 - parseFloat(String(stops[lastExplicit].offset!)));
+            (100 - parseFloat(String(stops[lastExplicit]?.offset!)));
       } else {
         // between two explicit stops
         let nextExplicit = i + 1;
-        while (nextExplicit < total && stops[nextExplicit].offset === undefined)
+        while (
+          nextExplicit < total &&
+          stops[nextExplicit]?.offset === undefined
+        )
           nextExplicit++;
 
-        const prevOffset = parseFloat(String(stops[i - 1].offset!));
+        const prevOffset = parseFloat(String(stops[i - 1]?.offset!));
         const nextOffset =
           nextExplicit < total
-            ? parseFloat(String(stops[nextExplicit].offset!))
+            ? parseFloat(String(stops[nextExplicit]?.offset!))
             : 100;
 
         const gap = nextExplicit - (i - 1);
         offset = prevOffset + (nextOffset - prevOffset) / gap;
-        stops[i].offset = offset; // cache it to reuse if needed
+        stops[i]!['offset'] = offset; // cache it to reuse if needed
       }
     }
 
     const stopEl = createSVGElement('stop');
     propertyUpdate(stopEl, {
-      'stop-color': stop.color,
+      'stop-color': stop!.color,
       offset: `${offset}%`
     });
 

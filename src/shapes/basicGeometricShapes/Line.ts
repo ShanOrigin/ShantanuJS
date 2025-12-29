@@ -125,7 +125,7 @@ export class Line extends Shape<'line'> {
       if (!geo) return;
       const { x1 = 0, y1 = 0, x2 = 0, y2 = 0 } = geo;
       const shapeRows = 2;
-      const bboxRows = 4;
+
       const totalLength = shapeRows * 3;
 
       // Allocate once and reuse
@@ -135,16 +135,7 @@ export class Line extends Shape<'line'> {
 
       const sb = geo.buffer as Float32Array;
       sb.set([x1, y1, 1, x2, y2, 1], 0);
-      /*
-      // Only recreate views if buffer was reallocated
-      if (!geo.canonicalMatrix) {
-        geo.canonicalMatrix = [
-          new Float32Array(sb.buffer, 0 * 4, 3),
-          new Float32Array(sb.buffer, 3 * 4, 3)
-        ];
-      }
-*/
-      //     renderer.render({ el: this });
+
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;
@@ -164,7 +155,7 @@ export class Line extends Shape<'line'> {
   ) {
     assertAccess(accessKey);
     //    const m = this.#geometry?.matrix as Float32Array[];
-    //   if (!this.#geometry || !isValidMatrix(m, 2, 3)) return;
+    if (!this.#geometry) return;
 
     const geo = this.#geometry as {
       x1: number;
@@ -172,7 +163,13 @@ export class Line extends Shape<'line'> {
       x2: number;
       y2: number;
     };
-    [geo.x1, geo.y1] = [temporaryState[0], temporaryState[1]];
-    [geo.x2, geo.y2] = [temporaryState[3], temporaryState[4]];
+    [geo.x1, geo.y1] = [
+      temporaryState[0] as number,
+      temporaryState[1] as number
+    ];
+    [geo.x2, geo.y2] = [
+      temporaryState[3] as number,
+      temporaryState[4] as number
+    ];
   }
 }

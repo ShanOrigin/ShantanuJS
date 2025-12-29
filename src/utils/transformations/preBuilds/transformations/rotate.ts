@@ -1,4 +1,3 @@
-import { getCentre, typeCheck } from '../helpers/helpers.js';
 import type { RotateProps } from '../../../../types/transformations';
 
 /**

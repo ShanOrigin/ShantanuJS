@@ -79,6 +79,7 @@ export class Engine {
     // 1. Update animations
     //    Use a traditional for loop for maximum speed and predictability.
     const len = this.#shapes.length;
+    time;
     for (let i = 0; i < len; i++) {
       const shape = this.#shapes[i];
       /*

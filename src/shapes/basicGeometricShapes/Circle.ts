@@ -142,7 +142,7 @@ export class Circle extends Shape<'circle'> {
           new Float32Array(sb.buffer, 3 * 4, 3)
         ];
       }
-      //     renderer.render({ el: this });
+
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
       throw e;
@@ -163,7 +163,7 @@ export class Circle extends Shape<'circle'> {
 
       const [center, right] = matrix;
 
-      const r = Math.hypot(right[0] - center[0], right[1] - center[1]);
+      const r = Math.hypot(right![0]! - center![0]!, right![1]! - center![1]!);
 
       if (output) return r;
 
@@ -181,17 +181,15 @@ export class Circle extends Shape<'circle'> {
     try {
       assertAccess(accessKey);
       if (!this.#geometry) return;
-      //    const m = this.#geometry.matrix as Float32Array[];
 
-      //      if (!isValidMatrix(m, 2, 3)) return;
-      const [cx, cy] = [temporaryState[0], temporaryState[1]]; // center if circle
-      const [rx, ry] = [temporaryState[3], temporaryState[4]]; // right most point on circle
+      const [cx, cy] = [temporaryState[0]!, temporaryState[1]!]; // center if circle
+      const [rx, ry] = [temporaryState[3]!, temporaryState[4]!]; // right most point on circle
 
       basic &&
         ((this.#geometry.r = Math.hypot(rx - cx, ry - cy)),
         ([this.#geometry.cx, this.#geometry.cy] = [
-          temporaryState[0],
-          temporaryState[1]
+          temporaryState[0]!,
+          temporaryState[1]!
         ]));
     } catch (e) {
       throw e;

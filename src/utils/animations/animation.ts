@@ -149,7 +149,7 @@ export class Animation<T extends GShpesTages> {
   #animationState: boolean = false;
 
   // it tells animation allready available or not to --- avoid multiple animations can not run on same shape at same time it holds parent class isAnimation method to determine  ---
-  #isAnimation: (t: boolean) => boolean | undefined;
+  #isAnimation: (t: boolean) => boolean | undefined | void;
 
   // object to store final Geometry and respective Pivot data of Animation Shape in the transformed state
 
@@ -221,7 +221,7 @@ export class Animation<T extends GShpesTages> {
 
   constructor(
     GElement: iShape, // GEC<keyof IG, keyof IG>,
-    isAnimation: (t: boolean) => boolean | undefined,
+    isAnimation: (t: boolean) => boolean | undefined | void,
     cleanUp: Function
   ) {
     this.#elFig = GElement.getIFig(DEV_INTERNAL_ACCESS);
@@ -270,7 +270,7 @@ export class Animation<T extends GShpesTages> {
     let path = '';
 
     for (let i = 0; i < curvePoints.length; i++) {
-      const p = curvePoints[i];
+      const p = curvePoints[i] as Point;
 
       // local point
       let x = normalizePoints.px + p.x;
@@ -295,7 +295,7 @@ export class Animation<T extends GShpesTages> {
 
   #interpolater() {
     //++++++ Transforming Geometry of Shape +++++
-    // this.#transformGeometry();
+
     const fP: Record<string, number | string> = {}; // final Apply properties
     const tMatrix = this.#interpolateFunction(
       this.#preComputeFranesOrPolynomial as optFuncType,
@@ -327,10 +327,10 @@ export class Animation<T extends GShpesTages> {
         const f: number[] = (fS as any)[k] as number[];
 
         fP[k] = `rgba(
-  ${Math.round(lerp(i[0], f[0], this.#progress))},
-  ${Math.round(lerp(i[1], f[1], this.#progress))},
-  ${Math.round(lerp(i[2], f[2], this.#progress))},
-  ${lerp(i[3], f[3], this.#progress)}
+  ${Math.round(lerp(i[0]!, f[0]!, this.#progress))},
+  ${Math.round(lerp(i[1]!, f[1]!, this.#progress))},
+  ${Math.round(lerp(i[2]!, f[2]!, this.#progress))},
+  ${lerp(i[3]!, f[3]!, this.#progress)}
 )`;
       }
     }
@@ -361,93 +361,6 @@ export class Animation<T extends GShpesTages> {
     this.pause();
     this.#resetAllStates();
   }
-  /*
-  #resetAllStates() {
-    // #el is animator class object which shape going to animate
-    (this.#el as any) = null;
-    (this.#elFig as any) = null;
-
-    // Arc Length Parameterized table for storing arc table
-    (this.#arcTable as any) = null;
-
-    // Arc total length while Arc length parameterization
-    (this.#totalLength as any) = null;
-
-    // to store curve Path points { x , y } or sampaling points on curve
-    (this.#curvePoints as any) = null;
-
-    // object to store Initial Geometry of Animation Shape in the transformed state
-    (this.#initialGeometry as any) = null;
-    // as Geometry & IG[T];
-
-    // object to store Initial Style of Animation Shape
-    (this.#initialStyle as any) = null;
-
-    // transformation matrix of Shape before Animation
-    (this.#Tmatrix as any) = null;
-
-    // shared matrix of the shape which represent shape Matrix and oriented bounding box matrix
-(this.#sharedSMatrix as any) = null;
-
-    // progress represent how much animation completed from 0 to 1
-    (this.#progress as any) = null;
-
-    //when direction is alternate then for handling ping pong motion
-    (this.#reverseCycle as any) = null;
-
-    // shape store which class Object is Going to animate
-    (this.#shape as any) = null;
-
-    // start time is time whem animation stared
-    (this.#startTime as any) = null;
-
-    // ellipse time is time that shows how much time passed from animation start
-    (this.#elapsedTime as any) = null;
-
-    // total time is time that which animation going to take time
-    (this.#totalTime as any) = null;
-
-    // it holds animation state like animation is going on or stoped
-    (this.#animationState as any) = null;
-
-    // it tells animation allready available or not to --- avoid multiple animations can not run on same shape at same time ---
-    (this.#isAnimation as any) = null;
-
-    // object to final Initial Geometry of Animation Shape in the transformed state
-    (this.#finalGeometry as any) = null;
-
-    // object to store final Style of Animation Shape
-    (this.#finalStyle as any) = null;
-
-    // object to store all advance properties about animation given by user and provide by default options
-    (this.#advInfo as any) = null;
-
-    // it store easing Function according to user values
-    (this.#easingFunction as any) = null;
-
-    // it store on Complete Function which is going to run after Animation 100% completed
-    (this.#onComplete as any) = null;
-
-    // it store next animation frame Id for easy handaling
-    (this.#animationFrameId as any) = null;
-
-    // it store cleanUp Function to clean animator mess after animation completion
-    (this.#cleanUp as any) = null;
-
-    // it checks is user given animatableProps consists transform directly.
-    (this.#isTranslation as any) = null;
-
-    // it store completion Promise , in case animation pause or played cases
-    (this.#completionPromise as any) = null;
-
-    // it store completion Resolve Function , in case animation pause or played cases
-    (this.#completionResolve as any) = null;
-
-    (this.#interpolateFunction as any) = null;
-
-    (this.#preComputeFranesOrPolynomial as any) = null;
-  }
-*/
 
   #resetAllStates() {
     for (const k of [
@@ -850,7 +763,8 @@ export class Animation<T extends GShpesTages> {
       ((this.#preComputeFranesOrPolynomial = fitTransformPolynomialsFast(
         this.#initialGeometry,
         this.#finalGeometry,
-        baseTransformationMatrix
+        baseTransformationMatrix,
+        this.#el.createTransformMatrix.bind(this.#el)
       )),
       (this.#interpolateFunction = transformUsingPolynomialFast));
 
@@ -898,7 +812,7 @@ export class Animation<T extends GShpesTages> {
     pivot.mode = pivot.mode as modes;
 
     // --- Get object bounding info ---
-    const N = this.#sharedSMatrix.length;
+
     const OBB = (this.#el.getBBox() as { matrix: number[][] }).matrix; // last 12 elements
 
     // --- Check if translation exists ---
@@ -1003,13 +917,13 @@ export class Animation<T extends GShpesTages> {
     // --- Get object bounding info ---
 
     const OBB = (this.#el.getBBox() as { matrix: number[][] }).matrix;
-    const [tx, ty] = this.#finalGeometry.Translate as number[];
+    const [tx, ty] = this.#finalGeometry.Translate as [number, number];
     [this.#curvePoints, this.#arcTable, this.#totalLength] =
       generateCurvePoints({
         P1: { x: 0, y: 0 },
         P2: { x: tx, y: ty },
         bend: (curve.stepness as number) * -1,
-        smoothness: curve.smoothness,
+        smoothness: curve.smoothness as number,
         curveName: curve.curvePath as CurveType,
         pointsOnly: false,
         continuous: false,
@@ -1021,53 +935,9 @@ export class Animation<T extends GShpesTages> {
     const mode =
       translateMode == 'r' || translateMode == 'relative' ? 'TL' : 'C';
 
-    /*
-    if (translateMode == 'r' || translateMode == 'relative') {
-      [p.px, p.py] = pivotSetter('TL', OBB);
-    } else if (translateMode == 'c' || translateMode == 'center') {
-      [p.px, p.py] = pivotSetter('C', OBB);
-    }
-*/
     [p.px, p.py] = pivotSetter(mode, OBB);
     this.#curveFormation(this.#elFig, this.#curvePoints, p);
-
-    /*
-    console.log(
-      ' curve point =  ',
-      this.#curvePoints,
-      this.#arcTable,
-      this.#totalLength
-    );
-		*/
   }
-
-  //+++++++++++++++++++++++++++
-  // Function to get absolute  control points of curve to create curve in between that two points
-  //+++++++++++++++++++++++++++
-  /*
-  #getControlPointsOfCurve(mode: string): { p1: Point; p2: Point } {
-    let p1: Point = { x: 0, y: 0 },
-      p2: Point = { x: 0, y: 0 };
-
-    const [tx, ty] = this.#finalGeometry.Translate as number[];
-
-    // the curve will form from 0 , 0  to the translation point which is relative to the shape
-    // the curve will form from 0 0 to the translation point  with offset of shape shape top left to shape center
-
-    (mode == 'r' || mode == 'relative' || mode == 'c' || mode == 'center') &&
-      ((p1 = {
-        x: 0,
-        y: 0
-      }),
-      // translation point where we want to translate
-      (p2 = {
-        x: tx,
-        y: ty
-      }));
-
-    return { p1, p2 };
-  }
-*/
 
   #lerpColor(p: string, o: object) {
     const isP = typeof o == 'object' && p in o;
@@ -1144,105 +1014,3 @@ export class Animation<T extends GShpesTages> {
     this.#finalGeometry.Scale[1] == 0 && (this.#finalGeometry.Scale[1] = 1);
   }
 }
-
-//++++++++++++++++++++++++++++++++++++
-// GroupAnimation Class
-// Optimized single RAF loop for multiple child shapes
-//++++++++++++++++++++++++++++++++++++
-//++++++++++ Very Important ++++++++++
-
-/*
-class GroupAnimation {
-  #children: ShapeAnimation[] = [];   // children shape animators
-  #startTime = 0;
-  #elapsedTime = 0;
-  #progress = 0;
-  #duration: number;
-  #animationState = false;
-  #animationFrameId: number | null = null;
-  #completionPromise: Promise<void> | null = null;
-  #completionResolve: (() => void) | null = null;
-
-  constructor(children: ShapeAnimation[], duration: number) {
-    this.#children = children;
-    this.#duration = duration;
-  }
-
-  //+++++++++++++++++++++++++++
-  // Start Group Animation
-  //+++++++++++++++++++++++++++
-  public start(): Promise<void> | void {
-    if (this.#animationState) return this.#completionPromise ?? Promise.resolve();
-
-    this.#startTime = performance.now();
-    this.#elapsedTime = 0;
-    this.#animationState = true;
-
-    this.#completionPromise = new Promise((resolve) => {
-      this.#completionResolve = resolve;
-    });
-
-    this.#requestNextFrame();
-
-    return this.#completionPromise;
-  }
-
-  //+++++++++++++++++++++++++++
-  // Pause Group Animation
-  //+++++++++++++++++++++++++++
-  public pause(): void {
-    if (!this.#animationState) return; // already paused
-
-    this.#elapsedTime = performance.now() - this.#startTime;
-    this.#animationState = false;
-
-    this.#animationFrameId && cancelAnimationFrame(this.#animationFrameId);
-    this.#animationFrameId = null;
-
-    // apply final transform to all children so they "freeze"
-    this.#children.forEach((c) => c['#applyFinalTransformationMatrix']?.(this.#progress));
-  }
-
-  //+++++++++++++++++++++++++++
-  // Resume Group Animation
-  //+++++++++++++++++++++++++++
-  public resume(): Promise<void> {
-    if (this.#animationState) return this.#completionPromise ?? Promise.resolve();
-
-    this.#startTime = performance.now() - this.#elapsedTime;
-    this.#animationState = true;
-
-    this.#completionPromise = new Promise((resolve) => {
-      this.#completionResolve = resolve;
-    });
-
-    this.#requestNextFrame();
-    return this.#completionPromise;
-  }
-
-  //+++++++++++++++++++++++++++
-  // Internal frame driver
-  //+++++++++++++++++++++++++++
-  #requestNextFrame() {
-    this.#animationFrameId = requestAnimationFrame(this.#update.bind(this));
-  }
-
-  #update(now: number) {
-    if (!this.#animationState) return;
-
-    this.#elapsedTime = now - this.#startTime;
-    this.#progress = Math.min(this.#elapsedTime / this.#duration, 1);
-
-    // Shared progress computed ONCE here ⬇️
-    // Then delegated to all children without re-running RAF
-    this.#children.forEach((c) => c['#applyFinalTransformationMatrix']?.(this.#progress));
-
-    if (this.#progress < 1) {
-      this.#requestNextFrame();
-    } else {
-      this.#animationState = false;
-      this.#completionResolve?.();
-    }
-  }
-}
-*/

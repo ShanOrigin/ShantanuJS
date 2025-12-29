@@ -6,7 +6,7 @@ import { createSVGElement } from '../graphics/backends/svg/core/core.js';
 import { GraphicalElement as G } from '../graphics/graphicsElement/graphicsElement.js';
 
 import { EventsSystem } from '../events/event.js';
-import { Group as GR } from '../../utils/collection/group.js';
+// import { Group as GR } from '../../utils/collection/group.js';
 import { DEV_INTERNAL_ACCESS } from '../../utils/providers/accesskeys.js';
 
 import { initRenderer } from '../graphics/backends/renderer.js';
@@ -151,7 +151,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
     }
   }
 
-  public attrs(
+  public override attrs(
     props:
       | {
           width?: number;
@@ -200,7 +200,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
         const arg = props.trim().split(' ');
 
         for (let i = 0; i < arg.length; i++) {
-          const e = arg[i].trim();
+          const e = arg[i]!.trim();
           if (e !== '') {
             const r = super.attrs(e);
             attrValue[i] =
@@ -462,10 +462,9 @@ export default class Canvas extends EventsSystem<'canvas'> {
     }
   }
 
+  /*
   #unGroupToDeleteGroup(g: GR) {
-    /* Very important
-		 *
-		 *
+
 		if (g?.geometry?.shape !== 'g') return;
      const ge = g.getElements();
     // for (let f = 0, l = ge.length - 1; f <= l; f++, l--) {
@@ -474,24 +473,31 @@ export default class Canvas extends EventsSystem<'canvas'> {
     // e2.attrs({ roleOfSVG: 'deleted' });
     //}
    g.ungroup();
-	 */
+	
   }
+	*/
+
   public clear(): this {
     try {
       // finding the GR which consists "element" based on it parent id
       // using double pointer technique to find which take less iterations then linear search
-
       const CA = this.#canvasElements;
+      /*
+
       for (let f = 0, l = CA.length - 1; f <= l; f++, l--) {
         const [fe, le] = [CA[f], CA[l]];
 
+			
         if (fe === le) {
           if (fe instanceof GR) this.#unGroupToDeleteGroup(fe);
         } else {
           if (fe instanceof GR) this.#unGroupToDeleteGroup(fe);
           if (le instanceof GR) this.#unGroupToDeleteGroup(le);
         }
+				
+
       }
+			*/
 
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
       // This code may change According to context
@@ -499,8 +505,8 @@ export default class Canvas extends EventsSystem<'canvas'> {
 
       if (this.#geometry?.context == SVG_CONTEXT) {
         for (let f = 0, l = CA.length - 1; f <= l; f++, l--) {
-          const fe = CA[f].getIFig(DEV_INTERNAL_ACCESS);
-          const le = CA[l].getIFig(DEV_INTERNAL_ACCESS);
+          const fe = CA![f]!.getIFig(DEV_INTERNAL_ACCESS);
+          const le = CA![l]!.getIFig(DEV_INTERNAL_ACCESS);
 
           if (fe && fe.parentNode === this.#fig) this.#fig.removeChild(fe);
           if (le && le.parentNode === this.#fig) this.#fig.removeChild(le);
