@@ -86,7 +86,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
         console.log('context is ', context);
         if (!this.#fig) {
           const canvas = createSVGElement(SVG_CONTEXT) as SVGSVGElement;
-          console.log(canvas);
+
           const def = createSVGElement('defs');
           canvas.appendChild(def);
           this.setIFig(DEV_INTERNAL_ACCESS, context, canvas);
@@ -97,7 +97,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
       this.#parent &&
         (this.#parent?.appendChild(this.#fig),
         (this.#parent.style.position = 'relative'));
-      console.log('applying dim to canvas ');
+
       this.attrs({
         width,
         height,
