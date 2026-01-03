@@ -177,26 +177,28 @@ export async function LineCombineTests() {
   await vTest(
     ' testing .transform() method with chained transformation and batched transformation ',
     async () => {
-      const Shape = new Shantanu.Shapes.Basic.Line(20, 160, 10, 10, {
+      const Shape = new Shantanu.Shapes.Basic.Line(20, 130, 10, 10, {
         stroke: 'rgba(78 , 30 , 190,1)',
         'stroke-width': 2
       });
       Canvas.addTo(Shape);
       await delay(time);
 
-      const Shape1 = new Shantanu.Shapes.Basic.Line(20, 160, 10, 10, {
+      const Shape1 = new Shantanu.Shapes.Basic.Line(20, 130, 10, 10, {
         stroke: 'rgba(178 , 130 , 90, 1)',
         'stroke-width': 2
       });
       Canvas.addTo(Shape1);
       await delay(time);
-      const Shape2 = new Shantanu.Shapes.Basic.Line(20, 160, 10, 10, {
-        stroke: 'rgba(78 , 130 , 90, )',
+
+      const Shape2 = new Shantanu.Shapes.Basic.Line(20, 130, 10, 10, {
+        stroke: 'rgba(78 , 130 , 90,1 )',
         'stroke-width': 2
       });
       Canvas.addTo(Shape2);
-      await delay(time);
-      const Shape3 = new Shantanu.Shapes.Basic.Line(20, 160, 10, 10, {
+      await delay(time * 3);
+
+      const Shape3 = new Shantanu.Shapes.Basic.Line(20, 130, 10, 10, {
         stroke: 'rgba(78 , 30 , 0 , 1 )',
         'stroke-width': 2
       });
@@ -218,6 +220,7 @@ export async function LineCombineTests() {
       await delay(time);
 
       Shape2.beginT(); // start batching
+
       Shape2.Scale({ sx: 1.5, sy: 1.5 });
       await delay(time);
       Shape2.transform('R(60)T(10,10,r)');
@@ -236,9 +239,15 @@ export async function LineCombineTests() {
       await delay(time);
 
       await visualTest(Canvas, Shape);
+
       await visualTest(Canvas, Shape1);
+
       await visualTest(Canvas, Shape2);
+
       await visualTest(Canvas, Shape3);
+
+      console.log('s1 ', Shape1.geometry?.transformStack);
+      console.log('s2 ', Shape2.geometry?.transformStack);
     }
   );
 

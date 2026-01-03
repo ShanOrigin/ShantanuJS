@@ -4,7 +4,6 @@ import Canvas from '../core/providers/canvas.js';
 import {
   Point,
   Line,
-  Path,
   Polyline,
   Polygon,
   Rect,
@@ -65,7 +64,6 @@ export namespace Shantanu {
   export type Point = InstanceType<typeof Shantanu.Point>;
   export type Polyline = InstanceType<typeof Shantanu.Polyline>;
   export type Polygon = InstanceType<typeof Shantanu.Polygon>;
-  //  export type Path = InstanceType<typeof Shantanu.Path>;
 
   export type Text = InstanceType<typeof Shantanu.Text>;
 }

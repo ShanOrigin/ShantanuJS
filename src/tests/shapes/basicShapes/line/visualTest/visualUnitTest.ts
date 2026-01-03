@@ -39,7 +39,6 @@ export async function LineUnitTests() {
     }, 8000);
   });
 
-  /*
   await vTest('Changing Shapes geometric propeties by  .attrs() ', async () => {
     const Shape = new Shantanu.Line(80, 40, 30, 40, {
       stroke: 'rgba(78 , 180 , 190 , 0.3)',
@@ -238,12 +237,38 @@ export async function LineUnitTests() {
         { x: -70, y: 0, tType: 'p', px: 50, py: 10 }
       ];
 
+      function getAllMethods(obj: any): string[] {
+        const methods = new Set<string>();
+        let currentObj = obj;
+
+        // Traverse the prototype chain until a certain base is reached (e.g., Object.prototype)
+        while (currentObj && currentObj !== Object.prototype) {
+          // Get all property names defined directly on the current prototype
+          const props = Object.getOwnPropertyNames(currentObj);
+
+          props.forEach((name) => {
+            // Check if the property is a function and not the 'constructor'
+            if (typeof obj[name] === 'function' && name !== 'constructor') {
+              methods.add(name);
+            }
+          });
+
+          // Move up the prototype chain
+          currentObj = Object.getPrototypeOf(currentObj);
+        }
+
+        return Array.from(methods);
+      }
+
+      console.log(getAllMethods(Shape));
+
       for (let i = 0; i < cases.length; i++) {
-        const c = cases[i];
+        const c = cases[i]!;
 
         await delay(time);
         Shape.Translate(c);
-        //console.log(Shape);
+
+        await delay(time);
         await visualTest(Canvas, Shape);
       }
     }
@@ -319,7 +344,7 @@ export async function LineUnitTests() {
     ];
 
     for (let i = 0; i < cases.length; i++) {
-      const c = cases[i];
+      const c = cases[i]!;
 
       await delay(time * 1.25);
       Shape.Rotate(c);
@@ -393,7 +418,7 @@ export async function LineUnitTests() {
     ];
 
     for (let i = 0; i < cases.length; i++) {
-      const c = cases[i];
+      const c = cases[i]!;
 
       await delay(time);
       Shape.Scale(c);
@@ -422,7 +447,7 @@ export async function LineUnitTests() {
     Canvas.addTo(Shape);
 
     for (let i = 0; i < cases.length; i++) {
-      const c = cases[i];
+      const c = cases[i]!;
 
       await delay(time);
 
@@ -468,7 +493,7 @@ export async function LineUnitTests() {
     ];
 
     for (let i = 0; i < cases.length; i++) {
-      const c = cases[i];
+      const c = cases[i]!;
 
       await delay(time);
       Shape.Skew(c);
@@ -497,7 +522,7 @@ export async function LineUnitTests() {
     Canvas.addTo(Shape);
 
     for (let i = 0; i < cases.length; i++) {
-      const c = cases[i];
+      const c = cases[i]!;
 
       await delay(time);
 
@@ -542,7 +567,7 @@ export async function LineUnitTests() {
     ];
 
     for (let i = 0; i < cases.length; i++) {
-      const c = cases[i];
+      const c = cases[i]!;
 
       await delay(time);
       Shape.Flip(c as any);
@@ -576,14 +601,13 @@ export async function LineUnitTests() {
     Canvas.addTo(Shape);
 
     for (let i = 0; i < cases.length; i++) {
-      const c = cases[i];
+      const c = cases[i]!;
 
       await delay(time);
 
       await ThrowError(() => Shape.Flip(c as any));
     }
   });
-*/
 
   // ++++++++++++ Flip End ++++++++++++++++
 }

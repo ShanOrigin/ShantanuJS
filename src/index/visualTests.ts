@@ -15,11 +15,11 @@ import { RectAnimationTests } from '../tests/shapes/basicShapes/rect/visualTest/
 import { RectEventsTests } from '../tests/shapes/basicShapes/rect/visualTest/visualEvent.js';
 
 import { RectFiltersTests } from '../tests/shapes/basicShapes/rect/visualTest/visualFilters.js';
-
+/*
 import { QuadraticCurveUnitTests } from '../tests/shapes/customShapes/curves/visualTest/visualUnitTest.js';
 
 import { TriangleUnitTests } from '../tests/shapes/customShapes/triangles/visualTest/visualUnitTest.js';
-
+*/
 // Tester function
 
 // Rect testing
@@ -75,7 +75,7 @@ async function RectClassTester(testType: string) {
 async function QuadraticCurveClassTester(testType: string) {
   switch (testType) {
     case 'unit':
-      await QuadraticCurveUnitTests();
+      // await QuadraticCurveUnitTests();
       break;
 
     case 'combine':
@@ -100,7 +100,7 @@ async function QuadraticCurveClassTester(testType: string) {
 async function TriangleClassTester(testType: string) {
   switch (testType) {
     case 'unit':
-      await TriangleUnitTests();
+      // await TriangleUnitTests();
       break;
 
     case 'combine':

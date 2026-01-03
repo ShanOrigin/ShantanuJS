@@ -1,10 +1,10 @@
+/*
 import { Shantanu as s } from './index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     try {
-      /*
- *
+
       const xyA: s.Line[] = [];
       const xyB: s.Line[] = [];
       const yzA: s.Line[] = [];
@@ -185,7 +185,7 @@ document.addEventListener('DOMContentLoaded', () => {
 			//
 			//
 		*/
-      /*
+/*
       let i = 0,
         j = 0;
       setInterval(() => {
@@ -201,16 +201,17 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }, 16.66);
 */
-      /*
+/*
       setTimeout(() => {
         yAxis.forEach((e) => {
           console.log(e);
           e.Rotate({ angle: 45, type: 'p', px: 125, py: 200 });
         });
       }, 1200);
-*/
+
     } catch (e) {
       throw e;
     }
   }, 5000);
 });
+*/

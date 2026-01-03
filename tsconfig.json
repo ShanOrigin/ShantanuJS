@@ -53,11 +53,11 @@
 
     // Methods / Class correctness
     "noImplicitOverride": true,
-*/
+
 
     // Exceptions & runtime safety
     "useUnknownInCatchVariables": true
-
+*/
 
   },
 

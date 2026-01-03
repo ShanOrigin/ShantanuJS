@@ -1,13 +1,10 @@
 import { Shantanu } from '../../../../../index/index.js';
 import {
-  visualTest,
-  vTest,
-  delay,
-  ThrowError,
-  toError
+  vTest
+  //  delay,
 } from '../../../../vTest.js';
 
-const time = 1500;
+//const time = 1000;
 // Utility function to pick a random element from an array
 const choice = function <T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -28,7 +25,7 @@ export async function LineFiltersTests() {
 
     console.log('blur filter');
 
-    shape.click((e) => {
+    shape.click(() => {
       shape.blur(Math.random());
     });
   });
@@ -42,7 +39,7 @@ export async function LineFiltersTests() {
 
     console.log('glow filter');
 
-    shape.click((e) => {
+    shape.click(() => {
       shape.glow(Math.random() * 10);
     });
   });
@@ -56,7 +53,7 @@ export async function LineFiltersTests() {
 
     console.log('glow filter');
 
-    shape.click((e) => {
+    shape.click(() => {
       const x = Math.random() * 10;
       const y = Math.random() * 10;
       console.log(' x ', x, 'y ', y);
@@ -78,7 +75,7 @@ export async function LineFiltersTests() {
     });
     Canvas.addTo(shape);
 
-    shape.click((e) => {
+    shape.click(() => {
       const x = Math.random() * 20;
       const y = Math.random() * 20;
 
@@ -100,7 +97,7 @@ export async function LineFiltersTests() {
     });
     Canvas.addTo(shape);
 
-    shape.click((e) => {
+    shape.click(() => {
       console.log(' Linear Gradiant filter');
 
       shape.linearGradient({
@@ -133,7 +130,7 @@ export async function LineFiltersTests() {
     });
     Canvas.addTo(shape);
 
-    shape.click((e) => {
+    shape.click(() => {
       console.log(' Linear Gradiant filter');
 
       // BL , BR , TL , TR
@@ -161,7 +158,7 @@ export async function LineFiltersTests() {
 
       console.log('Lightning filter');
 
-      shape.click((e) => {
+      shape.click(() => {
         shape.lightEffect({
           lightingColor: `rgb( ${Math.random() * 255} ,  ${
             Math.random() * 255
@@ -183,7 +180,7 @@ export async function LineFiltersTests() {
 
       console.log('Displacement filter test initialized');
 
-      shape.click((e) => {
+      shape.click(() => {
         shape.displacementEffect({
           detailLevel: Math.random() * 10,
           randomSeed: Math.random() * 10,
@@ -207,7 +204,7 @@ export async function LineFiltersTests() {
 
       console.log('neo outer morph  filter test initialized');
 
-      shape.click((e) => {
+      shape.click(() => {
         shape.neuMorph({
           type: 'outer',
           backgroundColor: '#e6eef6',
@@ -247,7 +244,7 @@ export async function LineFiltersTests() {
 
       console.log('neo inner morph  filter test initialized');
 
-      shape.click((e) => {
+      shape.click(() => {
         shape.neuMorph({
           type: 'inner',
           backgroundColor: '#e6eef6',
@@ -287,7 +284,7 @@ export async function LineFiltersTests() {
 
       console.log('neo full morph  filter test initialized');
 
-      shape.click((e) => {
+      shape.click(() => {
         shape.neuMorph({
           type: 'full',
           backgroundColor: '#e6eef6',
@@ -325,7 +322,7 @@ export async function LineFiltersTests() {
       });
       Canvas.addTo(shape);
 
-      shape.click((e) => {
+      shape.click(() => {
         shape.glassMorph({
           blurAmount: 0.4,
           frostOpacity: 0.7

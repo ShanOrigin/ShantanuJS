@@ -364,9 +364,7 @@ export function TransformMinix<
         (temporaryState = this.#matrixProductTxM(composedMat, false));
 
       if (callback && typeof callback === 'function') {
-        callback({
-          temporaryState
-        });
+        callback(temporaryState);
         const transform = `${a},${b},${c},${d},${e},${f}`;
         this['attrs']({ transform });
       } else {
@@ -765,6 +763,7 @@ export function TransformMinix<
         if (callback && typeof callback[0] === 'function') {
           !isBatching && this.beginT();
 
+          console.log('hi t');
           this.#applyTransformations(results, callback[0]);
 
           !isBatching && this.endT();
