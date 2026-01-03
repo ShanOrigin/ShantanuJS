@@ -1,13 +1,10 @@
 import { Shantanu } from '../../../../../index/index.js';
 import {
-  visualTest,
-  vTest,
-  delay,
-  ThrowError,
-  toError
+  vTest
+  //  delay,
 } from '../../../../vTest.js';
 
-const time = 1500;
+//const time = 1500;
 
 export async function LineEventsTests() {
   const Canvas = new Shantanu.Canvas('testing', 250, 400);
@@ -24,7 +21,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.click((e) => {
+    shape.click(() => {
       console.log('click triggered');
       shape.attrs({ stroke: 'red' });
       console.log(shape.getAllEvents());
@@ -65,7 +62,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.mouseDown((e) => {
+    shape.mouseDown(() => {
       console.log('mouseDown triggered');
       shape.attrs({ 'stroke-width': 5, stroke: 'black' });
     });
@@ -79,7 +76,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.mouseUp((e) => {
+    shape.mouseUp(() => {
       console.log('mouseUp triggered');
       shape.attrs({ stroke: 'pink' });
     });
@@ -93,7 +90,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.mouseMove((e) => {
+    shape.mouseMove(() => {
       console.log('mouseMove triggered succesfully');
       shape.attrs({ opacity: Number(Math.random().toFixed(2)) });
     });
@@ -107,7 +104,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.touchStart((e) => {
+    shape.touchStart(() => {
       console.log('touchStart triggered');
       shape.attrs({ stroke: 'lime' });
     });
@@ -121,7 +118,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.touchEnd((e) => {
+    shape.touchEnd(() => {
       console.log('touchEnd triggered');
       shape.attrs({ stroke: 'white' });
     });
@@ -135,7 +132,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.touchMove((e) => {
+    shape.touchMove(() => {
       console.log('touchMove triggered');
       shape.attrs({ x: shape.x + 5, y: shape.y + 5 });
     });
@@ -149,7 +146,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.enterMouse((e) => {
+    shape.enterMouse(() => {
       console.log('enterMouse triggered');
       shape.attrs({ stroke: 'violet' });
     });
@@ -163,7 +160,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.leaveMouse((e) => {
+    shape.leaveMouse(() => {
       console.log('leaveMouse triggered');
       shape.attrs({ stroke: 'gray' });
     });
@@ -178,11 +175,11 @@ export async function LineEventsTests() {
     Canvas.addTo(shape);
 
     shape.hover(
-      (e) => {
+      () => {
         console.log('hover enter');
         shape.attrs({ stroke: 'lightblue' });
       },
-      (e) => {
+      () => {
         console.log('hover leave');
         shape.attrs({ stroke: 'navy' });
       }
@@ -198,14 +195,14 @@ export async function LineEventsTests() {
     Canvas.addTo(shape);
 
     shape.drag(
-      (e) => {
+      () => {
         console.log('drag started');
         shape.attrs({ stroke: 'green' });
       },
-      (e) => {
+      () => {
         console.log('drag moving');
       },
-      (e) => {
+      () => {
         console.log('drag ended');
         shape.attrs({ stroke: 'olive' });
       }
@@ -214,13 +211,14 @@ export async function LineEventsTests() {
 
   // 🔹 POUNTER UP
   await vTest('Shapes.Basic.Line pointer up  event', async () => {
-    const shape = new Shantanu.Shapes.Basic.Line(20, 170, 40, 40, {
-      stroke: 'rgb(70,24,102)',
+    const shape = new Shantanu.Shapes.Basic.Line(120, 120, 40, 40, {
+      stroke: 'rgb(56 , 24 , 80)',
       'stroke-width': 4
     });
+
     Canvas.addTo(shape);
 
-    shape.pointerup((e) => {
+    shape.pointerup(() => {
       console.log('pointer up triggered');
       shape.attrs({ stroke: 'rgb(167,10,23)' });
     });
@@ -234,7 +232,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.pointerdown((e) => {
+    shape.pointerdown(() => {
       console.log('pointer down triggered');
       shape.attrs({ stroke: 'rgb(17,10,23)' });
     });
@@ -248,7 +246,7 @@ export async function LineEventsTests() {
     });
     Canvas.addTo(shape);
 
-    shape.pointermove((e) => {
+    shape.pointermove(() => {
       console.log('pointer move triggered');
       shape.attrs({ stroke: 'rgb(217,100,23)' });
     });

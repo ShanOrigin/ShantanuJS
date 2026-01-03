@@ -31,6 +31,10 @@ type SupportedEvents =
 export abstract class EventsSystem<
   T extends GShpesTages
 > extends GraphicalElement<T> {
+  // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+  //  This entire class code may change According to context in future
+  // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
   #listener: {
     type: SupportedEvents;
@@ -87,6 +91,7 @@ export abstract class EventsSystem<
       ...listenerOptions
     } = props;
 
+    this.#fig = this.getIFig(DEV_INTERNAL_ACCESS);
     if (!this.#fig) return;
 
     const handler = (e: Event) => {
@@ -115,6 +120,7 @@ export abstract class EventsSystem<
   }
 
   #removeEvent(type: SupportedEvents, uid: string = 'default'): void {
+    this.#fig = this.getIFig(DEV_INTERNAL_ACCESS);
     if (this.#fig) {
       const existing = this.#listener.find(
         (l) => l.type === type && l.uid === uid
@@ -319,10 +325,11 @@ export abstract class EventsSystem<
     props: CustomEventOptions = {},
     uid = 'default'
   ) {
+    this.#addEvent('pointerdown', callback, props, uid);
+
     this.#fig.style.touchAction = 'none';
     props['preventDefault'] = true;
     this.#fig.setAttribute('pointer-events', 'all');
-    this.#addEvent('pointerdown', callback, props, uid);
   }
 
   public pointermove(
@@ -330,10 +337,10 @@ export abstract class EventsSystem<
     props: CustomEventOptions = {},
     uid = 'default'
   ) {
+    this.#addEvent('pointermove', callback, props, uid);
     props['preventDefault'] = true;
     this.#fig.style.touchAction = 'none';
     this.#fig.setAttribute('pointer-events', 'all');
-    this.#addEvent('pointermove', callback, props, uid);
   }
 
   public pointerup(
@@ -341,10 +348,11 @@ export abstract class EventsSystem<
     props: CustomEventOptions = {},
     uid = 'default'
   ) {
+    this.#addEvent('pointerup', callback, props, uid);
     this.#fig.style.touchAction = 'none';
+
     props['preventDefault'] = true;
     this.#fig.setAttribute('pointer-events', 'all');
-    this.#addEvent('pointerup', callback, props, uid);
   }
 
   public unpointerdown(uid: string = 'default') {
