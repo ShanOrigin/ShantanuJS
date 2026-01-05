@@ -5,6 +5,7 @@ import {
   type GShpesTages
 } from '../graphics/graphicsElement/graphicsElement.js';
 
+import type { iShape } from '../../shapes/provider/shapesTypes';
 /**
  * Engine
  * -------
@@ -18,10 +19,10 @@ import {
  * The Engine only manages timing, looping, and coordination.
  */
 
-type AllowedShapesTypes = Array<GraphicalElement<GShpesTages>>;
+//type iShape = Array<GraphicalElement<GShpesTages>>;
 export class Engine {
   /** @type {Array} */
-  #shapes: AllowedShapesTypes = [];
+  #shapes: iShape[] = [];
 
   /** @type {Renderer} */
   #renderer: Renderer;
@@ -37,7 +38,7 @@ export class Engine {
    * @param {Array} shapes - Array reference to all Shapes in the Canvas Stack.
    * @param {Renderer} renderer - The active Renderer (SVGRenderer, CanvasRenderer, etc.).
    */
-  constructor(shapes: AllowedShapesTypes, renderer: Renderer) {
+  constructor(shapes: iShape[], renderer: Renderer) {
     this.#shapes = shapes;
     this.#renderer = renderer;
     this.#running = false;
@@ -82,17 +83,13 @@ export class Engine {
     time;
     for (let i = 0; i < len; i++) {
       const shape = this.#shapes[i];
-      /*
-      if (shape.animation !== null && shape.animation !== undefined) {
-        shape.animation.update(time);
-      }
-			*/
 
       if (!(shape instanceof GraphicalElement))
         throw new Error(
           'Given Shape is not Renderable: necessary parameters are not provided'
         );
-
+      i;
+      shape.updateAnimation(DEV_INTERNAL_ACCESS, time);
       // get geometry/style/DOM handle
       const geoRef = shape.getIGeo(DEV_INTERNAL_ACCESS) as Partial<{
         dirty: boolean;

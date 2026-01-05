@@ -19,18 +19,16 @@ import {
 } from '../graphics/backends/svg/core/core.js';
 
 import type { CONTEXT } from '../../types/graphicsElements';
-
+import { iShape } from '../../shapes/provider/shapesTypes';
 type shapeType = keyof IG;
 
 type GType = G<shapeType>;
-
-type allowedShapes = GType;
 
 declare const __SHANTANU_DEV__: boolean;
 
 export default class Canvas extends EventsSystem<'canvas'> {
   #parent: HTMLElement | null; // Accept all valid SVG types generically
-  #canvasElements: Array<allowedShapes> = [];
+  #canvasElements: Array<iShape> = [];
   #renderer!: Renderer;
   #engine!: Engine;
   #fig = this.getIFig(DEV_INTERNAL_ACCESS);
@@ -219,7 +217,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
     }
   }
 
-  public contain(shape: allowedShapes): boolean {
+  public contain(shape: iShape): boolean {
     let isInDOM = false;
 
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -251,7 +249,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
     return isInDOM && isInCanvas;
   }
 
-  public addTo(...rest: allowedShapes[]): this {
+  public addTo(...rest: iShape[]): this {
     if (!this.#fig)
       throw new Error(
         `Canvas is not initialized or may have been deleted: ${this.#fig}`
@@ -296,7 +294,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
 	 *
 	 *
 	 *
-  #removeSameElementFromContainingGR(element: allowedShapes) {
+  #removeSameElementFromContainingGR(element: iShape) {
     const parentId = (
       element.getIFig(DEV_INTERNAL_ACCESS).parentNode as HTMLElement
     ).getAttribute('id');
@@ -373,7 +371,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
 
 	*/
 
-  public remove(...elements: allowedShapes[]): this {
+  public remove(...elements: iShape[]): this {
     try {
       /*
 			 remove(element):
@@ -519,7 +517,7 @@ export default class Canvas extends EventsSystem<'canvas'> {
     }
   }
 
-  public getAllElements(): Array<allowedShapes> {
+  public getAllElements(): Array<iShape> {
     try {
       return this.#canvasElements;
     } catch (e) {

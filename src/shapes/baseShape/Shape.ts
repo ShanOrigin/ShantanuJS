@@ -61,7 +61,7 @@ export abstract class Shape<T extends GShpesTages> extends TransformMinix(
 )<T> {
   #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
-  //#Animations!: Animation<T>[]; // for timeline support but not implementated yet
+  #Animation!: Animation<T> | null; // for timeline support but not implementated yet
   #isAnimations: boolean = false; // animation control to avoid multiple animation do not run at same time
 
   #classProp: {
@@ -162,10 +162,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
     // create world view parameters of local geometry and reflects that new world view parameters in Actual current state of this shape geometry which are current parameters of shape.
 
     // console.log('updatedBuffer = ', updatedBuffer);
-    this.#restore({
-      temporaryState: updatedBuffer,
-      isEffect: true
-    });
+    this.#restore(updatedBuffer);
 
     // apply or add user given parameters to world view parameters .
     applyUserParams({ ...userParams, transform: '' });
@@ -344,14 +341,8 @@ Description : taking original shape data ( which is local geometry ) and then ap
     ) as number[][];
   }
 
-  #restore({
-    temporaryState,
-    isEffect
-  }: {
-    temporaryState: Float32Array;
-    isEffect: boolean;
-  }) {
-    isEffect && this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
+  #restore(temporaryState: Float32Array) {
+    this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
   }
 
   //++++++++++++++++++++++++++++++++++++++++++++
@@ -547,52 +538,84 @@ Description : taking original shape data ( which is local geometry ) and then ap
   }
 
   public animate(
-    attrs: animatableProps & IG['rect'],
+    attrs: animatableProps & IG[T],
     avdProp: IadvanceProps | null,
     duration: number,
     ease: EasingFunction | EasingType | null = null,
     onComplete: Function | null = null
-  ): void | Promise<void> {
-    this.#preChecks('', 1, 1);
-    animationChecks(attrs, avdProp, duration, ease, onComplete);
+  ): void {
+    if (!this.#Animation) {
+      this.#preChecks('', 1, 1);
+      animationChecks(attrs, avdProp, duration, ease, onComplete);
 
-    const animation = new Animation<'rect'>(
-      this,
-      this.#isAnimationsGoingOn.bind(this),
-      function () {}
-    );
-    return animation.animate(attrs, avdProp, duration, ease, onComplete, true);
+      this.#Animation = new Animation<T>(
+        this,
+        this.#isAnimationsGoingOn.bind(this),
+        () => {
+          this.#Animation = null;
+          this.#isAnimations = false;
+        }
+      );
+
+      this.#Animation.animate(attrs, avdProp, duration, ease, onComplete, true);
+    } else {
+      cwarn(
+        'Animation is already going on this shape , please wait untill animation finish.'
+      );
+    }
   }
 
-  public animatia(
-    attrs: animatableProps & IG['rect'],
+  public animation(
+    attrs: animatableProps & IG[T],
     avdProp: IadvanceProps | null,
     duration: number,
     ease: EasingFunction | EasingType | null = null,
     onComplete: Function | null = null
   ): {
-    start: () => void | Promise<void>;
+    start: () => void;
     pause: () => void;
-    resume: () => Promise<void>;
+    resume: () => void;
     isPaused: () => boolean;
     isRunning: () => boolean;
+    cancelAnimation: () => void;
   } {
-    this.#preChecks('', 1, 1);
-    animationChecks(attrs, avdProp, duration, ease, onComplete);
-    const animation = new Animation<'rect'>(
-      this,
-      this.#isAnimationsGoingOn.bind(this),
-      function () {}
-    );
-    animation.animate(attrs, avdProp, duration, ease, onComplete, false);
+    if (!this.#Animation) {
+      this.#preChecks('', 1, 1);
+      animationChecks(attrs, avdProp, duration, ease, onComplete);
+
+      this.#Animation = new Animation<T>(
+        this,
+        this.#isAnimationsGoingOn.bind(this),
+        () => {
+          this.#Animation = null;
+          this.#isAnimations = false;
+        }
+      );
+
+      this.#Animation.animate(attrs, avdProp, duration, ease, onComplete, true);
+    } else {
+      cwarn(
+        'Animation is already going on this shape , please wait untill animation finish or cancel the animation.'
+      );
+    }
 
     return {
-      start: animation.start.bind(animation),
-      pause: animation.pause.bind(animation),
-      resume: animation.resume.bind(animation),
-      isPaused: animation.isPaused.bind(animation),
-      isRunning: animation.isRunning.bind(animation)
+      start: this.#Animation.start.bind(this.#Animation),
+      pause: this.#Animation.pause.bind(this.#Animation),
+      resume: this.#Animation.resume.bind(this.#Animation),
+      isPaused: this.#Animation.isPaused.bind(this.#Animation),
+      isRunning: this.#Animation.isRunning.bind(this.#Animation),
+      cancelAnimation: this.#Animation.cancelAnimation.bind(this.#Animation)
     };
+  }
+
+  /**
+   * updateAnimation
+   */
+  public updateAnimation(key: symbol, time: number) {
+    assertAccess(key);
+
+    this.#Animation && this.#isAnimations && this.#Animation.update(time);
   }
 
   //++++++++++++++++++++++++++++++++++++++++++++

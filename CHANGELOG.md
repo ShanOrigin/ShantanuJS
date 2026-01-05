@@ -566,3 +566,20 @@ Notes:
 -  Prevented divergence between logical and visual transformations 
 -  Strengthened architectural correctness by removing speculative design
 
+[2026-01-05 | Monday | 21:07] [Animations / Engine / Canvas / Shapes | 3d] Refactored and stabilized the animation module to support enough the multi-backend architecture and in future may be rewriting needed. Added comprehensive internal documentation across the animation system, including detailed explanations for classes, methods, variables, lifecycle, and internal execution flow. Modified animation logic to ensure correctness, consistency, and predictable state transitions across backends. Updated the Engine to introduce proper guards and a dedicated animation update-checking function, invoked on every frame to ensure animations are advanced safely and only when valid. Integrated animation update handling into the main engine loop with explicit validation. Updated the Canvas core to align animation execution with engine-driven rendering. Enhanced the base Shape class by adding a controlled animation update interface with strict internal-access assertions, preventing improper usage from public APIs. Refactored multiple animation-related behaviors in shapes to improve correctness, encapsulation, and synchronization with the engine animation pipeline.
+Notes:
+- Refactored animation module for multi-backend compatibility 
+-  Added detailed internal documentation for animation lifecycle and internals 
+-  Clarified responsibilities of animation classes and methods 
+-  Introduced strict guards to prevent invalid animation updates 
+-  Centralized animation update checks within the Engine loop 
+-  Ensured animation updates are executed per-frame in a controlled manner 
+-  Improved Engine–Animation integration and execution order 
+-  Updated Canvas to align with engine-managed animation flow 
+-  Added internal-only animation update API in base Shape class 
+-  Enforced access assertions to prevent misuse of animation internals 
+-  Refined animation state handling within shapes 
+-  Reduced undefined and invalid animation states 
+-  Improved maintainability and debuggability of animation system 
+-  Strengthened architectural separation between public API and internal animation control
+
