@@ -24,18 +24,14 @@ export async function LineAnimationTests() {
   await vTest(
     ' testing manual chained ,  batched transformations and .attrs() method on Different shape    s   ',
     async () => {
+      /*
       // 1. Basic attribute animation
       const line1 = new Shantanu.Shapes.Basic.Line(20, 20, 50, 20, {
         stroke: 'red',
         'stroke-width': 2
       });
       Canvas.addTo(line1);
-      await line1.animate(
-        { stroke: 'blue', 'stroke-width': 5 },
-        null,
-        500,
-        'linear'
-      );
+      line1.animate({ stroke: 'blue', 'stroke-width': 5 }, null, 500, 'linear');
       await delay(time);
     }
   );
@@ -52,7 +48,7 @@ export async function LineAnimationTests() {
   });
   Canvas.addTo(line21);
 
-  await line2.animate(
+  line2.animate(
     { translate: { x: 50, y: 40 } },
     {
       controls: { optimizationTechnique: 'preComputeFrames' },
@@ -78,7 +74,7 @@ export async function LineAnimationTests() {
   });
   Canvas.addTo(line31);
 
-  await line3.animate(
+  line3.animate(
     { translate: { x: 50, y: 40 }, skew: { sx: 15 } },
     {
       physics: { physicsMotion: false },
@@ -86,62 +82,65 @@ export async function LineAnimationTests() {
       controls: { optimizationTechnique: 'preComputeFrames' },
       pivot: { skewPivot: 'TL' }
     },
-    800,
+    2000,
     'easeInBounce'
   );
-  await delay(time);
+  await delay(time * 3);
 
-  await delay(time);
   line31
     .beginT()
 
     .Translate({ x: 50, y: 40, tType: 'r' })
-    .Skew({ sx: 15, sy: 0, tType: 'p', px: 20, py: 20 })
+    .Skew({ sx: 15, sy: 0, tType: 'p', px: 19, py: 19 })
     .endT();
 
-  /*
+  const rect21 = new Shantanu.Shapes.Basic.Line(20, 40, 20, 20, {
+    stroke: 'rgb(90, 160 , 50)',
+    'stroke-width': 2
+  });
+  Canvas.addTo(rect21);
+  rect21.animate(
+    { translate: { x: 50, y: 40 }, rotate: { angle: 360 } },
+    {
+      curve: {
+        curvePathMotion: true,
+        curvePath: 'quadratic',
+        stepness: 0.9
+      },
+      pivot: { rotatePivot: [20, 20] }
+    },
+    3500,
+    'easeInOutBounce'
+  );
+  await delay(time);
 
-      const rect21 = new Shantanu.Shapes.Basic.Line(20, 40, 20, 20, {
-        stroke: 'rgb(90, 160 , 50)'
-      });
-      Canvas.addTo(rect21);
-      await rect21.animate(
-        { translate: { x: 70, y: 40 }, rotate: { angle: 360 } },
-        {
-          curve: {
-            curvePathMotion: true,
-            curvePath: 'quadratic',
-            stepness: 0.9
-          },
-          pivot: { rotatePivot: [20, 20] }
-        },
-        800,
-        'easeInOutBounce'
-      );
-      await delay(time);
-
+	*/
+      /*
       const rect22 = new Shantanu.Shapes.Basic.Line(20, 40, 20, 20, {
-        stroke: 'rgb(230 , 70 , 50)'
+        stroke: 'rgb(230 , 70 , 50)',
+        'stroke-width': 2
       });
       Canvas.addTo(rect22);
-      await rect22.animate(
-        { width: 30, height: 30, opacity: 0.4, translate: { x: 70, y: 40 } },
+      await delay(time);
+      rect22.animate(
+        { translate: { x: 70, y: 70 } },
         {
           curve: { curvePathMotion: true, curvePath: 'arc', stepness: 0.7 },
           pivot: { scalePivot: 'C' },
-          physics: { physicsMotion: true }
+          physics: { physicsMotion: true, speed: 0.2 }
         },
-        800,
+        3000,
         'easeOutBounce'
       );
-      await delay(time);
+      await delay(time * 4);
 
       const rect23 = new Shantanu.Shapes.Basic.Line(20, 40, 20, 20, {
-        stroke: 'rgb(230 , 120 , 50)'
+        stroke: 'rgb(230 , 120 , 50)',
+        'stroke-width': 2
       });
       Canvas.addTo(rect23);
-      await rect23.animate(
-        { translate: { x: 70, y: 40 } },
+      rect23.animate(
+        { x2: 40, translate: { x: 0, y: 70 } },
         {
           curve: { curvePathMotion: true, curvePath: 'earc', stepness: 1.7 },
           pivot: { scalePivot: 'C' },
@@ -150,20 +149,26 @@ export async function LineAnimationTests() {
             optimizationTechnique: 'preComputeFrames'
           }
         },
-        800,
+        1400,
         'easeOutBounce'
       );
       await delay(time);
-
+*/
       // 3. Scale with pivot
-      const rect3 = new Shantanu.Shapes.Basic.Line(20, 80, 10, 15, { stroke: 'orange' });
+      const rect3 = new Shantanu.Shapes.Basic.Line(20, 80, 20, 100, {
+        stroke: 'orange',
+        'stroke-width': 2
+      });
       Canvas.addTo(rect3);
-      await rect3.animate(
+      await delay(time);
+      rect3.animate(
         { scale: { sx: 3, sy: 2 } },
         { pivot: { scalePivot: 'BR' } },
         1000,
         'easeOutBounce'
       );
+
+      /*
       await delay(time);
       // 4. Rotate
       const rect4 = new Shantanu.Shapes.Basic.Line(60, 80, 30, 30, { stroke: 'purple' });
@@ -278,7 +283,7 @@ export async function LineAnimationTests() {
 
       console.log(a1, a2);
       Promise.all([a1.start(), a2.start()]);
+			*/
     }
   );
-	*/
 }

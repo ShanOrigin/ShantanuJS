@@ -148,5 +148,5 @@ async function Tester(classes: string, types: string) {
 
 setTimeout(async () => {
   console.log('line unit test');
-  await Tester('line', 'unit');
+  await Tester('line', 'animation');
 }, 5000);
