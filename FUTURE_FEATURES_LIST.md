@@ -18,6 +18,194 @@ MAY BE / NO GUARANTEED FEATURES :
          - minimum area rect for hit testing.
 
 
+/**
+ * ---------------------------------------------------------
+ * Anchor support (planned for v1.5 / v2)
+ * ---------------------------------------------------------
+ *
+ * Anchors will be resolved relative to the OBB (oriented
+ * bounding box) of the shape.
+ *
+ * Anchor resolution is only applied when `tType === 'p'`
+ * (pivot mode). All anchors ultimately resolve to a concrete
+ * pivot point `(px, py)` in absolute coordinates.
+ */
+
+/**
+ * AnchorType defines semantic pivot selectors.
+ *
+ * All string-based anchors are case-insensitive.
+ * Examples:
+ *   'c', 'C', 'center'
+ *   'rm', 'RIGHT-MID'
+ *   'top-left', 'TL'
+ */
+type AnchorType =
+  | 'tl' | 'top-left'
+  | 'tm' | 'top-mid'
+  | 'tr' | 'top-right'
+
+  | 'rm' | 'right-mid'
+
+  | 'br' | 'bottom-right'
+  | 'bm' | 'bottom-mid'
+  | 'bl' | 'bottom-left'
+
+  | 'lm' | 'left-mid'
+
+  | 'c'  | 'center'
+
+  /**
+   * Normalized anchor expressed as a relative point
+   * inside the shape's OBB.
+   *
+   * The values are normalized in the range [0, 1]:
+   *   x = 0 → left edge
+   *   x = 1 → right edge
+   *   y = 0 → top edge
+   *   y = 1 → bottom edge
+   *
+   * Example:
+   *   { x: 0.4, y: 0.6 }
+   *
+   * This resolves to:
+   *   px = obb.x + 0.4 * obb.width
+   *   py = obb.y + 0.6 * obb.height
+   */
+  | { x: number; y: number };
+
+
+/**
+ * ---------------------------------------------------------
+ * Pivot resolution model
+ * ---------------------------------------------------------
+ *
+ * All anchors (string-based or object-based) are internally
+ * converted to a normalized `{ x, y }` form.
+ *
+ * A single pivot resolver maps normalized coordinates to
+ * absolute `(px, py)` using the OBB.
+ *
+ * Example:
+ *
+ *   OBB:
+ *     x      = 50
+ *     y      = 50
+ *     width  = 100
+ *     height = 100
+ *
+ *   Anchor:
+ *     { x: 0.4, y: 0.4 }
+ *
+ *   Resolution:
+ *     px = 50 + 0.4 * 100 = 90
+ *     py = 50 + 0.4 * 100 = 90
+ */
+
+
+/**
+ * ---------------------------------------------------------
+ * Core transform metadata
+ * ---------------------------------------------------------
+ */
+interface BaseTransformMeta {
+  /**
+   * Transformation space:
+   *   'r' → relative (canvas space)
+   *   'a' → absolute (shape-local default)
+   *   'p' → pivot-based
+   */
+  tType?: 'r' | 'a' | 'p';
+
+  /**
+   * Semantic anchor used to compute pivot.
+   *
+   * Valid only when `tType === 'p'`.
+   * All anchors are resolved relative to the shape's OBB.
+   */
+  anchor?: AnchorType;
+
+  /**
+   * Absolute, fully resolved pivot coordinates.
+   *
+   * When provided, `px` / `py` override `anchor`.
+   */
+  px?: number;
+  py?: number;
+
+  /**
+   * Optional lifecycle callback.
+   */
+  callback?: Function;
+}
+
+
+
+
+/**
+ * ---------------------------------------------------------
+ * Canonical anchor mapping
+ * ---------------------------------------------------------
+ *
+ * All string-based anchors are mapped to normalized
+ * `{ x, y }` coordinates relative to the shape's OBB.
+ *
+ * These values are geometry-agnostic and are later resolved
+ * to absolute `(px, py)` using the OBB dimensions.
+ *
+ * NOTE:
+ * - Keys are expected to be normalized (lowercase, trimmed)
+ *   before lookup.
+ * - Case-insensitivity is handled outside this map.
+ */
+const ANCHOR_MAP: Record<string, { x: number; y: number }> = {
+  // Top row
+  'tl':         { x: 0.0, y: 0.0 },
+  'top-left':   { x: 0.0, y: 0.0 },
+
+  'tm':         { x: 0.5, y: 0.0 },
+  'top-mid':    { x: 0.5, y: 0.0 },
+
+  'tr':         { x: 1.0, y: 0.0 },
+  'top-right':  { x: 1.0, y: 0.0 },
+
+  // Middle row
+  'lm':         { x: 0.0, y: 0.5 },
+  'left-mid':   { x: 0.0, y: 0.5 },
+
+  'c':          { x: 0.5, y: 0.5 },
+  'center':     { x: 0.5, y: 0.5 },
+
+  'rm':         { x: 1.0, y: 0.5 },
+  'right-mid':  { x: 1.0, y: 0.5 },
+
+  // Bottom row
+  'bl':         { x: 0.0, y: 1.0 },
+  'bottom-left':{ x: 0.0, y: 1.0 },
+
+  'bm':         { x: 0.5, y: 1.0 },
+  'bottom-mid': { x: 0.5, y: 1.0 },
+
+  'br':         { x: 1.0, y: 1.0 },
+  'bottom-right':{ x: 1.0, y: 1.0 }
+};
+
+
+function resolveAnchor(
+  anchor: AnchorType,
+  obb: { x: number; y: number; width: number; height: number }
+): { px: number; py: number } {
+  const norm =
+    typeof anchor === 'string'
+      ? ANCHOR_MAP[normalize(anchor)]
+      : anchor;
+
+  return {
+    px: obb.x + norm.x * obb.width,
+    py: obb.y + norm.y * obb.height
+  };
+}
+
 
 
 

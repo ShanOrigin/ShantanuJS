@@ -32,6 +32,26 @@ For me, ShantanuJS/TS isn’t just a library — it’s proof that imagination, 
 
 ================================================================================
 
+====================
+### Philosophy
+====================
+
+This library is built on the philosophy of explicit control with deterministic defaults: what you specify is applied exactly, what you omit follows documented defaults, and invalid semantic input fails fast.
+
+# "Explicit Control with Deterministic Defaults”
+This is the most accurate, technically honest name for your approach.
+
+# Explicit Control
+If the user specifies something, it is applied exactly as given.
+No guessing. No silent reinterpretation.
+
+# Deterministic Defaults
+If the user omits something, the system applies a documented, fixed default.
+Not heuristics. Not intent inference. Always the same result.
+
+
+
+
 # AUTHOR:
    🔹Created solely by **Shantanu Suryawanshi**.
    🔹This library is **100% a solo project**. No tutors, guides, or external developers involved.
