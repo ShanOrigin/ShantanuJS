@@ -1659,16 +1659,12 @@ export class Animation<T extends GShpesTages> {
     // +++++++++++++++++++++++++++
     // need to delete transformation stacks last transform which is added by pause() method of animation
 
-		const geo = this.#el.getIGeo(DEV_INTERNAL_ACCESS) ;
-		if (!geo) {
-		  throw new Error("geometry is undefined");
-		  
-		}
-    const tStack =	geo.transformStack as transformStack ;
-		tStack.stack.pop();
-
-		}
-
+    const geo = this.#el.getIGeo(DEV_INTERNAL_ACCESS);
+    if (!geo) {
+      throw new Error('geometry is undefined');
+    }
+    const tStack = geo.transformStack as transformStack;
+    tStack.stack.pop();
   }
 
   /**
