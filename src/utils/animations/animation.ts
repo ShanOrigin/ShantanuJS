@@ -2632,7 +2632,7 @@ export class Animation<T extends GShpesTages> {
      * OBB is treated as read-only input data.
      */
     const OBB = (
-      this.#el.getBBox() as {
+      this.#el.getBBox(false) as {
         matrix: number[][];
       }
     ).matrix;
