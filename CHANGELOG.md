@@ -587,3 +587,16 @@ Notes:
 Notes:
 - base line version for other branches
 
+[2026-01-10 | Saturday | 23:42] [Errors | 1d] Introduced a structured, domain-driven error system to standardize error handling across the library. Established a core error hierarchy with a shared ShantanuJSError base class, centralized diagnostics support via ErrorContext, and clear separation between configuration, state, internal, and usage errors. Added domain-specific error namespaces (animation, backend, canvas, geometry, transformation, etc.) to enable precise and scalable error modeling. Currently, UsageError is actively used, while other core and domain error classes are intentionally scaffolded for future enforcement as the system evolves. This change lays the foundation for consistent, explicit, and debuggable error handling across all modules.
+Notes:
+- Introduced centralized ShantanuJSError base class 
+-  Added ErrorContext for diagnostics and contextual debugging 
+-  Defined core error categories (configuration, state, internal, usage) 
+-  Established domain-specific error namespaces 
+-  Added geometry-specific errors for value validation 
+-  Added backend-specific errors for unsupported configurations 
+-  Prepared error infrastructure for future enforcement 
+-  Kept unused error classes intentionally scaffolded 
+-  Improved long-term debuggability and error consistency 
+-  Established a scalable error-handling architecture
+
