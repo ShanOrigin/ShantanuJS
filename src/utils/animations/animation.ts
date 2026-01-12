@@ -2258,7 +2258,7 @@ export class Animation<T extends GShpesTages> {
     ease: EasingType | Function | null = 'linear',
     onComplate: Function | null = null,
     start: boolean = true
-  ): void | Promise<void> {
+  ): void {
     // ------------------------------------------------------------------
     // STEP 1: Handle and normalize basic animation parameters
     // ------------------------------------------------------------------
@@ -2632,7 +2632,7 @@ export class Animation<T extends GShpesTages> {
      * OBB is treated as read-only input data.
      */
     const OBB = (
-      this.#el.getBBox() as {
+      this.#el.getBBox(false) as {
         matrix: number[][];
       }
     ).matrix;
@@ -2948,13 +2948,12 @@ export class Animation<T extends GShpesTages> {
      * This ensures the curve is spatially aligned
      * with the chosen translation semantics.
      */
-    const mode =
-      translateMode == 'r' || translateMode == 'relative' ? 'TL' : 'C';
 
-    /**
-     * Resolve pivot coordinates from bounding box.
-     */
-    [p.px, p.py] = pivotSetter(mode, OBB);
+    const m = this.#el.getIGeo(DEV_INTERNAL_ACCESS)?.buffer as Float32Array;
+    [p.px, p.py] =
+      translateMode == 'r' || translateMode == 'relative'
+        ? [m[0], m[1]]
+        : pivotSetter('C', OBB);
 
     /**
      * Apply curve formation logic.
