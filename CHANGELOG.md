@@ -600,3 +600,17 @@ Notes:
 -  Improved long-term debuggability and error consistency 
 -  Established a scalable error-handling architecture
 
+[2026-01-12 | Monday | 14:06] [Utils / Errors / Diagnostics | 1d] Introduced a comprehensive, domain-driven error system under src/utils/errors to standardize error handling across the entire library. Designed a clear core error hierarchy with ShantanuJSError as the base, supported by ConfigurationError, StateError, InternalError, and UsageError, along with centralized diagnostic support via ErrorContext. Added well-scoped, domain-specific error classes for animation, backend, canvas, collection, color, common options, curves, geometry, and transformations to explicitly model all expected failure scenarios. Implemented provider-level error aggregation via shantanuJSErrors for consistent exports. Added detailed documentation comments for each error class to clearly describe intent, usage context, and failure semantics. This establishes a scalable and explicit error-handling foundation for future enforcement across all modules.
+Notes:
+- Introduced centralized error infrastructure under utils 
+-  Added ShantanuJSError base class for all errors 
+-  Implemented ErrorContext for diagnostic metadata 
+-  Defined core error categories for configuration, state, internal, and usage failures 
+-  Added domain-specific error classes across animation, backend, canvas, geometry, transformation, and more 
+-  Modeled explicit failure cases instead of generic runtime errors 
+-  Added provider-level error exports for consistency 
+-  Documented all error classes with clear intent and usage guidance 
+-  Prepared error system for gradual adoption and enforcement 
+-  Improved debuggability and long-term maintainability 
+-  Established a scalable, domain-aware error-handling architecture
+
