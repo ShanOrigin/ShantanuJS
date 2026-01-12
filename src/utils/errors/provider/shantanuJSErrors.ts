@@ -1,0 +1,40 @@
+import { NegativeValueError } from '../domains/geometry/NegativeValueError.js';
+import { OutOfRangeError } from '../domains/geometry/OutOfRangeError.js';
+
+import { InvalidOptionError } from '../domains/common/InvalidOptionError.js';
+import { TypeMismatchError } from '../domains/common/TypeMismatchError.js';
+
+import { CanvasParentNotFoundError } from '../domains/canvas/CanvasParentNotFoundError.js';
+import { ShapeAlreadyExistsInCanvasError } from '../domains/canvas/ShapeAlreadyExistsInCanvasError.js';
+import { ShapeNotAttachedToCanvasError } from '../domains/canvas/ShapeNotAttachedToCanvasError.js';
+
+import { MissingRequiredTransformParameterError } from '../domains/transformation/MissingRequiredTransformParameterError.js';
+
+import { MissingRequiredAnimationParameterError } from '../domains/animation/MissingRequiredAnimationParameterError.js';
+
+import { ShapeAlreadyExistsInGroupError } from '../domains/collection/ShapeAlreadyExistsInGroupError.js';
+
+import { InvalidColorFormatError } from '../domains/color/InvalidColorFormatError.js';
+import { InvalidNamedColorError } from '../domains/color/InvalidNamedColorError.js';
+
+import { MissingRequiredCurveParameterError } from '../domains/curve/MissingRequiredCurveParameterError.js';
+
+import { UnsupportedRenderingBackendError } from '../domains/backend/UnsupportedRenderingBackendError.js';
+//import {  } from "../domains/";
+
+export {
+  NegativeValueError,
+  OutOfRangeError,
+  InvalidOptionError,
+  TypeMismatchError,
+  CanvasParentNotFoundError,
+  ShapeAlreadyExistsInCanvasError,
+  ShapeNotAttachedToCanvasError,
+  MissingRequiredTransformParameterError,
+  MissingRequiredAnimationParameterError,
+  ShapeAlreadyExistsInGroupError,
+  InvalidNamedColorError,
+  InvalidColorFormatError,
+  MissingRequiredCurveParameterError,
+  UnsupportedRenderingBackendError
+};

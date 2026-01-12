@@ -32,10 +32,12 @@ import type {
  */
 
 export const CommonStyleAnimatableProperties = {
+  // common
   fill: '',
   stroke: '',
   'stroke-width': 0,
   opacity: 0,
+  // specific
   'clip-path': 0,
   'font-size': 0,
   'font-weight': 0
