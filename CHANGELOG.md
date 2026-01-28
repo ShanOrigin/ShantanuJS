@@ -614,3 +614,9 @@ Notes:
 -  Improved debuggability and long-term maintainability 
 -  Established a scalable, domain-aware error-handling architecture
 
+[2026-01-17 | Saturday | 21:07] [error / animation / testing | 1d] Added multiple different Error class for specific error in error system.Using error system in animation for proper user error handling.Testing animation module.
+Notes:
+- Added multiple different error classes in error for specific errors.
+- Inserted .js extension in lots of .ts files of error module.
+- Using error module in animation module for user error handling.
+

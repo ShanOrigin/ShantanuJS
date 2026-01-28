@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/UsageError';
-import { ErrorContext } from '../../core/diagnostics/ErrorContext';
+import { UsageError } from '../../core/errors/UsageError.js';
+import { ErrorContext } from '../../core/diagnostics/ErrorContext.js';
 
 /**
  * Error thrown when a color value does not match any supported color format.

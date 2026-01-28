@@ -1,5 +1,5 @@
-import { ConfigurationError } from '../../core/errors/ConfigurationError';
-import { ErrorContext } from '../../core/diagnostics/ErrorContext';
+import { ConfigurationError } from '../../core/errors/ConfigurationError.js';
+import { ErrorContext } from '../../core/diagnostics/ErrorContext.js';
 
 /**
  * Error thrown when a requested rendering backend is not supported by the library.

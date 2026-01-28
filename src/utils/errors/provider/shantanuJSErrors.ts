@@ -3,6 +3,10 @@ import { OutOfRangeError } from '../domains/geometry/OutOfRangeError.js';
 
 import { InvalidOptionError } from '../domains/common/InvalidOptionError.js';
 import { TypeMismatchError } from '../domains/common/TypeMismatchError.js';
+import { InvalidArgumentError } from '../domains/common/InvalidArgumentError.js';
+import { InvalidReturnTypeError } from '../domains/common/InvalidReturnTypeError.js';
+import { OperationInProgressError } from '../domains/common/OperationInProgressError.js';
+import { InvalidFormatError } from '../domains/common/InvalidFormatError.js';
 
 import { CanvasParentNotFoundError } from '../domains/canvas/CanvasParentNotFoundError.js';
 import { ShapeAlreadyExistsInCanvasError } from '../domains/canvas/ShapeAlreadyExistsInCanvasError.js';
@@ -27,6 +31,10 @@ export {
   OutOfRangeError,
   InvalidOptionError,
   TypeMismatchError,
+  InvalidArgumentError,
+  InvalidReturnTypeError,
+  OperationInProgressError,
+  InvalidFormatError,
   CanvasParentNotFoundError,
   ShapeAlreadyExistsInCanvasError,
   ShapeNotAttachedToCanvasError,

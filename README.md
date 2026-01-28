@@ -73,7 +73,6 @@ Not heuristics. Not intent inference. Always the same result.
    🔹Planned future backend: HTML5 Canvas (guaranteed).
    🔹Possible long-term backends: PDF, WebGL, WebGPU (not guaranteed).
    🔹ZERO DEPENDENCIES: only TypeScript and WASM (C for high-performance tasks like manual matrix multiplication).
-   🔹WASM integrated with synchronous BASE64 operations for maximum graphics performance.
    🔹Written in TypeScript with 95–99% type safety.
    🔹80–90% decoupled: each module is modular and mostly independent.
    🔹Adding future backends requires minimal effort due to the decoupled architecture.
@@ -139,11 +138,6 @@ Not heuristics. Not intent inference. Always the same result.
     🔹Group + scene-level animations.  
     🔹Full **canvas-wide transformations** with a single call( may be in future ).
 
-# 🔹WebAssembly-Powered Performance
-    🔹Embedded C math engine via **synchronous WASM execution**.  
-    🔹No async setup, no boilerplate → behaves like pure TypeScript.  
-    🔹Native-speed operations inside the browser.  
-
 # 🔹Filters or Shapes or Event go through below MODULES sections 
 
 # 🔹Rendering
@@ -194,7 +188,6 @@ Not heuristics. Not intent inference. Always the same result.
 
  🔹Optimized for browser rendering using SVG APIs, replicating ~90% of the features of established 2D libraries while introducing novel capabilities and superior performance.
 
- 🔹Designed for minimal developer friction: WebAssembly is embedded directly, so the library runs synchronously like pure TypeScript code — no async setup, no extra dependencies, no boilerplate.
 
  🔹Delivered an engine that combines graphics innovation + mathematical rigor + systems-level optimization, making it both feature-rich and memory-efficient.
 

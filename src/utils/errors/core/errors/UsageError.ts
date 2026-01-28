@@ -1,5 +1,5 @@
 import { ErrorContext } from '../diagnostics/ErrorContext.js';
-import { ShantanuJSError } from './ShantanuJSError';
+import { ShantanuJSError } from './ShantanuJSError.js';
 
 /**
  * Base class for errors caused by incorrect usage of the public API.
