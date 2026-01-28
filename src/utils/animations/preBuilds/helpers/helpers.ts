@@ -6,9 +6,24 @@ import type {
   TransformGeometryWithPivot,
   EasingType,
   CurveType,
-  EasingFunction
+  EasingFunction,
+  IadvanceProps,
+  curveParams,
+  physicsParams,
+  pivotParams,
+  controlsParams
 } from '../../../../types/animation';
 
+import {
+  InvalidArgumentError,
+  InvalidOptionError,
+  InvalidReturnTypeError,
+  NegativeValueError,
+  TypeMismatchError,
+  MissingRequiredAnimationParameterError,
+  OutOfRangeError,
+  InvalidFormatError
+} from '../../../errors/provider/shantanuJSErrors.js';
 //+++++++++++++++++++++++++++++++++++++++++++++++
 // --------------- DATA SECTION -----------------
 //+++++++++++++++++++++++++++++++++++++++++++++++
@@ -133,7 +148,6 @@ export const sy = ['scaleY', 'r', 'ry', 'height'];
 
 export const map = {
   // Translate map
-  // translate: 'Translate',
   cx: 'Translate',
   cy: 'Translate',
   x: 'Translate',
@@ -142,7 +156,6 @@ export const map = {
   y1: 'Translate',
 
   // Scale map
-  // scale: 'Scale',
   r: 'Scale',
   rx: 'Scale',
   ry: 'Scale',
@@ -151,18 +164,1063 @@ export const map = {
   x2: 'Scale', // line
   y2: 'Scale', // line
 
-  // Rotate map
-  // rotate: 'Rotate',
-
-  // Shear map
-  // skewr: 'Skwe',
-
   not: null
 };
+
+/**
+ * List of supported easing function identifiers.
+ *
+ * These values define the timing functions used to interpolate animation
+ * progress over time. Each easing represents a distinct acceleration and
+ * deceleration curve applied during animation playback.
+ *
+ * This list is used for validation and lookup of easing behaviors.
+ */
+const easingMap: string[] = [
+  'linear',
+  'easeInQuad',
+  'easeOutQuad',
+  'easeInOutQuad',
+  'easeInCubic',
+  'easeOutCubic',
+  'easeInOutCubic',
+  'easeOutBounce',
+  'easeInBounce',
+  'easeInOutBounce'
+];
+
+/**
+ * List of supported path interpolation types.
+ *
+ * These values describe the geometric path along which an animation
+ * or transformation progresses, independent of easing behavior.
+ *
+ * This list is used to validate path-related configuration.
+ */
+const pathsMap: string[] = ['linear', 'quadratic', 'cubic', 'earc', 'arc'];
+
+/**
+ * List of supported anchor point identifiers.
+ *
+ * Anchors define reference points used for alignment, transformation,
+ * or positioning operations. Each value represents a specific relative
+ * location within a bounding region.
+ *
+ * The identifiers follow a concise directional naming convention.
+ */
+const anchorsMap = ['TL', 'TM', 'TR', 'RM', 'BR', 'BM', 'BL', 'LM', 'C'];
+
+/**
+ * List of supported transformation mode identifiers.
+ *
+ * These values control how transformations are interpreted or applied,
+ * such as relative positioning, pivot-based transformations, or
+ * center-based alignment.
+ *
+ * Both shorthand and descriptive aliases are supported.
+ */
+const modesMap = ['r', 'c', 'p', 'relative', 'pivot', 'center'];
+
+/**
+ * List of supported animation direction modes.
+ *
+ * Direction modes define how an animation sequence progresses over time,
+ * including forward playback, reversed playback, or alternating behavior.
+ */
+const directionsMap = ['normal', 'reverse', 'alternate'];
+
+/**
+ * List of supported optional feature flags.
+ *
+ * These options enable or modify advanced behaviors such as precomputation
+ * or polynomial fitting strategies. They are intended for fine-tuning
+ * performance or numerical behavior rather than core functionality.
+ */
+const optMap = ['fitPolynomialCofficient', 'preComputeFrames'];
 
 //+++++++++++++++++++++++++++++++++++++++++++++++
 // ------------- FUNCTION SECTION ---------------
 //+++++++++++++++++++++++++++++++++++++++++++++++
+
+/**
+ * Validates user-provided animation properties against
+ * shape-specific, style, and geometry animatable definitions.
+ *
+ * Purpose:
+ * - Performs strict runtime validation of animation properties.
+ * - Ensures only supported keys are accepted for a given shape.
+ * - Validates value types since JavaScript provides no static guarantees.
+ *
+ * Notes:
+ * - This function only validates input; it does not transform data.
+ * - All validation rules are derived from predefined default maps.
+ *
+ * @param props - User-defined animation properties
+ * @param shape - Shape identifier (e.g., 'vgpircle', 'rect', 'line')
+ */
+
+export type ShapeType = keyof typeof ShapeSpecificAnimatableProperties;
+export function handleProps(props: unknown, shape: ShapeType): void {
+  // Ensure props is a plain object
+  if (props === null || typeof props !== 'object' || Array.isArray(props)) {
+    throw new TypeMismatchError(
+      'attrs',
+      typeof props,
+      'object',
+      'Animation.animate()'
+    );
+  }
+
+  const shapeAttrs = ShapeSpecificAnimatableProperties[shape];
+
+  if (!Array.isArray(shapeAttrs)) {
+    throw new InvalidOptionError(
+      'shape',
+      shape,
+      Object.keys(ShapeSpecificAnimatableProperties),
+      'Animation.animate()'
+    );
+  }
+
+  const styleKeys = Object.keys(CommonStyleAnimatableProperties);
+  const geometryKeys = Object.keys(commonGeometryAnimatableProperties);
+
+  const entries = Object.entries(props);
+
+  for (let i = 0; i < entries.length; i++) {
+    const [key, value] = entries[i];
+
+    const isShapeAttr = shapeAttrs.includes(key);
+    const isStyleProp = styleKeys.includes(key);
+    const isGeometryProp = geometryKeys.includes(key);
+
+    // Property must exist in at least one allowed category
+    if (!isShapeAttr && !isStyleProp && !isGeometryProp) {
+      throw new InvalidOptionError(
+        key,
+        key,
+        [...shapeAttrs, ...styleKeys, ...geometryKeys],
+        'Animation.animate()'
+      );
+    }
+
+    // Shape-specific attributes must be numeric
+    if (isShapeAttr) {
+      if (typeof value !== 'number') {
+        throw new TypeMismatchError(
+          key,
+          typeof value,
+          'number',
+          'Animation.animate()'
+        );
+      }
+      continue;
+    }
+
+    // Style property validation
+    if (isStyleProp) {
+      if (key === 'fill' || key === 'stroke') {
+        if (typeof value !== 'string') {
+          throw new TypeMismatchError(
+            key,
+            typeof value,
+            'string',
+            'Animation.animate()'
+          );
+        }
+      } else {
+        if (typeof value !== 'number') {
+          throw new TypeMismatchError(
+            key,
+            typeof value,
+            'number',
+            'Animation.animate()'
+          );
+        }
+      }
+      continue;
+    }
+
+    // Geometry transform validation
+    if (isGeometryProp) {
+      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+        throw new TypeMismatchError(
+          key,
+          typeof value,
+          'object',
+          'Animation.animate()'
+        );
+      }
+
+      // Translate validation
+      if (key === 'translate') {
+        if (!('x' in value) || typeof value.x !== 'number') {
+          throw new TypeMismatchError(
+            'translate.x',
+            typeof value.x,
+            'number',
+            'Animation.animate()'
+          );
+        }
+        if (!('y' in value) || typeof value.y !== 'number') {
+          throw new TypeMismatchError(
+            'translate.y',
+            typeof value.y,
+            'number',
+            'Animation.animate()'
+          );
+        }
+      }
+
+      // Scale validation
+      if (key === 'scale') {
+        if (!('sx' in value) || typeof value.sx !== 'number') {
+          throw new TypeMismatchError(
+            'scale.sx',
+            typeof value.sx,
+            'number',
+            'Animation.animate()'
+          );
+        }
+        if (!('sy' in value) || typeof value.sy !== 'number') {
+          throw new TypeMismatchError(
+            'scale.sy',
+            typeof value.sy,
+            'number',
+            'Animation.animate()'
+          );
+        }
+      }
+
+      // Skew validation
+      if (key === 'skew') {
+        if (!('sx' in value) || typeof value.sx !== 'number') {
+          throw new TypeMismatchError(
+            'skew.sx',
+            typeof value.sx,
+            'number',
+            'Animation.animate()'
+          );
+        }
+        if (!('sy' in value) || typeof value.sy !== 'number') {
+          throw new TypeMismatchError(
+            'skew.sy',
+            typeof value.sy,
+            'number',
+            'Animation.animate()'
+          );
+        }
+      }
+
+      // Rotate validation
+      if (key === 'rotate') {
+        if (!('angle' in value) || typeof value.angle !== 'number') {
+          throw new TypeMismatchError(
+            'rotate.angle',
+            typeof value.angle,
+            'number',
+            'Animation.animate()'
+          );
+        }
+      }
+    }
+  }
+}
+
+/*
+ *
+
+export function andleProps(props: unknown, shape: string) {
+  if (typeof props != 'object') {
+    throw new TypeMismatchError(
+      'attrs',
+      typeof props,
+      'number',
+      'Animation.animate()'
+    );
+  }
+
+  if (typeof props == 'object') {
+    const attr = (ShapeSpecificAnimatableProperties as any)[shape];
+    const style = Object.keys(CommonStyleAnimatableProperties);
+    const tr = Object.keys(commonGeometryAnimatableProperties);
+
+    const userAttr = Object.entries(props as object);
+
+    for (let i = 0; i < userAttr.length; i++) {
+      const e = userAttr[i];
+
+      if (!attr.includes(e[0]) || !style.includes(e[0]) || !tr.includes(e[0])) {
+        throw new InvalidOptionError(
+          `${e[0]}`,
+          e[0],
+          attr,
+          'Animation.animate()'
+        );
+      } else if (attr.includes(e[0]) && typeof e[1] != 'number') {
+        throw new TypeMismatchError(
+          `${e[1]}`,
+          typeof e[1],
+          'number',
+          'Animation.animate()'
+        );
+      } else if (style.includes(e[0])) {
+
+
+
+        if (typeof e[1] != 'string' && (e[0] == 'fill' || e[0] == 'stroke')) {
+          throw new TypeMismatchError(
+            `${e[1]}`,
+            typeof e[1],
+            'string',
+            'Animation.animate()'
+          );
+        } else if (typeof e[1] != 'number') {
+          throw new TypeMismatchError(
+            `${e[1]}`,
+            typeof e[1],
+            'number',
+            'Animation.animate()'
+          );
+        }
+      } else if (tr.includes(e[0])) {
+
+				if (e[0] == "translate"){
+					if(  typeof e[1].x != "number" ){
+						throw new TypeMismatchError("translate.x" , typeof e[1].x , "number" , "Animation.animate()" ); 
+					
+				}
+       if(  typeof e[1].y  != "number"  ) {
+
+						throw new TypeMismatchError("translate.x" , typeof e[1].x , "number" , "Animation.animate()" ); 
+
+      }
+    }
+
+
+     	if (e[0] == "scale"){
+
+					if(  typeof e[1].sx != "number" ){
+						throw new TypeMismatchError("scale.x" , typeof e[1].sx , "number" , "Animation.animate()" ); 
+					
+				}
+       if(  typeof e[1].sy != "number"  ) {
+
+						throw new TypeMismatchError("scale.x" , typeof e[1].sy , "number" , "Animation.animate()" ); 
+
+      }
+    }
+
+     	if (e[0] == "skew"){
+
+					if(  typeof e[1].sx != "number" ){
+						throw new TypeMismatchError("skew.x" , typeof e[1].sx , "number" , "Animation.animate()" ); 
+					
+				}
+       if(  typeof e[1].sy != "number"  ) {
+
+						throw new TypeMismatchError("skew.x" , typeof e[1].sy , "number" , "Animation.animate()" ); 
+
+      }
+    }
+
+     	if (e[0] == "rotate"){
+
+					if(  typeof e[1].angle != "number" ){
+						throw new TypeMismatchError("rotate.angle" , typeof e[1].angle , "number" , "Animation.animate()" ); 
+					
+				}
+
+    }
+
+
+  }
+}
+
+*/
+/*
+export function handleDuration(duration: unknown): number {
+  if (typeof duration != 'number') {
+    throw new TypeMismatchError(
+      'duration',
+      typeof duration,
+      'number',
+      'Animation.animate()'
+    );
+  }
+  if (typeof duration == 'number' && duration <= 0) {
+    throw new NegativeValueError(duration, 'Animation.animate()');
+  }
+
+  return Math.abs(duration);
+}
+*/
+
+/**
+ * Validates and normalizes animation duration.
+ *
+ * Purpose:
+ * - Ensures the provided duration is a valid number.
+ * - Rejects zero or negative durations, as animations require
+ *   a strictly positive time interval.
+ *
+ * Notes:
+ * - This function performs validation only.
+ * - No implicit normalization or correction is applied.
+ *
+ * @param duration - User-provided animation duration
+ * @returns Validated animation duration
+ */
+export function handleDuration(duration: unknown): number {
+  // Duration must be a number
+  if (typeof duration !== 'number') {
+    throw new TypeMismatchError(
+      'duration',
+      typeof duration,
+      'number',
+      'Animation.animate()'
+    );
+  }
+
+  // Duration must be strictly positive
+  if (duration <= 0) {
+    throw new NegativeValueError(duration, 'Animation.animate()');
+  }
+
+  return duration;
+}
+
+/*
+function ensureNumberToNumber(fn: Function) {
+  return function (...args: number[]) {
+    if (args.length < 1)
+      throw new InvalidOptionError(
+        'ease',
+        fn.toString(),
+        ['A functions with one number parameter and returning a number.'],
+        'Animation.animate()'
+      );
+
+    const first = args[0];
+    if (typeof first !== 'number')
+      throw new InvalidArgumentError(
+        getFirstParamName(fn),
+        typeof first,
+        'First argument must be a number',
+        'Animation.animate()'
+      );
+
+    const result = fn(...args);
+
+    if (typeof result !== 'number')
+      throw new InvalidReturnTypeError(
+        typeof result + '',
+        'number ',
+        'Animation.animate()'
+      );
+
+    return true;
+  };
+}
+*/
+
+/**
+ * Validates that a function accepts a number and returns a number.
+ *
+ * Purpose:
+ * - Performs a one-time validation of a user-provided function.
+ * - Ensures the function conforms to the (t: number) => number contract.
+ * - Avoids per-call overhead by NOT wrapping the function.
+ *
+ * Notes:
+ * - This function throws on invalid behavior.
+ * - On success, it returns the original function unchanged.
+ *
+ * @param fn - User-provided function to validate
+ * @returns The same function, guaranteed to be (t: number) => number
+ */
+function ensureNumberToNumber(
+  fn: (...args: unknown[]) => unknown
+): (t: number) => number {
+  // Probe with a known numeric value
+  const probe = 0;
+
+  const result = fn(probe);
+
+  if (typeof result !== 'number') {
+    throw new InvalidReturnTypeError(
+      typeof result,
+      'number',
+      'Animation.animate()'
+    );
+  }
+
+  // At this point:
+  // - input was a number
+  // - output was a number
+  // We can safely trust the function
+  return fn as (t: number) => number;
+}
+
+/*
+export function handleEasing(ease: unknown): (t: number) => number {
+  if (
+    typeof ease != 'string' ||
+    typeof ease != 'function' ||
+    typeof ease != null
+  ) {
+    throw new TypeMismatchError(
+      'ease',
+      typeof ease,
+      'string | Function | null',
+      'Animation.animate()'
+    );
+  }
+
+  if (typeof ease == 'function') {
+    const fn = ensureNumberToNumber(ease) as Function;
+    if (!fn(0)) {
+      throw new InvalidArgumentError(
+        'ease',
+        ease,
+        'A functions with one number parameter and returning a number.',
+        'Animation.animate()'
+      );
+    }
+  }
+  if (typeof ease == 'string') {
+    if (!easingMap.includes(ease)) {
+      throw new InvalidOptionError(
+        'ease',
+        ease,
+        easingMap,
+        'Animation.animate()'
+      );
+    }
+  }
+
+  return typeof ease == 'string' ? easing(ease) : ease;
+}
+*/
+
+/**
+ * Validates and resolves an easing definition.
+ *
+ * Purpose:
+ * - Accepts predefined easing names or custom easing functions.
+ * - Ensures the final result is a function of type (t: number) => number.
+ * - Performs strict runtime validation to prevent invalid easing behavior.
+ *
+ * @param ease - Easing identifier or easing function
+ * @returns A validated easing function
+ */
+export function handleEasing(ease: unknown): (t: number) => number {
+  // null or undefined is not allowed
+  if (ease === null) ease = 'linear'; // null allowed
+  if (ease === undefined) {
+    throw new TypeMismatchError(
+      'ease',
+      String(ease),
+      'string | function',
+      'Animation.animate()'
+    );
+  }
+
+  // Function easing
+  if (typeof ease === 'function') {
+    return ensureNumberToNumber(ease as (...args: unknown[]) => unknown);
+  }
+
+  // Named easing
+  if (typeof ease === 'string') {
+    if (!easingMap.includes(ease)) {
+      throw new InvalidOptionError(
+        'ease',
+        ease,
+        easingMap,
+        'Animation.animate()'
+      );
+    }
+    return easing(ease as EasingType);
+  }
+
+  // Everything else is invalid
+  throw new TypeMismatchError(
+    'ease',
+    typeof ease,
+    'string | function',
+    'Animation.animate()'
+  );
+}
+
+/*
+export function handleOnComplete(onComplete: unknown) {
+  if (onComplete && typeof onComplete != 'function') {
+    throw new TypeMismatchError(
+      'onComplete',
+      typeof onComplete,
+      'function',
+      'Animation.animate()'
+    );
+  }
+
+  return () => {
+    typeof onComplete == 'function' && onComplete();
+  };
+}
+
+*/
+
+/**
+ * Validates and normalizes an onComplete callback.
+ *
+ * Purpose:
+ * - Ensures the provided value is either undefined/null or a function.
+ * - Returns a stable, callable function for downstream usage.
+ * - Avoids runtime checks during execution by validating once.
+ *
+ * @param onComplete - User-provided completion callback
+ * @returns A function safe to call on animation completion
+ */
+export function handleOnComplete(onComplete: unknown): Function {
+  // Allow undefined or null (no-op)
+  if (onComplete === undefined || onComplete === null) {
+    return () => {};
+  }
+
+  // Reject non-function values
+  if (typeof onComplete !== 'function') {
+    throw new TypeMismatchError(
+      'onComplete',
+      typeof onComplete,
+      'function',
+      'Animation.animate()'
+    );
+  }
+
+  // At this point, onComplete is guaranteed to be a function
+  return onComplete;
+}
+
+/**
+ * Validates and applies advanced animation properties.
+ *
+ * Purpose:
+ * - Performs strict runtime validation of advanced animation options.
+ * - Ensures sub-objects are structurally and semantically correct.
+ * - Mutates the provided default object only after validation succeeds.
+ *
+ * @param defaultOne - Default advanced animation configuration
+ * @param userOne - User-provided partial advanced configuration
+ */
+export function handleAdvanceProps(
+  defaultOne: IadvanceProps,
+  userOne: Partial<IadvanceProps> | null
+): void {
+  if (userOne === null) return;
+
+  if (typeof userOne !== 'object') {
+    throw new TypeMismatchError(
+      'advanceProps',
+      typeof userOne,
+      'object',
+      'Animation.animate()'
+    );
+  }
+
+  /* ---------------- curve ---------------- */
+
+  if ('curve' in userOne && userOne.curve !== undefined) {
+    const curve = userOne.curve;
+
+    if (curve === null || typeof curve !== 'object') {
+      throw new TypeMismatchError(
+        'curve',
+        typeof curve,
+        'object',
+        'Animation.animate()'
+      );
+    }
+
+    if (Object.keys(curve).length === 0) {
+      throw new InvalidOptionError(
+        'curve',
+        'empty object',
+        ['curvePath', 'curvePathMotion', 'stepness', 'smoothness'],
+        'Animation.animate()'
+      );
+    }
+
+    if (!('curvePath' in curve) || typeof curve.curvePath !== 'string') {
+      throw new MissingRequiredAnimationParameterError(
+        'curve.curvePath',
+        'Animation.animate()'
+      );
+    }
+
+    if (!pathsMap.includes(curve.curvePath)) {
+      throw new InvalidOptionError(
+        'curve.curvePath',
+        curve.curvePath,
+        pathsMap,
+        'Animation.animate()'
+      );
+    }
+
+    if (curve.curvePath !== 'linear') {
+      if (curve.curvePathMotion !== true) {
+        throw new MissingRequiredAnimationParameterError(
+          'curve.curvePathMotion',
+          'Animation.animate()'
+        );
+      }
+
+      if (typeof curve.stepness !== 'number') {
+        throw new TypeMismatchError(
+          'curve.stepness',
+          typeof curve.stepness,
+          'number',
+          'Animation.animate()'
+        );
+      }
+    }
+  }
+
+  /* ---------------- physics ---------------- */
+
+  if ('physics' in userOne && userOne.physics !== undefined) {
+    const physics = userOne.physics;
+
+    if (physics === null || typeof physics !== 'object') {
+      throw new TypeMismatchError(
+        'physics',
+        typeof physics,
+        'object',
+        'Animation.animate()'
+      );
+    }
+
+    if ('speed' in physics) {
+      if (typeof physics.speed !== 'number') {
+        throw new TypeMismatchError(
+          'physics.speed',
+          typeof physics.speed,
+          'number',
+          'Animation.animate()'
+        );
+      }
+
+      if (physics.speed < 0.02 || physics.speed > 5) {
+        throw new OutOfRangeError(
+          physics.speed,
+          0.02,
+          5,
+          'Animation.animate()'
+        );
+      }
+
+      if (physics.speed && physics.physicsMotion !== true) {
+        throw new MissingRequiredAnimationParameterError(
+          'physics.physicsMotion',
+          'Animation.animate()'
+        );
+      }
+    }
+  }
+
+  /* ---------------- pivot ---------------- */
+
+  if ('pivot' in userOne && userOne.pivot !== undefined) {
+    const pivot = userOne.pivot;
+
+    if (pivot === null || typeof pivot !== 'object') {
+      throw new TypeMismatchError(
+        'pivot',
+        typeof pivot,
+        'object',
+        'Animation.animate()'
+      );
+    }
+
+    for (const [key, value] of Object.entries(pivot)) {
+      if (key === 'mode') {
+        if (typeof value !== 'string' || !modesMap.includes(value)) {
+          throw new InvalidOptionError(
+            'pivot.mode',
+            String(value),
+            modesMap,
+            'Animation.animate()'
+          );
+        }
+        continue;
+      }
+
+      if (Array.isArray(value)) {
+        if (
+          value.length !== 2 ||
+          typeof value[0] !== 'number' ||
+          typeof value[1] !== 'number'
+        ) {
+          throw new InvalidFormatError(
+            value,
+            '[px: number, py: number]',
+            'Animation.animate()'
+          );
+        }
+        continue;
+      }
+
+      if (typeof value !== 'string') {
+        throw new TypeMismatchError(
+          `pivot.${key}`,
+          typeof value,
+          'string | [number, number]',
+          'Animation.animate()'
+        );
+      }
+
+      if (!anchorsMap.includes(value)) {
+        throw new InvalidOptionError(
+          `pivot.${key}`,
+          value,
+          anchorsMap,
+          'Animation.animate()'
+        );
+      }
+    }
+  }
+
+  /* ---------------- controls ---------------- */
+
+  if ('controls' in userOne && userOne.controls !== undefined) {
+    const controls = userOne.controls;
+
+    if (controls === null || typeof controls !== 'object') {
+      throw new TypeMismatchError(
+        'controls',
+        typeof controls,
+        'object',
+        'Animation.animate()'
+      );
+    }
+
+    if ('loop' in controls && typeof controls.loop !== 'boolean') {
+      throw new TypeMismatchError(
+        'controls.loop',
+        typeof controls.loop,
+        'boolean',
+        'Animation.animate()'
+      );
+    }
+
+    if (
+      'direction' in controls &&
+      (typeof controls.direction !== 'string' ||
+        !directionsMap.includes(controls.direction))
+    ) {
+      throw new InvalidOptionError(
+        'controls.direction',
+        String(controls.direction),
+        directionsMap,
+        'Animation.animate()'
+      );
+    }
+
+    if (
+      'optimizationTechnique' in controls &&
+      (typeof controls.optimizationTechnique !== 'string' ||
+        !optMap.includes(controls.optimizationTechnique))
+    ) {
+      throw new InvalidOptionError(
+        'controls.optimizationTechnique',
+        String(controls.optimizationTechnique),
+        optMap,
+        'Animation.animate()'
+      );
+    }
+  }
+
+  // All validation passed → mutate defaults
+  deepMerge(defaultOne, userOne);
+}
+
+/*
+ *
+export function handleAdvanceProps(
+  defaultOne: IadvanceProps,
+  userOne: Partial<IadvanceProps> | null
+) {
+  if (userOne != null) {
+    const curveMotion = userOne.curve as curveParams;
+    // curve sub object
+    if (curveMotion) {
+      if (Object.keys(curveMotion).length == 0) {
+        throw new InvalidOptionError(
+          'curve',
+          'object - no options , at least give curvePath ',
+          ['curvePathMotion', 'curvePath', 'stepness', 'smoothness'],
+          'Animation.animate()'
+        );
+      }
+      if (!curveMotion.curvePath) {
+        throw new MissingRequiredAnimationParameterError(
+          ' curve.curvePath - should be there , specify curve path ' +
+            pathsMap.join(' | '),
+          'Animation.animate()'
+        );
+      }
+
+      if (curveMotion.curvePath != 'linear') {
+        if (!curveMotion.curvePathMotion) {
+          // curvePathMotion is not enable with curve is selected
+          throw new MissingRequiredAnimationParameterError(
+            'curvePathMotion - should be true ',
+            'Animation.animate()'
+          );
+        }
+        if (!curveMotion.stepness) {
+          throw new MissingRequiredAnimationParameterError(
+            'stepness - should be there ',
+            'Animation.animate()'
+          );
+        }
+      }
+
+      const physics = userOne.physics as physicsParams;
+      // physics sub object
+      if (physics != null) {
+        if (physics.speed && !physics.physicsMotion) {
+          throw new MissingRequiredAnimationParameterError(
+            'physics.physicsMotion',
+            'Animation.animate()'
+          );
+        }
+        if (typeof physics.speed != 'number') {
+          throw new TypeMismatchError(
+            'speed',
+            typeof physics.speed,
+            'number',
+            'Animation.animate()'
+          );
+        }
+        if (physics.speed <= 0.02 && physics.speed > 5) {
+          throw new OutOfRangeError(
+            physics.speed,
+            0.02,
+            5,
+            'Animation.animate()'
+          );
+        }
+      }
+
+      const pivots = userOne.pivot as pivotParams;
+      // pivot sub object
+      if (pivots != null) {
+        const pvt = Object.entries(pivots);
+        for (let i = 0; i < pvt.length; i++) {
+          const k: string = pvt[i][0];
+          const v: string | number[] = pvt[i][1];
+
+          if (k == 'mode' && typeof v == 'string' && !modesMap.includes(v)) {
+            throw new InvalidOptionError(
+              'pivot.mode',
+              v,
+              modesMap,
+              'Animation.animate()'
+            );
+          }
+
+          if (typeof v != 'string' || Array.isArray(v)) {
+            throw new TypeMismatchError(
+              `pivot.${k}`,
+              typeof v,
+              'string | [px , py ]',
+              'Animation.animate()'
+            );
+          }
+
+          if (typeof v == 'string' && k != 'mode' && !anchorsMap.includes(v)) {
+            throw new InvalidOptionError(
+              `pivot.${k}`,
+              v,
+              anchorsMap,
+              'Animation.animate()'
+            );
+          }
+
+          if (
+            Array.isArray(v) &&
+            v.length != 2 &&
+            (typeof v[0] != 'number' || typeof v[1] != 'number')
+          ) {
+            throw new InvalidFormatError(
+              v,
+              ' [ px : number , py : number ] ',
+              'Animation.animate()'
+            );
+          }
+        }
+      }
+
+      const controls = userOne.controls as controlsParams;
+      // controls sub object
+      if (controls != null) {
+        if (typeof controls.loop != 'boolean') {
+          throw new TypeMismatchError(
+            `controls.loop`,
+            typeof controls.loop,
+            'boolean',
+            'Animation.animate()'
+          );
+        }
+
+        if (
+          typeof controls.direction == 'string' &&
+          !directionsMap.includes(controls.direction)
+        ) {
+          throw new InvalidOptionError(
+            `controls.direction`,
+            controls.direction,
+            directionsMap,
+            'Animation.animate()'
+          );
+        } else if (typeof controls.direction != 'string') {
+          throw new TypeMismatchError(
+            `controls.direction`,
+            typeof controls.direction,
+            'string',
+            'Animation.animate()'
+          );
+        }
+
+        if (
+          typeof controls.optimizationTechnique == 'string' &&
+          !optMap.includes(controls.optimizationTechnique)
+        ) {
+          throw new InvalidOptionError(
+            `controls.optimizationTechnique`,
+            controls.optimizationTechnique,
+            optMap,
+            'Animation.animate()'
+          );
+        } else if (typeof controls.optimizationTechnique != 'string') {
+          throw new TypeMismatchError(
+            `controls.optimizationTechnique`,
+            typeof controls.optimizationTechnique,
+            'string',
+            'Animation.animate()'
+          );
+        }
+      }
+    }
+  }
+  userOne != null &&
+    typeof userOne === 'object' &&
+    // mutate defaultOne directly using userOne Object
+    deepMerge(defaultOne, userOne);
+}
+
+*/
 
 /**
  * Performs linear interpolation between two numbers.
@@ -198,7 +1256,7 @@ export function lerp(start: number, end: number, t: number) {
  * @param P1 - Starting point of the curve { x: number, y: number }.
  * @param P2 - Ending point of the curve { x: number, y: number }.
  * @param bend - Curve bend factor in range [-1, 1]. Positive for upward/clockwise, negative for downward/counter-clockwise.
- * @param curveType - Type of the curve: 'linear', 'quadratic', 'cubic', or 'arc'.
+ * @param curveType - Type of the curve: 'linear', 'quadratic', 'cubic' , 'earc' , 'arc'.
  * @param minSamples - Minimum number of samples to use (default: 4).
  * @param maxSamples - Maximum number of samples to use (default: 100).
  *
@@ -228,19 +1286,19 @@ export function getCurveAdaptiveSmoothness(
 
   // 3. Curve type adjustment
   switch (curveType) {
-    case 'linear':
+    case pathsMap[0]: // 'linear'
       adjustedMax = Math.min(maxSamples, 20); // linear requires fewer points
       break;
-    case 'quadratic':
+    case pathsMap[1]: // 'quadratic'
       adjustedMin = Math.max(minSamples, 6);
       adjustedMax = Math.min(maxSamples, 60);
       break;
-    case 'cubic':
+    case pathsMap[2]: // 'cubic'
       adjustedMin = Math.max(minSamples, 10);
       adjustedMax = Math.min(maxSamples, 100);
       break;
-    case 'arc':
-    case 'earc':
+    case pathsMap[3]: // 'arc'
+    case pathsMap[4]: // 'earc'
       adjustedMin = Math.max(minSamples, 8);
       adjustedMax = Math.min(maxSamples, 80);
       break;
@@ -282,27 +1340,27 @@ export function getCurveAdaptiveSmoothness(
 
 export function easing(type: EasingType): EasingFunction {
   switch (type) {
-    case 'linear':
+    case easingMap[0]: // 'linear'
       return (t) => t;
 
     // Quadratic
-    case 'easeInQuad':
+    case easingMap[1]: //'easeInQuad'
       return (t) => t * t;
-    case 'easeOutQuad':
+    case easingMap[2]: // 'easeOutQuad'
       return (t) => t * (2 - t);
-    case 'easeInOutQuad':
+    case easingMap[3]: // 'easeInOutQuad'
       return (t) => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t);
 
     // Cubic
-    case 'easeInCubic':
+    case easingMap[4]: //  'easeInCubic'
       return (t) => t * t * t;
-    case 'easeOutCubic':
+    case easingMap[5]: // 'easeOutCubic'
       return (t) => --t * t * t + 1; // (t-1)^3 + 1
-    case 'easeInOutCubic':
+    case easingMap[6]: // 'easeInOutCubic':
       return (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
     // Bounce family
-    case 'easeOutBounce':
+    case easingMap[7]: // 'easeOutBounce'
       return (t) => {
         const n1 = 7.5625,
           d1 = 2.75;
@@ -311,9 +1369,9 @@ export function easing(type: EasingType): EasingFunction {
         else if (t < 2.5 / d1) return n1 * (t -= 2.25 / d1) * t + 0.9375;
         else return n1 * (t -= 2.625 / d1) * t + 0.984375;
       };
-    case 'easeInBounce':
+    case easingMap[8]: // 'easeInBounce'
       return (t) => 1 - easing('easeOutBounce')(1 - t);
-    case 'easeInOutBounce':
+    case easingMap[9]: // 'easeInOutBounce'
       return (t) =>
         t < 0.5
           ? (1 - easing('easeOutBounce')(1 - 2 * t)) / 2
