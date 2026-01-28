@@ -108,12 +108,17 @@ import {
   map,
   CommonStyleAnimatableProperties,
   //----- impoting functions -----
+  handleDuration,
+  handleEasing,
+  handleAdvanceProps,
   lerp,
   separateProperties,
-  easing,
   pivotSetter,
   deepMerge,
-  choosePivotAwareOptimization
+  choosePivotAwareOptimization,
+  handleOnComplete,
+  handleProps,
+  ShapeType
 } from './preBuilds/helpers/helpers.js';
 
 import {
@@ -971,7 +976,7 @@ export class Animation<T extends GShpesTages> {
    *
    * It may be composed internally with multiple callbacks.
    */
-  #onComplete: Function = function () {};
+  #onComplete!: Function;
 
   /**
    * Cleanup callback invoked after animation completion or cancellation.
@@ -1937,7 +1942,7 @@ export class Animation<T extends GShpesTages> {
        * Current implementation uses incremental progress
        * accumulation for frame-rate independence.
        */
-      const deltaProgress = (dt * clampedSpeed) / (this.#totalTime / 1000);
+      const deltaProgress = dt / (this.#totalTime / 1000);
 
       this.#rawProgress = (this.#rawProgress ?? 0) + deltaProgress;
       this.#rawProgress = Math.min(this.#rawProgress, 1);
@@ -1997,7 +2002,7 @@ export class Animation<T extends GShpesTages> {
          */
         this.#animationState = false;
         this.#isAnimation(true);
-        this.#onComplete?.();
+        this.#onComplete();
 
         this.#cleanUp();
 
@@ -2256,33 +2261,25 @@ export class Animation<T extends GShpesTages> {
     advProp: IadvanceProps | null,
     duration: number,
     ease: EasingType | Function | null = 'linear',
-    onComplate: Function | null = null,
+    onComplete: Function | null = null,
     start: boolean = true
   ): void {
     // ------------------------------------------------------------------
     // STEP 1: Handle and normalize basic animation parameters
     // ------------------------------------------------------------------
 
+    handleProps(attrs, this.#el.geometry?.shape as ShapeType);
     // Normalize duration (negative values treated as positive)
-    this.#totalTime = Math.abs(duration) ?? 0;
-
-    // Merge user-provided advanced properties into internal defaults
-    advProp && typeof advProp === 'object' && deepMerge(this.#advInfo, advProp);
+    this.#totalTime = handleDuration(duration) as number;
 
     // Resolve easing function (string-based or function-based)
-    (typeof ease === 'string' &&
-      (this.#easingFunction = easing(ease) as EasingFunction)) ||
-      (typeof ease === 'function' &&
-        (this.#easingFunction = ease as EasingFunction));
+    this.#easingFunction = handleEasing(ease) as EasingFunction;
 
     // Chain onComplete callbacks if provided
-    if (onComplate) {
-      const previousOnComplete = this.#onComplete;
-      this.#onComplete = () => {
-        previousOnComplete && previousOnComplete();
-        onComplate();
-      };
-    }
+    this.#onComplete = handleOnComplete(onComplete) as Function;
+
+    // Merge user-provided advanced properties into internal defaults
+    handleAdvanceProps(this.#advInfo, advProp);
 
     // ------------------------------------------------------------------
     // STEP 2: Decompose user attributes into style and geometry properties
