@@ -1,30 +1,61 @@
 import type { FlipMethodProps } from '../../../../types/transformations';
+import { InvalidArgumentError } from '../../../errors/provider/shantanuJSErrors.js';
 
 /**
- * Creates a transformation matrix that flips an object horizontally and/or vertically.
+ * Applies a 2D flip (mirror) transformation to an existing DOMMatrix.
  *
- * Purpose:
- * This function generates a `DOMMatrix` to mirror an object along the X-axis, Y-axis, or both.
- * It allows controlling the direction of the flip and adjusts the object’s position
- * so that the flipping occurs around its center.
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This function mutates the provided transformation matrix by composing
+ * horizontal and/or vertical flip operations.
  *
- * Parameters:
- * @param flipX - Whether to flip the object horizontally. Must be true or false.
- * @param flipY - Whether to flip the object vertically. Must be true or false.
- * @param dirX - Horizontal flip direction: 'x+' (positive X) or 'x-' (negative X). Default is 'x+'.
- * @param dirY - Vertical flip direction: 'y+' (positive Y) or 'y-' (negative Y). Default is 'y+'.
- * @param x - X coordinate of the object’s bounding box.
- * @param y - Y coordinate of the object’s bounding box.
- * @param width - Width of the object.
- * @param height - Height of the object.
+ * The flip is performed around the geometric center of the provided
+ * bounding box and optionally adjusted based on direction hints.
  *
- * Returns:
- * - A `DOMMatrix` representing the flip transformation.
+ * It does NOT allocate or return a new matrix.
+ * It operates directly on the passed `oMatrix` instance.
  *
- * Dependencies:
- * - Requires `DOMMatrix` (browser API) for performing matrix transformations.
+ * -------------------------------------------------------------------------
+ * FLIP BEHAVIOR
+ * -------------------------------------------------------------------------
+ * - Horizontal flip is achieved by scaling X by -1
+ * - Vertical flip is achieved by scaling Y by -1
+ * - Translation offsets are applied to preserve expected orientation
+ *   based on direction (`dirX`, `dirY`)
+ *
+ * The flip is always executed relative to the computed center point:
+ *   (x + width / 2, y + height / 2)
+ *
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - At least one of flipX or flipY must be true
+ * - Direction values must be explicitly valid ('x+' | 'x-', 'y+' | 'y-')
+ * - The provided DOMMatrix is treated as mutable state
+ * - Flip is composed using translate → scale → translate
+ *
+ * -------------------------------------------------------------------------
+ * ERROR BEHAVIOR
+ * -------------------------------------------------------------------------
+ * Throws InvalidArgumentError when:
+ * - both flipX and flipY are false
+ * - dirX is not a valid horizontal direction
+ * - dirY is not a valid vertical direction
+ *
+ * -------------------------------------------------------------------------
+ * PARAMETERS
+ * -------------------------------------------------------------------------
+ * @param flipX   Whether to apply a horizontal flip.
+ * @param flipY   Whether to apply a vertical flip.
+ * @param dirX    Horizontal flip direction ('x+' | 'x-').
+ * @param dirY    Vertical flip direction ('y+' | 'y-').
+ * @param x       Bounding box X coordinate.
+ * @param y       Bounding box Y coordinate.
+ * @param width   Bounding box width.
+ * @param height  Bounding box height.
+ * @param oMatrix Target DOMMatrix to be mutated.
  */
-
 export function Flip({
   flipX,
   flipY,
@@ -44,16 +75,30 @@ export function Flip({
 }) {
   try {
     if (!flipX && !flipY) {
-      throw new Error(
-        'flipX  and flipY both parameters are false at least one parameter should be true'
+      throw new InvalidArgumentError(
+        'flipX , flipY ',
+        'boolean , boolean',
+        'Invalid flip configuration: at least one of flipX or flipY must be true.',
+        'transformation.flip()'
       );
     }
-    if (dirX != 'x+' && dirX != 'x-') {
-      throw new Error("dirX parameter is not Valid it should be 'x+' or 'x-' ");
+
+    if (dirX !== 'x+' && dirX !== 'x-') {
+      throw new InvalidArgumentError(
+        'dirX',
+        'x+ , x-',
+        "Invalid dirX value: expected 'x+' or 'x-'.",
+        'transformation.flip()'
+      );
     }
 
-    if (dirY != 'y+' && dirY != 'y-') {
-      throw new Error("dirY parameter is not Valid it should be 'y+' or 'y-' ");
+    if (dirY !== 'y+' && dirY !== 'y-') {
+      throw new InvalidArgumentError(
+        'dirY',
+        'y+ , y-',
+        "Invalid dirY value: expected 'y+' or 'y-'.",
+        'transformation.flip()'
+      );
     }
 
     const [xCenter, yCenter] = [x + width / 2, y + height / 2];
