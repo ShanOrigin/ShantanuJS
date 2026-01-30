@@ -5,27 +5,75 @@ type BBoxPoints = {
   maxY: number;
 };
 
-// ----------------------------------------------
-//  Axis-Aligned Bounding Box (AABB)
-// ----------------------------------------------
-// Input :
-//     shapeTransformedMat [x1,y1,1,x2,y2,1,......] N x 3 homogeneous
-// Output :
-//     { minX, minY, maxX, maxY }
-
+/**
+ * Computes the axis-aligned bounding box (AABB) from transformed geometry points.
+ *
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This function calculates the minimum axis-aligned rectangle that fully
+ * contains a set of 2D points expressed in homogeneous coordinates.
+ *
+ * It operates purely on numeric data and performs no transformation itself.
+ *
+ * -------------------------------------------------------------------------
+ * INPUT CONTRACT
+ * -------------------------------------------------------------------------
+ * - The input buffer is expected to be a flat Float32Array
+ * - Points must be stored in homogeneous form:
+ *     [x1, y1, 1, x2, y2, 1, ...]
+ * - The buffer length should be a multiple of 3
+ *
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - Only X and Y components are considered
+ * - Z components are ignored
+ * - The bounding box is always axis-aligned
+ * - No allocation beyond primitive numbers is performed
+ *
+ * -------------------------------------------------------------------------
+ * EDGE CASE BEHAVIOR
+ * -------------------------------------------------------------------------
+ * - An empty buffer yields a zero-sized bounding box at the origin
+ * - No errors are thrown for empty input
+ *
+ * -------------------------------------------------------------------------
+ * PARAMETERS
+ * -------------------------------------------------------------------------
+ * @param shapeTransformedMat - Flat buffer of transformed homogeneous points.
+ *
+ * -------------------------------------------------------------------------
+ * RETURNS
+ * -------------------------------------------------------------------------
+ * An object containing the minimum and maximum X and Y extents:
+ * { minX, minY, maxX, maxY }
+ */
 export function computeAABBPoints(
   shapeTransformedMat: Float32Array
 ): BBoxPoints {
+  // -----------------------------------------------------------
+  // STEP 1: Handle empty input buffer
+  // -----------------------------------------------------------
+
   const len = shapeTransformedMat.length;
 
   if (len === 0) {
     return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
   }
 
+  // -----------------------------------------------------------
+  // STEP 2: Initialize bounding extents
+  // -----------------------------------------------------------
+
   let minX: number = Infinity,
     minY: number = Infinity,
     maxX: number = -Infinity,
     maxY: number = -Infinity;
+
+  // -----------------------------------------------------------
+  // STEP 3: Iterate over homogeneous points and update bounds
+  // -----------------------------------------------------------
 
   for (let i = 0; i < len; i += 3) {
     const x = shapeTransformedMat[i] as number;
