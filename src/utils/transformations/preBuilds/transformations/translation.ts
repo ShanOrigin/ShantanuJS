@@ -1,20 +1,58 @@
 import type { TranslateMethodProps } from '../../../../types/transformations';
 
 /**
- * Creates a translation oMatrix for moving an object in 2D space.
+ * Applies a 2D translation transformation to an existing DOMMatrix.
  *
- * Purpose:
- * This function generates a `DOMMatrix` that represents translation by a given (x, y) offset.
- * It supports multiple modes for translation:
- * - Absolute: moves relative to a reference point.
- * - Center: moves relative to the object's geometric center.
- * - Pivot: moves relative to a custom pivot point.
- * - Relative: moves relative to the current position.
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This function mutates the provided transformation matrix by composing
+ * a translation operation based on the supplied parameters.
  *
- * Parameters:
- * @param x - The horizontal translation distance.
- * @param y - The vertical translation distance.
- * @param type - Translation mode:
+ * It does NOT create a new matrix.
+ * It operates directly on the passed `oMatrix` instance.
+ *
+ * -------------------------------------------------------------------------
+ * SUPPORTED TRANSLATION MODES
+ * -------------------------------------------------------------------------
+ * The translation behavior is determined by the `tType` parameter:
+ *
+ * - Absolute ('a' | 'absolute')
+ *   Applies translation relative to a reference pivot.
+ *
+ * - Center ('c' | 'center')
+ *   Applies translation assuming the object is already centered
+ *   around the provided pivot.
+ *
+ * - Pivot ('p' | 'pivot')
+ *   Performs a pivot-aware translation by:
+ *   1. translating to the pivot
+ *   2. applying the offset
+ *   3. translating back
+ *
+ * - Relative ('r' | 'relative')
+ *   Applies translation directly relative to the current matrix state.
+ *
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - The provided DOMMatrix is treated as mutable state
+ * - Translation is composed using DOMMatrix.translateSelf
+ * - No validation of numeric ranges is performed here
+ * - All higher-level validation is assumed to be done upstream
+ *
+ * -------------------------------------------------------------------------
+ * ERROR BEHAVIOR
+ * -------------------------------------------------------------------------
+ * Any error thrown by DOMMatrix operations is propagated as-is.
+ * This function does not perform error translation or wrapping.
+ *
+ * -------------------------------------------------------------------------
+ * PARAMETERS
+ * -------------------------------------------------------------------------
+ * @param x       Horizontal translation offset.
+ * @param y       Vertical translation offset.
+ * @param tType - Translation mode:
  *               'a' | 'absolute' → absolute translation,
  *               'r' | 'relative' → relative translation,
  *               'p' | 'pivot' → pivot-based translation,
@@ -22,15 +60,8 @@ import type { TranslateMethodProps } from '../../../../types/transformations';
  *               Default is 'a'.
  * @param px - X coordinate of the pivot point (used for pivot mode). Default is 0.
  * @param py - Y coordinate of the pivot point (used for pivot mode). Default is 0.
- * @param buffer - Float32Array representing the object's coordinates or bounding points.
- *
- * Returns:
- * - A `DOMoMatrix` representing the translation transformation.
- *
- * Dependencies:
- * - Requires `DOMMatrix` (browser API) and `getCentre` helper function to compute center points.
+ * @param oMatrix Target DOMMatrix to be mutated.
  */
-
 export function Translate({
   x,
   y,
@@ -44,15 +75,12 @@ export function Translate({
       case 'absolute':
       case 'a': {
         oMatrix.translateSelf(-px, -py).translateSelf(x, y);
-
         break;
       }
 
       case 'center':
       case 'c': {
-        // Step 2: move by desired offset
         oMatrix.translateSelf(x - px, y - py);
-
         break;
       }
 
