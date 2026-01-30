@@ -1,31 +1,57 @@
-/**
- * Default property types and values for a graphical or animated element.
- *
- * Purpose:
- * This object provides a template of default values for common properties
- * used in animations or transformations. It ensures consistent behavior
- * when creating or manipulating elements by specifying fallback values.
- *
- * Use cases:
- * - Initializing elements with default positions, scales, and rotation angles.
- * - Providing default directional and flipping behavior for animations.
- * - Setting default callbacks and effect flags to avoid undefined behavior.
- *
- * Dependencies:
- * - Pure data structure; does **not** depend on any DOM or graphics API.
- *
- * Properties:
- * - `x`, `y`: Default coordinates (number).
- * - `sx`, `sy`: Default scale factors (number).
- * - `angle`: Default rotation angle in degrees (number).
- * - `flipX`, `flipY`: Whether to flip the element on X or Y axis (boolean).
- * - `dirX`, `dirY`: Direction strings for X and Y axes (string).
- * - `type`: Type identifier (string).
- * - `px`, `py`: Pivot coordinates (number).
- * - `isEffect`, `isVEffect`: Flags for enabling effects (boolean).
- * - `callbacks`: Default callback function (function).
- */
+import { InvalidArgumentError } from '../../../errors/provider/shantanuJSErrors';
 
+/**
+ * Canonical default property map for transformation and animation parameters.
+ *
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This object defines the canonical default values for all common
+ * transformation-related properties used throughout the animation
+ * and transformation pipeline.
+ *
+ * It acts as a normalization baseline when user input is partial,
+ * missing, or intentionally omitted.
+ *
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - This object is pure data with no behavior
+ * - Values represent safe, neutral defaults
+ * - All keys correspond to known transformation parameters
+ * - Defaults are intentionally permissive, not restrictive
+ *
+ * -------------------------------------------------------------------------
+ * USAGE CONTRACT
+ * -------------------------------------------------------------------------
+ * This object is used for:
+ * - initializing transformation parameter objects
+ * - filling missing values during parsing or normalization
+ * - ensuring predictable engine behavior without defensive checks
+ *
+ * This object is NOT:
+ * - a validation schema
+ * - a runtime configuration object
+ * - user-facing API surface
+ *
+ * -------------------------------------------------------------------------
+ * DEPENDENCIES
+ * -------------------------------------------------------------------------
+ * None.
+ * This is a standalone, engine-internal constant.
+ *
+ * -------------------------------------------------------------------------
+ * PROPERTY SEMANTICS
+ * -------------------------------------------------------------------------
+ * - x, y        : Translation offsets
+ * - sx, sy      : Scale factors
+ * - angle       : Rotation angle (degrees)
+ * - flipX, flipY: Flip flags
+ * - dirX, dirY  : Flip direction hints
+ * - tType       : Transformation mode identifier
+ * - px, py      : Pivot coordinates
+ * - callbacks   : No-op default callback
+ */
 export const propTypes = {
   x: 0,
   y: 0,
@@ -36,110 +62,221 @@ export const propTypes = {
   flipY: true,
   dirX: 'x+',
   dirY: 'y+',
-  type: 'a',
+  tType: 'a',
   px: 0,
   py: 0,
-  isEffect: true,
-  isVEffect: true,
   callbacks: () => {}
 };
 
 /**
- * Resets a DOMMatrix to the identity matrix.
+ * Resets a DOMMatrix instance to the identity transformation.
  *
- * Purpose:
- * Sets all entries of the provided DOMMatrix to default values such that
- * it represents an identity transformation (no scaling, rotation, or translation).
- * This is useful for clearing any previous transformations before applying new ones.
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This function mutates the provided DOMMatrix instance by explicitly
+ * restoring it to an identity matrix.
  *
- * Parameters:
- * @param m - A `DOMMatrix` object representing a transformation matrix to reset.
+ * After execution, the matrix represents a neutral transformation:
+ * - no translation
+ * - no rotation
+ * - no scaling
+ * - no skew
  *
- * Dependencies:
- * - Depends on the DOMMatrix API, which is part of the browser's Web APIs.
- * - Cannot be used in environments without DOMMatrix support (e.g., some Node.js environments).
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - The provided DOMMatrix is treated as mutable state
+ * - All matrix components are explicitly assigned
+ * - No new matrix is allocated
+ * - No conditional logic is involved
  *
- * Behavior:
- * After calling, the matrix behaves as a neutral transformation:
- * - Scale factors are set to 1.
- * - All rotations, skews, and translations are reset to 0.
+ * This explicit assignment strategy avoids relying on browser defaults
+ * and ensures deterministic behavior across environments.
+ *
+ * -------------------------------------------------------------------------
+ * USAGE CONTRACT
+ * -------------------------------------------------------------------------
+ * This function is intended for:
+ * - clearing accumulated transformation state
+ * - reusing DOMMatrix instances safely
+ * - performance-critical paths where allocation must be avoided
+ *
+ * This function does NOT:
+ * - validate the matrix instance
+ * - return a new matrix
+ * - perform partial resets
+ *
+ * -------------------------------------------------------------------------
+ * PARAMETERS
+ * -------------------------------------------------------------------------
+ * @param m - DOMMatrix instance to be reset to identity.
  */
 export function resetMatrix(m: DOMMatrix): void {
+  // -----------------------------------------------------------
+  // STEP 1: Reset first row
+  // -----------------------------------------------------------
+
   m.m11 = 1;
   m.m12 = 0;
   m.m13 = 0;
   m.m14 = 0;
+
+  // -----------------------------------------------------------
+  // STEP 2: Reset second row
+  // -----------------------------------------------------------
+
   m.m21 = 0;
   m.m22 = 1;
   m.m23 = 0;
   m.m24 = 0;
+
+  // -----------------------------------------------------------
+  // STEP 3: Reset third row
+  // -----------------------------------------------------------
+
   m.m31 = 0;
   m.m32 = 0;
   m.m33 = 1;
   m.m34 = 0;
+
+  // -----------------------------------------------------------
+  // STEP 4: Reset fourth row
+  // -----------------------------------------------------------
+
   m.m41 = 0;
   m.m42 = 0;
   m.m43 = 0;
   m.m44 = 1;
 }
 
-// method to get geometric center of Shape
-
 /**
- * Calculates the center point of a quadrilateral given its corner coordinates.
+ * Computes the geometric center of a quadrilateral from homogeneous coordinates.
  *
- * Purpose:
- * Finds the geometric center (average of corner points) of a shape represented
- * by a Float32Array of 12 elements (x, y for 4 corners). Useful for pivot calculations
- * or aligning transformations around the shape's center.
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This function calculates the geometric center (centroid) of a shape
+ * defined by four corner points.
  *
- * Parameters:
- * @param m - A Float32Array of length 12 representing the coordinates of 4 corners:
- *            [x1, y1, _, x2, y2, _, x3, y3, _, x4, y4] (underscores can be ignored or placeholders).
+ * The center is computed as the arithmetic mean of the four X coordinates
+ * and the four Y coordinates.
  *
- * Returns:
- * - An array `[cx, cy]` representing the center coordinates of the shape.
+ * -------------------------------------------------------------------------
+ * INPUT CONTRACT
+ * -------------------------------------------------------------------------
+ * - The input buffer is expected to contain four points
+ * - Each point is represented in homogeneous form
+ * - Only X and Y components are considered
  *
- * Dependencies:
- * - Pure computation; no reliance on DOM, graphics, or browser APIs.
+ * Expected layout (length ≥ 12):
+ *   [x1, y1, _, x2, y2, _, x3, y3, _, x4, y4, _]
+ *
+ * Z / homogeneous components are ignored.
+ *
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - No validation of buffer length is performed
+ * - Missing values default to 0
+ * - The function is pure and side-effect free
+ *
+ * -------------------------------------------------------------------------
+ * USAGE CONTEXT
+ * -------------------------------------------------------------------------
+ * This helper is typically used for:
+ * - pivot resolution
+ * - center-based transformations
+ * - alignment and normalization logic
+ *
+ * -------------------------------------------------------------------------
+ * PARAMETERS
+ * -------------------------------------------------------------------------
+ * @param m - Float32Array containing corner coordinates in homogeneous layout.
+ *
+ * -------------------------------------------------------------------------
+ * RETURNS
+ * -------------------------------------------------------------------------
+ * A tuple [cx, cy] representing the geometric center of the shape.
  */
-
 export function getCentre(m: Float32Array): number[] {
+  // -----------------------------------------------------------
+  // STEP 1: Destructure corner coordinates with safe defaults
+  // -----------------------------------------------------------
+
   const [x1 = 0, y1 = 0, , x2 = 0, y2 = 0, , x3 = 0, y3 = 0, , x4 = 0, y4 = 0] =
     m;
+
+  // -----------------------------------------------------------
+  // STEP 2: Compute centroid coordinates
+  // -----------------------------------------------------------
+
   const cx = (x1 + x2 + x3 + x4) / 4;
   const cy = (y1 + y2 + y3 + y4) / 4;
 
   return [cx, cy];
 }
-// method to check modes of transformations
 
 /**
- * Validates a transformation type string and normalizes it.
+ * Validates and normalizes a transformation mode identifier.
  *
- * Purpose:
- * Ensures that a provided transformation type is recognized ('absolute', 'relative', or 'pivot')
- * and throws an error if invalid. Converts shorthand forms to lower case for consistency.
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This function verifies that a provided transformation type identifier
+ * corresponds to a supported transformation mode.
  *
- * Parameters:
- * @param type - A string representing the transformation type (e.g., 'a', 'r', 'p').
+ * Supported modes include:
+ * - absolute ('absolute' | 'a')
+ * - relative ('relative' | 'r')
+ * - pivot    ('pivot'    | 'p')
  *
- * Returns:
- * - The normalized type string (lowercase).
+ * The check is case-insensitive.
  *
- * Dependencies:
- * - Pure computation; no reliance on DOM, graphics, or browser APIs.
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - Only known transformation mode identifiers are accepted
+ * - No defaulting or coercion is performed on invalid input
+ * - Validation is purely string-based
+ *
+ * -------------------------------------------------------------------------
+ * ERROR BEHAVIOR
+ * -------------------------------------------------------------------------
+ * Throws InvalidArgumentError if the provided type does not match
+ * any supported transformation mode.
+ *
+ * This indicates a caller-side contract violation.
+ *
+ * -------------------------------------------------------------------------
+ * PARAMETERS
+ * -------------------------------------------------------------------------
+ * @param type - Transformation mode identifier.
+ *
+ * -------------------------------------------------------------------------
+ * RETURNS
+ * -------------------------------------------------------------------------
+ * The original transformation type string if valid.
  */
+export function typeCheck(tType: string): string {
+  // -----------------------------------------------------------
+  // STEP 1: Normalize input for comparison
+  // -----------------------------------------------------------
 
-export function typeCheck(type: string): string {
-  const lowerType = type.toLowerCase();
+  const lowerType = tType.toLowerCase();
+
+  // -----------------------------------------------------------
+  // STEP 2: Validate against supported modes
+  // -----------------------------------------------------------
+
   if (!['absolute', 'a', 'relative', 'r', 'pivot', 'p'].includes(lowerType)) {
-    // type = 'a';
-    throw new Error(
-      `Transformation type is not valid type given type = ${type} expected type
- 'relative' or 'r' ,  'absolute' or 'a' , 'pivot' or 'p' `
+    throw new InvalidArgumentError(
+      'tType',
+      tType,
+      `Invalid transformation type: "${tType}". Expected one of 'absolute' | 'a', 'relative' | 'r', or 'pivot' | 'p'.`,
+      'transformation'
     );
   }
 
-  return type;
+  return tType;
 }
