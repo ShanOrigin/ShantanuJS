@@ -1,4 +1,4 @@
-import { InvalidArgumentError } from '../../../errors/provider/shantanuJSErrors';
+import { InvalidArgumentError } from '../../../errors/provider/shantanuJSErrors.js';
 
 /**
  * Canonical default property map for transformation and animation parameters.
