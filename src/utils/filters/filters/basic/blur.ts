@@ -1,6 +1,6 @@
 import { propertyUpdate } from '../../helpers/helpers.js';
 import { generateId } from '../../../helpers/helpers.js';
-import { createSVGElement } from '../../../../core/providers/svgSpecific.js';
+import { createSVGElement } from '../../../../core/provider/svgSpecific.js';
 export function blur(blur: number) {
   const id = 'blur' + generateId('');
   const filter = createSVGElement('filter');

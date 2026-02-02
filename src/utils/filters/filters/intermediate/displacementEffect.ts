@@ -1,5 +1,5 @@
 import { propertyUpdate, appendChildren } from '../../helpers/helpers.js';
-import { createSVGElement } from '../../../../core/providers/svgSpecific.js';
+import { createSVGElement } from '../../../../core/provider/svgSpecific.js';
 
 import { displacementEffectProps } from '../../../../types/filters.d';
 import { generateId } from '../../../helpers/helpers.js';
