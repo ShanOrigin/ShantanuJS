@@ -91,12 +91,17 @@ import type {
   controlsParams
 } from '../../types/animation';
 
+import {
+  createTransformationMatrixProps,
+  bboxProps
+} from '../../types/transformations';
+
 import type { iShape } from '../../shapes/provider/shapesTypes';
 
 // ----- Runtime Imports -----
 
 import Colors from '../colors/colors.js';
-import { DEV_INTERNAL_ACCESS } from '../providers/accesskeys.js';
+import { DEV_INTERNAL_ACCESS } from '../provider/accesskeys.js';
 import { AllStyleProperties as S } from '../../properties/provider/shapeProperties.js';
 
 import {
@@ -1077,9 +1082,18 @@ export class Animation<T extends GShpesTages> {
    *                      with the animation system
    * @param cleanUp     - Cleanup callback invoked when animation ends
    */
+
+  #createTransformMatrix!: (
+    param: createTransformationMatrixProps
+  ) => Float32Array | number[][];
+  #getBBox!: (param: boolean) => bboxProps;
   constructor(
     GElement: iShape, // GEC<keyof IG, keyof IG>,
     isAnimation: (t: boolean) => boolean | undefined | void,
+    createTransformMatrix: (
+      param: createTransformationMatrixProps
+    ) => Float32Array | number[][],
+    getBBox: (param: boolean) => bboxProps,
     cleanUp: Function
   ) {
     /**
@@ -1130,6 +1144,9 @@ export class Animation<T extends GShpesTages> {
      * This will be invoked when the animation lifecycle fully completes.
      */
     this.#cleanUp = cleanUp as Function;
+
+    this.#createTransformMatrix = createTransformMatrix;
+    this.#getBBox = getBBox;
   }
 
   /**
@@ -2363,7 +2380,7 @@ export class Animation<T extends GShpesTages> {
         this.#finalGeometry,
         baseTransformationMatrix,
         100,
-        this.#el.createTransformMatrix.bind(this.#el)
+        this.#createTransformMatrix
       )) as optFuncType,
       (this.#interpolateFunction = setPreComputedFrame));
 
@@ -2373,7 +2390,7 @@ export class Animation<T extends GShpesTages> {
         this.#initialGeometry,
         this.#finalGeometry,
         baseTransformationMatrix,
-        this.#el.createTransformMatrix.bind(this.#el)
+        this.#createTransformMatrix
       )),
       (this.#interpolateFunction = transformUsingPolynomialFast));
 
@@ -2629,7 +2646,7 @@ export class Animation<T extends GShpesTages> {
      * OBB is treated as read-only input data.
      */
     const OBB = (
-      this.#el.getBBox(false) as {
+      this.#getBBox(false) as {
         matrix: number[][];
       }
     ).matrix;
@@ -2899,7 +2916,7 @@ export class Animation<T extends GShpesTages> {
      *
      * Treated strictly as read-only geometric input.
      */
-    const OBB = (this.#el.getBBox() as { matrix: number[][] }).matrix;
+    const OBB = (this.#getBBox(true) as { matrix: number[][] }).matrix;
 
     /**
      * Translation vector extracted from resolved geometry.
