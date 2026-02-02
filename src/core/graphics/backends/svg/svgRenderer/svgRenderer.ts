@@ -1,34 +1,15 @@
+import type { Renderer } from '../../renderers';
+import type { iShape } from '../../../../../shapes/provider/shapesTypes';
+
 import {
-  GraphicalElement,
+  GraphicsModel,
   type GShpesTages
-} from '../../../graphicsElement/graphicsElement.js';
+} from '../../../graphicsModel/graphicsModel.js';
 
-import { DEV_INTERNAL_ACCESS } from '../../../../../utils/providers/accesskeys.js';
-
-import type {
-  iPoint,
-  iLine,
-  iCircle,
-  iEllipse,
-  iPolygon,
-  iPolyline,
-  iRect,
-  iPath
-} from '../../../../../shapes/provider/shapesTypes';
+import { DEV_INTERNAL_ACCESS } from '../../../../../utils/provider/accesskeys.js';
 
 import { transformStack } from '../../../../../types/index.js';
 
-type shapeType =
-  | iPoint
-  | iLine
-  | iCircle
-  | iEllipse
-  | iPolyline
-  | iPolygon
-  | iRect
-  | iPath;
-
-import { Renderer } from '../../renderers';
 /**
  * Renderer — Engine-level optimized SVG attribute writer.
  *
@@ -101,13 +82,13 @@ export class SVGRenderer implements Renderer {
    * - finalMatrix: optional explicit transform to apply (short-circuit).
    * - isEffect: whether to apply transform attribute.
    */
-  public render(shapesStack: Array<GraphicalElement<GShpesTages>>): void {
+  public render(shapesStack: Array<GraphicsModel<GShpesTages>>): void {
     // Validate the wrapper
 
     for (let index = 0; index < shapesStack.length; index++) {
       const el = shapesStack[index];
 
-      if (!(el instanceof GraphicalElement))
+      if (!(el instanceof GraphicsModel))
         throw new Error(
           'Given Shape is not Renderable: necessary parameters are not provided'
         );
@@ -130,7 +111,7 @@ export class SVGRenderer implements Renderer {
       const figRef = el.getIFig(DEV_INTERNAL_ACCESS);
       const shape = geoRef?.shape;
 
-      if ((el as shapeType).isBatching())
+      if ((el as iShape).isBatching())
         throw new Error(
           'Transformation batching is active by .beginT(); call .endT() after transformations are applied.'
         );
