@@ -6,6 +6,7 @@ import { TypeMismatchError } from '../domains/common/TypeMismatchError.js';
 import { InvalidArgumentError } from '../domains/common/InvalidArgumentError.js';
 import { InvalidReturnTypeError } from '../domains/common/InvalidReturnTypeError.js';
 import { OperationInProgressError } from '../domains/common/OperationInProgressError.js';
+import { InvalidInternalStateError } from '../domains/common/InvalidInternalStateError.js';
 import { InvalidFormatError } from '../domains/common/InvalidFormatError.js';
 
 import { CanvasParentNotFoundError } from '../domains/canvas/CanvasParentNotFoundError.js';
@@ -33,6 +34,7 @@ export {
   TypeMismatchError,
   InvalidArgumentError,
   InvalidReturnTypeError,
+  InvalidInternalStateError,
   OperationInProgressError,
   InvalidFormatError,
   CanvasParentNotFoundError,
