@@ -1,8 +1,8 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
 
 import {
   GraphicalElementProperties,
@@ -12,11 +12,11 @@ import {
 import {
   parameterTypeValidator,
   autoFixGeometry
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import type { rectStyleTypes, rectPropsType } from '../../types/shapes';
 
-export class Rect extends Shape<'rect'> {
+export class Rect extends GraphicsEntity<'rect'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);

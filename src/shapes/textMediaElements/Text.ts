@@ -1,8 +1,9 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
+
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -14,11 +15,11 @@ import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
 import {
   validProps,
   parameterTypeValidator
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import { textPropsType } from '../../types/shapes';
 
-export class Text extends Shape<'text'> {
+export class Text extends GraphicsEntity<'text'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);

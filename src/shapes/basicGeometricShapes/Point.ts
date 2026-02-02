@@ -1,8 +1,9 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
+
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -16,7 +17,7 @@ import {
   validProps,
   parameterTypeValidator,
   autoFixGeometry
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import { pointPropsType } from '../../types/shapes';
 
@@ -32,7 +33,7 @@ import { pointPropsType } from '../../types/shapes';
  * - Intended for internal engine use with strict access control.
  */
 
-export class Point extends Shape<'dot'> {
+export class Point extends GraphicsEntity<'dot'> {
   /**
    * Internal reference to the base class geometry object.
    *

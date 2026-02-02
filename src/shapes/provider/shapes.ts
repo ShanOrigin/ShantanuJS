@@ -9,11 +9,11 @@ import { Path } from '../basicGeometricShapes/Path.js';
 
 //composite geometry shapes
 import { Triangle } from '../customGeometricShapes/Triangle.js';
-import { Curve } from '../customGeometricShapes/Curves.js';
-import { CubicCurve } from '../customGeometricShapes/cubicCurves.js';
-import { QuadraticCurve } from '../customGeometricShapes/quadraticCurves.js';
-import { ArcCurve } from '../customGeometricShapes/arcCurves.js';
-import { EarcCurve } from '../customGeometricShapes/earcCurves.js';
+import { Curve } from '../customGeometricShapes/Curve.js';
+import { CubicCurve } from '../customGeometricShapes/cubicCurve.js';
+import { QuadraticCurve } from '../customGeometricShapes/quadraticCurve.js';
+import { ArcCurve } from '../customGeometricShapes/arcCurve.js';
+import { EarcCurve } from '../customGeometricShapes/earcCurve.js';
 
 import { Text } from '../textMediaElements/Text.js';
 export {

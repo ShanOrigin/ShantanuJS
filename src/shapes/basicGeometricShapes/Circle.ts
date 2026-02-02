@@ -4,13 +4,13 @@ import {
   validProps,
   parameterTypeValidator,
   autoFixGeometry
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
   DEV_INTERNAL_ACCESS,
-  assertAccess,
-  Shape
-} from '../baseShape/Shape.js';
+  assertAccess
+} from '../../utils/provider/accesskeys.js';
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -19,7 +19,7 @@ import {
 
 import type { circlePropsType } from '../../types/shapes';
 
-export class Circle extends Shape<'circle'> {
+export class Circle extends GraphicsEntity<'circle'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
 

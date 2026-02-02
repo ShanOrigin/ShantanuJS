@@ -1,8 +1,9 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
+
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -15,11 +16,11 @@ import {
   validProps,
   parameterTypeValidator,
   autoFixGeometry
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import type { ellipsePropsType } from '../../types/shapes';
 
-export class Ellipse extends Shape<'ellipse'> {
+export class Ellipse extends GraphicsEntity<'ellipse'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);

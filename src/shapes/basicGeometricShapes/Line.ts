@@ -1,8 +1,8 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -16,7 +16,7 @@ import {
   isValidMatrix,
   validProps,
   parameterTypeValidator
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import { linePropsType } from '../../types/shapes';
 
@@ -34,7 +34,7 @@ import { linePropsType } from '../../types/shapes';
  * geometry logic and constraints.
  */
 
-export class Line extends Shape<'line'> {
+export class Line extends GraphicsEntity<'line'> {
   /**
    * Reference to the base class’s internal geometry object.
    *

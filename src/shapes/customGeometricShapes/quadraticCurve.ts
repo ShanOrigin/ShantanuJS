@@ -1,5 +1,5 @@
-import { Curve } from './Curves.js';
-import type { propsType } from './Curves';
+import { Curve } from './Curve.js';
+import type { propsType } from './Curve';
 
 export class QuadraticCurve extends Curve {
   constructor(props: propsType) {

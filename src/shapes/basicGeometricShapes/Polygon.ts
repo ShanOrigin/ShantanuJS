@@ -1,8 +1,9 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
+
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -17,11 +18,11 @@ import {
   parameterTypeValidator,
   autoFixGeometry
   //  computeBBox
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import type { polygonPropsType } from '../../types/shapes';
 
-export class Polygon extends Shape<'polygon'> {
+export class Polygon extends GraphicsEntity<'polygon'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);

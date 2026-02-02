@@ -1,8 +1,9 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
+
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -20,7 +21,7 @@ import {
   isValidMatrix,
   validProps,
   autoFixGeometry
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import { generateCurvePoints } from '../../utils/curve/curveGenerator/generateCurvePoints.js';
 
@@ -29,7 +30,7 @@ export type propsType = Partial<IGraphicalElementProperties['curve']> &
 
 import type { polylinePropsType, curvePropsType } from '../../types/shapes';
 
-export class Curve extends Shape<'curve'> {
+export class Curve extends GraphicsEntity<'curve'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   //  #Animations!: Animation<'polyline'>[]; // for timeline support but not implementated yet
 
