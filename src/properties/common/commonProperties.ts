@@ -86,7 +86,7 @@ const ShapeStyleProperties = Object.seal({
   'marker-end': '' // Reference to end marker
 });
 
-type IShapeStyleProperties = typeof ShapeStyleProperties;
+export type IShapeStyleProperties = typeof ShapeStyleProperties;
 
 const TextStyleProperties = Object.seal({
   'font-family': 'arial', // Font name
