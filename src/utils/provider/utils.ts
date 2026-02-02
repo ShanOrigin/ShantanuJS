@@ -17,7 +17,7 @@ import {
 import { Transformation } from '../transformation/transformation.js';
 
 // importing animation module from sub module of utils
-import { Animation } from '../animations/animation.js';
+import { Animation } from '../animation/animation.js';
 
 // importing filter module from sub module of utils
 import { Filter } from '../filters/filters.js';

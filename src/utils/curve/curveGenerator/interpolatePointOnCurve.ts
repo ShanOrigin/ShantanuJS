@@ -3,7 +3,7 @@
 //+++++++++++++++++++++++++++
 
 import type { Point, CurveType, CurveInfo } from '../../../types/animation';
-import { lerp } from '../../animations/preBuilds/helpers/helpers.js';
+import { lerp } from '../../animation/preBuilds/helpers/helpers.js';
 import { getSemiCirclePoint } from '../curvePaths/arcCurve.js';
 import { getEllipsePoint } from '../curvePaths/ellipseArcCurve.js';
 

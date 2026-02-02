@@ -22,7 +22,7 @@ import {
 
 // ------ Type Imports ------
 
-import type { animatableProps } from '../../utils/animations/animation.js';
+import type { animatableProps } from '../../utils/animation/animation.js';
 import type { attrsMethodReturnTypes, transformStack } from '../../types/index';
 import type {
   IadvanceProps,
