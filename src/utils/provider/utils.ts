@@ -14,7 +14,7 @@ import {
 } from '../helpers/helpers.js';
 
 // importing transformations mixier class module from sub module of utils
-import { TransformMinix } from '../transformations/transformations.js';
+import { Transformation } from '../transformation/transformation.js';
 
 // importing animation module from sub module of utils
 import { Animation } from '../animations/animation.js';
@@ -39,7 +39,7 @@ export {
 };
 
 // exporting transformations mixier class
-export { TransformMinix };
+export { Transformation };
 
 // exporting Animation module
 export { Animation };
