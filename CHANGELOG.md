@@ -1,6 +1,6 @@
 
 
-## I don't know exactly but but I am creating this file and storing changes which I did on my project I think after 4 months for 5 months because I know that the first thing that I created this project I think in the January of 2025 for a solving only just a simple animation problem in my first project which is code for respective
+## I don't know exactly but but I am creating this file and storing changes which I did on my project I think after 4 months for 5 months because I know that the first thing that I created this project I think in the January of 2025 for a solving only just a simple animation problem in my first project which is "TheCodePerspective".
 
 ## This is new format for storing change logs from [ 28 - 08 ( August ) - 2025 ] - Thursday before this i was storing all logs in README.md now i am deleting that README.md file and Storing Real README.md data , because i was not awere of CHANGELOG.md Something exists .
 
@@ -619,4 +619,9 @@ Notes:
 - Added multiple different error classes in error for specific errors.
 - Inserted .js extension in lots of .ts files of error module.
 - Using error module in animation module for user error handling.
+
+[2026-01-31 | Saturday | 22:35] [Library | 1d] Big last refactor for multiple things.
+Notes:
+- Last refactor for correcting different things.
+- Correcting logical and relational things.
 
