@@ -1,5 +1,5 @@
 // importing canvas classes
-import Canvas from '../core/providers/canvas.js';
+import Canvas from '../core/provider/canvas.js';
 
 import {
   Point,

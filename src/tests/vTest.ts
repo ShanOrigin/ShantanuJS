@@ -1,4 +1,4 @@
-import { DEV_INTERNAL_ACCESS } from '../utils/providers/accesskeys.js';
+import { DEV_INTERNAL_ACCESS } from '../utils/provider/accesskeys.js';
 
 // -------------------------------------------------------------
 // Convert BBox rect into 4 corners
