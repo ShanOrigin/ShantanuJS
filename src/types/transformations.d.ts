@@ -52,3 +52,11 @@ export type createTransformationMatrixProps = {
   baseTMatrix?: Float32Array;
   multiplyWithBase?: boolean;
 };
+
+export type bboxProps = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  matrix: number[][];
+};
