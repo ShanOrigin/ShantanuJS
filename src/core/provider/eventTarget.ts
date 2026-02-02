@@ -1,3 +1,3 @@
-import { EventsSystem } from '../events/event.js';
+import { EventTarget } from '../eventTarget/eventTarget.js';
 
-export { EventsSystem };
+export { EventTarget };

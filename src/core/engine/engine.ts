@@ -1,9 +1,6 @@
-import { DEV_INTERNAL_ACCESS } from '../../utils/internals/accessKeys.js';
+import { DEV_INTERNAL_ACCESS } from '../../utils/provider/accesskeys.js';
 import type { Renderer } from '../graphics/backends/renderers';
-import {
-  GraphicalElement,
-  type GShpesTages
-} from '../graphics/graphicsElement/graphicsElement.js';
+import { GraphicsModel } from '../graphics/graphicsModel/graphicsModel.js';
 
 import type { iShape } from '../../shapes/provider/shapesTypes';
 /**
@@ -84,7 +81,7 @@ export class Engine {
     for (let i = 0; i < len; i++) {
       const shape = this.#shapes[i];
 
-      if (!(shape instanceof GraphicalElement))
+      if (!(shape instanceof GraphicsModel))
         throw new Error(
           'Given Shape is not Renderable: necessary parameters are not provided'
         );

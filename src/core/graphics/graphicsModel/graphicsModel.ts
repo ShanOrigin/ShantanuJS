@@ -4,9 +4,9 @@ import {
   GraphicalElementProperties
 } from '../../../properties/provider/shapeProperties.js';
 
-import { assertAccess } from '../../../utils/providers/accesskeys.js';
+import { assertAccess } from '../../../utils/provider/accesskeys.js';
 
-import { Colors, generateId } from '../../../utils/providers/utils.js';
+import { Colors, generateId } from '../../../utils/provider/utils.js';
 
 import type {
   ICommonGeometricProperties,
@@ -34,7 +34,7 @@ type ValidKeys = Extract<
 >;
 
 type GRAPHICS_TYPES = SVGElement;
-export abstract class GraphicalElement<T extends ValidKeys> {
+export abstract class GraphicsModel<T extends ValidKeys> {
   // in future #fig may hold HTMLCanvasElement , WebGl Elements
   #fig!: GRAPHICS_TYPES;
   // int future #context may hold SVG_CONTEXT , 'htmlcanvas' , 'webgl' contexts
@@ -81,7 +81,7 @@ export abstract class GraphicalElement<T extends ValidKeys> {
         enumerable: true
       });
 
-      GraphicalElement.prototype.attrs.call(this, {
+      GraphicsModel.prototype.attrs.call(this, {
         'stroke-width': 0.5,
         stroke: new Colors('rgb(0,0,0)').isColor(),
         fill: new Colors('none').isColor(),

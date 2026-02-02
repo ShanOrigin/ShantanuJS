@@ -1,8 +1,8 @@
 import {
-  GraphicalElement,
+  GraphicsModel,
   GShpesTages
-} from '../graphics/graphicsElement/graphicsElement.js';
-import { DEV_INTERNAL_ACCESS } from '../../utils/providers/accesskeys.js';
+} from '../graphics/graphicsModel/graphicsModel.js';
+import { DEV_INTERNAL_ACCESS } from '../../utils/provider/accesskeys.js';
 
 import { SVG_CONTEXT } from '../graphics/backends/svg/core/core.js';
 
@@ -28,9 +28,9 @@ type SupportedEvents =
   | 'mouseenter'
   | 'mouseleave';
 
-export abstract class EventsSystem<
+export abstract class EventTarget<
   T extends GShpesTages
-> extends GraphicalElement<T> {
+> extends GraphicsModel<T> {
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++
   //  This entire class code may change According to context in future
   // +++++++++++++++++++++++++++++++++++++++++++++++++++++

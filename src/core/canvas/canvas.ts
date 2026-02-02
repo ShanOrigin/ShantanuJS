@@ -1,13 +1,13 @@
 import { IGraphicalElementProperties as IG } from '../../properties/specific/specificProperties.js';
 
-import { Colors } from '../../utils/providers/utils.js';
+import { Colors } from '../../utils/provider/utils.js';
 import { createSVGElement } from '../graphics/backends/svg/core/core.js';
 
-import { GraphicalElement as G } from '../graphics/graphicsElement/graphicsElement.js';
+import { GraphicsModel as G } from '../graphics/graphicsModel/graphicsModel.js';
 
-import { EventsSystem } from '../events/event.js';
+import { EventTarget } from '../eventTarget/eventTarget.js';
 // import { Group as GR } from '../../utils/collection/group.js';
-import { DEV_INTERNAL_ACCESS } from '../../utils/providers/accesskeys.js';
+import { DEV_INTERNAL_ACCESS } from '../../utils/provider/accesskeys.js';
 
 import { initRenderer } from '../graphics/backends/renderer.js';
 import { Renderer } from '../graphics/backends/renderers';
@@ -26,7 +26,7 @@ type GType = G<shapeType>;
 
 declare const __SHANTANU_DEV__: boolean;
 
-export default class Canvas extends EventsSystem<'canvas'> {
+export default class Canvas extends EventTarget<'canvas'> {
   #parent: HTMLElement | null; // Accept all valid SVG types generically
   #canvasElements: Array<iShape> = [];
   #renderer!: Renderer;

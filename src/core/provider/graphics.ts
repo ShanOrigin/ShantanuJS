@@ -1,6 +1,6 @@
 import {
-  GraphicalElement,
+  GraphicsModel,
   GShpesTages
-} from '../graphics/graphicsElement/graphicsElement.js';
+} from '../graphics/graphicsModel/graphicsModel.js';
 
-export { GraphicalElement, GShpesTages };
+export { GraphicsModel, GShpesTages };
