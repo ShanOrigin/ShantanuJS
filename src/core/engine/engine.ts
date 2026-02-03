@@ -49,7 +49,7 @@ export class Engine {
   start() {
     if (this.#running) return;
     this.#running = true;
-    this.#rafId = requestAnimationFrame(this.loop.bind(this));
+    this.#rafId = requestAnimationFrame(this.#loop.bind(this));
   }
 
   /**
@@ -66,18 +66,9 @@ export class Engine {
     }
   }
 
-  /**
-   * Internal loop function called every frame by requestAnimationFrame.
-   * @param {DOMHighResTimeStamp} time - The high-resolution timestamp provided by rAF.
-   */
-  loop(time: number) {
-    // If stopped between frames, do not continue.
-    if (!this.#running) return;
-
-    // 1. Update animations
-    //    Use a traditional for loop for maximum speed and predictability.
+  #frame(time: number) {
     const len = this.#shapes.length;
-    time;
+
     for (let i = 0; i < len; i++) {
       const shape = this.#shapes[i];
 
@@ -85,26 +76,42 @@ export class Engine {
         throw new Error(
           'Given Shape is not Renderable: necessary parameters are not provided'
         );
-      i;
+
       shape.updateAnimation(DEV_INTERNAL_ACCESS, time);
-      // get geometry/style/DOM handle
-      const geoRef = shape.getIGeo(DEV_INTERNAL_ACCESS) as Partial<{
-        dirty: boolean;
-
-        shape: string;
-      }>;
-
-      if (!geoRef)
-        throw new Error('Shape geometry or canonicalMatrix is missing');
-
-      // Render Only that shapes which actually needs to be rendered avoid unchanged shapes
-      if (!geoRef.dirty) continue;
     }
 
-    // 2. Render entire scene once
     this.#renderer.render(this.#shapes);
+  }
+
+  public flush(time: number = performance.now()) {
+    // forcefully re - render
+    const len = this.#shapes.length;
+
+    for (let i = 0; i < len; i++) {
+      const shape = this.#shapes[i];
+
+      const geoRef = shape.getIGeo(DEV_INTERNAL_ACCESS) as Partial<{
+        dirty: boolean;
+      }>;
+
+      // force re render
+      geoRef.dirty = true;
+    }
+
+    this.#frame(time);
+  }
+
+  /**
+   * Internal loop function called every frame by requestAnimationFrame.
+   * @param {DOMHighResTimeStamp} time - The high-resolution timestamp provided by rAF.
+   */
+  #loop(time: number) {
+    // If stopped between frames, do not continue.
+    if (!this.#running) return;
+
+    this.#frame(time);
 
     // Continue loop
-    this.#rafId = requestAnimationFrame(this.loop.bind(this));
+    this.#rafId = requestAnimationFrame(this.#loop.bind(this));
   }
 }
