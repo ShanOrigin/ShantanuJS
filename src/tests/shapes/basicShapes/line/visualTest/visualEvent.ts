@@ -134,7 +134,10 @@ export async function LineEventsTests() {
 
     shape.touchMove(() => {
       console.log('touchMove triggered');
-      shape.attrs({ x: shape.x + 5, y: shape.y + 5 });
+      shape.attrs({
+        x1: shape?.geometry?.x1 ?? 0 + 5,
+        y1: shape?.geometry?.y1 ?? 0 + 5
+      });
     });
   });
 
