@@ -120,6 +120,15 @@ export default class Canvas extends EventTarget<'canvas'> {
     }
   }
 
+  public start() {
+    this.#engine.start();
+  }
+  public stop() {
+    this.#engine.stop();
+  }
+  public flush() {
+    this.#engine.flush();
+  }
   #setCanvasParams(): void {
     try {
       const { x, y } = this.#geometry as { x: number; y: number };
