@@ -61,7 +61,7 @@ export abstract class GraphicsEntity<
   #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #transform!: Transformation; // composition of transformation module with GraphicsEntity class with has-a reletionship
-  #animation!: Animation<T> | null; // composition of animation module with GraphicsEntity class with has-a reletionship
+  #animation!: Animation | null; // composition of animation module with GraphicsEntity class with has-a reletionship
   #isAnimation: boolean = false; // animation control to avoid multiple animation do not run at same time
 
   #classProp: {
@@ -723,7 +723,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
       this.#preChecks('', 1, 1);
       animationChecks(attrs, avdProp, duration, ease, onComplete);
 
-      this.#animation = new Animation<T>(
+      this.#animation = new Animation(
         this,
         this.#isAnimationsGoingOn.bind(this),
         this.#transform.createTransformMatrix.bind(this.#transform),
@@ -760,7 +760,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
       this.#preChecks('', 1, 1);
       animationChecks(attrs, avdProp, duration, ease, onComplete);
 
-      this.#animation = new Animation<T>(
+      this.#animation = new Animation(
         this,
         this.#isAnimationsGoingOn.bind(this),
         this.#transform.createTransformMatrix.bind(this.#transform),
