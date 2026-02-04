@@ -350,7 +350,7 @@ const GraphicsSource = 'http://www.w3.org/2000/svg';
  * into a single, coherent, and deterministic animation engine.
  */
 
-export class Animation<T extends GShpesTages> {
+export class Animation {
   /**
    * Reference to the graphics shape instance being animated.
    *
@@ -1088,7 +1088,7 @@ export class Animation<T extends GShpesTages> {
   ) => Float32Array | number[][];
   #getBBox!: (param: boolean) => bboxProps;
   constructor(
-    GElement: iShape, // GEC<keyof IG, keyof IG>,
+    GElement: iShape,
     isAnimation: (t: boolean) => boolean | undefined | void,
     createTransformMatrix: (
       param: createTransformationMatrixProps
@@ -2148,7 +2148,7 @@ export class Animation<T extends GShpesTages> {
      * Shape instance reference.
      * Used to apply transformation commands.
      */
-    const s = this.#el as any;
+    const s = this.#el as iShape;
 
     /**
      * -----------------------------------------------------------
@@ -2165,7 +2165,7 @@ export class Animation<T extends GShpesTages> {
     /**
      * Begin transformation batching if required.
      */
-    isToCompose > 0 && (s.beginT() as Function);
+    isToCompose > 0 && s.beginT();
 
     /**
      * -----------------------------------------------------------
@@ -2274,7 +2274,7 @@ export class Animation<T extends GShpesTages> {
    * @returns void or a Promise that resolves when animation completes
    */
   public animate(
-    attrs: animatableProps & IG[T],
+    attrs: animatableProps,
     advProp: IadvanceProps | null,
     duration: number,
     ease: EasingType | Function | null = 'linear',
@@ -3186,7 +3186,7 @@ export class Animation<T extends GShpesTages> {
    *
    * This function mutates `finalGeometry` as part of animation setup.
    */
-  #associate(gProps: IcommonGeometryAnimatableProperties & IG[T]) {
+  #associate(gProps: IcommonGeometryAnimatableProperties) {
     /**
      * Direct transform association.
      * If the user explicitly provided transform blocks,
