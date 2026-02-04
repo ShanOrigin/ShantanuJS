@@ -68,6 +68,8 @@ export namespace Shantanu {
   export type Text = InstanceType<typeof Shantanu.Text>;
 }
 
+export type ShantanuTypes = typeof Shantanu;
+
 /*
 export const Shantanu = {
   Canvas,
