@@ -1,6 +1,7 @@
 // ++++++ General export types +++++++
 
-export type infoParams = {
+export type CompareMode = 'eq' | 'gt' | 'lt' | 'gte' | 'lte';
+export type testInfo = {
   module?: string;
   element?: string;
   testType?: string;
@@ -11,6 +12,7 @@ export type Primitive = string | number | boolean;
 
 export type AttrMap = Record<string, Primitive>;
 
+export type geoAttrMap = AttrMap & { tolerance?: number };
 export type NumMap = Record<string, number>;
 
 export type constraintsParams = {
@@ -19,12 +21,10 @@ export type constraintsParams = {
     browser?: boolean;
     library?: boolean;
   };
-  tolerance?: {
-    geometry: number;
-  };
 };
 
-export type verifyParam = {
+export type verifyParams = {
+  shapes: string[];
   constraints?: constraintsParams;
   style?: {
     fill?: string;
@@ -33,19 +33,19 @@ export type verifyParam = {
     attrs?: AttrMap;
   };
   geometry?: {
-    attr?: NumMap;
-    equalTo?: NumMap;
-    greaterThan?: NumMap;
-    lessThan?: NumMap;
-    bbox?: boolean;
+    attr?: geoAttrMap;
+    equalTo?: geoAttrMap;
+    greaterThan?: geoAttrMap;
+    lessThan?: geoAttrMap;
+    greaterThanOrEqual?: geoAttrMap;
+    lessThanOrEqual?: geoAttrMap;
+    bbox?: { check: boolean; tolerance?: number };
   };
 
   error?: {
     expected: Error;
   };
 };
-
-export type testInfo = infoParams;
 
 // +++++++++ Style export types +++++++++
 
@@ -54,23 +54,16 @@ export type OracleResult = {
   actual: Primitive;
   expected: Primitive;
 };
-export type StyleResult = {
-  library?: Record<string, OracleResult>;
-  browser?: Record<string, OracleResult>;
-};
 
 // ++++++++ Geometry export types +++++++++
 
 export type GeometryCheckResult = {
   status: 'pass' | 'fail';
-  actual: number;
-  expected: number;
+  actual: number | string | number[];
+  expected: number | string | number[];
   delta?: number;
-};
-
-export type GeometryResult = {
-  library?: Record<string, GeometryCheckResult>;
-  browser?: Record<string, GeometryCheckResult>;
+  reason?: string;
+  tolerance?: number;
 };
 
 // +++++++ Error export types +++++++++
@@ -84,7 +77,7 @@ export type Terrors = {
 // +++++++ Output Types ++++++++
 
 export type outputParam = {
-  information: infoParams & { id: string };
+  information: testInfo & { id: string };
 
   state?: {
     before?: Record<string, any>;
@@ -92,12 +85,15 @@ export type outputParam = {
   };
 
   assertions: {
+    crossCheck?: 'library' | 'browser' | 'system';
     domain: 'style' | 'geometry' | 'error';
     property: string;
     status: 'pass' | 'fail';
     expected: any;
     actual: any;
     delta?: number;
+    reason?: string;
+    tolerance?: number;
   }[];
 };
 
@@ -117,7 +113,28 @@ export type metaData = {
   environment: env & { libraryVersion: string };
 };
 
-export type fileLevelData = {
-  meta: metaData;
-  tests: Record<string, outputParam>;
+export type tests = Record<string, outputParam>;
+export type saveFileData = {
+  save?: boolean;
+  fileUrl: string;
+  meta?: metaData;
+  tests: tests;
 };
+
+export type RGBA = [number, number, number, number];
+
+/**
+ * Represents parsed browser information.
+ */
+export interface BrowserInfo {
+  name: string;
+  version: string;
+}
+
+/**
+ * Represents the complete legacy browser detection result.
+ */
+export interface LegacyBrowserInfo {
+  browser: BrowserInfo;
+  platform: string;
+}
