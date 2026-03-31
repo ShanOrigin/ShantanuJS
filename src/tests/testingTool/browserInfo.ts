@@ -1,19 +1,4 @@
-/**
- * Represents parsed browser information.
- */
-interface BrowserInfo {
-  name: string;
-  version: string;
-}
-
-/**
- * Represents the complete legacy browser detection result.
- */
-interface LegacyBrowserInfo {
-  browser: BrowserInfo;
-  platform: string;
-}
-
+import { BrowserInfo, LegacyBrowserInfo } from './types';
 /**
  * Parses browser name and version from a given User-Agent string.
  *
