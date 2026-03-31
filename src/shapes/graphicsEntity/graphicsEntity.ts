@@ -477,6 +477,10 @@ Description : taking original shape data ( which is local geometry ) and then ap
      * while the visual model receives the finalized transform string.
      */
     this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
+
+    const t = `${a} , ${b} , ${c} , ${d} , ${e} , ${f}`;
+
+    this.attrs({ transform: t });
   }
 
   public beginT(): this {
