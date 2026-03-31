@@ -625,3 +625,8 @@ Notes:
 - Last refactor for correcting different things.
 - Correcting logical and relational things.
 
+[2026-02-24 | Tuesday | 23:13] [testing | 4h] working on testing framework
+Notes:
+- added file handling. 
+-  supprting multiple things.
+
