@@ -241,7 +241,8 @@ export class SVGRenderer implements Renderer {
         }
 
         case 'polyline':
-        case 'polygon': {
+        case 'polygon':
+        case 'curve': {
           // canonicalMatrix is an array-of-points. You said you replace arrays when geometry changes.
           const matrix = (geoRef?.buffer ?? []) as Float32Array;
 
@@ -271,6 +272,49 @@ export class SVGRenderer implements Renderer {
               desiredAttrs['d'] = d;
             }
           }
+          break;
+        }
+
+        case 'text': {
+          const { x, y, text } = geoRef as {
+            x: number;
+            y: number;
+            text: string;
+          };
+          const xs = this.#numToStr(x);
+          const ys = this.#numToStr(y);
+
+          geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
+
+          geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
+
+          figRef.textContent = text;
+
+          break;
+        }
+
+        case 'image': {
+          const { x, y, width, height, href } = geoRef as {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            href: string;
+          };
+          const xs = this.#numToStr(x);
+          const ys = this.#numToStr(y);
+          const ws = this.#numToStr(width);
+          const hs = this.#numToStr(height);
+
+          geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
+
+          geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
+
+          geoCache['__width'] !== ws && (desiredAttrs['width'] = ws);
+
+          geoCache['__height'] !== hs && (desiredAttrs['height'] = hs);
+          geoCache['__href'] !== href && (desiredAttrs['href'] = href);
+
           break;
         }
 
