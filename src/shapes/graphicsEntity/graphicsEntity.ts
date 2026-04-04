@@ -195,8 +195,9 @@ Description : taking original shape data ( which is local geometry ) and then ap
       if (typeof props === 'object') {
         if ('initial' in props && props.initial) {
           delete props.initial;
-          console.log('initial');
+
           super.attrs(props);
+
           this.generateMatrix(DEV_INTERNAL_ACCESS);
         } else {
           parameterTypeValidator(
