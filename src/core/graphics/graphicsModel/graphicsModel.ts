@@ -303,7 +303,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
           >
         )[key];
 
-        if (key === 'sharedBuffer') {
+        if (key === 'buffer') {
           // Copy Float32Array
           return (value as Float32Array).slice();
         } else if (key == 'transformStack') {
