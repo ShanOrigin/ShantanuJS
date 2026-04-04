@@ -68,12 +68,12 @@
     "synchronousWatchDirectory": true
   },
 
-  "include": ["src/index/**/*.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": [
     "src/tests/**",
     "src/**/*.test.ts",
     "src/**/visualTest/**",
-    "src/shapes/customGeometricShapes/*.ts",
+//    "src/shapes/customGeometricShapes/*.ts",
     "node_modules",
     "dist"
   ]
