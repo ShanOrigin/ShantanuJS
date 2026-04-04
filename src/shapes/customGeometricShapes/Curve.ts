@@ -7,7 +7,8 @@ import {
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
-  AllGShapeStyleProperties
+  AllGShapeStyleProperties,
+  dimensions
 } from '../../properties/provider/shapeProperties.js';
 
 import {
@@ -17,11 +18,7 @@ import {
 
 import type { Point, CurveType } from '../../types/animation';
 
-import {
-  isValidMatrix,
-  validProps,
-  autoFixGeometry
-} from '../../utils/provider/utils.js';
+import { isValidMatrix, validProps } from '../../utils/provider/utils.js';
 
 import { generateCurvePoints } from '../../utils/curve/curveGenerator/generateCurvePoints.js';
 
@@ -29,11 +26,12 @@ export type propsType = Partial<IGraphicalElementProperties['curve']> &
   Partial<StyleForGShapeTag<'polyline'>>;
 
 import type { polylinePropsType, curvePropsType } from '../../types/shapes';
+import type { attrsMethodReturnTypes } from '../../types/index';
 
 export class Curve extends GraphicsEntity<'curve'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
-  //  #Animations!: Animation<'polyline'>[]; // for timeline support but not implementated yet
 
+  #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   constructor(
     curveName: CurveType,
     props: polylinePropsType & curvePropsType = {}
@@ -52,64 +50,119 @@ export class Curve extends GraphicsEntity<'curve'> {
         continuousCount = 1
       } = props;
 
-      if (!continuous) {
-      } else {
-      }
-
-      const points = generateCurvePoints({
-        P1: { x: x1, y: y1 } as Point,
-        P2: { x: x2, y: y2 } as Point,
-        bend: (curvature * -1) as number,
-        smoothness: smoothness as number,
-        curveName: curveName || (props.curveName! as CurveType),
-        pointsOnly: true,
-        continuous: continuous as boolean,
-        continuousCount: continuousCount as number
-      }) as Point[];
-      /*
-      parameterTypeValidator(
-        //  safeProps,
-        GraphicalElementProperties,
-        AllGShapeStyleProperties,
-        this.#classProp,
-        'polyline'
-      );
-*/
-      autoFixGeometry(props, ['stroke-width']);
-
-      let pointsAttr = '';
-      if (
-        (points && !Array.isArray(points)) ||
-        !points.every(
-          (row) =>
-            typeof row == 'object' &&
-            typeof row.x == 'number' &&
-            typeof row.y == 'number'
-        )
-      ) {
-        throw new Error(
-          'Invalid matrix: must be an array of [x, y] coordinates.'
-        );
-      }
-
-      for (let i = 0; i < points.length; i++) {
-        pointsAttr += `${points[i]!.x.toFixed(10)},${points[i]!.y.toFixed(10)}`;
-        if (i < points.length - 1) {
-          pointsAttr += ' ';
-        }
-      }
-
       const safeProps = {
         stroke: props['stroke'] || 'black',
         'stroke-width': props['stroke-width'] || 0.5,
-        points: pointsAttr,
-        initial: true
+        x1,
+        y1,
+        x2,
+        y2,
+        curvature,
+        smoothness,
+        continuous,
+        continuousCount,
+        curveName,
+        initial: true,
+        ...props
       };
 
       this.attrs(safeProps);
     } catch (e) {
       throw e;
     }
+  }
+
+  public override attrs(
+    props: (curvePropsType & polylinePropsType) | string
+  ): attrsMethodReturnTypes {
+    try {
+      const isObject = typeof props == 'object';
+
+      if (isObject) {
+        const isCurveName = 'curveName' in props;
+
+        const isIntial = 'initial' in props;
+
+        !isIntial &&
+          (console.warn(`Curve Name Cannot be Changed `),
+          (props['curveName'] = this.#geometry?.curveName));
+
+        const needRecalculatePath =
+          'x1' in props ||
+          'y1' in props ||
+          'x2' in props ||
+          'y2' in props ||
+          'curvature' in props ||
+          'smoothness' in props ||
+          'continuous' in props ||
+          'continuousCount' in props ||
+          isCurveName;
+
+        if (needRecalculatePath) {
+          const {
+            x1,
+            y1,
+            x2,
+            y2,
+            curvature = 0.5,
+            smoothness,
+            continuous = false,
+            continuousCount = 1,
+            curveName = 'linear'
+          } = props;
+
+          if (!continuous) {
+          } else {
+          }
+
+          const points = generateCurvePoints({
+            P1: { x: x1, y: y1 } as Point,
+            P2: { x: x2, y: y2 } as Point,
+            bend: (curvature * -1) as number,
+            smoothness: smoothness as number,
+            curveName: curveName as CurveType,
+            pointsOnly: true,
+            continuous: continuous as boolean,
+            continuousCount: continuousCount as number
+          }) as Point[];
+
+          let pointsAttr = '';
+          if (
+            (points && !Array.isArray(points)) ||
+            !points.every(
+              (row) =>
+                typeof row == 'object' &&
+                typeof row.x == 'number' &&
+                typeof row.y == 'number'
+            )
+          ) {
+            throw new Error(
+              'Invalid matrix: must be an array of [x, y] coordinates.'
+            );
+          }
+
+          for (let i = 0; i < points.length; i++) {
+            pointsAttr += `${points[i]!.x.toFixed(10)},${points[i]!.y.toFixed(
+              10
+            )}`;
+            if (i < points.length - 1) {
+              pointsAttr += ' ';
+            }
+          }
+
+          props['points'] = pointsAttr;
+
+          super.attrs(props);
+          return;
+        }
+      } else if (typeof props == 'string') {
+        const val = super.attrs(props);
+
+        return val;
+      }
+
+      return;
+    } catch (e) {}
   }
 
   static validProps() {
@@ -121,9 +174,7 @@ export class Curve extends GraphicsEntity<'curve'> {
     );
   }
 
-  /*
   public clone(offsetX: number = 10, offsetY: number = 10): Curve {
-    /*
     if (
       this.#geometry &&
       typeof this.#geometry === 'object' &&
@@ -132,22 +183,54 @@ export class Curve extends GraphicsEntity<'curve'> {
       typeof this.#style === 'object' &&
       this.#style !== null
     ) {
-      const { copies = 0, points = 'M 10 , 10 L 50 , 50 ' } = this.#geometry;
+      const {
+        copies = 0,
+
+        x1 = 0,
+        y1 = 0,
+        x2 = 0,
+        y2 = 0,
+        curvature = 0.5,
+        smoothness = 0.5,
+        continuous = false,
+        continuousCount = 1,
+        curveName = 'cubic',
+
+        buffer
+      } = this.#geometry;
       const nextCopies = copies + 1;
+
+      const newPoints = [];
+      for (let i = 0; i < buffer!.length!; i += 3) {
+        const x = buffer![i]!;
+        const y = buffer![i + 1]!;
+        newPoints.push([x + offsetX, y + offsetY]);
+      }
+
       const style = { ...this.#style } as StyleForGShapeTag<'polyline'>;
       if ('id' in style && style.id !== '') {
         style.id = `${style.id}-c${nextCopies}`;
       }
       this.#geometry['copies'] = nextCopies;
 
-      const pl = new Curve(points, style as propsType);
-      pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
+      const pl = new Curve(curveName as CurveType, {
+        x1,
+        x2,
+        y1,
+        y2,
+        curvature,
+        smoothness,
+        continuous,
+        continuousCount,
+        curveName,
+        ...(style as polylinePropsType)
+      });
+      //   pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
       return pl;
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');
   }
-	*/
 
   #validatePolylineCoordinates(path: string) {
     // Match the pattern of "x,y" coordinates separated by spaces
@@ -194,8 +277,8 @@ export class Curve extends GraphicsEntity<'curve'> {
       assertAccess(accessKey);
 
       const geo = this.#geometry as {
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
+        buffer: Float32Array;
+
         points: string;
       };
 
@@ -206,6 +289,7 @@ export class Curve extends GraphicsEntity<'curve'> {
         vmat = setM as Float32Array;
       } else {
         const rawPoints = this.attrs('points') as string;
+
         vmat = this.#validatePolylineCoordinates(rawPoints);
         if (!(vmat instanceof Float32Array)) {
           throw new Error(
@@ -213,30 +297,23 @@ export class Curve extends GraphicsEntity<'curve'> {
           );
         }
       }
-      const shapeRows = vmat.length / 3;
-      const bboxRows = 4;
-      const totalLength = (shapeRows + bboxRows) * 3;
 
-      // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      const m = vmat.length / 3;
+
+      // Retrieve expected matrix dimensions for a line
+      const [_, n] = dimensions['polyline'] as [number, number];
+
+      // Compute total buffer length based on dimensions
+      const totalLength = m * n;
+
+      // Allocate the buffer once or reallocate only if the size has changed
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = geo.buffer as Float32Array;
       sb.set(vmat, 0);
 
-      // Only recreate views if buffer was reallocated
-      if (
-        !geo.canonicalMatrix ||
-        totalLength - 12 != geo.canonicalMatrix.length * 3
-      ) {
-        const mat = [];
-
-        for (let i = 0; i < shapeRows; i++) {
-          mat.push(new Float32Array(sb.buffer, i * 3 * 4, 3));
-        }
-        geo.canonicalMatrix = mat;
-      }
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
