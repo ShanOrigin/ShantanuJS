@@ -215,3 +215,131 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 5000);
 });
 */
+
+import { Shantanu } from './index.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const canvas = new Shantanu.Canvas('testing', 250, 400);
+
+    const point = new Shantanu.Shapes.Basic.Point(20, 20, 5, {
+      stroke: 'green',
+      fill: 'red'
+    });
+
+    canvas.addTo(point);
+
+    const line = new Shantanu.Shapes.Basic.Line(10, 20, 20, 50, {
+      stroke: 'blue'
+    });
+
+    canvas.addTo(line);
+
+    const circle = new Shantanu.Shapes.Basic.Circle(70, 60, 10, {
+      stroke: 'yellow',
+      fill: 'brown'
+    });
+    const ellipse = new Shantanu.Shapes.Basic.Ellipse(50, 100, 12, 15, {
+      stroke: 'brown',
+      fill: 'pink'
+    });
+
+    canvas.addTo(circle, ellipse);
+
+    const polyline = new Shantanu.Shapes.Basic.Polyline(
+      // '30,35 45,50 60,20',
+      [
+        [30, 35],
+        [45, 50],
+        [60, 20]
+      ],
+
+      { stroke: 'purple' }
+    ); // also supports path like '30 , 35 '
+
+    const polygon = new Shantanu.Shapes.Basic.Polygon(
+      '80,50 67,12 76,120 99,140',
+
+      /*      [
+        [10, 5],
+        [70, 33],
+        [90, 67]
+      ],
+			*/
+      { stroke: 'lightblue' }
+    );
+
+    canvas.addTo(polyline, polygon);
+
+    const rect = new Shantanu.Shapes.Basic.Rect(90, 80, 60, 50, {
+      rx: 5,
+      ry: 7,
+      stroke: 'green',
+      fill: 'red'
+    });
+
+    canvas.addTo(rect);
+
+    const text = new Shantanu.Shapes.Media.Text(78, 100, 'Queen', {
+      stroke: 'white',
+      fill: 'black'
+    });
+    canvas.addTo(text);
+
+    const img = new Shantanu.Shapes.Media.Image(
+      40,
+      170,
+      160,
+      120,
+      '../../deps.png'
+    );
+
+    canvas.addTo(img);
+
+    const cubicCurve = new Shantanu.Shapes.Custom.CubicCurve({
+      x1: 20,
+      y1: 100,
+      x2: 130,
+      y2: 140,
+      curvature: 0.6,
+      smoothness: 80
+    });
+
+    canvas.addTo(cubicCurve);
+
+    console.log(cubicCurve);
+
+    const quadraticCurve = new Shantanu.Shapes.Custom.QuadraticCurve({
+      x1: 20,
+      y1: 100,
+      x2: 130,
+      y2: 140,
+      curvature: -0.6,
+      smoothness: 80
+    });
+
+    canvas.addTo(quadraticCurve);
+
+    const arcCurve = new Shantanu.Shapes.Custom.ArcCurve({
+      x1: 20,
+      y1: 100,
+      x2: 130,
+      y2: 140,
+      curvature: 0.6,
+      smoothness: 80
+    });
+
+    canvas.addTo(arcCurve);
+
+    const earcCurve = new Shantanu.Shapes.Custom.EarcCurve({
+      x1: 20,
+      y1: 100,
+      x2: 130,
+      y2: 140,
+      curvature: -0.6,
+      smoothness: 80
+    });
+
+    canvas.addTo(earcCurve);
+  }, 7000);
+});
