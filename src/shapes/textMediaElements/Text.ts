@@ -7,7 +7,8 @@ import {
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
-  AllGShapeStyleProperties
+  AllGShapeStyleProperties,
+  dimensions
 } from '../../properties/provider/shapeProperties.js';
 
 import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
@@ -24,17 +25,12 @@ export class Text extends GraphicsEntity<'text'> {
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
 
-  //#Animations!: Animation<'text'>[]; // for timeline support but not implementated yet
   constructor(x: number, y: number, text: string, props: textPropsType = {}) {
     super('text', props.id ?? '');
     try {
       const { x: dx = 0, y: dy = 0, ...rest } = props;
 
       'id' in props && delete props.id;
-      parameterTypeValidator(props, GraphicalElementProperties, {}, {}, 'text');
-
-      // autoFixGeometry(props, ['width', 'height', 'rx', 'ry']);
-
       const safeProps = {
         initial: true,
         x: x + +dx,
@@ -50,8 +46,6 @@ export class Text extends GraphicsEntity<'text'> {
         this.#classProp,
         'text'
       );
-
-      // autoFixGeometry(props, ['x', 'y', 'r', 'stroke-width']);
 
       this.attrs(safeProps);
     } catch (e) {
@@ -97,30 +91,25 @@ export class Text extends GraphicsEntity<'text'> {
     try {
       assertAccess(accessKey);
       const geo = this.#geometry as {
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
+        buffer: Float32Array;
+
         x: number;
         y: number;
       };
       if (!geo) return;
 
       const { x = 0, y = 0 } = geo;
-      const shapeRows = 1;
-      const bboxRows = 4;
-      const totalLength = (shapeRows + bboxRows) * 3;
 
-      // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      const [m, n] = dimensions['text']!;
+      const totalLength = m * n;
+
+      // Allocate once and reuse to minimize GC pressure
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = geo.buffer as Float32Array;
       sb.set([x, y, 1], 0);
-
-      // Only recreate views if buffer was reallocated
-      if (!geo.canonicalMatrix) {
-        geo.canonicalMatrix = [new Float32Array(sb.buffer, 0 * 4, 3)];
-      }
 
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
     } catch (e) {
