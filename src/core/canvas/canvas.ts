@@ -285,7 +285,12 @@ export default class Canvas extends EventTarget<'canvas'> {
       //  This code may change According to context
       // +++++++++++++++++++++++++++++++++++++++++++++++++++++
       if (canvasContext == SVG_CONTEXT) {
-        const gEl = createSVGElement(shape);
+        let shapeName: string = shape;
+
+        shape == 'curve' && (shapeName = 'polyline');
+        shape == 'dot' && (shapeName = 'circle');
+
+        const gEl = createSVGElement(shapeName);
         shapeEl.setIFig(DEV_INTERNAL_ACCESS, canvasContext, gEl);
         this.#fig!.appendChild(gEl);
 
