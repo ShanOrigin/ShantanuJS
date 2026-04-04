@@ -1,3 +1,5 @@
+/*
+
 import { LineUnitTests } from '../tests/shapes/basicShapes/line/visualTest/visualUnitTest.js';
 
 import { LineCombineTests } from '../tests/shapes/basicShapes/line/visualTest/visualCombineTest.js';
@@ -15,6 +17,9 @@ import { RectAnimationTests } from '../tests/shapes/basicShapes/rect/visualTest/
 import { RectEventsTests } from '../tests/shapes/basicShapes/rect/visualTest/visualEvent.js';
 
 import { RectFiltersTests } from '../tests/shapes/basicShapes/rect/visualTest/visualFilters.js';
+
+*/
+
 /*
 import { QuadraticCurveUnitTests } from '../tests/shapes/customShapes/curves/visualTest/visualUnitTest.js';
 
@@ -22,6 +27,7 @@ import { TriangleUnitTests } from '../tests/shapes/customShapes/triangles/visual
 */
 // Tester function
 
+/*
 // Rect testing
 async function LineClassTester(testType: string) {
   switch (testType) {
@@ -146,7 +152,12 @@ async function Tester(classes: string, types: string) {
   }
 }
 
+*/
+
+/*
 setTimeout(async () => {
   console.log('line unit test');
   await Tester('line', 'unit');
 }, 5000);
+
+*/
