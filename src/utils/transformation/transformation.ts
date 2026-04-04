@@ -116,6 +116,7 @@ import { applyTransformToHomogeneousBuffer } from './preBuilds/matrix/matrixMult
  */
 
 import { assertAccess, DEV_INTERNAL_ACCESS } from '../provider/accesskeys.js';
+import { SVG_CONTEXT } from '../../core/graphics/backends/svg/core/core.js';
 
 /**
  * ============================================================================
@@ -1137,13 +1138,56 @@ export class Transformation {
     // STEP 2: Resolve stroke expansion
     // -----------------------------------------------------------
 
-    const sw = includeStroke ? (this.#style['stroke-width'] ?? 0) / 2 : 0;
+    let sw = includeStroke ? (this.#style['stroke-width'] ?? 0) / 2 : 0;
 
     // -----------------------------------------------------------
     // STEP 3: Extract canonical geometry and composed transform
     // -----------------------------------------------------------
 
-    const canonical = this.#geometry.buffer as Float32Array;
+    const { shape, context } = this.#geometry as {
+      shape: string;
+      context: string;
+    };
+
+    let canonical: Float32Array;
+
+    //-----------------------------------
+    // ONLY SVG TEXT SPECIFIC
+    //-----------------------------------
+
+    if (shape == 'text' && context == SVG_CONTEXT) {
+      const text = this.#gModel.getIFig(DEV_INTERNAL_ACCESS) as SVGTextElement;
+
+      const {
+        x,
+        y,
+        width: w,
+        height: h
+      } = text.getBBox() as {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      };
+      canonical = new Float32Array([
+        x,
+        y,
+        1,
+        x + w,
+        y,
+        1,
+        x + w,
+        y + h,
+        1,
+        x,
+        y + h,
+        1
+      ]);
+
+      sw = 0;
+    } else {
+      canonical = this.#geometry.buffer as Float32Array;
+    }
     const M = this.composeTransforms(true) as DOMMatrix;
 
     // -----------------------------------------------------------
