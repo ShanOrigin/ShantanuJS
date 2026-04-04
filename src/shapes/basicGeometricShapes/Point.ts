@@ -1,3 +1,4 @@
+// 6265914747
 import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
   DEV_INTERNAL_ACCESS,
@@ -15,11 +16,10 @@ import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
 
 import {
   validProps,
-  parameterTypeValidator,
-  autoFixGeometry
+  parameterTypeValidator
 } from '../../utils/provider/utils.js';
 
-import { pointPropsType } from '../../types/shapes';
+import type { pointPropsType } from '../../types/shapes';
 
 /**
  * Represents a zero-dimensional graphical Point (dot) shape.
@@ -89,11 +89,6 @@ export class Point extends GraphicsEntity<'dot'> {
 
       // Prevent id leakage into attribute validation
       'id' in props && delete props.id;
-      parameterTypeValidator(props, GraphicalElementProperties, {}, {}, 'dot');
-
-      // Remove geometry attributes not applicable to a point
-      autoFixGeometry(props, ['cx', 'cy', 'r', 'stroke-width']);
-
       // Final resolved geometry after applying deltas
       const safeProps = {
         initial: true,
@@ -111,9 +106,6 @@ export class Point extends GraphicsEntity<'dot'> {
         this.#classProp,
         'dot'
       );
-
-      // Final cleanup of conflicting or invalid geometry-related properties
-      autoFixGeometry(props, ['cx', 'cy', 'r', 'stroke-width']);
 
       // Apply attributes to internal state
       this.attrs(safeProps);
@@ -213,8 +205,8 @@ export class Point extends GraphicsEntity<'dot'> {
       const geo = this.#geometry as {
         cx: number;
         cy: number;
-        canonicalMatrix: Float32Array[];
-        sharedBuffer: Float32Array;
+
+        buffer: Float32Array;
       };
       if (!geo) return;
 
@@ -224,18 +216,13 @@ export class Point extends GraphicsEntity<'dot'> {
       const totalLength = m * n;
 
       // Allocate once and reuse to minimize GC pressure
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = geo.buffer as Float32Array;
       // Homogeneous coordinate for a point: [x, y, 1]
       sb.set([cx, cy, 1], 0);
-
-      // Only recreate typed-array views when the buffer changes
-      if (!geo.canonicalMatrix) {
-        geo.canonicalMatrix = [new Float32Array(sb.buffer, 0 * 4, 3)];
-      }
 
       // Restore expected dimensional state using the updated buffer
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);

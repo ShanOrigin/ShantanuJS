@@ -98,16 +98,7 @@ export class Line extends GraphicsEntity<'line'> {
   ) {
     // Initialize the base graphical element as a line and extract the optional identifier
     super('line', props?.id ?? '');
-
-    // Perform early validation on the raw input properties before any normalization
-    parameterTypeValidator(
-      props as linePropsType,
-      GraphicalElementProperties,
-      {},
-      {},
-      'line'
-    );
-
+    'id' in props && delete props.id;
     // Extract relative coordinate offsets from props, defaulting to zero when absent
     const {
       x1: dx1 = 0,
