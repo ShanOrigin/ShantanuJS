@@ -31,7 +31,8 @@ export const CommonGeometricProperties = Object.seal({
       ],
       skip: 0 //for redu , undo
     },
-    copies: 0 // copy count
+    copies: 0, // copy count
+    zIndex: 0
   }
 });
 
