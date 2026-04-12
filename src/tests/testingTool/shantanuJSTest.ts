@@ -1,4 +1,6 @@
-import { type ShantanuTypes, Shantanu } from '../../index/index.js';
+import { ShantanuJS } from '../../index/index.js';
+
+type ShantanuJSTypes = typeof ShantanuJS;
 import { iShape } from '../../shapes/provider/shapesTypes';
 
 import { DEV_INTERNAL_ACCESS } from '../../utils/internals/accessKeys.js';
@@ -23,10 +25,10 @@ import type {
 
 export type ctxParam = {
   shapes: Record<string, iShape>;
-  canvas: Shantanu.Canvas;
+  canvas: ShantanuJS.Canvas;
 };
 
-export type fn = (api: ShantanuTypes, ctx: ctxParam) => void;
+export type fn = (api: ShantanuJSTypes, ctx: ctxParam) => void;
 
 export type visualTestParams = {
   testInfo: testInfo;
@@ -35,7 +37,7 @@ export type visualTestParams = {
   expect: verifyParams;
 };
 
-export default class ShantanuJSTestTool {
+export default class ShantanuJSJSTestTool {
   /**
    * Internal auto-incrementing identifier used to assign unique IDs
    * to test cases during a single execution lifecycle.
@@ -52,7 +54,7 @@ export default class ShantanuJSTestTool {
   #idNumber = 0;
 
   /**
-   * Reference to the core Shantanu rendering/logic API.
+   * Reference to the core ShantanuJS rendering/logic API.
    *
    * This acts as the execution engine exposed to:
    * - setup phase
@@ -61,12 +63,12 @@ export default class ShantanuJSTestTool {
    * It is intentionally fixed at initialization to prevent
    * runtime API swapping, which would invalidate test determinism.
    *
-   * @type ShantanuTypes
+   * @type ShantanuJSTypes
    *
    * @invariant
    * - Must remain immutable during test lifecycle
    */
-  #api: ShantanuTypes = Shantanu;
+  #api: ShantanuJSTypes = ShantanuJS;
 
   /**
    * Execution context shared across test lifecycle phases.
@@ -232,7 +234,7 @@ export default class ShantanuJSTestTool {
     initialize,
     run
   }: {
-    initialize: (api: ShantanuTypes, ctx: ctxParam) => void;
+    initialize: (api: ShantanuJSTypes, ctx: ctxParam) => void;
     run: (ctx: ctxParam) => void;
   }) {
     try {

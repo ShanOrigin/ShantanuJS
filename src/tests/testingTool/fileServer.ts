@@ -317,16 +317,17 @@ const server = http.createServer((req, res) => {
           throw new Error('Invalid or missing tests object');
         }
 
-        let fullPath, fileData;
+        let fullPath!: string, fileData;
         if (save) {
           // ---------------- RESOLVE FILE ----------------
-          fullPath = resolveFile(fileUrl);
+          fullPath = resolveFile(fileUrl) as string;
 
           // ---------------- ENSURE FILE ----------------
           try {
             ensureFile(fullPath);
-          } catch (e) {
-            throw new Error(`File creation failed: ${e.message}`);
+          } catch (e: unknown) {
+            if (e instanceof Error)
+              throw new Error(`File creation failed: ${e.message}`);
           }
 
           // ---------------- READ FILE ----------------
@@ -385,9 +386,14 @@ const server = http.createServer((req, res) => {
         // ---------------- WRITE ----------------
         try {
           displayAnalysis({ meta, tests });
-          save && fs.writeFileSync(fullPath, JSON.stringify(fileData, null, 2));
+          save &&
+            fs.writeFileSync(
+              fullPath as string,
+              JSON.stringify(fileData, null, 2)
+            );
         } catch (e) {
-          throw new Error(`File write failed: ${e.message}`);
+          if (e instanceof Error)
+            throw new Error(`File write failed: ${e.message}`);
         }
 
         if (save) {
@@ -406,18 +412,21 @@ const server = http.createServer((req, res) => {
         // ---------------- RESPONSE ----------------
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ status: 'saved' }));
-      } catch (err) {
+      } catch (err: unknown) {
         // ---------------- ERROR ----------------
-        console.error('❌ SERVER ERROR:', err.message);
-        console.error(err.stack);
+        //
+        if (err instanceof Error) {
+          console.error('❌ SERVER ERROR:', err.message);
+          console.error(err.stack);
 
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            status: 'error',
-            message: err.message
-          })
-        );
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              status: 'error',
+              message: err.message
+            })
+          );
+        }
       }
     });
 

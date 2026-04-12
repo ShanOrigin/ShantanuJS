@@ -45,7 +45,7 @@ export function runTests() {
         // SETUP PHASE (Arrange)
         // --------------------------------------------------
         setup(api, ctx) {
-          const rectangle = new api.Rect(20, 40, 50, 80);
+          const rectangle = new api.Shapes.Basic.Rect(20, 40, 50, 80);
           ctx.canvas.addTo(rectangle);
 
           rectangle.attrs({
@@ -53,7 +53,7 @@ export function runTests() {
             'stroke-width': 2
           });
 
-          const line = new api.Line(20, 40, 50, 40);
+          const line = new api.Shapes.Basic.Line(20, 40, 50, 40);
           ctx.canvas.addTo(line);
 
           line.attrs({
