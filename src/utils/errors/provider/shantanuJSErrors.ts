@@ -25,6 +25,10 @@ import { InvalidNamedColorError } from '../domains/color/InvalidNamedColorError.
 import { MissingRequiredCurveParameterError } from '../domains/curve/MissingRequiredCurveParameterError.js';
 
 import { UnsupportedRenderingBackendError } from '../domains/backend/UnsupportedRenderingBackendError.js';
+import { NotInitializedError } from '../domains/engine/NotInitializedError.js';
+import { InvalidRenderingContextError } from '../domains/backend/InvalidRenderingContextError.js';
+import { ReadOnlyPropertyError } from '../domains/common/ReadOnlyPropertyError.js';
+import { InvalidRenderableShapeError } from '../domains/engine/InvalidRenderableShapeError.js';
 //import {  } from "../domains/";
 
 export {
@@ -46,5 +50,9 @@ export {
   InvalidNamedColorError,
   InvalidColorFormatError,
   MissingRequiredCurveParameterError,
-  UnsupportedRenderingBackendError
+  UnsupportedRenderingBackendError,
+  NotInitializedError,
+  InvalidRenderingContextError,
+  ReadOnlyPropertyError,
+  InvalidRenderableShapeError
 };
