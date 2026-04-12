@@ -76,6 +76,8 @@ export abstract class GraphicsEntity<
   constructor(shape: T, id: string) {
     super(shape, id); // ( shape generics , id , rander generics by default = 'path' )
     this.#transform = new Transformation(this);
+
+    this.#fig = this.getIFig(DEV_INTERNAL_ACCESS);
   }
 
   protected getClassProps(accessKey: symbol) {
@@ -500,7 +502,7 @@ Description : taking original shape data ( which is local geometry ) and then ap
   }
 
   public isBatching(): boolean {
-    console.log(this.#transform.isBatching());
+    // console.log(this.#transform.isBatching());
     return this.#transform.isBatching();
   }
 
