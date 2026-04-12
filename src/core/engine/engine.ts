@@ -3,7 +3,11 @@ import type { Renderer } from '../graphics/backends/renderers';
 import { GraphicsModel } from '../graphics/graphicsModel/graphicsModel.js';
 
 import type { iShape } from '../../shapes/provider/shapesTypes';
-import { InvalidInternalStateError } from '../../utils/errors/provider/shantanuJSErrors.js';
+import {
+  InvalidArgumentError,
+  InvalidInternalStateError
+} from '../../utils/errors/provider/shantanuJSErrors.js';
+import { Log } from '../../utils/helpers/helpers.js';
 
 /**
  * Core engine responsible for orchestrating the rendering lifecycle.
@@ -17,6 +21,7 @@ import { InvalidInternalStateError } from '../../utils/errors/provider/shantanuJ
  * - the global requestAnimationFrame loop
  * - animation update timing
  * - delegation of rendering to a concrete Renderer
+ * - invocation of z-order resolution logic (injected from Canvas)
  *
  * The Engine itself performs NO drawing and NO animation logic.
  *
@@ -26,9 +31,30 @@ import { InvalidInternalStateError } from '../../utils/errors/provider/shantanuJ
  * The Engine is responsible for:
  *
  * 1. Managing a single, controlled requestAnimationFrame loop
- * 2. Advancing animation state on all registered shapes
- * 3. Delegating visual output to the active Renderer
- * 4. Enforcing engine-level lifecycle invariants
+ * 2. Resolving z-order operations via injected resolver (before each frame)
+ * 3. Advancing animation state on all registered shapes
+ * 4. Sorting shapes deterministically based on zIndex
+ * 5. Delegating visual output to the active Renderer
+ * 6. Enforcing engine-level lifecycle invariants
+ *
+ * ============================================================================
+ * Z-ORDER RESOLUTION MODEL
+ * ============================================================================
+ * The Engine integrates a deferred z-order system using an injected resolver:
+ *
+ * - Shapes express intent via internal flags (e.g., toFront / toBack)
+ * - The Engine invokes a resolver function at the start of each frame
+ * - The resolver (owned by Canvas) mutates shape.style.zIndex
+ *
+ * Ordering is then established by:
+ *
+ * - Sorting shapes based on zIndex (ascending)
+ * - Producing a deterministic render sequence for the current frame
+ *
+ * This ensures:
+ * - separation of concerns (Engine does not own zIndex logic)
+ * - no circular dependency between Engine and Canvas
+ * - consistent ordering across all rendering backends
  *
  * ============================================================================
  * EXPLICIT NON-RESPONSIBILITIES
@@ -39,6 +65,7 @@ import { InvalidInternalStateError } from '../../utils/errors/provider/shantanuJ
  * - contain rendering backend logic
  * - implement animation algorithms
  * - mutate geometry directly
+ * - compute or own zIndex values
  *
  * It coordinates; it does not execute domain logic.
  *
@@ -47,7 +74,9 @@ import { InvalidInternalStateError } from '../../utils/errors/provider/shantanuJ
  * ============================================================================
  * - Only one engine loop may be active at a time
  * - All shapes managed by the engine must be renderable
- * - Animation updates always occur before rendering
+ * - Z-order resolution occurs exactly once per frame
+ * - Animation updates always occur after z-order resolution
+ * - Sorting reflects the current zIndex state
  * - Rendering is delegated, never embedded
  *
  * ============================================================================
@@ -57,7 +86,7 @@ import { InvalidInternalStateError } from '../../utils/errors/provider/shantanuJ
  *
  * - start() : begins the animation/render loop
  * - stop()  : halts the loop without destroying state
- * - flush() : forces a single render pass
+ * - flush() : forces a single render pass (includes z-order resolution)
  *
  * The Engine remains reusable after stopping.
  *
@@ -69,10 +98,11 @@ import { InvalidInternalStateError } from '../../utils/errors/provider/shantanuJ
  * It does not care *what* is being animated or *how* it is drawn.
  * It only ensures that everything happens:
  *
- * - in the correct order
+ * - in the correct order (via zIndex resolution + sorting)
  * - at the correct time
  * - under strict lifecycle control
  */
+
 export class Engine {
   /**
    * Internal collection of all shapes managed by the engine.
@@ -173,6 +203,45 @@ export class Engine {
   #rafId: number | null;
 
   /**
+   * Z-order resolution hook injected by the owning Canvas.
+   *
+   * -------------------------------------------------------------------------
+   * ROLE
+   * -------------------------------------------------------------------------
+   * Provides a deferred mechanism for resolving z-order operations
+   * (e.g., toFront / toBack) without introducing direct dependency
+   * on the Canvas class.
+   *
+   * -------------------------------------------------------------------------
+   * DESIGN PRINCIPLE
+   * -------------------------------------------------------------------------
+   * Implements Inversion of Control (IoC):
+   * - Engine does NOT own z-order state
+   * - Canvas owns and mutates zIndex
+   * - Engine only triggers resolution at the correct lifecycle point
+   *
+   * -------------------------------------------------------------------------
+   * EXECUTION CONTRACT
+   * -------------------------------------------------------------------------
+   * This function MUST:
+   * - Resolve all pending z-order operations
+   * - Mutate shape.style.zIndex deterministically
+   * - Maintain ordering invariants (unique, monotonic values)
+   *
+   * -------------------------------------------------------------------------
+   * TIMING
+   * -------------------------------------------------------------------------
+   * Invoked at the beginning of each frame BEFORE sorting and rendering.
+   *
+   * -------------------------------------------------------------------------
+   * INVARIANT
+   * -------------------------------------------------------------------------
+   * Must be a valid function reference. Engine assumes it is safe to call
+   * without additional guards.
+   */
+  #resolveZOrder!: () => void;
+
+  /**
    * Constructs a new Engine instance.
    *
    * -------------------------------------------------------------------------
@@ -183,6 +252,7 @@ export class Engine {
    *
    * - a collection of shapes to manage
    * - a concrete rendering backend
+   * - a z-order resolution hook (injected from Canvas)
    *
    * This constructor establishes ownership and initial lifecycle state
    * but does NOT start the engine loop.
@@ -192,9 +262,22 @@ export class Engine {
    * -------------------------------------------------------------------------
    * - The engine operates on the provided shapes array by reference
    * - The renderer instance is assumed to be fully initialized
+   * - The z-order resolver is provided externally (no Canvas dependency)
    * - No validation or cloning is performed at construction time
    *
    * The engine trusts upstream code to provide valid inputs.
+   *
+   * -------------------------------------------------------------------------
+   * Z-ORDER RESOLUTION MODEL
+   * -------------------------------------------------------------------------
+   * - Engine does NOT compute or own zIndex
+   * - Engine invokes the injected resolver before each frame
+   * - Canvas remains the single authority for zIndex mutation
+   *
+   * This ensures:
+   * - separation of concerns
+   * - no circular dependency between Engine and Canvas
+   * - deterministic ordering pipeline
    *
    * -------------------------------------------------------------------------
    * INITIAL STATE
@@ -202,6 +285,7 @@ export class Engine {
    * After construction:
    * - The engine is NOT running
    * - No animation frame is scheduled
+   * - No z-order resolution has been performed
    *
    * Explicit lifecycle methods must be invoked to start execution.
    *
@@ -210,13 +294,36 @@ export class Engine {
    * -------------------------------------------------------------------------
    * @param shapes   Reference to the array containing all shape instances
    *                 managed by this engine.
+   *
    * @param renderer Active rendering backend responsible for visual output.
+   *
+   * @param resolveZOrder
+   * A function injected from Canvas that resolves pending z-order operations.
+   *
+   * This function is:
+   * - called once per frame before rendering
+   * - responsible for updating shape.style.zIndex
+   * - required to maintain ordering invariants
+   *
+   * -------------------------------------------------------------------------
+   * @throws {InvalidArgumentError}
+   * If resolveZOrder is not a function (optional strict validation)
    */
-  constructor(shapes: iShape[], renderer: Renderer) {
+  constructor(shapes: iShape[], renderer: Renderer, resolveZOrder: () => void) {
     this.#shapes = shapes;
     this.#renderer = renderer;
+
     this.#running = false;
     this.#rafId = null;
+    if (typeof resolveZOrder !== 'function') {
+      throw new InvalidArgumentError(
+        'resolveZOrder',
+        resolveZOrder,
+        'function',
+        'core.engine.constructor'
+      );
+    }
+    this.#resolveZOrder = resolveZOrder;
   }
 
   /**
@@ -354,40 +461,79 @@ export class Engine {
   /**
    * Executes a single engine frame.
    *
-   * -------------------------------------------------------------------------
+   * ============================================================================
    * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * Advances the engine state for a single frame by:
-   * - updating animations on all registered shapes
-   * - delegating rendering to the active renderer
+   * ============================================================================
+   * Advances the entire rendering pipeline for one frame by performing:
    *
-   * This method represents the atomic unit of engine execution.
+   * 1. Z-order resolution (structural ordering)
+   * 2. Animation updates (temporal state progression)
+   * 3. Shape ordering (zIndex-based sorting)
+   * 4. Rendering delegation (visual projection)
    *
-   * -------------------------------------------------------------------------
+   * This method represents the atomic unit of execution within the engine.
+   *
+   * ============================================================================
+   * EXECUTION PIPELINE
+   * ============================================================================
+   *
+   * STEP 0: Z-ORDER RESOLUTION
+   * - Invokes injected resolver from Canvas
+   * - Converts pending z-order intents (toFront / toBack) into numeric zIndex
+   * - Ensures all shapes have consistent and comparable ordering values
+   *
+   * STEP 1: ANIMATION UPDATE
+   * - Iterates through all shapes
+   * - Advances animation state using the provided timestamp
+   * - Enforces renderable invariant (must be GraphicsModel)
+   *
+   * STEP 2: ORDER DERIVATION (SORT)
+   * - Sorts shapes based on zIndex (ascending)
+   * - Establishes final render order for this frame
+   * - Guarantees deterministic stacking across all backends
+   *
+   * STEP 3: RENDER DELEGATION
+   * - Passes sorted shapes to renderer
+   * - Renderer applies minimal DOM or draw operations
+   *
+   * ============================================================================
    * DESIGN INVARIANTS
-   * -------------------------------------------------------------------------
-   * - All shapes in the internal collection must be renderable
-   * - Animation updates are performed before rendering
-   * - Rendering is executed exactly once per frame
+   * ============================================================================
+   * - Z-order resolution is executed exactly once per frame
+   * - Animation updates occur after structural ordering is resolved
+   * - Sorting is required because zIndex is independent of array position
+   * - Rendering is performed exactly once per frame
    *
-   * -------------------------------------------------------------------------
+   * ============================================================================
    * ERROR BEHAVIOR
-   * -------------------------------------------------------------------------
-   * Throws InvalidInternalStateError if a non-renderable shape
-   * is encountered in the engine shape collection.
+   * ============================================================================
+   * Throws InvalidInternalStateError if:
+   * - A shape in the collection is not an instance of GraphicsModel
    *
-   * This indicates a violation of engine invariants.
+   * This indicates a violation of engine-level invariants.
    *
-   * -------------------------------------------------------------------------
+   * ============================================================================
+   * PERFORMANCE CHARACTERISTICS
+   * ============================================================================
+   * - Z-order resolution: O(n)
+   * - Animation update: O(n)
+   * - Sorting: O(n log n)
+   * - Rendering: backend-dependent
+   *
+   * ============================================================================
    * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param time - High-resolution timestamp used for animation updates.
+   * ============================================================================
+   * @param time - High-resolution timestamp used for animation updates
    */
   #frame(time: number) {
     // -----------------------------------------------------------
+    // STEP 0: Resolve z-order (ONCE per frame)
+    // -----------------------------------------------------------
+    this.#resolveZOrder();
+
+    // -----------------------------------------------------------
     // STEP 1: Update animations for all shapes
     // -----------------------------------------------------------
-
     const len = this.#shapes.length;
 
     for (let i = 0; i < len; i++) {
@@ -406,9 +552,18 @@ export class Engine {
     }
 
     // -----------------------------------------------------------
-    // STEP 2: Render updated shapes
+    // STEP 2: Sort shapes by zIndex (ascending order)
     // -----------------------------------------------------------
+    //
 
+    this.#shapes.sort((a, b) => {
+      b?.geometry?.zIndex ?? 0;
+      return (a?.geometry?.zIndex ?? 0) - (b?.geometry?.zIndex ?? 0);
+    });
+
+    // -----------------------------------------------------------
+    // STEP 3: Delegate rendering to backend
+    // -----------------------------------------------------------
     this.#renderer.render(this.#shapes);
   }
 
