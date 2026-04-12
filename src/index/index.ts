@@ -1,3 +1,5 @@
+import '../env.global.js'; // MUST be first line
+
 // importing canvas classes
 import Canvas from '../core/provider/canvas.js';
 
@@ -9,73 +11,16 @@ import {
   Rect,
   Circle,
   Ellipse,
-  //  Triangle,
   Text,
   Image,
-  Curve,
   CubicCurve,
   QuadraticCurve,
   ArcCurve,
   EarcCurve
 } from '../shapes/provider/shapes.js';
-/*
-export const Shantanu = {
-  Canvas,
-  // basic shapes
-  Rect,
-  Circle,
-  Line,
-  Ellipse,
-  Point,
-  Polyline,
-  Polygon,
-  //  Path,
-  // custom shapes
-  Shapes: {
-    Basic: {
-      Circle,
-      Line,
-      Ellipse,
-      Point,
-      Polyline,
-      Polygon
-      //      Path
-    },
-    Custom: {
-      Curve,
-      QuadraticCurve,
-      CubicCurve,
-      ArcCurve,
-      EarcCurve
-      //      Triangle
-    },
-    Media: {
-      Text
-    }
-  },
-  // media elements
-  Text
-  // Image
-} as const;
+import { Group } from '../shapes/group/Group.js';
 
-// Now export types that map cleanly
-export namespace Shantanu {
-  export type Canvas = InstanceType<typeof Shantanu.Canvas>;
-  export type Rect = InstanceType<typeof Shantanu.Rect>;
-  export type Circle = InstanceType<typeof Shantanu.Circle>;
-  export type Line = InstanceType<typeof Shantanu.Line>;
-  export type Ellipse = InstanceType<typeof Shantanu.Ellipse>;
-  export type Point = InstanceType<typeof Shantanu.Point>;
-  export type Polyline = InstanceType<typeof Shantanu.Polyline>;
-  export type Polygon = InstanceType<typeof Shantanu.Polygon>;
-
-  export type Text = InstanceType<typeof Shantanu.Text>;
-}
-
-export type ShantanuTypes = typeof Shantanu;
-*/
-
-export const Shantanu = {
+export const ShantanuJS = {
   Canvas,
 
   // Organized Shapes
@@ -102,6 +47,9 @@ export const Shantanu = {
       Image
       //      Video
     }
+  },
+  Semantics: {
+    Group
   }
 
   // Math utilities (for geometry/trig ops)
@@ -120,74 +68,76 @@ export const Shantanu = {
   //     }
   //   },
   //
-  //   // Semantics layer (meta meaning)
-  //   Semantics: {
-  //     Group
-  //   },
-  //
+  // Semantics layer (meta meaning)
+
   // Physics (placeholder for future)
   //  Physics: {}
 } as const;
 
-export namespace Shantanu {
+export namespace ShantanuJS {
   // === Core ===
-  export type Canvas = InstanceType<typeof Shantanu.Canvas>;
+  export type Canvas = InstanceType<typeof ShantanuJS.Canvas>;
 
   // === Shapes.Basic ===
   export namespace Shapes {
     export namespace Basic {
-      export type Rect = InstanceType<typeof Shantanu.Shapes.Basic.Rect>;
-      export type Circle = InstanceType<typeof Shantanu.Shapes.Basic.Circle>;
-      export type Ellipse = InstanceType<typeof Shantanu.Shapes.Basic.Ellipse>;
-      export type Line = InstanceType<typeof Shantanu.Shapes.Basic.Line>;
-      export type Polygon = InstanceType<typeof Shantanu.Shapes.Basic.Polygon>;
-      export type Polyline = InstanceType<
-        typeof Shantanu.Shapes.Basic.Polyline
+      export type Rect = InstanceType<typeof ShantanuJS.Shapes.Basic.Rect>;
+      export type Circle = InstanceType<typeof ShantanuJS.Shapes.Basic.Circle>;
+      export type Ellipse = InstanceType<
+        typeof ShantanuJS.Shapes.Basic.Ellipse
       >;
-      export type Point = InstanceType<typeof Shantanu.Shapes.Basic.Point>;
-      //    export type Path = InstanceType<typeof Shantanu.Shapes.Basic.Path>;
+      export type Line = InstanceType<typeof ShantanuJS.Shapes.Basic.Line>;
+      export type Polygon = InstanceType<
+        typeof ShantanuJS.Shapes.Basic.Polygon
+      >;
+      export type Polyline = InstanceType<
+        typeof ShantanuJS.Shapes.Basic.Polyline
+      >;
+      export type Point = InstanceType<typeof ShantanuJS.Shapes.Basic.Point>;
+      //    export type Path = InstanceType<typeof ShantanuJS.Shapes.Basic.Path>;
     }
 
     // === Shapes.Custom ===
     export namespace Custom {
-      //   export type Triangle = InstanceType<typeof Shantanu.Shapes.Custom.Triangle>;
+      //   export type Triangle = InstanceType<typeof ShantanuJS.Shapes.Custom.Triangle>;
       export type QuadraticCurve = InstanceType<
-        typeof Shantanu.Shapes.Custom.QuadraticCurve
+        typeof ShantanuJS.Shapes.Custom.QuadraticCurve
       >;
       export type CubicCurve = InstanceType<
-        typeof Shantanu.Shapes.Custom.CubicCurve
+        typeof ShantanuJS.Shapes.Custom.CubicCurve
       >;
       export type ArcCurve = InstanceType<
-        typeof Shantanu.Shapes.Custom.ArcCurve
+        typeof ShantanuJS.Shapes.Custom.ArcCurve
       >;
       export type EarcCurve = InstanceType<
-        typeof Shantanu.Shapes.Custom.EarcCurve
+        typeof ShantanuJS.Shapes.Custom.EarcCurve
       >;
     }
 
     // === Shapes.Media ===
     export namespace Media {
-      export type Text = InstanceType<typeof Shantanu.Shapes.Media.Text>;
-      export type Image = InstanceType<typeof Shantanu.Shapes.Media.Image>;
-      //     export type Video = InstanceType<typeof Shantanu.Shapes.Media.Video>;
+      export type Text = InstanceType<typeof ShantanuJS.Shapes.Media.Text>;
+      export type Image = InstanceType<typeof ShantanuJS.Shapes.Media.Image>;
+      //     export type Video = InstanceType<typeof ShantanuJS.Shapes.Media.Video>;
     }
   }
 
   //   // === Math ===
   //   export namespace Math {
-  //     export type Vector2 = InstanceType<typeof Shantanu.Math.Vector2>;
-  //     export type Matrix2D = InstanceType<typeof Shantanu.Math.Matrix2D>;
-  //     export type Angle = ReturnType<typeof Shantanu.Math.Angle>;
-  //     export type Distance = ReturnType<typeof Shantanu.Math.Distance>;
+  //     export type Vector2 = InstanceType<typeof ShantanuJS.Math.Vector2>;
+  //     export type Matrix2D = InstanceType<typeof ShantanuJS.Math.Matrix2D>;
+  //     export type Angle = ReturnType<typeof ShantanuJS.Math.Angle>;
+  //     export type Distance = ReturnType<typeof ShantanuJS.Math.Distance>;
   //   }
   //
   //   // === Semantics ===
-  //   export namespace Semantics {
-  //     export type Tag = InstanceType<typeof Shantanu.Semantics.Tag>;
-  //     export type Layer = InstanceType<typeof Shantanu.Semantics.Layer>;
-  //     export type Group = InstanceType<typeof Shantanu.Semantics.Group>;
-  //     export type State = InstanceType<typeof Shantanu.Semantics.State>;
-  //     export type ObjectType = ReturnType<typeof Shantanu.Semantics.ObjectType>;
-  //   }
+  export namespace Semantics {
+    //     export type Tag = InstanceType<typeof ShantanuJS.Semantics.Tag>;
+    //     export type Layer = InstanceType<typeof ShantanuJS.Semantics.Layer>;
+    export type Group = InstanceType<typeof ShantanuJS.Semantics.Group>;
+    //     export type State = InstanceType<typeof ShantanuJS.Semantics.State>;
+    //     export type ObjectType = ReturnType<typeof ShantanuJS.Semantics.ObjectType>;
+  }
+
   //
 }
