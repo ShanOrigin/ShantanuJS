@@ -43,7 +43,6 @@ export function getEllipsePoint(
   const ry = rx * Math.abs(bend); // vertical radius (height)
   const sign = Math.sign(bend) || 1; // direction of bend (+up, -down)
 
-  console.log(bend, rx, ry);
   // angle of baseline between points
   const baseAngle = Math.atan2(dy, dx);
 
