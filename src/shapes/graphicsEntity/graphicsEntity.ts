@@ -1,14 +1,12 @@
 import {
   GraphicalElementProperties,
-  AllGShapeStyleProperties,
-  dimensions
+  AllGShapeStyleProperties
 } from '../../properties/provider/shapeProperties.js';
 
 import {
   parameterTypeValidator,
   animationChecks,
-  getTransformationMatrix,
-  cwarn
+  getTransformationMatrix
 } from '../../utils/provider/utils.js';
 
 import { Animation } from '../../utils/provider/utils.js';
@@ -53,19 +51,246 @@ import {
 import type { IGraphicalElementProperties as IG } from '../../properties/provider/shapeProperties';
 
 import { EventTarget } from '../../core/provider/eventTarget.js';
-import { GShpesTages } from '../../core/provider/graphics.js';
+
 import { Log, Warn } from '../../utils/helpers/helpers.js';
 import { OperationInProgressError } from '../../utils/errors/provider/shantanuJSErrors.js';
 
 /**
- * Abstract extension layer over `EventTarget` that enriches graphical models
- * with higher-level entity capabilities such as transformation and animation.
+ * ============================================================================
+ * GRAPHICS ENTITY
+ * ============================================================================
  *
- * This class introduces:
- * - Composition with Transformation module
- * - Composition with Animation module
- * - Internal references to base class private state (`#fig`, `#geometry`)
- * - Entity-level control flags (selection, animation state)
+ * Abstract extension layer over `EventTarget` that elevates a graphical model
+ * into a fully interactive, transformable, and animatable entity.
+ *
+ * ============================================================================
+ * CORE RESPONSIBILITY
+ * ============================================================================
+ *
+ * - Acts as the behavioral layer over graphical state (geometry + style)
+ * - Orchestrates transformations, animations, and visual effects
+ * - Bridges mathematical operations (matrices) with rendering updates
+ *
+ * This class converts:
+ *   → static graphical data
+ * into:
+ *   → dynamic, interactive graphical entities
+ *
+ * ============================================================================
+ * ARCHITECTURAL POSITION
+ * ============================================================================
+ *
+ * GraphicsModel → EventTarget → GraphicsEntity → Concrete Shapes
+ *
+ * - GraphicsModel   → raw state (geometry, style)
+ * - EventTarget     → event system
+ * - GraphicsEntity  → behavior (transform, animation, effects)
+ * - Shape Classes   → implementation (Rect, Path, etc.)
+ *
+ * ============================================================================
+ * INTERNAL COMPOSITION
+ * ============================================================================
+ *
+ * This class follows composition-based architecture:
+ *
+ * - Transformation (matrix engine)
+ * - Animation (time-based state engine)
+ * - Filter (visual effect executor)
+ *
+ * Each module is:
+ * - encapsulated
+ * - injected into entity lifecycle
+ * - accessed through controlled interfaces
+ *
+ * ============================================================================
+ * WORKING MODEL
+ * ============================================================================
+ *
+ * The entity operates on a pipeline-based system:
+ *
+ *   Input (API call)
+ *        ↓
+ *   Validation / Pre-checks
+ *        ↓
+ *   Matrix generation / Animation step
+ *        ↓
+ *   Transformation composition
+ *        ↓
+ *   Geometry update (buffer mutation)
+ *        ↓
+ *   Visual synchronization (DOM/SVG)
+ *
+ * ============================================================================
+ * TRANSFORMATION SYSTEM
+ * ============================================================================
+ *
+ * Supports full 2D transformation set:
+ *
+ * - Translation
+ * - Scaling
+ * - Rotation
+ * - Skewing
+ * - Reflection (Flip)
+ *
+ * Key features:
+ * - Matrix-based computation (Float32Array)
+ * - Transformation stack (ordered operations)
+ * - Batch execution (beginT / endT)
+ * - Flattening (collapsing transforms into geometry)
+ *
+ * Transformation flow:
+ *
+ *   preChecks → matrix generation → finalize → apply → sync
+ *
+ * ============================================================================
+ * ANIMATION SYSTEM
+ * ============================================================================
+ *
+ * Provides time-based property interpolation.
+ *
+ * Features:
+ * - Single active animation per entity
+ * - Easing support
+ * - Frame-based update via `updateAnimation`
+ * - Lifecycle hooks (start, pause, resume, cancel)
+ *
+ * Modes:
+ * - Fire-and-forget (`animate`)
+ * - Controlled (`animation`)
+ *
+ * ============================================================================
+ * FILTER SYSTEM
+ * ============================================================================
+ *
+ * Applies visual effects on rendering element.
+ *
+ * Categories:
+ * - Basic: blur, shadow, glow
+ * - Advanced: displacement, lighting, color matrix
+ * - UI Effects: neuMorph, glassMorph
+ *
+ * Characteristics:
+ * - Stateless execution
+ * - Direct DOM/SVG mutation
+ * - No internal tracking of applied filters
+ *
+ * ============================================================================
+ * STATE MANAGEMENT
+ * ============================================================================
+ *
+ * Internal state includes:
+ *
+ * - #geometry → inherited geometric data
+ * - #fig → rendering element reference
+ * - #transform → transformation engine
+ * - #animation → animation handler (nullable)
+ * - #filter → filter executor
+ * - #isAnimation → animation lock flag
+ *
+ * ============================================================================
+ * INVARIANTS
+ * ============================================================================
+ *
+ * - Exactly one Transformation instance per entity
+ * - At most one active Animation instance
+ * - Geometry must always reflect latest transformation state
+ * - Transformation stack must maintain valid base matrix
+ * - Animation and transformation must not run concurrently
+ *
+ * ============================================================================
+ * ACCESS CONTROL
+ * ============================================================================
+ *
+ * Internal state is protected using:
+ *
+ * - symbol-based access keys
+ *
+ * Ensures:
+ * - restricted internal mutation
+ * - safe encapsulation of private data
+ *
+ * ============================================================================
+ * DESIGN ADVANTAGES
+ * ============================================================================
+ *
+ * ✔ Clear separation of concerns
+ * ✔ Matrix-driven transformation system
+ * ✔ Composable and extensible architecture
+ * ✔ Supports batching and optimization
+ * ✔ Unified pipeline for all transformations
+ * ✔ Flexible animation control interface
+ *
+ * ============================================================================
+ * DESIGN LIMITATIONS
+ * ============================================================================
+ *
+ * ✖ Single animation constraint (no parallel animations)
+ * ✖ Filter system is stateless (no lifecycle management)
+ * ✖ No transactional safety (partial updates possible)
+ * ✖ Transformation metadata not preserved (traceability loss)
+ * ✖ Order-sensitive transformations require user awareness
+ *
+ * ============================================================================
+ * PERFORMANCE CHARACTERISTICS
+ * ============================================================================
+ *
+ * - Efficient matrix operations using Float32Array
+ * - Batch transformations reduce redundant computations
+ * - Filter system may incur overhead due to DOM mutations
+ * - Animation depends on external update loop
+ *
+ * ============================================================================
+ * EXTENSIBILITY
+ * ============================================================================
+ *
+ * Designed to support:
+ *
+ * - Custom shape implementations (Rect, Path, etc.)
+ * - Advanced animation systems (timelines, chaining)
+ * - Stateful filter pipelines
+ * - Additional rendering backends (Canvas, WebGL)
+ *
+ * ============================================================================
+ * USAGE PATTERN
+ * ============================================================================
+ *
+ * Typical workflow:
+ *
+ * ```ts
+ * entity
+ *   .Translate({ x: 50, y: 50 })
+ *   .Scale({ sx: 2, sy: 2 })
+ *   .Rotate({ angle: 45 });
+ *
+ * entity.animate({ x: 100 }, null, 1000);
+ *
+ * entity.blur(5);
+ * ```
+ *
+ * ============================================================================
+ * DESIGN INTENT
+ * ============================================================================
+ *
+ * This class is not a simple utility layer.
+ *
+ * It is:
+ *   → a behavioral orchestration engine
+ *   → managing spatial, temporal, and visual transformations
+ *
+ * ============================================================================
+ * FINAL SUMMARY
+ * ============================================================================
+ *
+ * GraphicsEntity transforms a static graphical model into a dynamic,
+ * interactive, and fully controllable rendering entity by combining:
+ *
+ * - matrix mathematics
+ * - time-based animation
+ * - visual effect processing
+ *
+ * It serves as the core behavioral abstraction in the graphics system.
+ *
+ * ============================================================================
  *
  * @template T - Constrained graphical shape tag type
  */
