@@ -54,154 +54,797 @@ import type { IGraphicalElementProperties as IG } from '../../properties/provide
 
 import { EventTarget } from '../../core/provider/eventTarget.js';
 import { GShpesTages } from '../../core/provider/graphics.js';
+import { Log, Warn } from '../../utils/helpers/helpers.js';
+import { OperationInProgressError } from '../../utils/errors/provider/shantanuJSErrors.js';
 
+/**
+ * Abstract extension layer over `EventTarget` that enriches graphical models
+ * with higher-level entity capabilities such as transformation and animation.
+ *
+ * This class introduces:
+ * - Composition with Transformation module
+ * - Composition with Animation module
+ * - Internal references to base class private state (`#fig`, `#geometry`)
+ * - Entity-level control flags (selection, animation state)
+ *
+ * @template T - Constrained graphical shape tag type
+ */
 export abstract class GraphicsEntity<
-  T extends GShpesTages
+  T extends keyof IG
 > extends EventTarget<T> {
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS); // reference to base class original fig
-  #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
-  #transform!: Transformation; // composition of transformation module with GraphicsEntity class with has-a reletionship
-  #animation!: Animation | null; // composition of animation module with GraphicsEntity class with has-a reletionship
-  #isAnimation: boolean = false; // animation control to avoid multiple animation do not run at same time
+  /**
+   * Internal reference to the rendering primitive (`#fig`) from base class.
+   *
+   * Source:
+   * - Retrieved via privileged access (`getIFig`)
+   *
+   * Purpose:
+   * - Direct access to rendering object (e.g., SVGElement)
+   * - Used for advanced operations (transform, animation, DOM interaction)
+   *
+   * Invariant:
+   * - Must always remain consistent with base class `#fig`
+   *
+   * Access:
+   * - Private (controlled via access key system)
+   */
+  #fig = this.getIFig(DEV_INTERNAL_ACCESS);
 
+  /**
+   * Internal reference to the geometry state from base class.
+   *
+   * Source:
+   * - Retrieved via privileged access (`getIGeo`)
+   *
+   * Purpose:
+   * - Enables direct mutation/control of geometric properties
+   * - Used by transformation and animation systems
+   *
+   * Invariant:
+   * - Must remain synchronized with base class geometry
+   *
+   * Critical Warning:
+   * - This bypasses readonly proxy protection
+   */
+  #geometry = this.getIGeo(DEV_INTERNAL_ACCESS);
+
+  /**
+   * Transformation module instance.
+   *
+   * Relationship:
+   * - Composition ("has-a" relationship)
+   *
+   * Responsibilities:
+   * - Manages transformation stack
+   * - Applies matrix operations
+   * - Updates geometry transform state
+   *
+   * Lifecycle:
+   * - Instantiated during construction
+   * - Bound to current entity instance
+   *
+   * Invariant:
+   * - Must always exist after constructor execution
+   */
+  #transform!: Transformation;
+
+  /**
+   * Animation module instance.
+   *
+   * Relationship:
+   * - Composition ("has-a" relationship)
+   *
+   * Responsibilities:
+   * - Handles animation lifecycle
+   * - Controls timing and frame updates
+   *
+   * State:
+   * - `null` → no active animation
+   * - instance → active animation handler
+   *
+   * Invariant:
+   * - At most one active animation per entity
+   */
+  #animation!: Animation | null;
+
+  /**
+   * Filter module instance.
+   *
+   * Relationship:
+   * - Composition ("has-a" relationship)
+   *
+   * Responsibilities:
+   * - Applies visual effects to the rendering element
+   * - Handles filter operations such as blur, shadow, gradients, and advanced effects
+   * - Acts as the execution layer for all filter-related methods
+   *
+   * Lifecycle:
+   * - Instantiated during entity initialization
+   * - Reused across all filter operations
+   *
+   * Invariant:
+   * - Single filter instance is maintained per entity
+   * - Does not manage filter state internally (stateless execution)
+   */
+  #filter: Filter = new Filter();
+
+  /**
+   * Internal flag to track animation execution state.
+   *
+   * Purpose:
+   * - Prevents concurrent animation execution
+   * - Ensures only one animation runs at a time
+   *
+   * Behavior:
+   * - `true` → animation currently active
+   * - `false` → no active animation
+   *
+   * Design Note:
+   * - Acts as a lightweight concurrency control mechanism
+   */
+  #isAnimation: boolean = false;
+
+  /**
+   * Internal class-level properties related to interaction and selection.
+   *
+   * Structure:
+   * - `selectable` → whether entity can be selected
+   * - `hasCanvasSelectable` → whether canvas-level selection is enabled
+   *
+   * Purpose:
+   * - Future extension for interaction systems
+   * - Enables integration with selection engines or UI systems
+   *
+   * Default State:
+   * - All flags disabled
+   *
+   * Access:
+   * - Private (exposed via controlled accessor)
+   */
   #classProp: {
     selectable: boolean;
     hasCanvasSelectable: boolean;
   } = {
     selectable: false,
     hasCanvasSelectable: false
-  }; // future use
+  };
 
-  // Actual implementation
+  /**
+   * Constructs a new GraphicsEntity instance.
+   *
+   * Initialization Flow:
+   * 1. Delegates base initialization to `EventTarget`
+   * 2. Instantiates transformation module
+   * 3. Retrieves internal rendering reference (`#fig`)
+   *
+   * @param shape - Shape identifier (generic type T)
+   * @param id - Unique identifier for the entity
+   *
+   * Side Effects:
+   * - Initializes transformation system
+   * - Establishes internal references to base class state
+   *
+   * Invariants Established:
+   * - `#transform` is initialized
+   * - `#fig` reference is synchronized with base class
+   */
   constructor(shape: T, id: string) {
-    super(shape, id); // ( shape generics , id , rander generics by default = 'path' )
+    /**
+     * Initialize base graphical model and event system.
+     */
+    super(shape, id);
+
+    /**
+     * Initialize transformation module with current entity context.
+     */
     this.#transform = new Transformation(this);
 
+    /**
+     * Refresh internal reference to rendering primitive.
+     *
+     * Note:
+     * - Ensures latest reference after base class initialization
+     */
     this.#fig = this.getIFig(DEV_INTERNAL_ACCESS);
   }
 
+  /**
+   * Provides privileged access to internal class-level properties.
+   *
+   * Access Control:
+   * - Requires valid `accessKey`
+   * - Enforced via `assertAccess`
+   *
+   * @param accessKey - Symbol used for access validation
+   *
+   * @returns Internal class property object
+   *
+   * @throws {Error} If accessKey validation fails
+   *
+   * Security Model:
+   * - Prevents unauthorized mutation of internal interaction flags
+   *
+   * Critical Warning:
+   * - Returned object is mutable
+   * - Caller must ensure integrity of state
+   */
   protected getClassProps(accessKey: symbol) {
     assertAccess(accessKey);
 
     return this.#classProp;
   }
-  //++++++++++++++++++++++++++++++ Child Class Going to Override this below methods  ++++±+++++++++++++++++++++++++++++
 
-  // In this function the code of matrix generation for that particular shape should be implementated.
-  // According to the how are generating that shape matrix
+  /**
+   * ============================================================================
+   * ABSTRACT METHODS (SHAPE-SPECIFIC CONTRACT LAYER)
+   * ============================================================================
+   *
+   * These methods define the mandatory implementation contract for all concrete
+   * graphical entities.
+   *
+   * Each subclass (e.g., Rect, Ellipse, Path) must provide its own:
+   * - Matrix generation logic
+   * - Dimension restoration logic
+   * - Matrix validation logic
+   *
+   * These methods collectively define the **shape-specific behavior layer** of the system.
+   *
+   * Access Control:
+   * - All methods require `accessKeys` (symbol-based privileged access)
+   * - Enforced via internal access control system (`assertAccess`)
+   *
+   * Design Principle:
+   * - Core engine defines structure
+   * - Subclasses define behavior
+   *
+   * ============================================================================
+   */
+
+  /**
+   * Generates the transformation matrix representation for the specific shape.
+   *
+   * Responsibility:
+   * - Constructs or updates the internal transformation matrix based on:
+   *   - Shape geometry
+   *   - Current transformation state
+   *   - Shape-specific rules
+   *
+   * Expected Behavior:
+   * - Reads geometric properties from internal state
+   * - Computes transformation matrix (Float32Array-based)
+   * - Updates internal transformation stack or buffer
+   *
+   * @param accessKeys - Symbol used for privileged access validation
+   *
+   * @returns void
+   *
+   * @throws {Error} If access validation fails or matrix computation is invalid
+   *
+   * Invariants:
+   * - Must produce a valid transformation matrix compatible with rendering pipeline
+   * - Matrix must align with shape-specific geometry definition
+   *
+   * Implementation Requirements:
+   * - Must be deterministic (same input → same output)
+   * - Must not mutate unrelated state
+   *
+   * Example:
+   * - Rect → matrix based on x, y, width, height
+   * - Ellipse → matrix based on rx, ry, cx, cy
+   *
+   * Critical Note:
+   * - This method is part of the rendering pipeline preparation phase
+   */
   protected abstract generateMatrix(accessKeys: symbol): void;
 
-  // in this function the code of restore dimensions according to the particular shape should be implemented.
-  // Restore dimension code should be according to the shape
+  /**
+   * Restores geometric dimensions of the shape from a given transformation state.
+   *
+   * Responsibility:
+   * - Converts transformation matrix/state back into shape-specific dimensions
+   * - Used for reverse-mapping transformations (e.g., scaling, rotation adjustments)
+   *
+   * @param accessKeys - Symbol used for privileged access validation
+   * @param temporaryState - Transformation state (typically matrix representation)
+   * @param basic - Optional flag indicating simplified restoration mode
+   *
+   * @returns void
+   *
+   * @throws {Error} If access validation fails or restoration logic is invalid
+   *
+   * Behavior:
+   * - Interprets `temporaryState` (Float32Array)
+   * - Extracts relevant transformation components
+   * - Updates geometry properties accordingly
+   *
+   * Invariants:
+   * - Restored dimensions must remain consistent with shape definition
+   * - No invalid geometric state should be produced
+   *
+   * Modes:
+   * - `basic = true`:
+   *   → minimal restoration (approximation or partial update)
+   *
+   * - `basic = false | undefined`:
+   *   → full restoration (precise dimension reconstruction)
+   *
+   * Implementation Requirements:
+   * - Must correctly invert transformation effects
+   * - Must preserve shape integrity
+   *
+   * Example:
+   * - Rect → derive width/height after scaling
+   * - Ellipse → recompute radii after transformation
+   *
+   * Critical Note:
+   * - This is effectively the inverse of `generateMatrix`
+   */
   protected abstract restoreDimension(
     accessKeys: symbol,
     temporaryState: Float32Array,
     basic?: boolean
   ): void;
 
-  // In this function the the validation code of that particular shape matrix should be implementated on which this method is going to be  override.
-  // According to the implementation of shape Matrix in that class
-
-  // Example - Rect class  should validate rect matrix
-  // Example - Ellipe class should validate Ellipse matrix
+  /**
+   * Validates whether a given matrix (or set of matrices) is valid for the shape.
+   *
+   * Responsibility:
+   * - Ensures transformation matrices conform to shape-specific constraints
+   * - Prevents invalid or corrupted transformation states
+   *
+   * @param accessKeys - Symbol used for privileged access validation
+   * @param matrix - Array of transformation matrices to validate
+   * @param outputn - Optional flag to control output format
+   *
+   * @returns
+   * - `boolean` → validity status
+   * - `number[]` → extracted/processed values
+   * - `number` → scalar validation result (e.g., determinant, scale factor)
+   *
+   * @throws {Error} If access validation fails or matrix structure is invalid
+   *
+   * Behavior:
+   * - Iterates through provided matrices
+   * - Applies shape-specific validation rules
+   * - Optionally extracts meaningful values
+   *
+   * Invariants:
+   * - Must reject matrices that violate shape constraints
+   * - Must not allow invalid transformations into system
+   *
+   * Output Modes:
+   * - `outputn = false | undefined`:
+   *   → returns boolean (valid / invalid)
+   *
+   * - `outputn = true`:
+   *   → returns computed values (e.g., normalized parameters)
+   *
+   * Implementation Requirements:
+   * - Must be consistent with `generateMatrix`
+   * - Must align with `restoreDimension`
+   *
+   * Example:
+   * - Rect → ensure no skew if not supported
+   * - Ellipse → validate radius constraints
+   *
+   * Critical Note:
+   * - This method is a **safety gate** for transformation integrity
+   */
   protected abstract validateShapeMatrix(
     accessKeys: symbol,
     matrix: Float32Array[],
     outputn?: boolean
   ): boolean | number[] | number;
 
-  //++++++++++++++++++++++++++++++++++±+++++++++++++++++++++++++++++
-
-  /*
-Flattening = Taking your local canonical points + applying the ENTIRE transform stack → rewriting those points in world space → making that the new canonical
-
-
-Destroying the previous local coordinate frame
-
-Collapsing transforms into geometry
-
-Moving geometry into world coordinates
-
-Making world geometry into new local geometry
-
-Recomputing all parametric values
-
-Resetting transform stack to identity
-
-
-LOCAL (canonical)
-   ↓ apply transform stack
-WORLD (live geometry)
-   ↓ derive param attributes
-PARAMETRIC (semantic)
-   ↓ apply param edit
-WORLD (modified)
-   ↓ flatten into new local
-LOCAL (new canonical)
-
-Description : taking original shape data ( which is local geometry ) and then applying all transformations stack ( combined ) to convert local geometry to World geometry or Actual screen representation then apply parametric attributes accordingly ( because parametric attributes changes original geometry ) then after this now making new world geometry as local geometry for further operations and reseting entire transform stack to identity . 
-
-*/
-
+  /**
+   * Flattens the entire transformation stack into the geometry, converting
+   * transformed (world-space) state into a new canonical local representation.
+   *
+   * ============================================================================
+   * CONCEPTUAL MODEL
+   * ============================================================================
+   *
+   * Flattening is a transformation collapse operation:
+   *
+   *   LOCAL (canonical geometry)
+   *        ↓ apply full transform stack
+   *   WORLD (rendered geometry)
+   *        ↓ derive parametric attributes
+   *   PARAMETRIC (semantic representation)
+   *        ↓ apply user modifications
+   *   WORLD (updated geometry)
+   *        ↓ flatten into new canonical form
+   *   LOCAL (new canonical geometry)
+   *
+   * Effectively:
+   * - Removes all accumulated transforms
+   * - Embeds their effect directly into geometry
+   * - Resets transform stack to identity
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Converts transformation stack → geometry mutation
+   * - Rewrites geometry in world-space coordinates
+   * - Applies user-specified parametric updates
+   * - Recomputes canonical shape definition
+   * - Resets transformation stack
+   *
+   * ============================================================================
+   * EXECUTION FLOW
+   * ============================================================================
+   *
+   * 1. Compose all transformations into a single matrix
+   * 2. Apply composed matrix to local geometry buffer
+   * 3. Convert transformed buffer → parametric representation
+   * 4. Apply user-provided parameter updates
+   * 5. Regenerate canonical geometry matrix
+   * 6. Reset transformation stack to identity
+   *
+   * ============================================================================
+   * @param applyUserParams
+   * Function responsible for applying user-defined parametric updates.
+   *
+   * Expected Behavior:
+   * - Accepts parameter object
+   * - Mutates geometry via standard mutation pipeline (likely `attrs`)
+   * - Must NOT bypass validation layers
+   *
+   * @param userParams
+   * Key-value pairs representing user-specified attribute changes.
+   *
+   * Notes:
+   * - Automatically overrides `transform` to empty string (`''`)
+   *   → ensures transform stack is not reintroduced
+   *
+   * ============================================================================
+   * @returns void
+   *
+   * ============================================================================
+   * SIDE EFFECTS
+   * ============================================================================
+   *
+   * - Mutates internal geometry representation
+   * - Rewrites canonical coordinate system
+   * - Clears transformation stack (except identity)
+   * - Forces geometry into world-space alignment
+   *
+   * ============================================================================
+   * INVARIANTS ENFORCED
+   * ============================================================================
+   *
+   * - After execution:
+   *   - Geometry reflects fully transformed state
+   *   - Transformation stack contains only identity matrix
+   *   - No residual transformations remain
+   *
+   * - Canonical geometry becomes equivalent to previously rendered geometry
+   *
+   * ============================================================================
+   * CRITICAL GUARANTEES
+   * ============================================================================
+   *
+   * - No transformation loss (all transforms are preserved in geometry)
+   * - Shape integrity must remain valid post-flattening
+   * - Parametric consistency must be maintained
+   *
+   * ============================================================================
+   * FAILURE MODES
+   * ============================================================================
+   *
+   * - Invalid transformation matrix → incorrect geometry reconstruction
+   * - Invalid `restoreDimension` implementation → corrupted parametric state
+   * - Invalid `generateMatrix` implementation → inconsistent canonical form
+   *
+   * ============================================================================
+   * DESIGN INTENT
+   * ============================================================================
+   *
+   * This method exists to:
+   * - Normalize transformation-heavy states
+   * - Prevent accumulation of transformation stack complexity
+   * - Enable stable parametric editing after transformations
+   *
+   * It is a critical operation for:
+   * - Editing workflows
+   * - Export pipelines
+   * - Geometry normalization
+   *
+   * ============================================================================
+   * PERFORMANCE CHARACTERISTICS
+   * ============================================================================
+   *
+   * - Matrix composition cost: O(n) (n = transform stack size)
+   * - Buffer transformation cost: O(m) (m = geometry points)
+   * - Additional overhead from regeneration and validation
+   *
+   * ============================================================================
+   * SECURITY MODEL
+   * ============================================================================
+   *
+   * - Relies on internal privileged methods:
+   *   - `restoreDimension`
+   *   - `generateMatrix`
+   *
+   * - Requires correct implementation of abstract methods in subclasses
+   *
+   * ============================================================================
+   * IMPLEMENTATION NOTES
+   * ============================================================================
+   *
+   * - Uses DOMMatrix for transformation composition
+   * - Converts matrix operations into Float32Array buffer representation
+   * - Ensures identity reset using explicit matrix overwrite
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * This operation is destructive to the original local coordinate system.
+   *
+   * After execution:
+   * - Original local geometry cannot be recovered
+   * - Transform history is permanently lost
+   *
+   * Use only when:
+   * - Transform stack must be collapsed
+   * - Geometry normalization is required
+   */
   #flattenTransforms(
     applyUserParams: Function,
     userParams: Record<string, string | number>
   ) {
-    console.log('in Flattening');
+    if (__DEV__) {
+      Log('in flatten transform func');
+    }
+
+    /**
+     * Step 1: Compose full transformation stack into a single matrix.
+     */
     const composedMatrix = this.#transform.composeTransforms(true) as DOMMatrix;
 
-    // const { a, b, m31, c, d, m32, e, f } = composedMatrix;
-
-    // column major because shape matrix is row major and for clearity
-
-    //  const transformMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
-
-    //  console.log('transforMatrix ', transformMatrix);
+    /**
+     * Step 2: Apply composed matrix to local geometry buffer.
+     *
+     * Result:
+     * - Geometry transformed into world-space coordinates
+     */
     const updatedBuffer = this.#transform.matrixProductTxM(
       composedMatrix
     ) as Float32Array;
 
-    // create world view parameters of local geometry and reflects that new world view parameters in Actual current state of this shape geometry which are current parameters of shape.
-
-    // console.log('updatedBuffer = ', updatedBuffer);
+    /**
+     * Step 3: Convert transformed buffer into parametric representation.
+     *
+     * Delegates to shape-specific logic.
+     */
     this.restoreDimension(DEV_INTERNAL_ACCESS, updatedBuffer);
 
-    // apply or add user given parameters to world view parameters .
+    /**
+     * Step 4: Apply user-provided parameter updates.
+     *
+     * - Forces transform reset (`transform: ''`)
+     * - Ensures no residual transformation is reintroduced
+     */
     applyUserParams({ ...userParams, transform: '' });
 
-    // this use world view parameters + user Parameters created by restore to create new local or canonical representation of shape with respect to world parameters and new user given attrs parameters
+    /**
+     * Step 5: Regenerate canonical geometry matrix from updated parameters.
+     */
     this.generateMatrix(DEV_INTERNAL_ACCESS);
 
+    /**
+     * Step 6: Reset transformation stack to identity.
+     */
     const geo = this.#geometry as {
       transformStack: transformStack;
     };
 
+    /**
+     * Clear all transformation entries except base.
+     */
     geo.transformStack.stack.length = 1;
-    // assinging identity matrix to composed or cumulative  matrix
 
+    /**
+     * Assign identity matrix to base transformation.
+     */
     (geo.transformStack.stack[0].transformMatrix as Float32Array).set(
       [1, 0, 0, 0, 1, 0, 0, 0, 1],
       0
     );
   }
 
+  /**
+   * Overrides the base `attrs` method to introduce shape-aware validation,
+   * transformation flattening, and parametric control.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * This method extends the base attribute system with:
+   * - Shape-specific validation (`parameterTypeValidator`)
+   * - Separation of geometry and style domains
+   * - Conditional transformation flattening for geometry updates
+   * - Automatic matrix regeneration
+   *
+   * ============================================================================
+   * BEHAVIOR MODES
+   * ============================================================================
+   *
+   * 1. INITIALIZATION MODE
+   *    Trigger:
+   *      - `props.initial === true`
+   *
+   *    Behavior:
+   *      - Applies attributes directly via base class
+   *      - Skips validation and flattening
+   *      - Regenerates matrix immediately
+   *
+   *    Use Case:
+   *      - First-time shape setup
+   *      - Internal system initialization
+   *
+   *
+   * 2. STANDARD MUTATION MODE
+   *    Trigger:
+   *      - `props` is an object (without `initial`)
+   *
+   *    Behavior:
+   *      - Validates properties against shape definitions
+   *      - Separates properties into:
+   *          → Geometry (`g`)
+   *          → Style (`s`)
+   *      - Applies style properties directly
+   *      - Applies geometry properties via flattening pipeline
+   *
+   *
+   * 3. GETTER MODE
+   *    Trigger:
+   *      - `props` is a string
+   *
+   *    Behavior:
+   *      - Delegates to base `attrs`
+   *      - Returns result if available
+   *
+   * ============================================================================
+   * @param props
+   * - Object → setter mode
+   * - String → getter mode
+   *
+   * @returns
+   * - Getter mode → value or array
+   * - Setter mode → void (undefined)
+   *
+   * ============================================================================
+   * VALIDATION PIPELINE
+   * ============================================================================
+   *
+   * - `parameterTypeValidator` ensures:
+   *   - Property belongs to shape domain
+   *   - Property type is valid
+   *   - Property respects class-level constraints
+   *
+   * ============================================================================
+   * DOMAIN SEPARATION
+   * ============================================================================
+   *
+   * Properties are split into:
+   *
+   * - Geometry (`g`)
+   *   → affects shape structure
+   *   → triggers flattening
+   *
+   * - Style (`s`)
+   *   → affects visual appearance
+   *   → applied directly
+   *
+   * Special Case:
+   * - Rect:
+   *   - `rx`, `ry` treated as style properties
+   *
+   * ============================================================================
+   * TRANSFORMATION HANDLING
+   * ============================================================================
+   *
+   * Geometry updates:
+   *
+   *   → invoke `#flattenTransforms`
+   *
+   * This ensures:
+   * - Existing transforms are collapsed into geometry
+   * - New geometry is applied in canonical space
+   * - Transform stack is reset
+   *
+   * ============================================================================
+   * MATRIX REGENERATION
+   * ============================================================================
+   *
+   * - Always triggered after initialization mode
+   * - Triggered indirectly after flattening
+   *
+   * ============================================================================
+   * SIDE EFFECTS
+   * ============================================================================
+   *
+   * - Mutates geometry and/or style
+   * - May collapse transformation stack
+   * - Regenerates shape matrix
+   * - Updates rendering state
+   *
+   * ============================================================================
+   * FAILURE MODES
+   * ============================================================================
+   *
+   * - Undefined shape → throws error
+   * - Invalid property → validator throws
+   * - Invalid transformation → flattening corruption
+   *
+   * ============================================================================
+   * CRITICAL INVARIANTS
+   * ============================================================================
+   *
+   * - Geometry must remain consistent after mutation
+   * - Transform stack must be reset after flattening
+   * - Style mutations must not affect geometry integrity
+   *
+   * ============================================================================
+   * DESIGN INTENT
+   * ============================================================================
+   *
+   * This method acts as:
+   *
+   *   → Shape-aware mutation controller
+   *   → Transformation normalization gateway
+   *   → Validation enforcement layer
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Geometry updates are destructive to transform history
+   * - Partial mutation possible if error occurs mid-processing
+   * - No transactional rollback mechanism
+   */
   public override attrs(
     props: shapesPropsType | string
   ): attrsMethodReturnTypes {
     try {
+      /**
+       * Validate shape existence.
+       */
       const shape = this.#geometry?.shape;
       if (!shape || shape == '') {
         throw new Error('Shape is not difined');
       }
 
+      /**
+       * ============================
+       * SETTER MODE
+       * ============================
+       */
       if (typeof props === 'object') {
+        /**
+         * Initialization mode:
+         * - Bypasses validation and flattening
+         */
         if ('initial' in props && props.initial) {
           delete props.initial;
 
+          /**
+           * Apply properties directly.
+           */
           super.attrs(props);
 
+          /**
+           * Generate canonical matrix.
+           */
           this.generateMatrix(DEV_INTERNAL_ACCESS);
         } else {
+          /**
+           * Step 1: Validate input properties.
+           */
           parameterTypeValidator(
             props,
             GraphicalElementProperties,
@@ -210,128 +853,147 @@ Description : taking original shape data ( which is local geometry ) and then ap
             shape
           );
 
-          //ToDo : autoFixGeometry according to shape
-          //autoFixGeometry(props, ['rx', 'ry', 'stroke-width']);
-
+          /**
+           * Retrieve shape-specific property registries.
+           */
           const elementProps = GraphicalElementProperties[shape as keyof IG];
+
           const styleProps =
             AllGShapeStyleProperties[
               shape as keyof typeof AllGShapeStyleProperties
             ];
 
-          // g for storing Geometry specific properties
+          /**
+           * Containers for separated properties.
+           */
           const g: Record<string, number | string> = {};
-          // s for storing Style specific properties
           const s: Record<string, string | number | undefined> = {};
 
+          /**
+           * Step 2: Split properties into geometry and style domains.
+           */
           for (const key in props) {
             if (key in elementProps) {
               const k = key as keyof typeof elementProps;
-
-              g[k] = props[k]; // TS now knows k is valid
+              g[k] = props[k];
             } else if (key in styleProps) {
               const k = key as keyof typeof styleProps;
-              s[k] = props[k]; // TS now knows k is valid
+              s[k] = props[k];
             }
           }
+
+          /**
+           * Special case: Rect shape handling.
+           * - `rx`, `ry` treated as style instead of geometry
+           */
           if (shape === 'rect') {
             'rx' in g && ((s['rx'] = g['rx']), delete g['rx']);
             'ry' in g && ((s['ry'] = g['ry']), delete g['ry']);
           }
 
-          // applying style properties only
+          /**
+           * Step 3: Apply style properties directly.
+           */
           super.attrs(s);
 
-          // applying geometric perperties with respect to shape if any property available
-
+          /**
+           * Step 4: Apply geometry properties via flattening.
+           *
+           * Only executed if geometry updates exist.
+           */
           Object.keys(g).length > 0 &&
             this.#flattenTransforms(super.attrs.bind(this), g);
 
-          // renderering new updated geometry and style
+          /**
+           * Final state:
+           * - Geometry updated
+           * - Transform stack reset (if flattening occurred)
+           * - Style applied
+           */
         }
       } else if (typeof props === 'string') {
+        /**
+         * ============================
+         * GETTER MODE
+         * ============================
+         */
         let result = super.attrs(props);
+
+        /**
+         * Return result if available.
+         */
         if (result != null) {
           return result;
         }
       }
 
+      /**
+       * Default return for setter mode.
+       */
       return undefined;
     } catch (e) {
+      /**
+       * Transparent error propagation.
+       */
       throw e;
     }
   }
 
-  public setSMatrix(m: number[][], rollback: boolean = false): void {
-    try {
-      if (this.#isAnimation) {
-        cwarn('Animation is Going on So can not set matrix seperataly...!');
-        return;
-      }
-
-      cwarn(
-        'setSMatrix: All previous transformations are cleared , becarefull , you might loose all privouse dara of shape.'
-      );
-
-      const geo = this.#geometry as {
-        transformStack: transformStack;
-        buffer: Float32Array;
-        shape: string;
-      };
-
-      if (!geo) {
-        throw new Error('Geometry not initialized');
-      }
-      const shape = geo.shape as keyof typeof dimensions;
-
-      const [rowSize, columnSize] = dimensions[shape];
-
-      const sb = [] as Float32Array[];
-      const prev = new Float32Array(
-        geo.buffer.slice(0, columnSize! * rowSize!)
-      ); // backup
-
-      for (let i = 0; i < rowSize!; i++) {
-        sb[i] = new Float32Array(3);
-        for (let j = 0; j < columnSize!; j++) {
-          const e = m[i]?.[j] ?? 1;
-          geo.buffer[i * columnSize! + j] = e;
-          sb[i]![j]! = e;
-        }
-      }
-
-      if (
-        !Array.isArray(sb) ||
-        !this.validateShapeMatrix(DEV_INTERNAL_ACCESS, sb)
-      ) {
-        if (rollback) {
-          geo.buffer.set(prev, 0); // rollback
-        } else {
-          throw new Error(
-            'given Matrix for Rectangle is invalid maybe it is not actually the shape which you want to give'
-          );
-        }
-      }
-
-      this.restoreDimension(DEV_INTERNAL_ACCESS, geo.buffer);
-
-      // setting '' to transform attribute of svg
-      this.attrs({ transform: '' });
-      // clearing all transformations stack history
-      geo.transformStack.stack.length = 1;
-      // assinging identity matrix to composed or cumulative  matrix
-
-      (geo.transformStack.stack[0].transformMatrix as Float32Array).set(
-        [1, 0, 0, 0, 1, 0, 0, 0, 1],
-        0
-      );
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  // returning a transformation Matrix applied by user
-
+  /**
+   * Retrieves a transformation matrix from the internal transformation stack.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Exposes transformation matrices applied to the entity
+   * - Supports both single transform retrieval and composed matrix
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - Reads transformation stack from internal geometry
+   * - Delegates extraction/composition to `getTransformationMatrix`
+   * - Returns matrix in requested format (row/column major)
+   *
+   * ============================================================================
+   * @param which
+   * - number → index of transform in stack
+   * - default: 0
+   *
+   * @param major
+   * - 'r' → row-major (default)
+   * - 'c' → column-major
+   *
+   * ============================================================================
+   * @returns number[][]
+   *
+   * - 2D matrix representation of the transformation
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Returned matrix reflects current transform stack
+   * - No mutation of internal state occurs
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * getTMatrix(0)          // specific transform
+   * getTMatrix(3 , "c") // column-major
+   * ```
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Relies on `getTransformationMatrix` for actual computation
+   * - Returned matrix should be treated as read-only
+   */
   public getTMatrix(
     which: string | number = 0,
     major: 'r' | 'c' = 'r'
@@ -344,72 +1006,62 @@ Description : taking original shape data ( which is local geometry ) and then ap
     ) as number[][];
   }
 
-  #restore(temporaryState: Float32Array) {
-    this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
-  }
-
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Transformations Section
-  //++++++++++++++++++++++++++++++++++++++++++++
-  #preChecks(mode: string, px: number, py: number) {
-    //  this.#geometry && !this.#geometry.Obbox && this.getBBox();
-
-    if ((mode == 'p' || mode == 'pivot') && px == 0 && py == 0) {
-      cwarn(
-        "pivot px , py both are zero so effect is same as relative transformation even if type is 'pivot' or 'p' , falling to 'relative' type to save computations."
-      );
-      mode = 'r';
-    }
-    return mode;
-  }
-
   /**
-   * Finalizes and applies transformation matrices to the geometry buffer
-   * and synchronizes the visual representation.
+   * Finalizes the transformation pipeline and applies it to geometry.
    *
-   * -------------------------------------------------------------------------
+   * ============================================================================
    * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * This method completes the transformation pipeline by:
-   * - collecting the incoming transformation matrix (if provided)
-   * - pushing it onto the internal transform stack
-   * - composing all active transforms into a single matrix
-   * - applying the composed matrix to the geometry buffer
-   * - updating the visual model with the finalized transform
+   * ============================================================================
    *
-   * It represents the terminal step where logical transformations
-   * become concrete geometric and visual changes.
+   * - Adds incoming transform to stack
+   * - Composes all transforms into a single matrix
+   * - Applies final matrix to geometry buffer
+   * - Syncs visual transform state
    *
-   * -------------------------------------------------------------------------
-   * WHY THIS FUNCTION EXISTS
-   * -------------------------------------------------------------------------
-   * Transformations may be accumulated, batched, or deferred over time.
-   * Rendering and geometry updates, however, require a single resolved
-   * transformation matrix.
+   * ============================================================================
+   * WORKING
+   * ============================================================================
    *
-   * This method bridges that gap by collapsing the transform stack into
-   * a finalized matrix and applying it deterministically.
+   * 1. Push incoming transform into stack (if provided)
+   * 2. Compose full transformation stack
+   * 3. Store composed matrix as base transform
+   * 4. Apply matrix to geometry buffer
+   * 5. Update geometry + visual transform (`transform` attr)
    *
-   * -------------------------------------------------------------------------
-   * DESIGN INVARIANTS
-   * -------------------------------------------------------------------------
-   * - Geometry must be initialized before finalization
-   * - Transform stack must contain a valid base entry
-   * - All matrices are handled in homogeneous coordinates
-   * - Visual state must reflect the finalized transformation
+   * ============================================================================
+   * @param transformMatrix
+   * - Float32Array → transformation matrix to apply
    *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param callback        - Function invoked with the transformed geometry buffer.
-   * @param transformMatrix - Optional transformation matrix to be added before finalization.
-   * @param transformName   - Name of the transformation being finalized.
-   * @param transformType   - Type of transformation (e.g. batched or immediate).
+   * @param transformName
+   * - Identifier for the transform (tracking/debugging)
    *
-   * -------------------------------------------------------------------------
-   * RETURNS
-   * -------------------------------------------------------------------------
-   * This method does not return a value. It applies transformations as a side effect.
+   * @param transformType
+   * - Type of transform (e.g., 'batched', 'immediate')
+   *
+   * ============================================================================
+   * @returns void
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Transform stack always resolves to a single composed base matrix
+   * - Geometry reflects latest composed transformation
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * finalize({ matrix, "translate", "immediate" })
+   * ```
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Relies on `composeTransforms` and `matrixProductTxM`
+   * - Mutates geometry and updates visual transform state
    */
   #finalizeTransformAndApply({
     transformMatrix,
@@ -423,16 +1075,14 @@ Description : taking original shape data ( which is local geometry ) and then ap
     if (transformMatrix == undefined || transformMatrix == null) {
       return;
     }
+
     let temporaryState!: Float32Array;
 
     const geo = this.#geometry as { transformStack: transformStack };
     const stack = geo.transformStack.stack;
 
-    /* ---------------------------------------------------------------------
-     * STEP 1: Normalize and push incoming transform (if provided)
-     * ---------------------------------------------------------------------
-     * Convert the DOMMatrix into a homogeneous Float32Array representation
-     * and append it to the transform stack for later composition.
+    /**
+     * Step 1: Push incoming transform
      */
     if (transformMatrix instanceof Float32Array) {
       stack.push({
@@ -442,29 +1092,20 @@ Description : taking original shape data ( which is local geometry ) and then ap
       });
     }
 
-    /* ---------------------------------------------------------------------
-     * STEP 2: Compose all active transforms
-     * ---------------------------------------------------------------------
-     * Collapse the transform stack into a single DOMMatrix representing
-     * the cumulative transformation.
+    /**
+     * Step 2: Compose transforms
      */
     const composedMat = this.#transform.composeTransforms(true) as DOMMatrix;
     const { a, b, m31, c, d, m32, e, f } = composedMat;
 
-    /* ---------------------------------------------------------------------
-     * STEP 3: Persist the finalized matrix as the base transform
-     * ---------------------------------------------------------------------
-     * The first stack entry always represents the resolved transformation
-     * applied to geometry.
+    /**
+     * Step 3: Set base (finalized) matrix
      */
     const finalizedMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
     stack[0].transformMatrix = finalizedMatrix;
 
-    /* ---------------------------------------------------------------------
-     * STEP 4: Apply transformation to geometry buffer
-     * ---------------------------------------------------------------------
-     * Execute matrix–geometry multiplication to obtain the transformed
-     * homogeneous buffer.
+    /**
+     * Step 4: Apply matrix to geometry buffer
      */
     (transformType !== 'batched' &&
       (temporaryState = this.#transform.matrixProductTxM(
@@ -473,42 +1114,243 @@ Description : taking original shape data ( which is local geometry ) and then ap
       ))) ||
       (temporaryState = this.#transform.matrixProductTxM(composedMat, false));
 
-    /* ---------------------------------------------------------------------
-     * STEP 5: Invoke callback and synchronize visual model
-     * ---------------------------------------------------------------------
-     * The callback is responsible for consuming the transformed buffer,
-     * while the visual model receives the finalized transform string.
+    /**
+     * Step 5: Sync geometry + visual state
      */
     this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
 
     const t = `${a} , ${b} , ${c} , ${d} , ${e} , ${f}`;
-
     this.attrs({ transform: t });
   }
 
+  /**
+   * Starts a transformation batching session.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Initializes batching mode for transformations
+   * - Defers application of transforms until `endT()` is called
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - Delegates to transformation module
+   * - Accumulates transforms instead of applying immediately
+   *
+   * ============================================================================
+   * @returns this
+   *
+   * - Enables method chaining
+   */
   public beginT(): this {
     this.#transform.beginT();
     return this;
   }
 
+  /**
+   * Ends batching session and applies accumulated transformations.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Finalizes all batched transforms
+   * - Applies them to geometry via internal pipeline
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - Retrieves composed matrix from transform module
+   * - Passes it to finalization pipeline
+   *
+   * ============================================================================
+   * @returns this
+   *
+   * - Enables method chaining
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Triggers geometry update and visual synchronization
+   */
   public endT(): this {
     const transformMatrix = this.#transform.endT() as Float32Array | void;
+
     this.#finalizeTransformAndApply({
       transformMatrix,
       transformName: 'accumulated',
       transformType: 'batched'
     });
+
     return this;
   }
 
+  /**
+   * Checks whether transformation batching is active.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Indicates if transforms are currently being accumulated
+   *
+   * ============================================================================
+   * @returns boolean
+   *
+   * - `true` → batching active
+   * - `false` → immediate mode
+   */
   public isBatching(): boolean {
-    // console.log(this.#transform.isBatching());
     return this.#transform.isBatching();
   }
 
+  /**
+   * Computes the bounding box of the entity.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Returns spatial bounds of the transformed geometry
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - Delegates computation to transformation module
+   * - Accounts for applied transformations
+   *
+   * ============================================================================
+   * @param includeStroke
+   * - `true` → includes stroke width in bounds (default)
+   * - `false` → geometry-only bounds
+   *
+   * @returns Bounding box representation (implementation-dependent)
+   */
   public getBBox(includeStroke: boolean = true) {
     return this.#transform.getBBox(includeStroke);
   }
+
+  /**
+   * Normalizes transformation mode before execution.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Validates and adjusts transformation mode based on pivot inputs
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - If pivot mode is requested but pivot point is (0,0):
+   *   → converts mode to relative ('r')
+   *   → optionally emits warning in development mode
+   *
+   * ============================================================================
+   * @param mode
+   * - Transformation mode (e.g., 'p', 'pivot', 'r')
+   *
+   * @param px
+   * @param py
+   * - Pivot coordinates
+   *
+   * ============================================================================
+   * @returns string
+   *
+   * - Normalized transformation mode
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Pivot mode is only meaningful when pivot ≠ (0,0)
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Optimization step to avoid unnecessary pivot computation
+   */
+  #preChecks(mode: string, px: number, py: number) {
+    if ((mode == 'p' || mode == 'pivot') && px == 0 && py == 0) {
+      if (__DEV__)
+        Warn(
+          "pivot px , py both are zero so effect is same as relative transformation even if type is 'pivot' or 'p' , falling to 'relative' type to save computations."
+        );
+      mode = 'r';
+    }
+    return mode;
+  }
+
+  /**
+   * Applies a translation transform to the entity.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Moves the entity by `(x, y)` in coordinate space
+   * - Integrates translation into transformation pipeline
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Validates that no animation is currently active
+   * 2. Normalizes transformation type and pivot via pre-checks
+   * 3. Generates translation matrix using transformation module
+   * 4. Finalizes and applies transformation to geometry
+   *
+   * ============================================================================
+   * @param x
+   * - Translation along X-axis
+   *
+   * @param y
+   * - Translation along Y-axis
+   *
+   * @param tType
+   * - Transformation type (default: 'a')
+   * - Controls how transform is applied (e.g., batched/immediate)
+   *
+   * @param px
+   * @param py
+   * - Pivot point for translation (default: 0, 0)
+   *
+   * ============================================================================
+   * @returns this
+   *
+   * - Enables method chaining
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Transformation is not applied if animation is active
+   * - Geometry is updated via transformation pipeline
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * entity.Translate({ x: 10, y: 20 })
+   * entity.beginT().Translate({ x: 5, y: 5 }).endT()
+   * ```
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Throws error if animation is in progress
+   * - Mutates geometry and updates visual state
+   */
   public Translate({
     x,
     y,
@@ -518,19 +1360,25 @@ Description : taking original shape data ( which is local geometry ) and then ap
   }: Required<Pick<TranslateMethodProps, 'x' | 'y'>> &
     Partial<Omit<TranslateMethodProps, 'x' | 'y'>>): this {
     try {
-      // create Function for animation checking and seperate logic from all transformations
-      // add also element not attached to canvas like error
-
+      /**
+       * Prevent transformation during active animation.
+       */
       if (this.#isAnimation) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
+        throw new OperationInProgressError(
+          'transform.Translate',
+          'animation.animation',
+          'GraphicsEntity.Translate()'
         );
-        return this;
       }
-      // delete preChecks if not usefull
 
+      /**
+       * Normalize transformation type and pivot.
+       */
       tType = this.#preChecks(tType, px, py);
 
+      /**
+       * Generate translation matrix.
+       */
       const transformMatrix = this.#transform.Translate({
         x,
         y,
@@ -539,9 +1387,12 @@ Description : taking original shape data ( which is local geometry ) and then ap
         py
       }) as Float32Array | void;
 
+      /**
+       * Apply transformation to geometry.
+       */
       this.#finalizeTransformAndApply({
         transformMatrix,
-        transformName: '',
+        transformName: 'translate',
         transformType: tType
       });
 
@@ -551,22 +1402,94 @@ Description : taking original shape data ( which is local geometry ) and then ap
     }
   }
 
+  /**
+   * Applies a scaling transform to the entity.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Scales the entity along X and Y axes
+   * - Integrates scaling into transformation pipeline
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Prevents execution if animation is active
+   * 2. Normalizes transformation mode and pivot
+   * 3. Generates scaling matrix via transformation module
+   * 4. Finalizes and applies transformation to geometry
+   *
+   * ============================================================================
+   * @param sx
+   * - Scale factor along X-axis (default: 1)
+   *
+   * @param sy
+   * - Scale factor along Y-axis (default: 1)
+   *
+   * @param tType
+   * - Transformation type (default: 'a')
+   *
+   * @param px
+   * @param py
+   * - Pivot point for scaling (default: 0, 0)
+   *
+   * ============================================================================
+   * @returns this
+   *
+   * - Enables method chaining
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Scaling is blocked during active animation
+   * - Geometry is updated through transformation pipeline
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * entity.Scale({ sx: 2, sy: 2 })
+   * entity.Scale({ sx: 1.5, sy: 1, px: 50, py: 50 })
+   * ```
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Mutates geometry and updates visual transform
+   * - Throws error if animation is in progress
+   */
   public Scale({
     sx = 1,
     sy = 1,
     tType = 'a',
     px = 0,
     py = 0
-  }: Omit<ScaleMethodProps, 'isEffect' | 'isVEffect'>): this {
+  }: ScaleMethodProps): this {
     try {
+      /**
+       * Prevent scaling during active animation.
+       */
       if (this.#isAnimation) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
+        throw new OperationInProgressError(
+          'transform.Scale',
+          'animation.animation',
+          'GraphicsEntity.Scale()'
         );
-        return this;
       }
 
+      /**
+       * Normalize transformation mode and pivot.
+       */
       tType = this.#preChecks(tType, px, py);
+
+      /**
+       * Generate scaling matrix.
+       */
       const transformMatrix = this.#transform.Scale({
         sx,
         sy,
@@ -575,33 +1498,105 @@ Description : taking original shape data ( which is local geometry ) and then ap
         py
       }) as Float32Array | void;
 
+      /**
+       * Apply transformation to geometry.
+       */
       this.#finalizeTransformAndApply({
         transformMatrix,
-        transformName: '',
+        transformName: 'scale',
         transformType: tType
       });
+
       return this;
     } catch (e) {
       throw e;
     }
   }
 
+  /**
+   * Applies a rotation transform to the entity.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Rotates the entity by a given angle
+   * - Integrates rotation into transformation pipeline
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Prevents execution if animation is active
+   * 2. Normalizes transformation mode and pivot
+   * 3. Generates rotation matrix via transformation module
+   * 4. Finalizes and applies transformation to geometry
+   *
+   * ============================================================================
+   * @param angle
+   * - Rotation angle (typically in degrees, depends on implementation)
+   *
+   * @param tType
+   * - Transformation type (default: 'a')
+   *
+   * @param px
+   * @param py
+   * - Pivot point for rotation (default: 0, 0)
+   *
+   * ============================================================================
+   * @returns this
+   *
+   * - Enables method chaining
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Rotation is blocked during active animation
+   * - Geometry is updated through transformation pipeline
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * entity.Rotate({ angle: 45 })
+   * entity.Rotate({ angle: 90, px: 50, py: 50 })
+   * ```
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Mutates geometry and updates visual transform
+   * - Throws error if animation is in progress
+   */
   public Rotate({
     angle,
     tType = 'a',
     px = 0,
     py = 0
-  }: Omit<RotateMethodProps, 'isEffect' | 'isVEffect'>): this {
+  }: RotateMethodProps): this {
     try {
+      /**
+       * Prevent rotation during active animation.
+       */
       if (this.#isAnimation) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
+        throw new OperationInProgressError(
+          'transform.Rotate',
+          'animation.animation',
+          'GraphicsEntity.Rotate()'
         );
-        return this;
       }
 
+      /**
+       * Normalize transformation mode and pivot.
+       */
       tType = this.#preChecks(tType, px, py);
 
+      /**
+       * Generate rotation matrix.
+       */
       const transformMatrix = this.#transform.Rotate({
         angle,
         tType,
@@ -609,32 +1604,103 @@ Description : taking original shape data ( which is local geometry ) and then ap
         py
       }) as Float32Array | void;
 
+      /**
+       * Apply transformation to geometry.
+       */
       this.#finalizeTransformAndApply({
         transformMatrix,
-        transformName: '',
+        transformName: 'rotate',
         transformType: tType
       });
+
       return this;
     } catch (e) {
       throw e;
     }
   }
-  public Skew({
-    sx,
-    sy,
-    tType = 'a',
-    px = 0,
-    py = 0
-  }: Omit<SkewMethodProps, 'isEffect' | 'isVEffect'>): this {
+
+  /**
+   * Applies a skew (shear) transform to the entity.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Skews the entity along X and/or Y axes
+   * - Integrates skew transformation into the pipeline
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Prevents execution if animation is active
+   * 2. Normalizes transformation mode and pivot
+   * 3. Generates skew matrix via transformation module
+   * 4. Finalizes and applies transformation to geometry
+   *
+   * ============================================================================
+   * @param sx
+   * - Skew factor along X-axis
+   *
+   * @param sy
+   * - Skew factor along Y-axis
+   *
+   * @param tType
+   * - Transformation type (default: 'a')
+   *
+   * @param px
+   * @param py
+   * - Pivot point for skew (default: 0, 0)
+   *
+   * ============================================================================
+   * @returns this
+   *
+   * - Enables method chaining
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Skew is blocked during active animation
+   * - Geometry is updated via transformation pipeline
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * entity.Skew({ sx: 10, sy: 0 })
+   * entity.Skew({ sx: 0, sy: 15, px: 50, py: 50 })
+   * ```
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Mutates geometry and updates visual transform
+   * - Throws error if animation is in progress
+   */
+  public Skew({ sx, sy, tType = 'a', px = 0, py = 0 }: SkewMethodProps): this {
     try {
+      /**
+       * Prevent skew during active animation.
+       */
       if (this.#isAnimation) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
+        throw new OperationInProgressError(
+          'transform.Skew',
+          'animation.animation',
+          'GraphicsEntity.Skew()'
         );
-        return this;
       }
+
+      /**
+       * Normalize transformation mode and pivot.
+       */
       tType = this.#preChecks(tType, px, py);
 
+      /**
+       * Generate skew matrix.
+       */
       const transformMatrix = this.#transform.Skew({
         sx,
         sy,
@@ -643,31 +1709,107 @@ Description : taking original shape data ( which is local geometry ) and then ap
         py
       }) as Float32Array | void;
 
+      /**
+       * Apply transformation to geometry.
+       */
       this.#finalizeTransformAndApply({
         transformMatrix,
-        transformName: '',
+        transformName: 'skew',
         transformType: tType
       });
+
       return this;
     } catch (e) {
       throw e;
     }
   }
+
+  /**
+   * Applies a flip (reflection) transform to the entity.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Reflects the entity across X and/or Y axes
+   * - Integrates flip transformation into the pipeline
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Prevents execution if animation is active
+   * 2. Performs basic normalization via pre-checks
+   * 3. Generates flip matrix using transformation module
+   * 4. Finalizes and applies transformation to geometry
+   *
+   * ============================================================================
+   * @param flipX
+   * - Enables flip along X-axis
+   *
+   * @param flipY
+   * - Enables flip along Y-axis
+   *
+   * @param dirX
+   * - Direction for X-axis flip (default: 'x+')
+   *
+   * @param dirY
+   * - Direction for Y-axis flip (default: 'y+')
+   *
+   * ============================================================================
+   * @returns this
+   *
+   * - Enables method chaining
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Flip is blocked during active animation
+   * - Geometry is updated through transformation pipeline
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * entity.Flip({ flipX: true })
+   * entity.Flip({ flipY: true, dirY: 'y-' })
+   * ```
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Mutates geometry and updates visual transform
+   * - Throws error if animation is in progress
+   */
   public Flip({
     flipX,
     flipY,
     dirX = 'x+',
     dirY = 'y+'
-  }: Omit<FlipMethodProps, 'isEffect' | 'isVEffect'>): this {
+  }: FlipMethodProps): this {
     try {
+      /**
+       * Prevent flip during active animation.
+       */
       if (this.#isAnimation) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
+        throw new OperationInProgressError(
+          'transform.Flip',
+          'animation.animation',
+          'GraphicsEntity.Flip()'
         );
-        return this;
       }
+
+      /**
+       * Basic normalization (no pivot logic used here).
+       */
       this.#preChecks('', 1, 1);
 
+      /**
+       * Generate flip matrix.
+       */
       const transformMatrix = this.#transform.Flip({
         flipX,
         flipY,
@@ -675,50 +1817,205 @@ Description : taking original shape data ( which is local geometry ) and then ap
         dirY
       }) as Float32Array | void;
 
+      /**
+       * Apply transformation to geometry.
+       */
       this.#finalizeTransformAndApply({
         transformMatrix,
-        transformName: '',
+        transformName: 'flip',
         transformType: `${dirX} , ${dirY}`
       });
+
       return this;
     } catch (e) {
       throw e;
     }
   }
 
+  /**
+   * Applies a transformation using a raw transform string.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Parses and applies transformation defined as a string
+   * - Acts as a flexible entry point for custom or combined transforms
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Prevents execution if animation is active
+   * 2. Performs basic normalization via pre-checks
+   * 3. Parses input string into transformation matrix
+   * 4. Finalizes and applies transformation to geometry
+   *
+   * ============================================================================
+   * @param input
+   * - Transformation string (e.g., "translate(10,20) rotate(45)")
+   *
+   * ============================================================================
+   * @returns this
+   *
+   * - Enables method chaining
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Transformation is blocked during active animation
+   * - Parsed transformation is applied through standard pipeline
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * entity.transform("translate(10,20) rotate(45)")
+   * ```
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Input must be valid transform syntax
+   * - Mutates geometry and updates visual state
+   */
   public transform(input: string): this {
     try {
+      /**
+       * Prevent transform during active animation.
+       */
       if (this.#isAnimation) {
-        cwarn(
-          'Animation is Going on So can not apply transformation seperataly...!'
+        throw new OperationInProgressError(
+          'transform.transform',
+          'animation.animation',
+          'GraphicsEntity.transform()'
         );
-        return this;
       }
+
+      /**
+       * Basic normalization (no pivot-specific logic).
+       */
       this.#preChecks('', 1, 1);
+
+      /**
+       * Parse and generate transformation matrix.
+       */
       const transformMatrix = this.#transform.transform(
         input
       ) as Float32Array | void;
 
+      /**
+       * Apply transformation to geometry.
+       */
       this.#finalizeTransformAndApply({
         transformMatrix,
-        transformName: '',
+        transformName: 'batched',
         transformType: 'batched'
       });
+
       return this;
     } catch (e) {
       throw e;
     }
   }
 
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Animation Section
-  //++++++++++++++++++++++++++++++++++++++++++++
-
+  /**
+   * Internal helper to get/set animation state.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Tracks whether an animation is currently active
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - If `arg` is falsy → returns current animation state
+   * - If `arg` is truthy → toggles animation state
+   *
+   * ============================================================================
+   * @param arg
+   * - Control flag for read/toggle behavior
+   *
+   * @returns boolean | undefined
+   *
+   * - Current animation state (when reading)
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Used internally by Animation module for lifecycle control
+   */
   #isAnimationsGoingOn(arg: boolean): boolean | undefined | void {
     if (!arg) return this.#isAnimation;
     this.#isAnimation = !this.#isAnimation;
   }
 
+  /**
+   * Starts an animation on the entity.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Initializes and executes animation on geometry and/or style properties
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Ensures no animation is already running
+   * 2. Validates animation inputs
+   * 3. Creates Animation instance (if not existing)
+   * 4. Passes required hooks and callbacks
+   * 5. Starts animation execution
+   *
+   * ============================================================================
+   * @param attrs
+   * - Target properties to animate
+   *
+   * @param avdProp
+   * - Advanced animation configuration (optional)
+   *
+   * @param duration
+   * - Duration of animation in milliseconds
+   *
+   * @param ease
+   * - Easing function or type (optional)
+   *
+   * @param onComplete
+   * - Callback executed after animation completes (optional)
+   *
+   * ============================================================================
+   * @returns void
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Only one animation can run at a time per entity
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * entity.animate({ x: 100, y: 50 }, null, 1000)
+   * ```
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Throws error if another animation is already running
+   * - Mutates geometry and/or style over time
+   */
   public animate(
     attrs: animatableProps & IG[T],
     avdProp: IadvanceProps | null,
@@ -727,9 +2024,19 @@ Description : taking original shape data ( which is local geometry ) and then ap
     onComplete: Function | null = null
   ): void {
     if (!this.#animation) {
+      /**
+       * Basic normalization (no pivot-specific logic).
+       */
       this.#preChecks('', 1, 1);
+
+      /**
+       * Validate animation inputs.
+       */
       animationChecks(attrs, avdProp, duration, ease, onComplete);
 
+      /**
+       * Create animation instance with required hooks.
+       */
       this.#animation = new Animation(
         this,
         this.#isAnimationsGoingOn.bind(this),
@@ -741,14 +2048,92 @@ Description : taking original shape data ( which is local geometry ) and then ap
         }
       );
 
+      /**
+       * Start animation.
+       */
       this.#animation.animate(attrs, avdProp, duration, ease, onComplete, true);
     } else {
-      cwarn(
-        'Animation is already going on this shape , please wait untill animation finish.'
+      /**
+       * Prevent concurrent animations.
+       */
+      throw new OperationInProgressError(
+        'animation.animation',
+        'animation.animation',
+        'GraphicsEntity.animation()'
       );
     }
   }
 
+  /**
+   * Initializes an animation and returns control handlers.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Starts an animation on the entity
+   * - Exposes control methods (start, pause, resume, etc.)
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Ensures no animation is currently running
+   * 2. Validates animation inputs
+   * 3. Creates Animation instance with required hooks
+   * 4. Starts animation execution
+   * 5. Returns control interface bound to animation instance
+   *
+   * ============================================================================
+   * @param attrs
+   * - Target properties to animate
+   *
+   * @param avdProp
+   * - Advanced animation configuration (optional)
+   *
+   * @param duration
+   * - Animation duration (ms)
+   *
+   * @param ease
+   * - Easing function or type (optional)
+   *
+   * @param onComplete
+   * - Callback executed after completion (optional)
+   *
+   * ============================================================================
+   * @returns
+   *
+   * - Object with animation controls:
+   *   - start()
+   *   - pause()
+   *   - resume()
+   *   - isPaused()
+   *   - isRunning()
+   *   - cancelAnimation()
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Only one animation instance can exist per entity
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * const ctrl = entity.animation({ x: 100 }, null, 1000)
+   * ctrl.pause()
+   * ctrl.resume()
+   * ```
+   *
+   * ============================================================================
+   * WARNING
+   * ============================================================================
+   *
+   * - Throws error if another animation is active
+   * - Mutates geometry and/or style over time
+   */
   public animation(
     attrs: animatableProps & IG[T],
     avdProp: IadvanceProps | null,
@@ -764,9 +2149,19 @@ Description : taking original shape data ( which is local geometry ) and then ap
     cancelAnimation: () => void;
   } {
     if (!this.#animation) {
+      /**
+       * Basic normalization (no pivot-specific logic).
+       */
       this.#preChecks('', 1, 1);
+
+      /**
+       * Validate animation inputs.
+       */
       animationChecks(attrs, avdProp, duration, ease, onComplete);
 
+      /**
+       * Create animation instance.
+       */
       this.#animation = new Animation(
         this,
         this.#isAnimationsGoingOn.bind(this),
@@ -778,13 +2173,21 @@ Description : taking original shape data ( which is local geometry ) and then ap
         }
       );
 
+      /**
+       * Start animation immediately.
+       */
       this.#animation.animate(attrs, avdProp, duration, ease, onComplete, true);
     } else {
-      cwarn(
-        'Animation is already going on this shape , please wait untill animation finish or cancel the animation.'
+      throw new OperationInProgressError(
+        'animation.animation',
+        'animation.animation',
+        'GraphicsEntity.animation()'
       );
     }
 
+    /**
+     * Return control interface.
+     */
     return {
       start: this.#animation.start.bind(this.#animation),
       pause: this.#animation.pause.bind(this.#animation),
@@ -796,7 +2199,51 @@ Description : taking original shape data ( which is local geometry ) and then ap
   }
 
   /**
-   * updateAnimation
+   * Updates the current animation frame.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Advances the active animation using the provided time value
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - Validates access using internal access key
+   * - Checks if animation exists and is active
+   * - Delegates update to animation instance
+   *
+   * ============================================================================
+   * @param key
+   * - Access key for internal method authorization
+   *
+   * @param time
+   * - Current time or frame timestamp used for animation progression
+   *
+   * ============================================================================
+   * @returns void
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - Animation updates only when an active animation exists
+   *
+   * ============================================================================
+   * EXAMPLE
+   * ============================================================================
+   *
+   * ```ts
+   * entity.updateAnimation(key, performance.now())
+   * ```
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Intended for internal or engine-driven update loops
    */
   public updateAnimation(key: symbol, time: number) {
     assertAccess(key);
@@ -804,40 +2251,117 @@ Description : taking original shape data ( which is local geometry ) and then ap
     this.#animation && this.#isAnimation && this.#animation.update(time);
   }
 
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Filter Section
-  //++++++++++++++++++++++++++++++++++++++++++++
+  /**
+   * ============================================================================
+   * FILTER METHODS
+   * ============================================================================
+   *
+   * Applies visual effects to the underlying rendering element.
+   * All methods delegate to the `Filter` module.
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - Creates a new Filter instance
+   * - Applies effect directly on internal rendering element (`#fig`)
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Effects are visual-only and do not modify geometry
+   * - Requires element to be attached to rendering context
+   */
+
+  /**
+   * Applies box shadow effect.
+   *
+   * @param props - Shadow configuration
+   */
   public boxShadow(props: boxShadowProps) {
-    new Filter().boxShadow(this.#fig, props);
+    this.#filter.boxShadow(this.#fig, props);
   }
 
+  /**
+   * Applies inner shadow effect.
+   *
+   * @param props - Inner shadow configuration
+   */
   public innerShadow(props: innerShadowProps) {
-    new Filter().innerShadow(this.#fig, props);
+    this.#filter.innerShadow(this.#fig, props);
   }
 
+  /**
+   * Applies blur effect.
+   *
+   * @param blur - Blur intensity
+   */
   public blur(blur: number) {
-    new Filter().blur(this.#fig, blur);
+    this.#filter.blur(this.#fig, blur);
   }
 
+  /**
+   * Applies glow effect.
+   *
+   * @param bright - Glow intensity
+   */
   public glow(bright: number) {
-    new Filter().glow(this.#fig, bright);
+    this.#filter.glow(this.#fig, bright);
   }
 
+  /**
+   * Applies linear gradient fill.
+   *
+   * @param props - Gradient configuration
+   */
   public linearGradient(
     props: linearGradientProps = { direction: 'LR', stops: [] }
   ) {
-    new Filter().linearGradient(this.#fig, props);
+    this.#filter.linearGradient(this.#fig, props);
   }
 
+  /**
+   * Applies radial gradient fill.
+   *
+   * @param props - Gradient configuration
+   */
   public radialGradient(
     props: radialGradientProps = {
       direction: 'CENTER',
       stops: []
     }
   ) {
-    new Filter().radialGradient(this.#fig, props);
+    this.#filter.radialGradient(this.#fig, props);
   }
 
+  /**
+   * ============================================================================
+   * ADVANCED FILTER EFFECTS
+   * ============================================================================
+   *
+   * Applies advanced visual effects using the Filter module.
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - Instantiates Filter
+   * - Applies effect directly on rendering element (`#fig`)
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Effects are visual-only (no geometry impact)
+   * - No internal state tracking for applied filters
+   */
+
+  /**
+   * Applies lighting effect to simulate surface illumination.
+   *
+   * @param props - Lighting configuration (color, intensity, angles, etc.)
+   */
   public lightEffect(
     props: lightEffectProps = {
       lightingColor: 'red',
@@ -847,9 +2371,14 @@ Description : taking original shape data ( which is local geometry ) and then ap
       verticalAngleOfLight: 45
     }
   ) {
-    new Filter().lightEffect(this.#fig, props);
+    this.#filter.lightEffect(this.#fig, props);
   }
 
+  /**
+   * Applies displacement (distortion) effect.
+   *
+   * @param props - Distortion configuration (pattern, frequency, scale, etc.)
+   */
   public displacementEffect(
     props: displacementEffectProps = {
       patternStyle: 'turbulence',
@@ -860,9 +2389,14 @@ Description : taking original shape data ( which is local geometry ) and then ap
       distortDirectionY: 'G'
     }
   ) {
-    new Filter().displacementEffect(this.#fig, props);
+    this.#filter.displacementEffect(this.#fig, props);
   }
 
+  /**
+   * Applies color matrix transformation.
+   *
+   * @param props - Color transformation configuration
+   */
   public colorMatrixTransformation(
     props: colorMatrixProps = {
       type: 'saturate',
@@ -870,9 +2404,36 @@ Description : taking original shape data ( which is local geometry ) and then ap
       inSource: 'SourceGraphic'
     }
   ) {
-    new Filter().colorMatrixTransformation(this.#fig, props);
+    this.#filter.colorMatrixTransformation(this.#fig, props);
   }
 
+  /**
+   * ============================================================================
+   * DESIGN EFFECTS (UI-STYLE FILTERS)
+   * ============================================================================
+   *
+   * Applies composite visual effects for modern UI styles.
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * - Instantiates Filter
+   * - Applies effect directly on rendering element (`#fig`)
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Effects are purely visual (no geometry changes)
+   * - Built as combination of multiple filter primitives
+   */
+
+  /**
+   * Applies neumorphism effect (soft UI shadow-based design).
+   *
+   * @param props - Neumorphism configuration (colors, blur, offsets, opacity)
+   */
   public neuMorph(
     props: neuMorphProps = {
       backgroundColor: '#e6eef6',
@@ -896,9 +2457,14 @@ Description : taking original shape data ( which is local geometry ) and then ap
       innerShadowOpacity: 0.12
     }
   ) {
-    new Filter().neuMorph(this.#fig, props);
+    this.#filter.neuMorph(this.#fig, props);
   }
 
+  /**
+   * Applies glassmorphism effect (frosted glass appearance).
+   *
+   * @param props - Glass effect configuration (blur, opacity, edge highlights)
+   */
   public glassMorph(
     props: glassMorphProps = {
       blurAmount: 10,
@@ -907,6 +2473,6 @@ Description : taking original shape data ( which is local geometry ) and then ap
       edgeHighlightOpacity: 0.35
     }
   ) {
-    new Filter().glassMorph(this.#fig, props);
+    this.#filter.glassMorph(this.#fig, props);
   }
 }
