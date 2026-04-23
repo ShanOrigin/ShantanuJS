@@ -38,14 +38,8 @@ import type { shapesPropsType } from '../../types/shapes';
 
 import {
   boxShadowProps,
-  innerShadowProps,
-  colorMatrixProps,
-  displacementEffectProps,
-  lightEffectProps,
   linearGradientProps,
-  radialGradientProps,
-  neuMorphProps,
-  glassMorphProps
+  radialGradientProps
 } from '../../types/filters';
 
 import type { IGraphicalElementProperties as IG } from '../../properties/provider/shapeProperties';
@@ -391,7 +385,7 @@ export abstract class GraphicsEntity<
    * - Single filter instance is maintained per entity
    * - Does not manage filter state internally (stateless execution)
    */
-  #filter: Filter = new Filter();
+  #filter: Filter = new Filter(this);
 
   /**
    * Internal flag to track animation execution state.
@@ -655,12 +649,13 @@ export abstract class GraphicsEntity<
    * Critical Note:
    * - This method is a **safety gate** for transformation integrity
    */
+  /*
   protected abstract validateShapeMatrix(
     accessKeys: symbol,
     matrix: Float32Array[],
     outputn?: boolean
   ): boolean | number[] | number;
-
+*/
   /**
    * Flattens the entire transformation stack into the geometry, converting
    * transformed (world-space) state into a new canonical local representation.
@@ -1103,7 +1098,7 @@ export abstract class GraphicsEntity<
               g[k] = props[k];
             } else if (key in styleProps) {
               const k = key as keyof typeof styleProps;
-              s[k] = props[k];
+              s[k] = (props as Record<string, string | number>)[k];
             }
           }
 
@@ -1232,36 +1227,33 @@ export abstract class GraphicsEntity<
   }
 
   /**
-   * Finalizes the transformation pipeline and applies it to geometry.
+   * Registers a transformation into the transform stack.
    *
    * ============================================================================
    * CORE RESPONSIBILITY
    * ============================================================================
    *
-   * - Adds incoming transform to stack
-   * - Composes all transforms into a single matrix
-   * - Applies final matrix to geometry buffer
-   * - Syncs visual transform state
+   * - Accepts incoming transformation matrix
+   * - Appends transform into stack for later composition
+   * - Marks geometry as requiring recomputation
    *
    * ============================================================================
    * WORKING
    * ============================================================================
    *
-   * 1. Push incoming transform into stack (if provided)
-   * 2. Compose full transformation stack
-   * 3. Store composed matrix as base transform
-   * 4. Apply matrix to geometry buffer
-   * 5. Update geometry + visual transform (`transform` attr)
+   * 1. Validate incoming matrix
+   * 2. Push transform into `transformStack`
+   * 3. Mark `dirty` and `worldDirty` flags
    *
    * ============================================================================
    * @param transformMatrix
-   * - Float32Array → transformation matrix to apply
+   * - Float32Array → transformation matrix to register
    *
    * @param transformName
-   * - Identifier for the transform (tracking/debugging)
+   * - Identifier for transform tracking/debugging
    *
    * @param transformType
-   * - Type of transform (e.g., 'batched', 'immediate')
+   * - Classification of transform (e.g., 'batched', 'immediate')
    *
    * ============================================================================
    * @returns void
@@ -1270,25 +1262,17 @@ export abstract class GraphicsEntity<
    * INVARIANT
    * ============================================================================
    *
-   * - Transform stack always resolves to a single composed base matrix
-   * - Geometry reflects latest composed transformation
-   *
-   * ============================================================================
-   * EXAMPLE
-   * ============================================================================
-   *
-   * ```ts
-   * finalize({ matrix, "translate", "immediate" })
-   * ```
+   * - Transform stack accumulates all local transforms
+   * - Composition is deferred to engine phase
    *
    * ============================================================================
    * NOTE
    * ============================================================================
    *
-   * - Relies on `composeTransforms` and `matrixProductTxM`
-   * - Mutates geometry and updates visual transform state
+   * - Does NOT perform composition
+   * - Only mutates stack and invalidation flags
    */
-  #finalizeTransformAndApply({
+  #finalizeTransform({
     transformMatrix,
     transformName,
     transformType
@@ -1297,55 +1281,85 @@ export abstract class GraphicsEntity<
     transformName: string;
     transformType: string;
   }) {
-    if (transformMatrix == undefined || transformMatrix == null) {
-      return;
-    }
+    if (!transformMatrix) return;
 
-    let temporaryState!: Float32Array;
-
-    const geo = this.#geometry as { transformStack: transformStack };
+    const geo = this.#geometry as {
+      dirty: boolean;
+      worldDirty: boolean;
+      transformStack: transformStack;
+    };
     const stack = geo.transformStack.stack;
 
-    /**
-     * Step 1: Push incoming transform
-     */
-    if (transformMatrix instanceof Float32Array) {
-      stack.push({
-        transformMatrix: transformMatrix,
-        transformName,
-        transformType
-      });
-    }
+    stack.push({
+      transformMatrix,
+      transformName,
+      transformType
+    });
 
-    /**
-     * Step 2: Compose transforms
-     */
-    const composedMat = this.#transform.composeTransforms(true) as DOMMatrix;
-    const { a, b, m31, c, d, m32, e, f } = composedMat;
+    geo.dirty = true;
+    geo.worldDirty = true;
+  }
 
-    /**
-     * Step 3: Set base (finalized) matrix
-     */
-    const finalizedMatrix = new Float32Array([a, b, m31, c, d, m32, e, f, 1]);
-    stack[0].transformMatrix = finalizedMatrix;
+  /**
+   * Composes and updates the local transformation matrix.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   *
+   * - Resolves full local transformation stack
+   * - Produces a single composed matrix
+   * - Stores result as local base matrix
+   *
+   * ============================================================================
+   * WORKING
+   * ============================================================================
+   *
+   * 1. Compose all transforms from `transformStack`
+   * 2. Extract affine components from DOMMatrix
+   * 3. Write values into base `localMatrix`
+   *
+   * ============================================================================
+   * @param key
+   * - Internal access control token
+   *
+   * ============================================================================
+   * @returns void
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   *
+   * - `stack[0].transformMatrix` always holds latest composed matrix
+   * - Composition affects only local transform (no parent influence)
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   *
+   * - Must be invoked by engine before world resolution
+   * - Uses DOMMatrix as composition backend
+   */
+  public updateTransformation(key: symbol) {
+    assertAccess(key);
 
-    /**
-     * Step 4: Apply matrix to geometry buffer
-     */
-    (transformType !== 'batched' &&
-      (temporaryState = this.#transform.matrixProductTxM(
-        composedMat,
-        false
-      ))) ||
-      (temporaryState = this.#transform.matrixProductTxM(composedMat, false));
+    const geo = this.#geometry as {
+      transformStack: transformStack;
+    };
 
-    /**
-     * Step 5: Sync geometry + visual state
-     */
-    this.restoreDimension(DEV_INTERNAL_ACCESS, temporaryState);
+    // compose ONLY local transforms
+    const composed = this.#transform.composeTransforms(true) as DOMMatrix;
 
-    const t = `${a} , ${b} , ${c} , ${d} , ${e} , ${f}`;
-    this.attrs({ transform: t });
+    const { a, b, c, d, e, f } = composed;
+
+    const localMatrix = geo.transformStack.stack[0].transformMatrix;
+
+    localMatrix[0] = a;
+    localMatrix[1] = b;
+    localMatrix[3] = c;
+    localMatrix[4] = d;
+    localMatrix[6] = e;
+    localMatrix[7] = f;
   }
 
   /**
@@ -1406,7 +1420,7 @@ export abstract class GraphicsEntity<
   public endT(): this {
     const transformMatrix = this.#transform.endT() as Float32Array | void;
 
-    this.#finalizeTransformAndApply({
+    this.#finalizeTransform({
       transformMatrix,
       transformName: 'accumulated',
       transformType: 'batched'
@@ -1582,8 +1596,8 @@ export abstract class GraphicsEntity<
     tType = 'a',
     px = 0,
     py = 0
-  }: Required<Pick<TranslateMethodProps, 'x' | 'y'>> &
-    Partial<Omit<TranslateMethodProps, 'x' | 'y'>>): this {
+  }: TranslateMethodProps): this {
+    //   Required<Pick<TranslateMethodProps, 'x' | 'y'>> &  Partial<Omit<TranslateMethodProps, 'x' | 'y'>>)
     try {
       /**
        * Prevent transformation during active animation.
@@ -1615,11 +1629,13 @@ export abstract class GraphicsEntity<
       /**
        * Apply transformation to geometry.
        */
-      this.#finalizeTransformAndApply({
-        transformMatrix,
-        transformName: 'translate',
-        transformType: tType
-      });
+      if (transformMatrix) {
+        this.#finalizeTransform({
+          transformMatrix,
+          transformName: 'translate',
+          transformType: tType
+        });
+      }
 
       return this;
     } catch (e) {
@@ -1726,12 +1742,13 @@ export abstract class GraphicsEntity<
       /**
        * Apply transformation to geometry.
        */
-      this.#finalizeTransformAndApply({
-        transformMatrix,
-        transformName: 'scale',
-        transformType: tType
-      });
-
+      if (transformMatrix) {
+        this.#finalizeTransform({
+          transformMatrix,
+          transformName: 'scale',
+          transformType: tType
+        });
+      }
       return this;
     } catch (e) {
       throw e;
@@ -1832,12 +1849,13 @@ export abstract class GraphicsEntity<
       /**
        * Apply transformation to geometry.
        */
-      this.#finalizeTransformAndApply({
-        transformMatrix,
-        transformName: 'rotate',
-        transformType: tType
-      });
-
+      if (transformMatrix) {
+        this.#finalizeTransform({
+          transformMatrix,
+          transformName: 'rotate',
+          transformType: tType
+        });
+      }
       return this;
     } catch (e) {
       throw e;
@@ -1937,12 +1955,13 @@ export abstract class GraphicsEntity<
       /**
        * Apply transformation to geometry.
        */
-      this.#finalizeTransformAndApply({
-        transformMatrix,
-        transformName: 'skew',
-        transformType: tType
-      });
-
+      if (transformMatrix) {
+        this.#finalizeTransform({
+          transformMatrix,
+          transformName: 'skew',
+          transformType: tType
+        });
+      }
       return this;
     } catch (e) {
       throw e;
@@ -2045,12 +2064,13 @@ export abstract class GraphicsEntity<
       /**
        * Apply transformation to geometry.
        */
-      this.#finalizeTransformAndApply({
-        transformMatrix,
-        transformName: 'flip',
-        transformType: `${dirX} , ${dirY}`
-      });
-
+      if (transformMatrix) {
+        this.#finalizeTransform({
+          transformMatrix,
+          transformName: 'flip',
+          transformType: `${dirX} , ${dirY}`
+        });
+      }
       return this;
     } catch (e) {
       throw e;
@@ -2135,12 +2155,13 @@ export abstract class GraphicsEntity<
       /**
        * Apply transformation to geometry.
        */
-      this.#finalizeTransformAndApply({
-        transformMatrix,
-        transformName: 'batched',
-        transformType: 'batched'
-      });
-
+      if (transformMatrix) {
+        this.#finalizeTransform({
+          transformMatrix,
+          transformName: 'batched',
+          transformType: 'batched'
+        });
+      }
       return this;
     } catch (e) {
       throw e;
@@ -2177,7 +2198,7 @@ export abstract class GraphicsEntity<
    *
    * - Used internally by Animation module for lifecycle control
    */
-  #isAnimationsGoingOn(arg: boolean): boolean | undefined | void {
+  public isAnimationsGoingOn(arg: boolean): boolean | undefined | void {
     if (!arg) return this.#isAnimation;
     this.#isAnimation = !this.#isAnimation;
   }
@@ -2264,7 +2285,7 @@ export abstract class GraphicsEntity<
        */
       this.#animation = new Animation(
         this,
-        this.#isAnimationsGoingOn.bind(this),
+        this.isAnimationsGoingOn.bind(this),
         this.#transform.createTransformMatrix.bind(this.#transform),
         this.#transform.getBBox.bind(this.#transform),
         () => {
@@ -2359,6 +2380,7 @@ export abstract class GraphicsEntity<
    * - Throws error if another animation is active
    * - Mutates geometry and/or style over time
    */
+
   public animation(
     attrs: animatableProps & IG[T],
     avdProp: IadvanceProps | null,
@@ -2389,7 +2411,7 @@ export abstract class GraphicsEntity<
        */
       this.#animation = new Animation(
         this,
-        this.#isAnimationsGoingOn.bind(this),
+        this.isAnimationsGoingOn.bind(this),
         this.#transform.createTransformMatrix.bind(this.#transform),
         this.#transform.getBBox.bind(this.#transform),
         () => {
@@ -2470,10 +2492,13 @@ export abstract class GraphicsEntity<
    *
    * - Intended for internal or engine-driven update loops
    */
+
   public updateAnimation(key: symbol, time: number) {
     assertAccess(key);
 
-    this.#animation && this.#isAnimation && this.#animation.update(time);
+    if (!this.#animation || !this.#isAnimation) return null;
+
+    return this.#animation.update(time);
   }
 
   /**
@@ -2481,223 +2506,115 @@ export abstract class GraphicsEntity<
    * FILTER METHODS
    * ============================================================================
    *
-   * Applies visual effects to the underlying rendering element.
-   * All methods delegate to the `Filter` module.
+   * Applies visual effects and gradients to the underlying rendering element.
+   * All methods delegate creation to the Filter module and then bind the
+   * generated resource id to the appropriate style property.
    *
    * ============================================================================
    * WORKING
    * ============================================================================
    *
-   * - Creates a new Filter instance
-   * - Applies effect directly on internal rendering element (`#fig`)
+   * - Delegates resource creation to Filter (returns unique id)
+   * - Updates style layer using `url(#id)` reference
+   * - Returns id for external lifecycle control (e.g., deletion)
    *
    * ============================================================================
    * NOTE
    * ============================================================================
    *
-   * - Effects are visual-only and do not modify geometry
-   * - Requires element to be attached to rendering context
+   * - Filters (blur, glow, shadow) map to `filter`
+   * - Gradients map to `fill` or `stroke`
+   * - Caller is responsible for deletion using returned id
    */
 
   /**
-   * Applies box shadow effect.
+   * Applies box shadow (drop shadow) effect.
    *
-   * @param props - Shadow configuration
+   * @param props - Shadow configuration including blur, offset, color, opacity
+   * @returns Unique filter id
    */
-  public boxShadow(props: boxShadowProps) {
-    this.#filter.boxShadow(this.#fig, props);
+  public boxShadow(props: boxShadowProps): string {
+    const style = this.getIStyle(DEV_INTERNAL_ACCESS);
+
+    const id = this.#filter.boxShadow(props);
+
+    style['filter'] = `url(#${id})`;
+
+    return id;
   }
 
   /**
-   * Applies inner shadow effect.
+   * Applies Gaussian blur effect.
    *
-   * @param props - Inner shadow configuration
+   * @param blur - Blur intensity (standard deviation)
+   * @returns Unique filter id
    */
-  public innerShadow(props: innerShadowProps) {
-    this.#filter.innerShadow(this.#fig, props);
+  public blur(blur: number): string {
+    const style = this.getIStyle(DEV_INTERNAL_ACCESS);
+
+    const id = this.#filter.blur(blur);
+
+    style['filter'] = `url(#${id})`;
+
+    return id;
   }
 
   /**
-   * Applies blur effect.
-   *
-   * @param blur - Blur intensity
-   */
-  public blur(blur: number) {
-    this.#filter.blur(this.#fig, blur);
-  }
-
-  /**
-   * Applies glow effect.
+   * Applies glow effect (blur-based highlight).
    *
    * @param bright - Glow intensity
+   * @returns Unique filter id
    */
-  public glow(bright: number) {
-    this.#filter.glow(this.#fig, bright);
+  public glow(bright: number): string {
+    const style = this.getIStyle(DEV_INTERNAL_ACCESS);
+
+    const id = this.#filter.glow(bright);
+
+    style['filter'] = `url(#${id})`;
+
+    return id;
   }
 
   /**
-   * Applies linear gradient fill.
+   * Applies linear gradient to fill or stroke.
    *
-   * @param props - Gradient configuration
+   * @param property - Target property ('fill' or 'stroke')
+   * @param props - Gradient configuration (direction, color stops [])
+   * @returns Unique gradient id
    */
   public linearGradient(
+    property: 'fill' | 'stroke' = 'fill',
     props: linearGradientProps = { direction: 'LR', stops: [] }
-  ) {
-    this.#filter.linearGradient(this.#fig, props);
+  ): string {
+    const style = this.getIStyle(DEV_INTERNAL_ACCESS);
+
+    const id = this.#filter.linearGradient(props);
+
+    style[property] = `url(#${id})`;
+
+    return id;
   }
 
   /**
-   * Applies radial gradient fill.
+   * Applies radial gradient to fill or stroke.
    *
-   * @param props - Gradient configuration
+   * @param property - Target property ('fill' or 'stroke')
+   * @param props - Gradient configuration (position, radius, focal point, color stops [])
+   * @returns Unique gradient id
    */
   public radialGradient(
+    property: 'fill' | 'stroke' = 'fill',
     props: radialGradientProps = {
       direction: 'CENTER',
       stops: []
     }
-  ) {
-    this.#filter.radialGradient(this.#fig, props);
-  }
+  ): string {
+    const style = this.getIStyle(DEV_INTERNAL_ACCESS);
 
-  /**
-   * ============================================================================
-   * ADVANCED FILTER EFFECTS
-   * ============================================================================
-   *
-   * Applies advanced visual effects using the Filter module.
-   *
-   * ============================================================================
-   * WORKING
-   * ============================================================================
-   *
-   * - Instantiates Filter
-   * - Applies effect directly on rendering element (`#fig`)
-   *
-   * ============================================================================
-   * NOTE
-   * ============================================================================
-   *
-   * - Effects are visual-only (no geometry impact)
-   * - No internal state tracking for applied filters
-   */
+    const id = this.#filter.radialGradient(props);
 
-  /**
-   * Applies lighting effect to simulate surface illumination.
-   *
-   * @param props - Lighting configuration (color, intensity, angles, etc.)
-   */
-  public lightEffect(
-    props: lightEffectProps = {
-      lightingColor: 'red',
-      surfaceScale: 1,
-      intensityOfLight: 1,
-      horizontalAngleOfLight: 45,
-      verticalAngleOfLight: 45
-    }
-  ) {
-    this.#filter.lightEffect(this.#fig, props);
-  }
+    style[property] = `url(#${id})`;
 
-  /**
-   * Applies displacement (distortion) effect.
-   *
-   * @param props - Distortion configuration (pattern, frequency, scale, etc.)
-   */
-  public displacementEffect(
-    props: displacementEffectProps = {
-      patternStyle: 'turbulence',
-      waveFrequency: 0.6,
-      detailLevel: 3,
-      distortionAmount: 5,
-      distortDirectionX: 'B',
-      distortDirectionY: 'G'
-    }
-  ) {
-    this.#filter.displacementEffect(this.#fig, props);
-  }
-
-  /**
-   * Applies color matrix transformation.
-   *
-   * @param props - Color transformation configuration
-   */
-  public colorMatrixTransformation(
-    props: colorMatrixProps = {
-      type: 'saturate',
-      values: 1,
-      inSource: 'SourceGraphic'
-    }
-  ) {
-    this.#filter.colorMatrixTransformation(this.#fig, props);
-  }
-
-  /**
-   * ============================================================================
-   * DESIGN EFFECTS (UI-STYLE FILTERS)
-   * ============================================================================
-   *
-   * Applies composite visual effects for modern UI styles.
-   *
-   * ============================================================================
-   * WORKING
-   * ============================================================================
-   *
-   * - Instantiates Filter
-   * - Applies effect directly on rendering element (`#fig`)
-   *
-   * ============================================================================
-   * NOTE
-   * ============================================================================
-   *
-   * - Effects are purely visual (no geometry changes)
-   * - Built as combination of multiple filter primitives
-   */
-
-  /**
-   * Applies neumorphism effect (soft UI shadow-based design).
-   *
-   * @param props - Neumorphism configuration (colors, blur, offsets, opacity)
-   */
-  public neuMorph(
-    props: neuMorphProps = {
-      backgroundColor: '#e6eef6',
-      outerShadowColor: '#b8c9db',
-      highlightColor: '#ffffff',
-      innerShadowColor: '#000000',
-
-      outerBlur: 10,
-      outerOffsetX: 8,
-      outerOffsetY: 8,
-      outerShadowOpacity: 0.85,
-
-      highlightBlur: 6,
-      highlightOffsetX: -6,
-      highlightOffsetY: -6,
-      highlightOpacity: 0.9,
-
-      innerBlur: 6,
-      innerOffsetX: 4,
-      innerOffsetY: 4,
-      innerShadowOpacity: 0.12
-    }
-  ) {
-    this.#filter.neuMorph(this.#fig, props);
-  }
-
-  /**
-   * Applies glassmorphism effect (frosted glass appearance).
-   *
-   * @param props - Glass effect configuration (blur, opacity, edge highlights)
-   */
-  public glassMorph(
-    props: glassMorphProps = {
-      blurAmount: 10,
-      frostOpacity: 0.05,
-      edgeBlur: 1.2,
-      edgeHighlightOpacity: 0.35
-    }
-  ) {
-    this.#filter.glassMorph(this.#fig, props);
+    return id;
   }
 }
