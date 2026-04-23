@@ -33,6 +33,7 @@ import {
   CanvasParentNotFoundError,
   NotInitializedError,
   ShapeAlreadyExistsInCanvasError,
+  ShapeNotAttachedToCanvasError,
   UnsupportedRenderingBackendError
 } from '../../utils/errors/provider/shantanuJSErrors.js';
 
@@ -40,11 +41,13 @@ type shapeType = keyof IG;
 
 type GType = G<shapeType>;
 
+import { type GraphicsModel } from '../provider/graphics.js';
 import type {
   IGraphicalElementProperties,
   StyleForGShapeTag
 } from '../../properties/provider/shapeProperties';
 import { Warn } from '../../utils/helpers/helpers.js';
+import { EventSystem } from '../eventTarget/EventSystem.js';
 
 // Point propsTypes
 type canvasGeoTypes = IGraphicalElementProperties['canvas'];
@@ -292,6 +295,14 @@ export default class Canvas extends EventTarget<'canvas'> {
    * - Any desynchronization leads to structural corruption.
    */
   #elementIndexMap: Map<iShape, number> = new Map();
+  /**
+   * O(1) lookup map: id → shape
+   *
+   * PURPOSE:
+   * - Resolve parent via `inside`
+   * - Used by engine for hierarchy resolution
+   */
+  #elementIdMap: Map<string, GraphicsModel<shapeType>> = new Map();
 
   /**
    * Rendering abstraction responsible for translating shapes
@@ -317,6 +328,31 @@ export default class Canvas extends EventTarget<'canvas'> {
    * - Must be initialized before any state mutation that affects rendering.
    */
   #engine!: Engine;
+
+  /**
+   * Centralized synthetic event dispatcher for this canvas.
+   *
+   * Responsibilities:
+   * - Receives native DOM pointer events
+   * - Performs hit testing across all canvas elements
+   * - Resolves event target based on z-index and geometry
+   * - Builds propagation path using ECS `inside` relationships
+   * - Executes event phases (capture → target → bubble)
+   *
+   * Design Constraints:
+   * - Owned exclusively by Canvas (single dispatch authority)
+   * - Must operate on the same element registry used by rendering engine
+   * - Must remain stateless with respect to scene structure (consumes external maps)
+   *
+   * Invariant:
+   * - Must be initialized before any DOM event binding occurs
+   * - Must always reference the latest shapes array and element ID map
+   *
+   * Lifecycle:
+   * - Created once during Canvas initialization
+   * - Reused for all event dispatch operations
+   */
+  #eventSystem!: EventSystem;
 
   /**
    * Root graphical node representing this canvas in the rendering layer.
@@ -476,8 +512,8 @@ export default class Canvas extends EventTarget<'canvas'> {
 
       // Pre-allocate defs (required for gradients, filters, etc.)
       const defs = createSVGElement('defs');
-      canvas.appendChild(defs);
 
+      addTo(canvas, defs);
       this.setIFig(DEV_INTERNAL_ACCESS, context, canvas);
       fig = this.getIFig(DEV_INTERNAL_ACCESS);
       this.#fig = fig;
@@ -505,16 +541,62 @@ export default class Canvas extends EventTarget<'canvas'> {
     // Step 8: Initialize Renderer + Engine
     // =========================================================
     this.#renderer = initRenderer(context);
+
     const engine = new Engine(
       this.#canvasElements,
       this.#renderer,
-      this.#resolveZOrder.bind(this)
+      this.#resolveZOrder.bind(this),
+      this.#elementIdMap
     );
-
     this.#engine = engine;
 
     // Start engine only after full initialization
     engine.start();
+    this.#elementIdMap.set(this.style.id, this);
+
+    // Initialize event system with current canvas state (shapes + id map)
+    this.#eventSystem = new EventSystem(
+      this.#canvasElements,
+      this.#elementIdMap
+    );
+
+    this.#bindDOMEvents();
+  }
+
+  /**
+   * Binds native DOM events to the canvas surface.
+   *
+   * This is the entry point from browser → engine.
+   *
+   * Flow:
+   * DOM Event → Canvas → EventSystem → SyntheticEvent → Handlers
+   *
+   * Important:
+   * - Only Canvas interacts with DOM
+   * - All shapes remain DOM-independent
+   */
+  #bindDOMEvents(): void {
+    const el = this.#fig as unknown as HTMLElement; // actual <canvas> DOM node
+
+    el.addEventListener('pointerdown', (e) => {
+      this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
+    });
+
+    el.addEventListener('pointermove', (e) => {
+      this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
+    });
+
+    el.addEventListener('pointerup', (e) => {
+      this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
+    });
+
+    el.addEventListener('click', (e) => {
+      this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
+    });
+
+    el.addEventListener('dblclick', (e) => {
+      this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
+    });
   }
 
   /**
@@ -1029,6 +1111,8 @@ export default class Canvas extends EventTarget<'canvas'> {
         shape: string;
         context?: string | null;
         zIndex: number;
+        dirty: boolean;
+        worldDirty: boolean;
       };
 
       // =========================================================
@@ -1079,9 +1163,12 @@ export default class Canvas extends EventTarget<'canvas'> {
 
       elements.push(shape);
       indexMap.set(shape, index);
+      this.#elementIdMap.set(shape.style.id, shape);
 
       style.inside = insideValue;
       geometry.context = canvasContext;
+      geometry.dirty = true;
+      geometry.worldDirty = true;
 
       // =========================================================
       // Step 4: Z-ORDER INITIALIZATION (CRITICAL)
@@ -1162,7 +1249,6 @@ export default class Canvas extends EventTarget<'canvas'> {
 
     const elements = this.#canvasElements;
     const indexMap = this.#elementIndexMap;
-    const canvasId = this.#style.id;
 
     for (let i = 0; i < targets.length; i++) {
       const el = targets[i];
@@ -1182,21 +1268,27 @@ export default class Canvas extends EventTarget<'canvas'> {
       // =========================================================
       // Ownership validation (soft check)
       // =========================================================
-      if (__DEV__) {
-        const inside = style?.inside;
-        if (inside) {
-          const [container, sid] = inside.split('-');
-          if (!(container === 'canvas' && sid === canvasId)) {
-            Warn(`Ownership mismatch detected`, el);
-          }
+
+      const inside = style?.inside;
+      if (
+        !inside.startsWith('canvas-') ||
+        inside !== `canvas-${this.#style.inside}`
+      ) {
+        if (__DEV__) {
+          Warn(`Ownership mismatch detected`, el);
         }
+        throw new ShapeNotAttachedToCanvasError(
+          style.id,
+          this.style.id,
+          'canvas.remove()'
+        );
       }
 
       // =========================================================
       // Group handling
       // =========================================================
       if (el instanceof Group) {
-        const groupElements = el.getElements();
+        const groupElements = el.getAllElements();
         el.ungroup();
 
         if (groupElements.length > 0) {
@@ -1228,6 +1320,7 @@ export default class Canvas extends EventTarget<'canvas'> {
 
       elements.pop();
       indexMap.delete(el);
+      this.#elementIdMap.delete(el.style.id);
 
       // =========================================================
       // CLEAN INTERNAL STATE
@@ -1240,8 +1333,10 @@ export default class Canvas extends EventTarget<'canvas'> {
         geometry.context = undefined;
         // Z-INDEX CLEANUP (CRITICAL ADDITION)
         geometry.zIndex = undefined as unknown as number;
-      }
 
+        geometry.dirty = false;
+        geometry.worldDirty = false;
+      }
       // =========================================================
       // DEV invariant check
       // =========================================================
@@ -1459,6 +1554,8 @@ export default class Canvas extends EventTarget<'canvas'> {
         geometry.context = undefined;
         //  Z-INDEX CLEANUP (CRITICAL)
         geometry.zIndex = undefined as unknown as number;
+        geometry.dirty = false;
+        geometry.worldDirty = false;
       }
     }
 
@@ -1513,12 +1610,6 @@ export default class Canvas extends EventTarget<'canvas'> {
    * ORDERING STRATEGY
    * ============================================================================
    * - Front:  zIndex = ++maxZ
-   * - Back:   zIndex = --minZ
-   *
-   * This guarantees:
-   * - Strict ordering (no collisions)
-   * - O(1) updates per operation
-   *
    * ============================================================================
    * INVARIANTS
    * ============================================================================
@@ -1563,6 +1654,48 @@ export default class Canvas extends EventTarget<'canvas'> {
       }
 
       shape.clearZOrderOp(DEV_INTERNAL_ACCESS);
+    }
+  }
+
+  /**
+   * Marks all descendants of a container as worldDirty.
+   *
+   * ============================================================================
+   * PURPOSE
+   * ============================================================================
+   * - Propagates transform invalidation through full hierarchy
+   * - Used when container transform or hierarchy changes
+   *
+   * ============================================================================
+   * DESIGN
+   * ============================================================================
+   * - Uses iterative DFS (no recursion)
+   * - Respects shallow getAllElements() contract
+   * - Traverses only through containers (groups)
+   *
+   * ============================================================================
+   * @param container - Root container (Canvas or Group)
+   */
+  #markWorldDirtyCascade() {
+    const stack = [...this.getAllElements()];
+
+    while (stack.length) {
+      const el = stack.pop() as iShape;
+      const geo = el.geometry as { shape: string; worldDirty: boolean };
+
+      if (!geo.worldDirty) {
+        geo.worldDirty = true;
+      }
+
+      /*
+      // Only groups can expand traversal
+      if (geo.shape === 'group') {
+        const children = (el as Group).getAllElements();
+        for (let i = 0; i < children.length; i++) {
+          stack.push(children[i]);
+        }
+      }
+			*/
     }
   }
 }
