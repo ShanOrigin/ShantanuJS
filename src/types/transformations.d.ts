@@ -3,7 +3,6 @@ interface BaseTransformMeta {
   tType?: string;
   px?: number;
   py?: number;
-  callback?: Function;
 }
 
 // Translate
@@ -35,7 +34,6 @@ export interface FlipMethodProps {
   flipY: boolean;
   dirX?: 'x+' | 'x-';
   dirY?: 'y+' | 'y-';
-  callback?: Function;
 }
 
 export type ParsedDaTa = { tName: string; data: {} };

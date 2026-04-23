@@ -58,7 +58,10 @@ type textPropsType = Partial<IGraphicalElementProperties['text']> &
 type imagePropsType = Partial<IGraphicalElementProperties['image']> &
   Partial<StyleForGShapeTag<'image'>>;
 
-export type shapesPropsType =
+export type groupPropsType = Partial<IGraphicalElementProperties['group']> &
+  Partial<StyleForGShapeTag<'g'>>;
+
+export type shapesAllPropsType =
   | pointPropsType
   | linePropsType
   | polygonPropsType
@@ -71,3 +74,8 @@ export type shapesPropsType =
   | textPropsType
   | imagePropsType
   | (curvePropsType & polylinePropsType);
+
+export type shapesPropsType = Omit<
+  shapesAllPropsType,
+  'transform' | 'vector-effect' | 'id' | 'inside' | 'context'
+>;
