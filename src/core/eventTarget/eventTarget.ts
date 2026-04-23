@@ -1,369 +1,173 @@
-import {
-  GraphicsModel,
-  GShpesTages
-} from '../graphics/graphicsModel/graphicsModel.js';
-import { DEV_INTERNAL_ACCESS } from '../../utils/provider/accesskeys.js';
+import type { IGraphicalElementProperties } from '../../properties/specific/specificProperties';
+import { GraphicsModel } from '../provider/graphics.js';
+import { SyntheticEvent } from './syntheticEvent.js';
 
-import { SVG_CONTEXT } from '../graphics/backends/svg/core/core.js';
-
-//type SVGEventType = keyof SVGElementEventMap;
-
-interface CustomEventOptions extends AddEventListenerOptions {
-  preventDefault?: boolean;
-  stopPropagation?: boolean;
-}
-
-type SupportedEvents =
+export type SupportedEvents =
   | 'click'
   | 'dblclick'
-  | 'mousedown'
-  | 'mouseup'
-  | 'mousemove'
   | 'pointerdown'
   | 'pointermove'
   | 'pointerup'
-  | 'touchstart'
-  | 'touchmove'
-  | 'touchend'
-  | 'mouseenter'
-  | 'mouseleave';
+  | 'pointerenter'
+  | 'pointerleave';
 
+export type Handler = (e: SyntheticEvent) => void;
+
+/**
+ * ============================================================================
+ * EVENT TARGET (FINAL — PASSIVE EVENT CAPABILITY)
+ * ============================================================================
+ *
+ * PURPOSE
+ * ----------------------------------------------------------------------------
+ * Provides event subscription capability to graphical entities in a fully
+ * deterministic and minimal form.
+ *
+ * This class does NOT participate in:
+ * - event dispatch
+ * - hit testing
+ * - propagation logic
+ *
+ * It ONLY:
+ * - stores handlers
+ * - exposes controlled APIs
+ *
+ * ============================================================================
+ * DESIGN DECISIONS
+ * ----------------------------------------------------------------------------
+ *
+ * 1. ONE HANDLER PER EVENT TYPE
+ *    - No arrays, no stacking
+ *    - Deterministic overwrite behavior
+ *
+ * 2. NO EVENT IDS
+ *    - Redundant in single-handler model
+ *    - Eliminates unnecessary state
+ *
+ * 3. CONSTANT TIME OPERATIONS
+ *    - Map lookup: O(1)
+ *
+ * 4. INTERNAL ACCESS CONTROL
+ *    - EventSystem accesses handlers via controlled method
+ *
+ * ============================================================================
+ *
+ * STORAGE MODEL
+ * ----------------------------------------------------------------------------
+ *
+ * Map<eventType, handler>
+ *
+ * Example:
+ * {
+ *   click → handlerFn,
+ *   pointerdown → handlerFn
+ * }
+ *
+ * ============================================================================
+ */
 export abstract class EventTarget<
-  T extends GShpesTages
+  T extends keyof IGraphicalElementProperties
 > extends GraphicsModel<T> {
-  // +++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //  This entire class code may change According to context in future
-  // +++++++++++++++++++++++++++++++++++++++++++++++++++++
+  /**
+   * Internal handler storage.
+   *
+   * Key   → event type
+   * Value → handler function
+   */
+  #handlers: Map<SupportedEvents, Handler> = new Map();
 
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS);
-  #listener: {
-    type: SupportedEvents;
-    handler: EventListener;
-    options?: CustomEventOptions;
-    uid?: string;
-  }[] = [];
+  // ==========================================================================
+  // PUBLIC API
+  // ==========================================================================
 
   /**
-   * Deep clone an array of objects so that changes to the copy
-   * won't affect the original.
+   * Registers an event handler on the canvas.
    *
-   * ⚠️ Note: This won't preserve functions, Dates, Maps, Sets, or class instances.
+   * Behavior:
+   * - Associates a handler with a specific event type
+   * - If a handler already exists for the same type, it is replaced
+   *
+   * Scope:
+   * - Applies to the canvas itself (root-level events)
+   * - Will be triggered if propagation reaches canvas level
+   *
+   * Usage:
+   * canvas.on('click', handler)
+   *
+   * @param type Event type (click, pointerdown, etc.)
+   * @param handler Function to execute when event occurs
    */
-  public getAllEvents() {
-    return JSON.parse(JSON.stringify(this.#listener));
+  public on(type: SupportedEvents, handler: Handler): void {
+    this.#handlers.set(type, handler);
   }
 
-  public on<E extends Event>(
-    eventType: SupportedEvents,
-    callback: (e: E) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    if (eventType == ('drag' as SupportedEvents)) {
-      console.warn(
-        `drag event cannot beused by on() method is drag() seperate method provided on shape `
-      );
-    }
-    if (typeof (this as any)[eventType] === 'function') {
-      this.#addEvent(eventType as SupportedEvents, callback, props, uid);
-    } else {
-      console.warn(`Unsupported event type: ${eventType}`);
-    }
+  /**
+   * Removes the event handler associated with the given event type.
+   *
+   * Behavior:
+   * - Deletes handler if present
+   * - No effect if handler does not exist
+   *
+   * Usage:
+   * canvas.off('click')
+   *
+   * @param type Event type
+   */
+  public off(type: SupportedEvents): void {
+    this.#handlers.delete(type);
   }
 
-  public off(eventType: SupportedEvents, uid: string = 'default') {
-    if (typeof (this as any)[`un${eventType}`] === 'function') {
-      this.#removeEvent(eventType as SupportedEvents, uid);
-    } else {
-      console.warn(`Unsupported event type: ${eventType}`);
-    }
-  }
-
-  #addEvent<E extends Event>(
-    type: SupportedEvents,
-    callback: (e: E) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ): void {
-    const {
-      preventDefault = false,
-      stopPropagation = false,
-      ...listenerOptions
-    } = props;
-
-    this.#fig = this.getIFig(DEV_INTERNAL_ACCESS);
-    if (!this.#fig) return;
-
-    const handler = (e: Event) => {
-      if (preventDefault) e.preventDefault();
-      if (stopPropagation) e.stopPropagation();
-      callback(e as E);
+  /**
+   * Registers a one-time event handler on the canvas.
+   *
+   * Behavior:
+   * - Handler executes exactly once
+   * - Automatically removed after execution
+   * - Replaces any existing handler for the same event type
+   *
+   * Usage:
+   * canvas.once('click', handler)
+   *
+   * Use Cases:
+   * - Initialization interactions
+   * - One-shot triggers
+   *
+   * @param type Event type
+   * @param handler Function to execute once
+   */
+  public once(type: SupportedEvents, handler: Handler): void {
+    const wrapper: Handler = (e) => {
+      handler(e);
+      this.#handlers.delete(type);
     };
 
-    const existing = this.#listener.find(
-      (l) => l.type === type && l.uid === uid
-    );
-
-    if (this.getContext() == SVG_CONTEXT) {
-      if (existing) {
-        this.#fig.removeEventListener(
-          existing.type,
-          existing.handler,
-          existing.options
-        );
-      }
-      this.#listener = this.#listener.filter((l) => l.type !== type);
-
-      this.#fig.addEventListener(type, handler, listenerOptions);
-      this.#listener.push({ type, handler, options: props, uid });
-    }
+    this.#handlers.set(type, wrapper);
   }
 
-  #removeEvent(type: SupportedEvents, uid: string = 'default'): void {
-    this.#fig = this.getIFig(DEV_INTERNAL_ACCESS);
-    if (this.#fig) {
-      const existing = this.#listener.find(
-        (l) => l.type === type && l.uid === uid
-      );
-      if (this.getContext() == SVG_CONTEXT) {
-        if (existing) {
-          this.#fig.removeEventListener(
-            type,
-            existing.handler,
-            existing.options
-          );
-          this.#listener = this.#listener.filter(
-            (l) => l.type !== type && l.uid === uid
-          );
-        }
-      }
-    }
+  // ==========================================================================
+  // INTERNAL ACCESS (EVENT SYSTEM ONLY)
+  // ==========================================================================
+
+  /**
+   * Returns handler for given event type.
+   *
+   * IMPORTANT:
+   * - Intended ONLY for EventSystem usage
+   * - Not part of public contract
+   *
+   * @param type Event type
+   * @returns Handler or undefined
+   */
+  public getHandler(type: SupportedEvents): Handler | undefined {
+    return this.#handlers.get(type);
   }
 
-  public click(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('click', callback, props, uid);
-  }
-
-  public unclick(uid: string = 'default') {
-    this.#removeEvent('click', uid);
-  }
-
-  public dblclick(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('dblclick', callback, props, uid);
-  }
-
-  public undblclick(uid: string = 'default') {
-    this.#removeEvent('dblclick', uid);
-  }
-
-  public mouseDown(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('mousedown', callback, props, uid);
-  }
-
-  public unmouseDown(uid: string = 'default') {
-    this.#removeEvent('mousedown', uid);
-  }
-
-  public mouseUp(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('mouseup', callback, props, uid);
-  }
-
-  public unmouseUp(uid: string = 'default') {
-    this.#removeEvent('mouseup', uid);
-  }
-
-  public mouseMove(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('mousemove', callback, props, uid);
-  }
-
-  public unmouseMove(uid: string = 'default') {
-    this.#removeEvent('mousemove', uid);
-  }
-
-  public touchStart(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('touchstart', callback, props, uid);
-  }
-
-  public untouchStart(uid: string = 'default') {
-    this.#removeEvent('touchstart', uid);
-  }
-
-  public touchEnd(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('touchend', callback, props, uid);
-  }
-
-  public untouchEnd(uid: string = 'default') {
-    this.#removeEvent('touchend', uid);
-  }
-
-  public touchMove(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('touchmove', callback, props, uid);
-  }
-
-  public untouchMove(uid: string = 'default') {
-    this.#removeEvent('touchmove', uid);
-  }
-
-  public enterMouse(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('mouseenter', callback, props, uid);
-  }
-
-  public leaveMouse(
-    callback: (e: Event) => void,
-    props: CustomEventOptions = {},
-    uid: string = 'default'
-  ) {
-    this.#addEvent('mouseleave', callback, props, uid);
-  }
-
-  public unenterMouse(uid: string = 'default'): void {
-    this.#removeEvent('mouseenter', uid);
-  }
-
-  public unleaveMouse(uid: string = 'default'): void {
-    this.#removeEvent('mouseleave', uid);
-  }
-
-  public hover(enter: (e: Event) => void, leave: (e: Event) => void) {
-    this.enterMouse(enter, {}, 'combined');
-    this.leaveMouse(leave, {}, 'combined');
-  }
-
-  public unhover() {
-    this.unenterMouse('combined');
-    this.unleaveMouse('combined');
-  }
-  public drag(
-    start?: (x: number, y: number, ...args: any[]) => void,
-    move?: (x: number, y: number, ...args: any[]) => void,
-    end?: (e: Event, ...args: any[]) => void,
-    ...args: any[]
-  ) {
-    let isDragging = false;
-
-    const updateCoords = (e: any) => {
-      const { clientX, clientY } = e.touches ? e.touches[0] : e;
-      return { x: clientX, y: clientY };
-    };
-
-    const startHandler = (e: Event) => {
-      const { x, y } = updateCoords(e);
-      isDragging = true;
-      if (start) start(x, y, ...args);
-    };
-
-    const moveHandler = (e: Event) => {
-      if (!isDragging) return;
-      const { x, y } = updateCoords(e);
-      if (move) move(x, y, ...args);
-    };
-
-    const endHandler = (e: Event) => {
-      if (!isDragging) return;
-      isDragging = false;
-      if (end) end(e, ...args);
-    };
-
-    // Use built-in methods to add events
-    this.mouseDown(startHandler, {}, 'combined');
-    this.touchStart(startHandler, {}, 'combined');
-
-    this.mouseMove(moveHandler, {}, 'combined');
-    this.touchMove(moveHandler, {}, 'combined');
-
-    this.mouseUp(endHandler, {}, 'combined');
-    this.touchEnd(endHandler, {}, 'combined');
-  }
-
-  public undrag() {
-    this.unmouseDown('combined');
-    this.untouchStart('combined');
-    this.unmouseMove('combined');
-    this.untouchMove('combined');
-    this.unmouseUp('combined');
-    this.untouchEnd('combined');
-  }
-
-  public pointerdown(
-    callback: (e: PointerEvent) => void,
-    props: CustomEventOptions = {},
-    uid = 'default'
-  ) {
-    this.#addEvent('pointerdown', callback, props, uid);
-
-    this.#fig.style.touchAction = 'none';
-    props['preventDefault'] = true;
-    this.#fig.setAttribute('pointer-events', 'all');
-  }
-
-  public pointermove(
-    callback: (e: PointerEvent) => void,
-    props: CustomEventOptions = {},
-    uid = 'default'
-  ) {
-    this.#addEvent('pointermove', callback, props, uid);
-    props['preventDefault'] = true;
-    this.#fig.style.touchAction = 'none';
-    this.#fig.setAttribute('pointer-events', 'all');
-  }
-
-  public pointerup(
-    callback: (e: PointerEvent) => void,
-    props: CustomEventOptions = {},
-    uid = 'default'
-  ) {
-    this.#addEvent('pointerup', callback, props, uid);
-    this.#fig.style.touchAction = 'none';
-
-    props['preventDefault'] = true;
-    this.#fig.setAttribute('pointer-events', 'all');
-  }
-
-  public unpointerdown(uid: string = 'default') {
-    this.#removeEvent('pointerdown', uid);
-  }
-
-  public unpointermove(uid: string = 'default') {
-    this.#removeEvent('pointermove', uid);
-  }
-
-  public unpointerup(uid: string = 'default') {
-    this.#removeEvent('pointerup', uid);
+  /**
+   * Checks whether a handler exists for given event type.
+   *
+   * Useful for fast path skipping in dispatcher.
+   */
+  public hasHandler(type: SupportedEvents): boolean {
+    return this.#handlers.has(type);
   }
 }
