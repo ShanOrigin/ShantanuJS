@@ -134,15 +134,4 @@ export class Text extends GraphicsEntity<'text'> {
       throw e;
     }
   }
-
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    matrix: Float32Array[]
-  ): boolean {
-    assertAccess(accessKey);
-    if (matrix.length != 3 || isNaN(matrix[0]![0]!) || isNaN(matrix[0]![1]!))
-      return false;
-
-    return true;
-  }
 }
