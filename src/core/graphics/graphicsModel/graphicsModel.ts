@@ -372,6 +372,31 @@ export abstract class GraphicsModel<T extends ValidKeys> {
   #style: StyleForGShapeTag<T> = {} as StyleForGShapeTag<T>;
 
   /**
+   * Internal computed style state container.
+   *
+   * Composition:
+   * - Represents the fully resolved visual style after hierarchical propagation
+   * - Strongly typed via `StyleForGShapeTag<T>`
+   *
+   * Responsibilities:
+   * - Stores final styling attributes derived from:
+   *   parent group styles + local style overrides
+   * - Acts as the single source of truth for renderer consumption
+   *
+   * Access: Private (exposed via privileged accessor only)
+   *
+   * Design Notes:
+   * - Derived at runtime by Engine during world resolution phase
+   * - Does NOT mutate or replace original `#style`
+   * - Recomputed whenever hierarchy or local style changes
+   *
+   * Invariant:
+   * - Always reflects final visual state for the current frame
+   * - No external system should write directly except Engine
+   */
+  #computedStyle: StyleForGShapeTag<T> = {} as StyleForGShapeTag<T>;
+
+  /**
    * Internal z-order operation flag.
    *
    * ----------------------------------------------------------------------------
@@ -556,6 +581,14 @@ export abstract class GraphicsModel<T extends ValidKeys> {
         skip: 0
       };
 
+      this.#geometry['worldMatrix'] = new Float32Array([
+        1, 0, 0, 0, 1, 0, 0, 0, 1
+      ]); // Identity matrix
+
+      this.#geometry['localMatrix'] = new Float32Array([
+        1, 0, 0, 0, 1, 0, 0, 0, 1
+      ]); // Identity matrix
+
       // ============================================================
       // Proxy Creation Phase
       // ============================================================
@@ -702,6 +735,38 @@ export abstract class GraphicsModel<T extends ValidKeys> {
   public getIStyle(accessKey: symbol): StyleForGShapeTag<T> {
     assertAccess(accessKey);
     return this.#style;
+  }
+
+  /**
+   * Provides privileged access to the internal computed style state.
+   *
+   * Access Control:
+   * - Requires a valid `accessKey`
+   * - Enforced via `assertAccess`
+   *
+   * Responsibilities:
+   * - Grants read/write access to resolved visual style
+   * - Used by Engine during style resolution
+   * - Used by Renderer for final style application
+   *
+   * Returned Structure Includes:
+   * - Fully resolved styling attributes (post inheritance + overrides)
+   * - Final values ready for direct rendering
+   *
+   * @param key - Symbol used to validate privileged access
+   *
+   * @returns Full computed style object (mutable reference)
+   *
+   * @throws {Error} If accessKey validation fails via `assertAccess`
+   *
+   * Critical Warning:
+   * - Represents derived state, NOT user input
+   * - Must not be mutated outside Engine-controlled flows
+   * - Direct mutation may desynchronize visual output
+   */
+  public getIComputedStyle(key: symbol): StyleForGShapeTag<T> {
+    assertAccess(key);
+    return this.#computedStyle;
   }
 
   /**
@@ -1147,7 +1212,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
      * - `id` → unique identifier (assigned during initialization)
      * - `inside` → internal structural linkage
      */
-    if (prop == 'id' || prop == 'inside')
+    if (prop == 'id' || prop == 'inside' || prop == 'transform')
       throw new ReadOnlyPropertyError(
         'assign to',
         String(prop),
@@ -1261,6 +1326,12 @@ export abstract class GraphicsModel<T extends ValidKeys> {
        */
       if (this.#isGeometricProp(key)) {
         (this.#geometry as Record<string, string | number>)[key] = value;
+
+        /**
+         * Mark geometry as dirty to signal downstream systems
+         * (e.g., renderer, layout engine) for update/recalculation.
+         */
+        this.#geometry.dirty = true;
       } else if (typeof this.#style == 'object' && this.#isStyleProp(key)) {
         /**
          * Route to style domain if property qualifies.
@@ -1276,12 +1347,6 @@ export abstract class GraphicsModel<T extends ValidKeys> {
           'core.graphicsModel.#setAttrs()'
         );
       }
-
-      /**
-       * Mark geometry as dirty to signal downstream systems
-       * (e.g., renderer, layout engine) for update/recalculation.
-       */
-      this.#geometry.dirty = true;
     } catch (e) {
       /**
        * Transparent error propagation.
