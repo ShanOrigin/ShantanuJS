@@ -20,7 +20,7 @@ import { Transformation } from '../transformation/transformation.js';
 import { Animation } from '../animation/animation.js';
 
 // importing filter module from sub module of utils
-import { Filter } from '../filters/filters.js';
+import { Filter } from '../filters/backend/filters.js';
 
 // exporting color class
 export { Colors };
