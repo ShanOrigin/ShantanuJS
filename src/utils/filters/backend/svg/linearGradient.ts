@@ -1,5 +1,7 @@
-import { propertyUpdate, appendChildren } from '../../helpers/helpers.js';
-import { createSVGElement } from '../../../../core/provider/svgSpecific.js';
+import {
+  addTo,
+  createSVGElement
+} from '../../../../core/provider/svgSpecific.js';
 
 import {
   linearGradientProps,
@@ -7,7 +9,13 @@ import {
 } from '../../../../types/filters.d';
 import { generateId } from '../../../helpers/helpers.js';
 
-export function linearGradient(props: linearGradientProps) {
+/**
+ * Creates an SVG linear gradient definition.
+ *
+ * @param props - Gradient direction and color stops configuration.
+ * @returns Object containing the unique gradient id and SVG <linearGradient> element.
+ */
+export function svgLinearGradient(props: linearGradientProps) {
   const directions: Record<
     GradientDirection,
     [string, string, string, string]
@@ -27,19 +35,15 @@ export function linearGradient(props: linearGradientProps) {
   const id = `linearGradient-${direction + generateId('')}`;
 
   const linearGradient = createSVGElement('linearGradient');
-  propertyUpdate(linearGradient, { id, x1, y1, x2, y2 });
-  const filterComp: Record<string, SVGElement> = {};
+  linearGradient.setAttribute('id', id);
+  linearGradient.setAttribute('x1', x1);
+  linearGradient.setAttribute('y1', y1);
+  linearGradient.setAttribute('x2', x2);
+  linearGradient.setAttribute('y2', y2);
 
   let lastOffset = 0;
-  let nextExplicitIndex = 0;
-
-  // Find first explicit offset index
-  for (let i = 0; i < stops.length; i++) {
-    if (stops[i]!.offset !== undefined) {
-      nextExplicitIndex = i;
-      break;
-    }
-  }
+  let nextExplicitIndex = stops.findIndex((s) => s!.offset !== undefined);
+  if (nextExplicitIndex === -1) nextExplicitIndex = stops.length;
 
   for (let i = 0; i < stops.length; i++) {
     const stop = stops[i];
@@ -48,36 +52,32 @@ export function linearGradient(props: linearGradientProps) {
     if (stop!.offset !== undefined) {
       offset = parseFloat(String(stop!.offset));
       lastOffset = offset;
-      // Advance nextExplicitIndex
-      for (let j = i + 1; j < stops.length; j++) {
-        if (stops[j]!.offset !== undefined) {
-          nextExplicitIndex = j;
-          break;
-        }
-        nextExplicitIndex = stops.length; // no more explicit
-      }
+
+      nextExplicitIndex = stops.findIndex(
+        (s, idx) => idx > i && s!.offset !== undefined
+      );
+      if (nextExplicitIndex === -1) nextExplicitIndex = stops.length;
     } else {
       const nextOffset =
         nextExplicitIndex < stops.length
           ? parseFloat(String(stops[nextExplicitIndex]!.offset!))
           : 100;
+
       const gaps =
         nextExplicitIndex < stops.length
           ? nextExplicitIndex - i + 1
           : stops.length - i;
+
       offset = lastOffset + (nextOffset - lastOffset) / gaps;
       lastOffset = offset;
     }
 
     const stopEl = createSVGElement('stop');
-    propertyUpdate(stopEl, {
-      'stop-color': stop!.color,
-      offset: `${offset}%`
-    });
+    stopEl.setAttribute('stop-color', stop!.color);
+    stopEl.setAttribute('offset', `${offset}%`);
 
-    appendChildren(linearGradient, stopEl);
-    filterComp[`stop${i}`] = stopEl;
+    addTo(linearGradient, stopEl);
   }
 
-  return { id, filter: linearGradient, filterComp };
+  return { id, filter: linearGradient };
 }

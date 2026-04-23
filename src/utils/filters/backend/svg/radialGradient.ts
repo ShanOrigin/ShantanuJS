@@ -1,5 +1,7 @@
-import { propertyUpdate, appendChildren } from '../../helpers/helpers.js';
-import { createSVGElement } from '../../../../core/provider/svgSpecific.js';
+import {
+  addTo,
+  createSVGElement
+} from '../../../../core/provider/svgSpecific.js';
 
 import type {
   radialGradientProps,
@@ -7,7 +9,13 @@ import type {
 } from '../../../../types/filters';
 import { generateId } from '../../../helpers/helpers.js';
 
-export function radialGradient(props: radialGradientProps) {
+/**
+ * Creates an SVG radial gradient definition.
+ *
+ * @param props - Gradient position, radius, focal point, and color stops.
+ * @returns Object containing the unique gradient id and SVG <radialGradient> element.
+ */
+export function svgRadialGradient(props: radialGradientProps) {
   const positions: Record<RadialPosition, [string, string]> = {
     CENTER: ['50%', '50%'],
     TL: ['0%', '0%'],
@@ -33,43 +41,42 @@ export function radialGradient(props: radialGradientProps) {
 
   const gradient = createSVGElement('radialGradient');
 
-  direction == 'BR' &&
-    (focalX < 30 && (focalX = 30), focalY < 30 && (focalY = 30));
+  if (direction === 'BR') {
+    if (focalX < 30) focalX = 30;
+    if (focalY < 30) focalY = 30;
+  }
 
-  direction == 'TR' &&
-    (focalX < 50 && (focalX = 50), focalY > 80 && (focalY = 80));
+  if (direction === 'TR') {
+    if (focalX < 50) focalX = 50;
+    if (focalY > 80) focalY = 80;
+  }
 
-  direction == 'CENTER' &&
-    ((focalX < 30 || focalX > 70) && (focalX = 50),
-    focalY > 90 && (focalY = 80));
+  if (direction === 'CENTER') {
+    if (focalX < 30 || focalX > 70) focalX = 50;
+    if (focalY > 90) focalY = 80;
+  }
 
-  propertyUpdate(gradient, {
-    id,
-    cx,
-    cy,
-
-    r: (direction === 'CENTER' && `${radius}%`) || '100%',
-    fx: typeof focalX === 'number' ? `${focalX}%` : focalX,
-    fy: typeof focalY === 'number' ? `${focalY}%` : focalY,
-    gradientUnits: 'objectBoundingBox'
-  });
-
-  const filterComp: Record<string, SVGElement> = {};
+  gradient.setAttribute('id', id);
+  gradient.setAttribute('cx', cx);
+  gradient.setAttribute('cy', cy);
+  gradient.setAttribute('r', direction === 'CENTER' ? `${radius}%` : '100%');
+  gradient.setAttribute('fx', `${focalX}%`);
+  gradient.setAttribute('fy', `${focalY}%`);
+  gradient.setAttribute('gradientUnits', 'objectBoundingBox');
 
   const total = stops.length;
-  if (!total) return { id, filter: gradient, filterComp };
+  if (!total) return { id, filter: gradient };
 
-  // Pass 1: gather explicit offsets
   let firstExplicit = -1;
   let lastExplicit = -1;
+
   for (let i = 0; i < total; i++) {
-    if (stops?.[i]?.offset !== undefined) {
+    if (stops[i]?.offset !== undefined) {
       if (firstExplicit === -1) firstExplicit = i;
       lastExplicit = i;
     }
   }
 
-  // Pass 2: compute offsets
   for (let i = 0; i < total; i++) {
     const stop = stops[i];
     let offset: number;
@@ -78,21 +85,17 @@ export function radialGradient(props: radialGradientProps) {
       offset = parseFloat(String(stop.offset));
     } else {
       if (firstExplicit === -1) {
-        // no explicit offsets at all
-        offset = (i / (total - 1)) * 100;
+        offset = total > 1 ? (i / (total - 1)) * 100 : 0;
       } else if (i < firstExplicit) {
-        // before first explicit
         offset =
           (i / firstExplicit) *
           parseFloat(String(stops[firstExplicit]?.offset!));
       } else if (i > lastExplicit) {
-        // after last explicit
         offset =
           parseFloat(String(stops[lastExplicit]?.offset!)) +
-          ((i - lastExplicit) / (total - 1 - lastExplicit)) *
+          ((i - lastExplicit) / (total - 1 - lastExplicit || 1)) *
             (100 - parseFloat(String(stops[lastExplicit]?.offset!)));
       } else {
-        // between two explicit stops
         let nextExplicit = i + 1;
         while (
           nextExplicit < total &&
@@ -108,19 +111,16 @@ export function radialGradient(props: radialGradientProps) {
 
         const gap = nextExplicit - (i - 1);
         offset = prevOffset + (nextOffset - prevOffset) / gap;
-        stops[i]!['offset'] = offset; // cache it to reuse if needed
+        stops[i]!.offset = offset;
       }
     }
 
     const stopEl = createSVGElement('stop');
-    propertyUpdate(stopEl, {
-      'stop-color': stop!.color,
-      offset: `${offset}%`
-    });
+    stopEl.setAttribute('stop-color', stop!.color);
+    stopEl.setAttribute('offset', `${offset}%`);
 
-    appendChildren(gradient, stopEl);
-    filterComp[`stop${i}`] = stopEl;
+    addTo(gradient, stopEl);
   }
 
-  return { id, filter: gradient, filterComp };
+  return { id, filter: gradient };
 }
