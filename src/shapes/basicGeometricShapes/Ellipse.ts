@@ -148,38 +148,6 @@ export class Ellipse extends GraphicsEntity<'ellipse'> {
     }
   }
 
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    matrix: Float32Array[],
-    output: boolean = false
-  ): boolean | number[] {
-    try {
-      assertAccess(accessKey);
-
-      if (!this.#geometry || matrix.length !== 3) return false;
-      const [center, right, bottom] = matrix;
-      const crx = Math.hypot(
-        right![0]! - center![0]!,
-        right![1]! - center![1]!
-      );
-      const cry = Math.hypot(
-        bottom![0]! - center![0]!,
-        bottom![1]! - center![1]!
-      );
-      const [rx, ry] = [this.#geometry.rx ?? 0, this.#geometry.ry ?? 0];
-
-      const rValid = Math.abs(rx - crx) < 1e-6 && Math.abs(ry - cry) < 1e-6;
-
-      if (output && rValid) {
-        return [crx, cry];
-      }
-
-      return rValid;
-    } catch (e) {
-      throw e;
-    }
-  }
-
   protected override restoreDimension(
     accessKey: symbol,
     temporaryState: Float32Array,

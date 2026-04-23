@@ -133,30 +133,6 @@ export class Circle extends GraphicsEntity<'circle'> {
     }
   }
 
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    matrix: Float32Array[],
-    output: boolean = false
-  ): boolean | number {
-    try {
-      assertAccess(accessKey);
-
-      if (!this.#geometry || !this.#geometry.r) return false;
-
-      if (matrix.length !== 2) return false;
-
-      const [center, right] = matrix;
-
-      const r = Math.hypot(right![0]! - center![0]!, right![1]! - center![1]!);
-
-      if (output) return r;
-
-      return Math.abs(r - this.#geometry.r) < 1e-6;
-    } catch (e) {
-      throw e;
-    }
-  }
-
   protected override restoreDimension(
     accessKey: symbol,
     temporaryState: Float32Array,

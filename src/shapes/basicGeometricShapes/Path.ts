@@ -96,14 +96,6 @@ export class Path extends GraphicsEntity<'path'> {
     assertAccess(accessKeys);
   }
 
-  protected override validateShapeMatrix(
-    accessKeys: symbol,
-    matrix: Float32Array[]
-  ): boolean {
-    assertAccess(accessKeys);
-    return isValidMatrix(matrix, 4, 3);
-  }
-
   protected override restoreDimension(accessKeys: symbol): void {
     assertAccess(accessKeys);
   }

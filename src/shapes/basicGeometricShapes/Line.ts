@@ -274,38 +274,6 @@ export class Line extends GraphicsEntity<'line'> {
   }
 
   /**
-   * Validates whether the provided matrix conforms to the expected line geometry format.
-   *
-   * This method verifies that the given matrix matches the dimensional requirements
-   * defined for a line shape. Validation is performed using internally defined
-   * dimensions and is restricted to privileged internal callers.
-   *
-   * The method does not mutate any internal state; it only performs structural
-   * validation on the supplied matrix.
-   *
-   * @param accessKey - A privileged symbol used to assert internal-only access.
-   * @param mat - A matrix represented as an array of `Float32Array` rows to be
-   *              validated against the line shape’s expected dimensions.
-   * @returns `true` if the matrix is structurally valid for a line shape,
-   *          otherwise `false`.
-   *
-   * @throws Error if access validation fails.
-   */
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    mat: Float32Array[]
-  ): boolean {
-    // Ensure the caller has privileged internal access
-    assertAccess(accessKey);
-
-    // Retrieve the expected matrix dimensions for a line shape
-    const [m, n] = dimensions['line'] as [number, number];
-
-    // Validate the matrix structure against the expected dimensions
-    return isValidMatrix(mat, m, n);
-  }
-
-  /**
    * Restores line geometry coordinates from a temporary homogeneous state buffer.
    *
    * This method maps values from a flattened internal matrix buffer back into

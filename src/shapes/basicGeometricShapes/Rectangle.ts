@@ -287,7 +287,7 @@ export class Rect extends GraphicsEntity<'rect'> {
       ];
 
       //   if (!isValidMatrix(m, 4, 3)) return;
-      const dim = this.validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true) as [
+      const dim = this.#validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true) as [
         number,
         number
       ];
@@ -303,7 +303,7 @@ export class Rect extends GraphicsEntity<'rect'> {
     }
   }
 
-  protected override validateShapeMatrix(
+  #validateShapeMatrix(
     accessKey: symbol,
     matrix: Float32Array[],
     output: boolean = false

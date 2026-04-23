@@ -227,14 +227,6 @@ export class Polygon extends GraphicsEntity<'polygon'> {
     }
   }
 
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    m: Float32Array[]
-  ): boolean {
-    assertAccess(accessKey);
-    return isValidMatrix(m, m.length, 3);
-  }
-
   protected override restoreDimension(
     accessKey: symbol,
     temporaryState: Float32Array

@@ -262,28 +262,4 @@ export class Point extends GraphicsEntity<'dot'> {
       throw e;
     }
   }
-
-  /**
-   * Validates the structural correctness of a transformation matrix
-   * for the Point (dot) shape.
-   *
-   * This method ensures the matrix conforms to the expected
-   * homogeneous point representation and contains valid numeric values.
-   *
-   * @param accessKey - Internal access token required to perform validation.
-   * @param matrix - Canonical matrix representation to validate.
-   *
-   * @returns `true` if the matrix is structurally valid, otherwise `false`.
-   */
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    matrix: Float32Array[]
-  ): boolean {
-    assertAccess(accessKey);
-    // Expect fixed-length canonical homogeneous matrix and valid x/y coordinates
-    if (matrix.length != 3 || isNaN(matrix[0]![0]!) || isNaN(matrix[0]![1]!))
-      return false;
-
-    return true;
-  }
 }
