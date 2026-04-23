@@ -158,7 +158,7 @@ type precomputeFramesRawType = (
   c: number, // normalized progress (0–1)
   d: boolean, // translation availability flag
   e?: number // optional extra parameter (engine-specific)
-) => string;
+) => Float32Array;
 
 // Function signature for polynomial-based interpolation.
 // Uses precomputed polynomial data instead of raw frames
@@ -169,7 +169,7 @@ type transformUsingPolynomialFastType = (
   c: number, // normalized progress (0–1)
   d: boolean, // translation availability flag
   e?: number // optional extra parameter
-) => string;
+) => Float32Array;
 
 // Defines all animatable properties accepted by the animation engine.
 // Includes geometry-related properties and supported style properties.
@@ -1308,6 +1308,8 @@ export class Animation {
    * - Color values are interpolated numerically (RGBA)
    * - Only user-declared animatable properties are processed
    * - Final application is done in a single attribute update
+   *
+   * @returns Object of type Record<string, number | string | Float32Array>with geometry , style and animationMatrix as Float32Array combined
    */
   #interpolater() {
     // -----------------------------------------------------------
@@ -1318,7 +1320,7 @@ export class Animation {
      * Object holding final interpolated properties
      * to be applied to the element in this frame.
      */
-    const fP: Record<string, number | string> = {};
+    const fP: Record<string, number | string | Float32Array> = {};
 
     /**
      * Compute the interpolated transformation matrix
@@ -1334,7 +1336,7 @@ export class Animation {
     /**
      * Store the transform matrix as a style-compatible value.
      */
-    fP['transform'] = tMatrix;
+    fP['animationMatrix'] = tMatrix;
 
     // -----------------------------------------------------------
     // STEP 2: Prepare style state for interpolation
@@ -1383,14 +1385,14 @@ export class Animation {
     }
 
     // -----------------------------------------------------------
-    // STEP 4: Apply interpolated properties to the element
+    // STEP 4: Return interpolated properties to update function
     // -----------------------------------------------------------
 
     /**
-     * Apply all interpolated geometry and style properties
-     * in a single attribute update.
+     * Return all interpolated geometry and style properties
+     * in a single object update.
      */
-    this.#el.attrs(fP);
+    return fP;
   }
 
   /**
@@ -1833,6 +1835,14 @@ export class Animation {
    *
    * Any change to this function must be approached
    * with extreme caution.
+	 *
+   * -------------------------------------------------------------
+   * INPUT
+   * -------------------------------------------------------------
+   * @param time - High Precision timestamp from RFA for frame data calculation. 
+	 *
+   * @returns Object of type Record<string, number | string | Float32Array>with geometry , style and animationMatrix as Float32Array combined
+
    */
 
   public update = (currentTime: number) => {
@@ -1991,7 +2001,10 @@ export class Animation {
      *
      * Only interpolate when progress is within valid bounds.
      */
-    this.#progress >= 0 && this.#progress <= 1 && this.#interpolater();
+    let frameData: Record<string, string | number | Float32Array> | null = null;
+    if (this.#progress >= 0 && this.#progress <= 1) {
+      frameData = this.#interpolater();
+    }
 
     /**
      * ---------------------------------------------------------
@@ -2035,6 +2048,8 @@ export class Animation {
        */
       direction === 'alternate' && (this.#reverseCycle = !this.#reverseCycle);
     }
+
+    return frameData;
   };
 
   /**
@@ -2356,9 +2371,9 @@ export class Animation {
     // STEP 8: Determine base transformation matrix
     // ------------------------------------------------------------------
 
-    const baseTransformationMatrix: Float32Array =
-      geo.transformStack.stack[0].transformMatrix ||
-      new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+    //  const baseTransformationMatrix: Float32Array =
+    //    geo.transformStack.stack[0].transformMatrix ||
+    //    new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
 
     // ------------------------------------------------------------------
     // STEP 9: Choose and apply optimization strategy
@@ -2374,25 +2389,26 @@ export class Animation {
     let optimizationTechnique = controls.optimizationTechnique as opt;
 
     // STEP 9a: Pre-compute animation frames
-    optimizationTechnique === 'preComputeFrames' &&
-      ((this.#preComputeFranesOrPolynomial = precomputeFramesRaw(
+    if (optimizationTechnique === 'preComputeFrames') {
+      this.#preComputeFranesOrPolynomial = precomputeFramesRaw(
         this.#initialGeometry,
         this.#finalGeometry,
-        baseTransformationMatrix,
+        // baseTransformationMatrix,
         100,
         this.#createTransformMatrix
-      )) as optFuncType,
-      (this.#interpolateFunction = setPreComputedFrame));
-
+      ) as optFuncType;
+      this.#interpolateFunction = setPreComputedFrame;
+    }
     // STEP 9b: Fit polynomial coefficients for interpolation
-    optimizationTechnique === 'fitPolynomialCofficient' &&
-      ((this.#preComputeFranesOrPolynomial = fitTransformPolynomialsFast(
+    else if (optimizationTechnique === 'fitPolynomialCofficient') {
+      this.#preComputeFranesOrPolynomial = fitTransformPolynomialsFast(
         this.#initialGeometry,
         this.#finalGeometry,
-        baseTransformationMatrix,
+        // baseTransformationMatrix,
         this.#createTransformMatrix
-      )),
-      (this.#interpolateFunction = transformUsingPolynomialFast));
+      );
+      this.#interpolateFunction = transformUsingPolynomialFast;
+    }
 
     // ------------------------------------------------------------------
     // STEP 10: Start animation if auto-start is enabled

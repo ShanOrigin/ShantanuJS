@@ -89,8 +89,8 @@ function evalCubic(poly: CubicPoly, t: number) {
 export function fitTransformPolynomialsFast(
   start: TransformGeometry,
   end: TransformGeometryWithPivot,
-  base: Float32Array,
-  composeFn: Function
+  composeFn: Function,
+  base?: Float32Array
 ) {
   // Compose start/end matrices
 
@@ -126,9 +126,9 @@ export function fitTransformPolynomialsFast(
         }
       },
       major: 'column',
-      arrayType: 'float32',
-      baseTMatrix: base,
-      multiplyWithBase: true
+      arrayType: 'float32'
+      // baseTMatrix: base,
+      // multiplyWithBase: true
     } as createTransformationMatrixProps) as Float32Array;
   }
 
@@ -164,9 +164,9 @@ export function fitTransformPolynomialsFast(
         }
       },
       major: 'column',
-      arrayType: 'float32',
-      baseTMatrix: base,
-      multiplyWithBase: true
+      arrayType: 'float32'
+      //  baseTMatrix: base,
+      //  multiplyWithBase: true
     } as createTransformationMatrixProps) as Float32Array;
   }
 
@@ -199,7 +199,7 @@ export function fitTransformPolynomialsFast(
  * @param t - Normalized time parameter in `[0, 1]`.
  * @param isTranslate - If `true`, apply additional translation along the curve.
  *
- * @returns A CSS/SVG-compatible `matrix(a b c d e f)` string representing the transform at time `t`.
+ * @returns A delta animation column-major Float32Array Matrix  representing the transform at time `t`.
  */
 
 export function transformUsingPolynomialFast(
@@ -219,5 +219,6 @@ export function transformUsingPolynomialFast(
   const e = evalCubic(polys.e, t) + tr.x;
   const f = evalCubic(polys.f, t) + tr.y;
 
-  return `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
+  // column major
+  return new Float32Array([a, b, 0, c, d, 0, e, f, 1]);
 }

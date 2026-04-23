@@ -116,9 +116,9 @@ function lerpParams(
 export function precomputeFramesRaw(
   start: TransformGeometry,
   end: TransformGeometryWithPivot,
-  base: Float32Array,
   steps: number = 100,
-  composeFn?: Function
+  composeFn?: Function,
+  base?: Float32Array
 ): Float32Array {
   const frames = new Float32Array((steps + 1) * 6);
 
@@ -155,9 +155,9 @@ export function precomputeFramesRaw(
           }
         },
         major: 'column',
-        arrayType: 'float32',
-        baseTMatrix: base,
-        multiplyWithBase: true
+        arrayType: 'float32'
+        //  baseTMatrix: base,
+        //   multiplyWithBase: true
       } as createTransformationMatrixProps) as Float32Array;
     }
 
@@ -198,8 +198,9 @@ export function precomputeFramesRaw(
  * @param curvePoints - An array of points defining a curve for optional translation.
  * @param progress - Animation progress between 0 and 1.
  * @param isTranslate - Whether to apply translation along the curve.
- * @param steps - Number of precomputed steps (default = 100).
- * @returns A string representing the 2D transformation matrix in the form `matrix(a b c d e f)`.
+ * @param steps - Number of precomputed steps (default = 100)
+ *
+ * @returns A delta animation column-major Float32Array Matrix  representing the transform at time `t`.
  */
 
 export function setPreComputedFrame(
@@ -249,5 +250,6 @@ export function setPreComputedFrame(
     t
   );
 
-  return `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
+  // column major
+  return new Float32Array([a, b, 0, c, d, 0, e, f, 1]);
 }
