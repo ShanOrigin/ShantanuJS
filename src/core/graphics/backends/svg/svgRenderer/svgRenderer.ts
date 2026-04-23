@@ -370,6 +370,8 @@ export class SVGRenderer implements Renderer {
         buffer: Float32Array; // geometry buffer (used in poly shapes)
         transformStack: transformStack; // transformation stack (if applicable)
         shape: string; // shape type identifier
+        worldMatrix: Float32Array; // parent -> child composed transformation matrix
+        worldDirty: boolean; // indicates if re-render is needed for dependancy
       }>;
 
       // Geometry must exist for rendering
@@ -883,6 +885,8 @@ export class SVGRenderer implements Renderer {
        *   styleCache[k] === DOM attribute value
        */
 
+      // Inserting transform into style if shape id dirty
+
       if (styleRef && typeof styleRef === 'object') {
         const styleObj = styleRef as Record<string, string | number>;
 
@@ -895,6 +899,32 @@ export class SVGRenderer implements Renderer {
             figRef.setAttribute(k, vStr);
             styleCache[k] = vStr;
           }
+        }
+      }
+
+      /**
+       * Applies the computed world transform to the DOM element.
+       *
+       * - Uses `worldMatrix` as the single source of truth for rendering.
+       * - Updates only when `dirty` or `worldDirty` is true to avoid redundant writes.
+       * - Converts Float32Array matrix into SVG `matrix(a b c d e f)` format.
+       * - Uses `styleCache` to prevent unnecessary DOM mutations.
+       */
+      const world = geoRef.worldMatrix as Float32Array;
+
+      if (geoRef.worldDirty || geoRef.dirty) {
+        const a = world[0],
+          b = world[1],
+          c = world[3],
+          d = world[4],
+          e = world[6],
+          f = world[7];
+
+        const transformStr = `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
+
+        if (styleCache['transform'] !== transformStr) {
+          figRef.setAttribute('transform', transformStr);
+          styleCache['transform'] = transformStr;
         }
       }
 
