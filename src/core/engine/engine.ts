@@ -8,6 +8,8 @@ import {
   InvalidInternalStateError
 } from '../../utils/errors/provider/shantanuJSErrors.js';
 import { Log } from '../../utils/helpers/helpers.js';
+import { IGraphicalElementProperties } from '../../properties/specific/specificProperties.js';
+import { transformStack } from '../../types/index.js';
 
 /**
  * Core engine responsible for orchestrating the rendering lifecycle.
@@ -15,15 +17,18 @@ import { Log } from '../../utils/helpers/helpers.js';
  * ============================================================================
  * WHAT THIS CLASS IS
  * ============================================================================
- * The Engine is the central coordinator of the rendering and animation system.
+ * The Engine is the central coordinator of the rendering, transformation,
+ * and animation pipeline.
  *
  * It owns and controls:
  * - the global requestAnimationFrame loop
- * - animation update timing
+ * - transformation composition scheduling (local → world)
+ * - animation update timing and integration
  * - delegation of rendering to a concrete Renderer
  * - invocation of z-order resolution logic (injected from Canvas)
  *
- * The Engine itself performs NO drawing and NO animation logic.
+ * The Engine performs NO drawing, but it finalizes all runtime state
+ * required for rendering.
  *
  * ============================================================================
  * CORE RESPONSIBILITIES
@@ -32,10 +37,30 @@ import { Log } from '../../utils/helpers/helpers.js';
  *
  * 1. Managing a single, controlled requestAnimationFrame loop
  * 2. Resolving z-order operations via injected resolver (before each frame)
- * 3. Advancing animation state on all registered shapes
- * 4. Sorting shapes deterministically based on zIndex
- * 5. Delegating visual output to the active Renderer
- * 6. Enforcing engine-level lifecycle invariants
+ * 3. Composing local transformations from transform stacks
+ * 4. Integrating animation output into local transformation state
+ * 5. Resolving world transformations (hierarchical composition)
+ * 6. Sorting shapes deterministically based on zIndex
+ * 7. Delegating final visual output to the active Renderer
+ * 8. Enforcing engine-level lifecycle and execution invariants
+ *
+ * ============================================================================
+ * TRANSFORMATION PIPELINE MODEL
+ * ============================================================================
+ * The Engine finalizes all transformation states in a strict sequence:
+ *
+ * - Local Transform:
+ *   Composed from `transformStack` into a single local matrix
+ *
+ * - Animation Integration:
+ *   Animation outputs a delta matrix which is composed with local transform
+ *
+ * - World Transform:
+ *   Local matrix is combined with parent world matrix to produce final transform
+ *
+ * Result:
+ * - Each shape has a stable `worldMatrix` before rendering
+ * - Renderer consumes only final computed matrices
  *
  * ============================================================================
  * Z-ORDER RESOLUTION MODEL
@@ -44,7 +69,7 @@ import { Log } from '../../utils/helpers/helpers.js';
  *
  * - Shapes express intent via internal flags (e.g., toFront / toBack)
  * - The Engine invokes a resolver function at the start of each frame
- * - The resolver (owned by Canvas) mutates shape.style.zIndex
+ * - The resolver (owned by Canvas) mutates shape.geometry.zIndex
  *
  * Ordering is then established by:
  *
@@ -57,17 +82,30 @@ import { Log } from '../../utils/helpers/helpers.js';
  * - consistent ordering across all rendering backends
  *
  * ============================================================================
+ * EXECUTION PIPELINE
+ * ============================================================================
+ * Each frame follows a strict deterministic pipeline:
+ *
+ * 1. Resolve z-order (structural ordering)
+ * 2. Update local transformations (if dirty)
+ * 3. Apply animation deltas (if active)
+ * 4. Resolve world transformations (hierarchical composition)
+ * 5. Sort shapes by zIndex
+ * 6. Delegate rendering to renderer
+ *
+ * ============================================================================
  * EXPLICIT NON-RESPONSIBILITIES
  * ============================================================================
  * The Engine does NOT:
  *
  * - perform any drawing operations
  * - contain rendering backend logic
- * - implement animation algorithms
- * - mutate geometry directly
- * - compute or own zIndex values
+ * - implement animation interpolation algorithms
+ * - mutate geometry buffers directly
+ * - compute or own zIndex policies
+ * - store or expose style-level representations (e.g., transform strings)
  *
- * It coordinates; it does not execute domain logic.
+ * It coordinates computation; it does not perform domain-specific execution.
  *
  * ============================================================================
  * DESIGN INVARIANTS
@@ -75,7 +113,8 @@ import { Log } from '../../utils/helpers/helpers.js';
  * - Only one engine loop may be active at a time
  * - All shapes managed by the engine must be renderable
  * - Z-order resolution occurs exactly once per frame
- * - Animation updates always occur after z-order resolution
+ * - Transformation composition occurs before world resolution
+ * - World matrices are always resolved before rendering
  * - Sorting reflects the current zIndex state
  * - Rendering is delegated, never embedded
  *
@@ -86,23 +125,25 @@ import { Log } from '../../utils/helpers/helpers.js';
  *
  * - start() : begins the animation/render loop
  * - stop()  : halts the loop without destroying state
- * - flush() : forces a single render pass (includes z-order resolution)
+ * - flush() : forces a single render pass (includes full pipeline execution)
  *
  * The Engine remains reusable after stopping.
  *
  * ============================================================================
  * SUMMARY
  * ============================================================================
- * The Engine is the temporal backbone of the system.
+ * The Engine is the temporal and computational backbone of the system.
  *
  * It does not care *what* is being animated or *how* it is drawn.
- * It only ensures that everything happens:
+ * It ensures that:
  *
- * - in the correct order (via zIndex resolution + sorting)
- * - at the correct time
- * - under strict lifecycle control
+ * - transformations are correctly composed (local → world)
+ * - animation is consistently integrated
+ * - ordering is deterministic (via zIndex resolution + sorting)
+ * - rendering receives fully resolved state
+ *
+ * under strict lifecycle and execution control.
  */
-
 export class Engine {
   /**
    * Internal collection of all shapes managed by the engine.
@@ -242,6 +283,14 @@ export class Engine {
   #resolveZOrder!: () => void;
 
   /**
+   * O(1) lookup map: id → shape
+   *
+   * PURPOSE:
+   * - Resolve parent via `inside`
+   * - Used by engine for hierarchy resolution
+   */
+  #shapeIdMap!: Map<string, GraphicsModel<keyof IGraphicalElementProperties>>;
+  /**
    * Constructs a new Engine instance.
    *
    * -------------------------------------------------------------------------
@@ -300,6 +349,9 @@ export class Engine {
    * @param resolveZOrder
    * A function injected from Canvas that resolves pending z-order operations.
    *
+   * @param shapeIdMap  Reference to shapeIdMap map for seen graph hierarchy
+   * parent detection
+   *
    * This function is:
    * - called once per frame before rendering
    * - responsible for updating shape.style.zIndex
@@ -309,7 +361,12 @@ export class Engine {
    * @throws {InvalidArgumentError}
    * If resolveZOrder is not a function (optional strict validation)
    */
-  constructor(shapes: iShape[], renderer: Renderer, resolveZOrder: () => void) {
+  constructor(
+    shapes: iShape[],
+    renderer: Renderer,
+    resolveZOrder: () => void,
+    shapeIdMap: Map<string, GraphicsModel<keyof IGraphicalElementProperties>>
+  ) {
     this.#shapes = shapes;
     this.#renderer = renderer;
 
@@ -324,6 +381,7 @@ export class Engine {
       );
     }
     this.#resolveZOrder = resolveZOrder;
+    this.#shapeIdMap = shapeIdMap;
   }
 
   /**
@@ -459,6 +517,50 @@ export class Engine {
   }
 
   /**
+   * Main engine loop callback invoked by requestAnimationFrame.
+   *
+   * -------------------------------------------------------------------------
+   * CORE RESPONSIBILITY
+   * -------------------------------------------------------------------------
+   * Acts as the self-scheduling driver of the engine lifecycle.
+   *
+   * On each invocation, this method:
+   * - verifies the engine is still running
+   * - executes a single frame
+   * - schedules the next animation frame
+   *
+   * -------------------------------------------------------------------------
+   * DESIGN INVARIANTS
+   * -------------------------------------------------------------------------
+   * - The loop terminates immediately if the engine is stopped
+   * - Only one loop chain may be active at any time
+   *
+   * -------------------------------------------------------------------------
+   * PARAMETERS
+   * -------------------------------------------------------------------------
+   * @param time - High-resolution timestamp provided by requestAnimationFrame.
+   */
+  #loop(time: number) {
+    // -----------------------------------------------------------
+    // STEP 1: Guard against stopped engine
+    // -----------------------------------------------------------
+
+    if (!this.#running) return;
+
+    // -----------------------------------------------------------
+    // STEP 2: Execute frame
+    // -----------------------------------------------------------
+
+    this.#frame(time);
+
+    // -----------------------------------------------------------
+    // STEP 3: Schedule next frame
+    // -----------------------------------------------------------
+
+    this.#rafId = requestAnimationFrame(this.#loop.bind(this));
+  }
+
+  /**
    * Executes a single engine frame.
    *
    * ============================================================================
@@ -525,17 +627,14 @@ export class Engine {
    * ============================================================================
    * @param time - High-resolution timestamp used for animation updates
    */
+
   #frame(time: number) {
-    // -----------------------------------------------------------
-    // STEP 0: Resolve z-order (ONCE per frame)
-    // -----------------------------------------------------------
+    // STEP 0: Resolve structural ordering
     this.#resolveZOrder();
 
-    // -----------------------------------------------------------
-    // STEP 1: Update animations for all shapes
-    // -----------------------------------------------------------
     const len = this.#shapes.length;
 
+    // STEP 1 + 2: Local transform + animation
     for (let i = 0; i < len; i++) {
       const shape = this.#shapes[i];
 
@@ -548,66 +647,347 @@ export class Engine {
         );
       }
 
-      shape.updateAnimation(DEV_INTERNAL_ACCESS, time);
+      const geo = shape.getIGeo(DEV_INTERNAL_ACCESS) as {
+        localMatrix: Float32Array;
+        transformStack: transformStack;
+        dirty: true;
+        worldDirty: true;
+      };
+
+      // -----------------------------------------------------------
+      // BASE TRANSFORM (static)
+      // -----------------------------------------------------------
+      if (geo.dirty || geo.worldDirty) {
+        shape.updateTransformation(DEV_INTERNAL_ACCESS);
+        if (__DEV__) Log('in update transform');
+      }
+
+      // -----------------------------------------------------------
+      // ANIMATION (delta)
+      // -----------------------------------------------------------
+
+      // return current state of animation like activeor not
+      const base = geo.transformStack.stack[0].transformMatrix;
+      if (shape.isAnimationsGoingOn(false)) {
+        const ani = shape.updateAnimation(DEV_INTERNAL_ACCESS, time) as {
+          animationMatrix: Float32Array;
+          [key: string]: string | number | Float32Array;
+        } | null;
+
+        if (ani) {
+          const { animationMatrix, ...style } = ani;
+
+          // finalLocal = base × animation
+          const { a, b, c, d, e, f } = this.#fastMatrixMultiplication(
+            animationMatrix,
+            base
+          );
+
+          geo.localMatrix[0] = a;
+          geo.localMatrix[1] = b;
+          geo.localMatrix[3] = c;
+          geo.localMatrix[4] = d;
+          geo.localMatrix[6] = e;
+          geo.localMatrix[7] = f;
+
+          if (style) shape.attrs(style);
+          if (__DEV__) Log('animation matrix');
+        }
+      } else {
+        geo.localMatrix.set(base);
+        if (__DEV__) Log('set local to base');
+      }
     }
+    // STEP 3: World resolution (hierarchy)
+    this.#resolveWorldMatrices();
 
-    // -----------------------------------------------------------
-    // STEP 2: Sort shapes by zIndex (ascending order)
-    // -----------------------------------------------------------
-    //
+    // STEP 4: Sorting (z-index)
+    this.#shapes.sort(
+      (a, b) => (a?.geometry?.zIndex ?? 0) - (b?.geometry?.zIndex ?? 0)
+    );
 
-    this.#shapes.sort((a, b) => {
-      b?.geometry?.zIndex ?? 0;
-      return (a?.geometry?.zIndex ?? 0) - (b?.geometry?.zIndex ?? 0);
-    });
-
-    // -----------------------------------------------------------
-    // STEP 3: Delegate rendering to backend
-    // -----------------------------------------------------------
+    // STEP 5: Render
     this.#renderer.render(this.#shapes);
   }
 
   /**
-   * Main engine loop callback invoked by requestAnimationFrame.
+   * Resolves world matrices for all shapes in the current frame.
    *
-   * -------------------------------------------------------------------------
-   * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * Acts as the self-scheduling driver of the engine lifecycle.
+   * ============================================================================
+   * PURPOSE
+   * ============================================================================
+   * Computes final world transform for each shape by combining:
+   * - local transform (from transform stack)
+   * - parent world transform (via `inside`)
    *
-   * On each invocation, this method:
-   * - verifies the engine is still running
-   * - executes a single frame
-   * - schedules the next animation frame
+   * ============================================================================
+   * STRATEGY
+   * ============================================================================
+   * - Iterates through flat shape list
+   * - Delegates resolution to recursive resolver
+   * - Each node is computed at most once per frame (guarded by flags)
    *
-   * -------------------------------------------------------------------------
-   * DESIGN INVARIANTS
-   * -------------------------------------------------------------------------
-   * - The loop terminates immediately if the engine is stopped
-   * - Only one loop chain may be active at any time
-   *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param time - High-resolution timestamp provided by requestAnimationFrame.
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   * After execution:
+   * - Every shape has a valid `worldMatrix`
+   * - Parent is always resolved before child
    */
-  #loop(time: number) {
-    // -----------------------------------------------------------
-    // STEP 1: Guard against stopped engine
-    // -----------------------------------------------------------
 
-    if (!this.#running) return;
+  #resolveWorldMatrices() {
+    for (let i = 0; i < this.#shapes.length; i++) {
+      this.#resolveWorldRecursive(this.#shapes[i]);
+    }
+  }
+
+  /**
+   * Recursively resolves world state (transform + inherited style) for a shape.
+   *
+   * ============================================================================
+   * PURPOSE
+   * ============================================================================
+   * Ensures correct hierarchical evaluation:
+   *   parent → child
+   *
+   * Extends world resolution to include:
+   * - transformation propagation (worldMatrix)
+   * - styling inheritance (group → children)
+   *
+   * ============================================================================
+   * LOGIC
+   * ============================================================================
+   * 1. Skip if already resolved
+   * 2. Resolve parent first (if exists)
+   * 3. Compute world matrix (transform propagation)
+   * 4. Apply inherited style (if parent is a Group, not Canvas)
+   *
+   * ============================================================================
+   * STYLE PROPAGATION RULES
+   * ============================================================================
+   * - Only Group styles propagate to children
+   * - Canvas styles are NOT propagated
+   * - Only inheritable style properties are applied
+   * - Child-local style always overrides inherited style
+   *
+   * ============================================================================
+   * TERMINATION GUARANTEE
+   * ============================================================================
+   * - worldDirty flag ensures each shape is resolved only once
+   * - prevents infinite recursion (assuming no cyclic parent)
+   *
+   * ============================================================================
+   * @param shape - Target shape to resolve
+   */
+  #resolveWorldRecursive(
+    shape: GraphicsModel<keyof IGraphicalElementProperties>
+  ) {
+    const geo = shape.getIGeo(DEV_INTERNAL_ACCESS);
+
+    // Skip if already resolved and not dirty
+    if (!geo?.worldDirty && !geo?.dirty) return;
+
+    const inside = shape.style.inside;
+
+    let parent: GraphicsModel<keyof IGraphicalElementProperties> | null = null;
+
+    if (inside) {
+      const parentId = inside.slice(inside.indexOf('-') + 1);
+      parent = this.#shapeIdMap.get(parentId) || null;
+    }
+
+    // Resolve parent first
+    if (parent) {
+      this.#resolveWorldRecursive(parent);
+    }
 
     // -----------------------------------------------------------
-    // STEP 2: Execute frame
+    // TRANSFORM PROPAGATION
     // -----------------------------------------------------------
-
-    this.#frame(time);
+    this.#computeWorldMatrix(shape, parent);
 
     // -----------------------------------------------------------
-    // STEP 3: Schedule next frame
+    // STYLE PROPAGATION (Group only, NOT Canvas)
     // -----------------------------------------------------------
+    if (parent && parent.geometry?.shape === 'g') {
+      this.#computeWorldStyle(shape, parent);
+    }
 
-    this.#rafId = requestAnimationFrame(this.#loop.bind(this));
+    geo.worldDirty = false;
+  }
+
+  /**
+   * Computes world matrix for a shape.
+   *
+   * ============================================================================
+   * FORMULA
+   * ============================================================================
+   * worldMatrix = localMatrix × parent.worldMatrix
+   *
+   * ============================================================================
+   * DATA FLOW
+   * ==================→ multiply → Float32Array (world)
+   *
+   * ============================================================================
+   * DESIGN NOTES
+   * ============================================================================
+   * - DOMMatrix used only for multiplication
+   * - Final result stored back into Float32Array for consistency
+   *
+   * ============================================================================
+   * @param shape  - Target shape
+   * @param parent - Parent shape (nullable)
+   */
+  #computeWorldMatrix(
+    shape: GraphicsModel<keyof IGraphicalElementProperties>,
+    parent: GraphicsModel<keyof IGraphicalElementProperties> | null
+  ) {
+    const geo = shape.getIGeo(DEV_INTERNAL_ACCESS) as {
+      localMatrix: Float32Array;
+      worldMatrix: Float32Array;
+    };
+
+    const localMatrix = geo?.localMatrix as Float32Array;
+
+    if (parent) {
+      const pGeo = parent.getIGeo(DEV_INTERNAL_ACCESS);
+      const worldMatrix = pGeo?.worldMatrix as Float32Array;
+
+      const { a, b, c, d, e, f } = this.#fastMatrixMultiplication(
+        localMatrix,
+        worldMatrix
+      );
+
+      // Write back to Float32Array
+      const world = geo?.worldMatrix as Float32Array;
+
+      world[0] = a;
+      world[1] = b;
+      world[3] = c;
+      world[4] = d;
+      world[6] = e;
+      world[7] = f;
+    }
+  }
+
+  /**
+   * Performs 2D affine matrix multiplication.
+   *
+   * ============================================================================
+   * FORMAT
+   * ============================================================================
+   * Float32Array (column-major logical layout):
+   *
+   * [ a, b, 0,
+   *   c, d, 0,
+   *   e, f, 1 ]
+   *
+   * ============================================================================
+   * OPERATION
+   * ============================================================================
+   * result = A × B
+   *
+   * ============================================================================
+   * NOTE
+   * ============================================================================
+   * Optimized for 2D affine transforms (ignores last row)
+   */
+  #fastMatrixMultiplication(A: Float32Array, B: Float32Array) {
+    const a = A[0],
+      b = A[1],
+      c = A[3],
+      d = A[4],
+      e = A[6],
+      f = A[7];
+    const ba = B[0],
+      bb = B[1],
+      bc = B[3],
+      bd = B[4],
+      be = B[6],
+      bf = B[7];
+
+    return {
+      a: a * ba + c * bb,
+      b: b * ba + d * bb,
+      c: a * bc + c * bd,
+      d: b * bc + d * bd,
+      e: a * be + c * bf + e,
+      f: b * be + d * bf + f
+    };
+  }
+
+  /**
+   * Computes inherited styling into computedStyle.
+   *
+   * ============================================================================
+   * PURPOSE
+   * ============================================================================
+   * Resolves final visual style for a shape by combining:
+   * - parent computed style (if parent is a Group)
+   * - local style overrides
+   *
+   * ============================================================================
+   * LOGIC
+   * ============================================================================
+   * 1. Copy parent computed style (if applicable)
+   * 2. Override with local style (always wins)
+   *
+   * ============================================================================
+   * DESIGN STRATEGY
+   * ============================================================================
+   * - Uses in-place overwrite model (NO object reset or deletion)
+   * - Assumes monotonic property accumulation (no property removal)
+   * - Ensures minimal allocation and maximum performance
+   *
+   * ============================================================================
+   * RULES
+   * ============================================================================
+   * - No mutation of local style
+   * - No per-property condition checks (direct overwrite)
+   * - Canvas does NOT propagate style
+   *
+   * ============================================================================
+   * INVARIANT
+   * ============================================================================
+   * - computedStyle always converges to correct final state via overwrite
+   * - Previously written keys are safely overridden each frame
+   *
+   * ============================================================================
+   * @param shape  - Target shape
+   * @param parent - Parent shape (nullable)
+   */
+  #computeWorldStyle(
+    shape: GraphicsModel<keyof IGraphicalElementProperties>,
+    parent: GraphicsModel<keyof IGraphicalElementProperties> | null
+  ) {
+    const computed = shape.getIComputedStyle(DEV_INTERNAL_ACCESS) as Record<
+      string,
+      string | number | boolean
+    >;
+
+    const local = shape.getIStyle(DEV_INTERNAL_ACCESS) as Record<
+      string,
+      string | number | boolean
+    >;
+
+    // -----------------------------------------------------------
+    // STEP 1: Inherit from parent (Group only)
+    // -----------------------------------------------------------
+    if (parent && parent.geometry?.shape === 'g') {
+      const parentComputed = parent.getIComputedStyle(
+        DEV_INTERNAL_ACCESS
+      ) as Record<string, any>;
+
+      for (const k in parentComputed) {
+        computed[k] = parentComputed[k];
+      }
+    }
+
+    // -----------------------------------------------------------
+    // STEP 2: Override with local style
+    // -----------------------------------------------------------
+    for (const k in local) {
+      computed[k] = local[k];
+    }
   }
 }
