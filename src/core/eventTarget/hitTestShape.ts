@@ -1,6 +1,7 @@
 import type { GraphicsEntity } from '../../shapes/graphicsEntity/graphicsEntity';
 import type { IGraphicalElementProperties } from '../../properties/specific/specificProperties';
 import { DEV_INTERNAL_ACCESS } from '../../utils/internals/accessKeys.js';
+import { Log } from '../../utils/helpers/helpers.js';
 
 type Shape = GraphicsEntity<keyof IGraphicalElementProperties>;
 
@@ -21,6 +22,7 @@ export function hitTestShape(shape: Shape, x: number, y: number): boolean {
   const inv = invertMatrix(geo.worldMatrix as Float32Array);
   const p = applyMatrix(inv, x, y);
 
+  Log(' transformed points = ', p);
   const props = {
     type: geo.shape,
     buffer: geo.buffer as Float32Array,
@@ -58,7 +60,7 @@ function hitTestByType(p: any, x: number, y: number): boolean {
       return hitPolygon(p.buffer, p.stroke, x, y);
 
     case 'rect':
-      return hitRect(p.width, p.height, p.rx, p.ry, p.stroke, x, y);
+      return hitRect(p.buffer, p.rx, p.ry, p.stroke, x, y);
 
     case 'circle':
       return hitCircle(p.radius, p.stroke, x, y);
@@ -68,7 +70,7 @@ function hitTestByType(p: any, x: number, y: number): boolean {
 
     case 'text':
     case 'image':
-      return hitRect(p.width, p.height, 0, 0, p.stroke, x, y);
+    // return hitRect(p.width, p.height, 0, 0, p.stroke, x, y);
 
     default:
       return false;
@@ -89,9 +91,11 @@ function applyMatrix(m: Float32Array, x: number, y: number) {
  * Matrix inversion (2D affine).
  */
 function invertMatrix(m: Float32Array): Float32Array {
-  const [a, b, c, d, e, f] = m;
+  const [a, b, _, c, d, __, e, f] = m;
+  Log(' m = ', m);
   const det = a * d - b * c;
 
+  Log(' d = ', det);
   if (det === 0) return m;
 
   const invDet = 1 / det;
@@ -182,38 +186,46 @@ function hitPolygon(
   return inside;
 }
 
-/**
- * Rectangle hit test with rounded corners and stroke.
- */
 function hitRect(
-  w: number,
-  h: number,
+  buffer: Float32Array,
   rx: number,
   ry: number,
   stroke: number,
   x: number,
   y: number
 ): boolean {
-  const half = stroke / 2;
+  const x1 = buffer[0],
+    y1 = buffer[1];
+  const x2 = buffer[6],
+    y2 = buffer[7];
 
-  // Outer expanded bounds
-  if (x < -half || x > w + half || y < -half || y > h + half) return false;
+  const h = stroke / 2;
 
-  // Rounded corner handling
-  if (rx > 0 || ry > 0) {
-    const cx = Math.min(Math.max(x, rx), w - rx);
-    const cy = Math.min(Math.max(y, ry), h - ry);
+  // Expanded bounds (stroke included)
+  const left = x1 - h,
+    right = x2 + h;
+  const top = y1 - h,
+    bottom = y2 + h;
 
-    const dx = x - cx;
-    const dy = y - cy;
+  // Fast reject
+  if (x < left || x > right || y < top || y > bottom) return false;
 
-    if ((dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) > 1) return false;
-  }
+  if (rx <= 0 || ry <= 0) return true;
 
-  // Inner hollow (stroke ring)
-  const inner = x > half && x < w - half && y > half && y < h - half;
+  // Clamp to nearest corner ellipse center
+  const cx = x < x1 + rx ? x1 + rx : x > x2 - rx ? x2 - rx : null;
+  const cy = y < y1 + ry ? y1 + ry : y > y2 - ry ? y2 - ry : null;
 
-  return !inner;
+  // If not in corner region → definitely inside
+  if (cx === null || cy === null) return true;
+
+  const dx = x - cx;
+  const dy = y - cy;
+
+  const orx = rx + h;
+  const ory = ry + h;
+
+  return (dx * dx) / (orx * orx) + (dy * dy) / (ory * ory) <= 1;
 }
 
 /**
