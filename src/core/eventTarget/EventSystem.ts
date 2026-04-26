@@ -4,7 +4,8 @@ import type { IGraphicalElementProperties } from '../../properties/specific/spec
 import type { GraphicsEntity } from '../../shapes/graphicsEntity/graphicsEntity';
 import type { GraphicsModel } from '../provider/graphics';
 import type { SupportedEvents } from './eventTarget';
-import { Log } from '../../utils/helpers/helpers.js';
+import { Log, Warn } from '../../utils/helpers/helpers.js';
+import { hitTestShape } from './hitTestShape.js';
 
 type SupportedShapes = GraphicsModel<keyof IGraphicalElementProperties>;
 type Shape = GraphicsEntity<keyof IGraphicalElementProperties>;
@@ -30,15 +31,6 @@ type Shape = GraphicsEntity<keyof IGraphicalElementProperties>;
  * - Uses linear scan for hit testing (O(n))
  * - Optimized for correctness and simplicity
  * - No spatial index (intentionally removed)
- *
- * ----------------------------------------------------------------------------
- * FUTURE UPGRADE (PLANNED)
- * ----------------------------------------------------------------------------
- *
- * TODO:
- * Replace bounding-box-only hit testing with:
- *   → shape-specific precise hit testing
- *   → matrix-aware point-in-geometry checks
  *
  * This will eliminate false positives caused by AABB.
  *
@@ -107,8 +99,6 @@ export class EventSystem {
    * - All hit testing MUST use normalized coordinates
    * - Raw clientX/clientY must NEVER be used directly
    *
-   * TODO:
-   * - Replace AABB hit test with shape-specific precise hit testing
    *
    * ============================================================================
    *
@@ -145,6 +135,7 @@ export class EventSystem {
     // ----------------------------------------------------------------------
 
     const target = this.#hitTest(elements, x, y);
+
     if (!target) return;
 
     // ----------------------------------------------------------------------
@@ -192,25 +183,31 @@ export class EventSystem {
     }
   }
 
-  // ========================================================================
-  // HIT TEST (LINEAR + Z-INDEX)
-  // ========================================================================
-
   /**
+   * ============================================================================
+   * HIT TEST (LINEAR + BROAD + NARROW PHASE)
+   * ============================================================================
+   *
+   * PURPOSE:
+   * --------
    * Resolves the topmost element under given pointer coordinates.
    *
    * STRATEGY:
-   * - Linear scan over all elements
-   * - Bounding box rejection (fast)
-   * - Z-index comparison for topmost selection
+   * ---------
+   * 1. Broad-phase → AABB rejection (fast, O(1))
+   * 2. Narrow-phase → precise shape hit test (geometry-based)
+   * 3. Depth resolution → highest zIndex wins
    *
-   * IMPORTANT:
-   * - This is ONLY broad-phase detection
-   * - Will produce false positives for rotated/complex shapes
+   * PERFORMANCE:
+   * ------------
+   * - Single linear scan (O(n))
+   * - Zero extra allocations inside loop
+   * - Early rejection to minimize expensive geometry checks
    *
-   * TODO (next phase):
-   * - Add shape-specific precise hit testing
-   * - Use inverse transform + geometry checks
+   * NOTE:
+   * -----
+   * - AABB is only a coarse filter
+   * - Precise hit testing guarantees correctness
    */
   #hitTest(
     elements: SupportedShapes[],
@@ -220,24 +217,27 @@ export class EventSystem {
     let best: SupportedShapes | null = null;
     let bestZ = -Infinity;
 
-    for (let i = 0; i < elements.length; i++) {
+    for (let i = 0, len = elements.length; i < len; i++) {
       const el = elements[i] as Shape;
 
+      // ------------------------------------------------------------
+      // STEP 1: Broad-phase → AABB rejection
+      // ------------------------------------------------------------
       const box = el.getBBox(true);
       if (!box) continue;
 
-      // Fast AABB rejection
-      if (
-        x < box.x ||
-        x > box.x + box.width ||
-        y < box.y ||
-        y > box.y + box.height
-      )
-        continue;
+      if (!this.#aabbContains(x, y, box)) continue;
 
+      // ------------------------------------------------------------
+      // STEP 2: Narrow-phase → precise geometry hit test
+      // ------------------------------------------------------------
+      if (!hitTestShape(el, x, y)) continue;
+
+      // ------------------------------------------------------------
+      // STEP 3: Depth resolution → z-index
+      // ------------------------------------------------------------
       const z = el?.geometry?.zIndex ?? 0;
 
-      // Keep topmost element
       if (z >= bestZ) {
         best = el;
         bestZ = z;
@@ -245,6 +245,30 @@ export class EventSystem {
     }
 
     return best;
+  }
+
+  /**
+   * Fast AABB containment test.
+   *
+   * - Performs constant-time bounding check
+   * - Used as broad-phase filter before expensive geometry testing
+   * - Avoids unnecessary hitTestShape calls
+   *
+   * @param x Pointer X (canvas-local)
+   * @param y Pointer Y (canvas-local)
+   * @param box Axis-aligned bounding box
+   */
+  #aabbContains(
+    x: number,
+    y: number,
+    box: { x: number; y: number; width: number; height: number }
+  ): boolean {
+    return (
+      x >= box.x &&
+      x <= box.x + box.width &&
+      y >= box.y &&
+      y <= box.y + box.height
+    );
   }
 
   // ========================================================================
