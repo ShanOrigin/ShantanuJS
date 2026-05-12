@@ -1,8 +1,9 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
+
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -14,11 +15,11 @@ import {
   parameterTypeValidator,
   autoFixGeometry,
   isValidMatrix
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import { pathPropsType } from '../../types/shapes';
 
-export class Path extends Shape<'path'> {
+export class Path extends GraphicsEntity<'path'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
 
@@ -93,14 +94,6 @@ export class Path extends Shape<'path'> {
 
   protected override generateMatrix(accessKeys: symbol): void {
     assertAccess(accessKeys);
-  }
-
-  protected override validateShapeMatrix(
-    accessKeys: symbol,
-    matrix: Float32Array[]
-  ): boolean {
-    assertAccess(accessKeys);
-    return isValidMatrix(matrix, 4, 3);
   }
 
   protected override restoreDimension(accessKeys: symbol): void {

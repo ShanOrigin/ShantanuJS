@@ -6,6 +6,7 @@ import { TypeMismatchError } from '../domains/common/TypeMismatchError.js';
 import { InvalidArgumentError } from '../domains/common/InvalidArgumentError.js';
 import { InvalidReturnTypeError } from '../domains/common/InvalidReturnTypeError.js';
 import { OperationInProgressError } from '../domains/common/OperationInProgressError.js';
+import { InvalidInternalStateError } from '../domains/common/InvalidInternalStateError.js';
 import { InvalidFormatError } from '../domains/common/InvalidFormatError.js';
 
 import { CanvasParentNotFoundError } from '../domains/canvas/CanvasParentNotFoundError.js';
@@ -24,6 +25,10 @@ import { InvalidNamedColorError } from '../domains/color/InvalidNamedColorError.
 import { MissingRequiredCurveParameterError } from '../domains/curve/MissingRequiredCurveParameterError.js';
 
 import { UnsupportedRenderingBackendError } from '../domains/backend/UnsupportedRenderingBackendError.js';
+import { NotInitializedError } from '../domains/engine/NotInitializedError.js';
+import { InvalidRenderingContextError } from '../domains/backend/InvalidRenderingContextError.js';
+import { ReadOnlyPropertyError } from '../domains/common/ReadOnlyPropertyError.js';
+import { InvalidRenderableShapeError } from '../domains/engine/InvalidRenderableShapeError.js';
 //import {  } from "../domains/";
 
 export {
@@ -33,6 +38,7 @@ export {
   TypeMismatchError,
   InvalidArgumentError,
   InvalidReturnTypeError,
+  InvalidInternalStateError,
   OperationInProgressError,
   InvalidFormatError,
   CanvasParentNotFoundError,
@@ -44,5 +50,9 @@ export {
   InvalidNamedColorError,
   InvalidColorFormatError,
   MissingRequiredCurveParameterError,
-  UnsupportedRenderingBackendError
+  UnsupportedRenderingBackendError,
+  NotInitializedError,
+  InvalidRenderingContextError,
+  ReadOnlyPropertyError,
+  InvalidRenderableShapeError
 };

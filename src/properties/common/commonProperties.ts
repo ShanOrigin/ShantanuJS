@@ -16,7 +16,11 @@ type DeepPartial<T> = {
 export const CommonGeometricProperties = Object.seal({
   geometry: {
     dirty: true, // for rendering optimization purpose
+    worldDirty: true,
     buffer: new Float32Array(0), // shape + OBB matrix in 1d combined
+    worldMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]), // [a, b , g = 0 , c , d, h =  0 , e , f , i =  1 ] // column major
+
+    localMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]), // [a, b , g = 0 , c , d, h =  0 , e , f , i =  1 ] // column major only used as local transformation composition and when animation available this curent shape local Composed matix X animation matrix
     shape: '', // shape which shape
     context: '',
     transformStack: {
@@ -26,12 +30,13 @@ export const CommonGeometricProperties = Object.seal({
           transformName: '', //transformations name
           transformType: '', // types like relative , absolute , pivot , batched , compose
           transformMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]) // [a, b , g = 0 , c , d, h =  0 , e , f , i =  1 ] // column major
-          // array to store each transformations appled on shape in 1d as column major and 0 index is composed matrix for all matrix from 1 to n
+          // array to store each transformations appled on shape in 1d as column major and 0 index is composed matrix for all matrix from 1 to n as pure composed local matrix ;
         }
       ],
       skip: 0 //for redu , undo
     },
-    copies: 0 // copy count
+    copies: 0, // copy count
+    zIndex: 0
   }
 });
 
@@ -53,8 +58,8 @@ type ICommonStylePropertie = typeof CommonStylePropertie;
 
 const CommonStylePropertie = Object.seal({
   'role-of-el': '', // Custom semantic property
-  inside: '', // Custom layout property
-  id: '', // Unique identifier
+  inside: '', // Custom property for parent tracking IMP
+  id: '', // Unique identifier IMP
   name: '', // Optional name (non-standard)
   selectable: '', // Controls element selection (CSS-like)
   display: '', // Show/hide or render type
@@ -86,7 +91,7 @@ const ShapeStyleProperties = Object.seal({
   'marker-end': '' // Reference to end marker
 });
 
-type IShapeStyleProperties = typeof ShapeStyleProperties;
+export type IShapeStyleProperties = typeof ShapeStyleProperties;
 
 const TextStyleProperties = Object.seal({
   'font-family': 'arial', // Font name

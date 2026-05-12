@@ -1,25 +1,20 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
 
 import {
   GraphicalElementProperties,
-  CommonGeometricProperties,
-  AllGShapeStyleProperties
+  AllGShapeStyleProperties,
+  dimensions
 } from '../../properties/provider/shapeProperties.js';
 
-import {
-  isValidMatrix,
-  validProps,
-  parameterTypeValidator,
-  autoFixGeometry
-} from '../../utils/providers/utils.js';
+import { parameterTypeValidator } from '../../utils/provider/utils.js';
 
 import type { rectStyleTypes, imagePropsType } from '../../types/shapes';
 
-export class Image extends Shape<'image'> {
+export class Image extends GraphicsEntity<'image'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
 
@@ -29,29 +24,12 @@ export class Image extends Shape<'image'> {
     y: number,
     width: number,
     height: number,
-    href: String,
-    props: imagePropsType
+    href: string,
+    props: imagePropsType = {}
   ) {
-    super('image', ''); // ( shape generics , id , rander generics by default = 'path' )
+    super('image', props?.id ?? ''); // ( shape generics , id , rander generics by default = 'path' )
     try {
-      /*
-      const props: rectPropsType = Rect.#getParams(
-        arg5,
-        arg6,
-        arg7
-      ) as rectPropsType;
-
-      parameterTypeValidator(
-        props,
-        GraphicalElementProperties,
-        AllGShapeStyleProperties,
-        {},
-        'rect'
-      );
-
-      //    console.log('props ', props);
-
-      autoFixGeometry(props, ['width', 'height', 'stroke-width']); // fix if any available and if any of  negative because its not valid
+      'id' in props && delete props.id;
 
       const mendatoryProps = {
         x,
@@ -60,23 +38,12 @@ export class Image extends Shape<'image'> {
         height
       };
 
-      parameterTypeValidator(
-        mendatoryProps,
-        GraphicalElementProperties,
-        AllGShapeStyleProperties,
-        this.#classProp,
-        'rect'
-      );
-
-      autoFixGeometry(mendatoryProps, ['width', 'height']); // fix if any of negative because its not valid
-
       const {
         x: dx = 0,
         y: dy = 0,
         width: dw = 0,
         height: dh = 0,
-        rx: drx = 0,
-        ry: dry = 0,
+
         ...rest
       } = props;
 
@@ -88,89 +55,35 @@ export class Image extends Shape<'image'> {
         y: ay + +dy,
         width: aw + +dw,
         height: ah + +dh,
-        rx: drx,
-        ry: dry,
+        href,
+
         ...rest
       };
 
+      parameterTypeValidator(
+        props,
+        GraphicalElementProperties,
+        AllGShapeStyleProperties,
+        {},
+        'image'
+      );
+
       // console.log('safePropsprops ', safeProps);
       this.attrs(safeProps);
-
-			*/
     } catch (e) {
       throw e;
     }
   }
-
+  /*
   static #validProps() {
     return validProps(
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'rect'
+      'image'
     );
   }
-
-  static #getParams(
-    arg5: number | rectPropsType | undefined,
-    arg6: number | rectPropsType | undefined,
-    arg7: rectPropsType | undefined,
-    id = false
-  ): rectPropsType | string {
-    let props: rectPropsType = {} as rectPropsType;
-
-    const rid = (o: object) => {
-      if ('id' in o) {
-        const sid = (o.id ?? '') as string;
-        delete o.id;
-        return sid;
-      }
-      return '';
-    };
-
-    const cornerRadius = () => {
-      const [rx, ry] = [Math.abs(props.rx ?? 0), Math.abs(props.ry ?? 0)];
-
-      props['rx'] = (rx +
-        (typeof arg5 === 'number' ? Math.abs(arg5) : 0)) as number;
-      props['ry'] = (ry +
-        (typeof arg6 === 'number'
-          ? Math.abs(arg6)
-          : typeof arg5 === 'number'
-          ? Math.abs(arg5)
-          : 0)) as number;
-    };
-
-    if (typeof arg5 === 'object' && arg5 !== null) {
-      // Case 1: Only props
-
-      if (id) return rid(arg5);
-
-      props = arg5;
-      cornerRadius();
-    } else if (typeof arg6 === 'object' && arg6 !== null) {
-      // Case 2: rx and props
-
-      if (id) return rid(arg6);
-      props = arg6;
-
-      cornerRadius();
-    } else if (typeof arg7 === 'object' && arg7 !== null) {
-      // Case 3: rx, ry, props
-
-      if (id) return rid(arg7);
-      props = arg7;
-
-      cornerRadius();
-    } else {
-      // Fallback case
-      if (id) return '' as string;
-      cornerRadius();
-    }
-
-    return props;
-  }
-
+*/
   public clone(
     offsetX: number = 10,
     offsetY: number = 10,
@@ -190,7 +103,8 @@ export class Image extends Shape<'image'> {
         x = 0,
         y = 0,
         width: w = 0,
-        height: h = 0
+        height: h = 0,
+        href = ''
       } = this.#geometry;
 
       const nextCopies = copies + 1;
@@ -201,78 +115,100 @@ export class Image extends Shape<'image'> {
       }
 
       this.#geometry['copies'] = nextCopies;
-      return new Rect(
+      return new Image(
         offsetX + x,
         offsetY + y,
         (width ?? 0) + w,
         (height ?? 0) + h,
-        style as rectPropsType
+        href,
+        style as imagePropsType
       );
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');
   }
 
-  protected override getAttrsAccordingToShape(
-    accessKey: symbol,
-    attrs: Record<string, any>
-  ): { x: number; y: number; width: number; height: number } {
-    assertAccess(accessKey);
-
-    // if class is Rect then attrs should be only x , y , width , height , rx , ry nothing except this
-    const {
-      x = 0,
-      y = 0,
-      width = 0,
-      height = 0
-    } = attrs as { x: number; y: number; width: number; height: number };
-
-    return { x, y, width, height };
-  }
-
   protected override generateMatrix(accessKey: symbol): void {
     try {
       assertAccess(accessKey);
 
-      if (!this.#geometry) return;
+      const geo = this.#geometry as {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        buffer: Float32Array;
+      };
 
-      const { x = 0, y = 0, width: w = 0, height: h = 0 } = this.#geometry;
-      const shapeRows = 4;
-      const bboxRows = 4;
-      7;
-      const totalLength = (shapeRows + bboxRows) * 3;
+      if (!geo) return;
 
-      // Allocate once and reuse
-      if (
-        !this.#geometry.buffer ||
-        this.#geometry.buffer.length !== totalLength
-      ) {
-        this.#geometry.buffer = new Float32Array(totalLength);
+      const { x = 0, y = 0, width: w = 0, height: h = 0 } = geo;
+
+      // Retrieve expected matrix dimensions for a line
+      const [m, n] = dimensions['image'] as [number, number];
+
+      // Compute total buffer length based on dimensions
+      const totalLength = m * n;
+
+      // Allocate the buffer once or reallocate only if the size has changed
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
       }
 
-      const sb = this.#geometry.buffer as Float32Array;
+      const sb = geo.buffer as Float32Array;
       sb.set([x, y, 1, x + w, y, 1, x + w, y + h, 1, x, y + h, 1], 0);
 
-      // Only recreate views if buffer was reallocated
-      if (!this.#geometry.buffer) {
-        /*
-				this.#geometry.buffer
-          new Float32Array(sb.buffer, 0 * 4, 3),
-          new Float32Array(sb.buffer, 3 * 4, 3),
-          new Float32Array(sb.buffer, 6 * 4, 3),
-          new Float32Array(sb.buffer, 9 * 4, 3)
-        ];
-				*/
-      }
-
-      this.restoreDimension(DEV_INTERNAL_ACCESS);
+      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
       //     renderer.render({ el: this });
     } catch (e) {
       throw e;
     }
   }
 
-  protected override validateShapeMatrix(
+  protected override restoreDimension(
+    accessKey: symbol,
+    temporaryStatus: Float32Array,
+    basic: boolean = true
+  ) {
+    try {
+      assertAccess(accessKey);
+
+      const geo = this.#geometry as {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        buffer: Float32Array;
+      };
+      if (!geo) return;
+
+      const base = geo.buffer;
+
+      const m = [
+        base.subarray(0, 3),
+        base.subarray(3, 6),
+        base.subarray(6, 9),
+        base.subarray(9, 12)
+      ];
+
+      //   if (!isValidMatrix(m, 4, 3)) return;
+      const dim = this.#validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true) as [
+        number,
+        number
+      ];
+      basic &&
+        Array.isArray(dim) &&
+        (([geo.width, geo.height] = dim),
+        ([geo.x, geo.y] = [
+          temporaryStatus[0] as number,
+          temporaryStatus[1] as number
+        ]));
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  #validateShapeMatrix(
     accessKey: symbol,
     matrix: Float32Array[],
     output: boolean = false
@@ -280,22 +216,27 @@ export class Image extends Shape<'image'> {
     assertAccess(accessKey);
     if (matrix.length !== 4) return false;
 
-    const [A, B, C, D] = matrix;
+    const [A, B, C, D] = matrix as [
+      Float32Array,
+      Float32Array,
+      Float32Array,
+      Float32Array
+    ];
 
     // --- Utility functions ---
     const dist = ([x1, y1]: Float32Array, [x2, y2]: Float32Array): number =>
-      Math.hypot(x2 - x1, y2 - y1);
+      Math.hypot(x2! - x1!, y2! - y1!);
 
     const dot = ([x1, y1]: Float32Array, [x2, y2]: Float32Array): number =>
-      x1 * x2 + y1 * y2;
+      x1! * x2! + y1! * y2!;
 
     const vec = (
       [x1, y1]: Float32Array,
       [x2, y2]: Float32Array
-    ): Float32Array => new Float32Array([x2 - x1, y2 - y1]);
+    ): Float32Array => new Float32Array([x2! - x1!, y2! - y1!]);
 
     const cross = ([x1, y1]: Float32Array, [x2, y2]: Float32Array) =>
-      x1 * y2 - y1 * x2;
+      x1! * y2! - y1! * x2!;
 
     // --- Compute vectors for sides ---
     const AB = vec(A, B);
@@ -309,7 +250,7 @@ export class Image extends Shape<'image'> {
     const CD_len = dist(C, D);
     const DA_len = dist(D, A);
 
-    // --- Dynamic epsilon (scaled by rectangle size) ---
+    // --- Dynamic epsilon (scaled by imageangle size) ---
     const maxSide = Math.max(AB_len, BC_len, CD_len, DA_len);
     const EPS = 1e-6 * (maxSide || 1);
 
@@ -318,7 +259,7 @@ export class Image extends Shape<'image'> {
     const orientation2 = cross(BC, vec(C, A));
     if (orientation1 * orientation2 < 0) return false;
 
-    // --- 1) Ensure non-degenerate rectangle ---
+    // --- 1) Ensure non-degenerate imageangle ---
     const hasNonZeroSides =
       AB_len > EPS && BC_len > EPS && CD_len > EPS && DA_len > EPS;
     if (!hasNonZeroSides) return false;
@@ -337,23 +278,23 @@ export class Image extends Shape<'image'> {
 
     if (!isPerpendicular && !output) return false;
 
-    // --- Optional: Snap coordinates back to perfect rectangle ---
+    // --- Optional: Snap coordinates back to perfect image ---
     if (!output) {
       // Snap opposite sides
       const avgWidth = (AB_len + CD_len) / 2;
       const avgHeight = (BC_len + DA_len) / 2;
       // Recompute positions with snapped lengths
       B.set([
-        A[0] + AB[0] * (avgWidth / AB_len),
-        A[1] + AB[1] * (avgWidth / AB_len)
+        A[0]! + AB[0]! * (avgWidth / AB_len),
+        A[1]! + AB[1]! * (avgWidth / AB_len)
       ]);
       C.set([
-        B[0] + BC[0] * (avgHeight / BC_len),
-        B[1] + BC[1] * (avgHeight / BC_len)
+        B[0]! + BC[0]! * (avgHeight / BC_len),
+        B[1]! + BC[1]! * (avgHeight / BC_len)
       ]);
       D.set([
-        C[0] - AB[0] * (avgWidth / AB_len),
-        C[1] - AB[1] * (avgWidth / AB_len)
+        C[0]! - AB[0]! * (avgWidth / AB_len),
+        C[1]! - AB[1]! * (avgWidth / AB_len)
       ]);
     }
 
@@ -361,24 +302,5 @@ export class Image extends Shape<'image'> {
     if (output) return [AB_len, BC_len];
 
     return true;
-  }
-
-  protected override restoreDimension(
-    accessKey: symbol,
-    basic: boolean = true
-  ) {
-    try {
-      assertAccess(accessKey);
-      if (!this.#geometry) return;
-      const m = this.#geometry?.matrix as Float32Array[];
-      if (!isValidMatrix(m, 4, 3)) return;
-      const dim = this.validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true);
-      basic &&
-        Array.isArray(dim) &&
-        (([this.#geometry.width, this.#geometry.height] = dim),
-        ([this.#geometry.x, this.#geometry.y] = m[0]));
-    } catch (e) {
-      throw e;
-    }
   }
 }

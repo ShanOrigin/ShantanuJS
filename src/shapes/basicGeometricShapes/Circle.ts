@@ -1,16 +1,19 @@
-import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
+import {
+  dimensions,
+  type StyleForGShapeTag
+} from '../../properties/provider/shapeProperties.js';
 
 import {
   validProps,
   parameterTypeValidator,
   autoFixGeometry
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
   DEV_INTERNAL_ACCESS,
-  assertAccess,
-  Shape
-} from '../baseShape/Shape.js';
+  assertAccess
+} from '../../utils/provider/accesskeys.js';
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -19,11 +22,9 @@ import {
 
 import type { circlePropsType } from '../../types/shapes';
 
-export class Circle extends Shape<'circle'> {
+export class Circle extends GraphicsEntity<'circle'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
-
-  // #Animations!: Animation<'circle'>[]; // for timeline support but not implementated yet
 
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
 
@@ -33,16 +34,6 @@ export class Circle extends Shape<'circle'> {
       const { cx: dcx = 0, cy: dcy = 0, r: dr = 0, ...rest } = props;
 
       'id' in props && delete props.id;
-      parameterTypeValidator(
-        props,
-        GraphicalElementProperties,
-        {},
-        {},
-        'circle'
-      );
-
-      autoFixGeometry(props, ['r']);
-
       const safeProps = {
         initial: true,
         cx: cx + +dcx,
@@ -58,8 +49,6 @@ export class Circle extends Shape<'circle'> {
         this.#classProp,
         'circle'
       );
-
-      autoFixGeometry(props, ['r', 'stroke-width']);
 
       this.attrs(safeProps);
     } catch (e) {
@@ -118,56 +107,27 @@ export class Circle extends Shape<'circle'> {
         cx: number;
         cy: number;
         r: number;
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
+        buffer: Float32Array;
       };
       if (!geo) return;
 
       const { cx = 0, cy = 0, r = 0 } = geo;
-      const shapeRows = 2;
-      const bboxRows = 4;
-      const totalLength = (shapeRows + bboxRows) * 3;
 
-      // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      // Retrieve expected matrix dimensions for a line
+      const [m, n] = dimensions['circle'] as [number, number];
+
+      // Compute total buffer length based on dimensions
+      const totalLength = m * n;
+
+      // Allocate the buffer once or reallocate only if the size has changed
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = geo.buffer as Float32Array;
       sb.set([cx, cy, 1, cx + r, cy, 1], 0);
-      // Only recreate views if buffer was reallocated
-      if (!geo.canonicalMatrix) {
-        geo.canonicalMatrix = [
-          new Float32Array(sb.buffer, 0 * 4, 3),
-          new Float32Array(sb.buffer, 3 * 4, 3)
-        ];
-      }
 
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
-    } catch (e) {
-      throw e;
-    }
-  }
-
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    matrix: Float32Array[],
-    output: boolean = false
-  ): boolean | number {
-    try {
-      assertAccess(accessKey);
-
-      if (!this.#geometry || !this.#geometry.r) return false;
-
-      if (matrix.length !== 2) return false;
-
-      const [center, right] = matrix;
-
-      const r = Math.hypot(right![0]! - center![0]!, right![1]! - center![1]!);
-
-      if (output) return r;
-
-      return Math.abs(r - this.#geometry.r) < 1e-6;
     } catch (e) {
       throw e;
     }

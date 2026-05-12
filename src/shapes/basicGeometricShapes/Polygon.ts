@@ -1,12 +1,14 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
+
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
-  AllGShapeStyleProperties
+  AllGShapeStyleProperties,
+  dimensions
 } from '../../properties/provider/shapeProperties.js';
 
 import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
@@ -17,15 +19,14 @@ import {
   parameterTypeValidator,
   autoFixGeometry
   //  computeBBox
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import type { polygonPropsType } from '../../types/shapes';
 
-export class Polygon extends Shape<'polygon'> {
+export class Polygon extends GraphicsEntity<'polygon'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
-  //  #Animations!: Animation<'polygon'>[]; // for timeline support but not implementated yet
 
   // Constructor 1: points as string
   constructor(points: string, props?: polygonPropsType);
@@ -36,6 +37,8 @@ export class Polygon extends Shape<'polygon'> {
     super('polygon', props?.id ?? '');
 
     try {
+      'id' in props && delete props.id;
+
       let pointsAttr: string = '';
 
       if (typeof points === 'string') {
@@ -64,9 +67,8 @@ export class Polygon extends Shape<'polygon'> {
             pointsAttr += ' ';
           }
         }
-        pointsAttr += ' Z';
       }
-
+      pointsAttr += ' Z';
       if (pointsAttr[pointsAttr.length - 1]!.toLowerCase() !== 'z') {
         throw new Error("Given Path is Not Closed please close path with 'Z'");
       }
@@ -84,8 +86,6 @@ export class Polygon extends Shape<'polygon'> {
         this.#classProp,
         'polygon'
       );
-
-      autoFixGeometry(props, ['stroke-width']);
 
       this.attrs(safeProps);
     } catch (e) {
@@ -184,8 +184,7 @@ export class Polygon extends Shape<'polygon'> {
 
       const geo = this.#geometry as {
         points: string;
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
+        buffer: Float32Array;
       };
 
       if (!geo) return;
@@ -202,30 +201,23 @@ export class Polygon extends Shape<'polygon'> {
           );
         }
       }
-      const shapeRows = vmat.length / 3;
-      const bboxRows = 4;
-      const totalLength = (shapeRows + bboxRows) * 3;
 
-      // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      const m = vmat.length / 3;
+
+      // Retrieve expected matrix dimensions for a line
+      const [_, n] = dimensions['polygon'] as [number, number];
+
+      // Compute total buffer length based on dimensions
+      const totalLength = m * n;
+
+      // Allocate the buffer once or reallocate only if the size has changed
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = geo.buffer as Float32Array;
       sb.set(vmat, 0);
 
-      // Only recreate views if buffer was reallocated
-      if (
-        !geo.canonicalMatrix ||
-        totalLength - 12 != geo.canonicalMatrix.length * 3
-      ) {
-        const mat = [];
-
-        for (let i = 0; i < shapeRows; i++) {
-          mat.push(new Float32Array(sb.buffer, i * 3 * 4, 3));
-        }
-        geo.canonicalMatrix = mat;
-      }
       // only when setM comming throught setSMatrix
       if (setM) return; // only assing array not rendering
 
@@ -233,14 +225,6 @@ export class Polygon extends Shape<'polygon'> {
     } catch (e) {
       throw e;
     }
-  }
-
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    m: Float32Array[]
-  ): boolean {
-    assertAccess(accessKey);
-    return isValidMatrix(m, m.length, 3);
   }
 
   protected override restoreDimension(

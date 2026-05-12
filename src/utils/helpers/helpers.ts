@@ -20,6 +20,24 @@ export function generateId(userId?: string): string {
 }
 
 /**
+ * Logs a warning message to the console.
+ *
+ * @param args - Values to be logged as a warning.
+ */
+export function Warn(...args: unknown[]): void {
+  console.warn(...args);
+}
+
+/**
+ * Logs a message to the console.
+ *
+ * @param args - Values to be logged.
+ */
+export function Log(...args: unknown[]): void {
+  console.log(...args);
+}
+
+/**
  * Purpose:
  * This functions Takes messages from user and simply print that messages as warning in console so user may get context.
  *

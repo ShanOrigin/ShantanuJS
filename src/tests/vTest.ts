@@ -1,4 +1,4 @@
-import { DEV_INTERNAL_ACCESS } from '../utils/providers/accesskeys.js';
+import { DEV_INTERNAL_ACCESS } from '../utils/provider/accesskeys.js';
 
 // -------------------------------------------------------------
 // Convert BBox rect into 4 corners
@@ -141,4 +141,14 @@ export async function toError(name: string, t: Function) {
 
 export function delay(time: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+export function getShapeColors(el: SVGElement) {
+  const style = window.getComputedStyle(el);
+
+  return {
+    fill: style.fill,
+    stroke: style.stroke,
+    strokeWidth: style.strokeWidth
+  };
 }

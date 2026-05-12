@@ -130,7 +130,10 @@ export async function RectEventsTests() {
 
     shape.touchMove((e) => {
       console.log('touchMove triggered');
-      shape.attrs({ x: shape.x + 5, y: shape.y + 5 });
+      shape.attrs({
+        x: shape?.geometry?.x ?? 0 + 5,
+        y: shape?.geometry?.y ?? 0 + 5
+      });
     });
   });
 

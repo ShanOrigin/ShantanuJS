@@ -1,5 +1,5 @@
 /*
-import { Shantanu as s } from './index.js';
+import { ShantanuJS as s } from './index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
@@ -215,3 +215,145 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 5000);
 });
 */
+
+import { Log } from '../utils/helpers/helpers.js';
+import { DEV_INTERNAL_ACCESS } from '../utils/internals/accessKeys.js';
+import { ShantanuJS } from './index.js';
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const canvas = new ShantanuJS.Canvas('testing', 250, 400);
+
+    const point = new ShantanuJS.Shapes.Basic.Point(20, 20, 5, {
+      stroke: 'green',
+      fill: 'red'
+    });
+
+    canvas.addTo(point);
+
+    const line = new ShantanuJS.Shapes.Basic.Line(10, 20, 20, 50, {
+      stroke: 'blue'
+    });
+
+    canvas.addTo(line);
+
+    const circle = new ShantanuJS.Shapes.Basic.Circle(70, 60, 10, {
+      stroke: 'yellow',
+      fill: 'brown'
+    });
+    const ellipse = new ShantanuJS.Shapes.Basic.Ellipse(50, 100, 12, 15, {
+      stroke: 'brown',
+      fill: 'pink'
+    });
+
+    canvas.addTo(circle, ellipse);
+
+    const polyline = new ShantanuJS.Shapes.Basic.Polyline(
+      // '30,35 45,50 60,20',
+      [
+        [30, 35],
+        [45, 50],
+        [60, 20]
+      ],
+
+      { stroke: 'purple' }
+    ); // also supports path like '30 , 35 '
+
+    const polygon = new ShantanuJS.Shapes.Basic.Polygon(
+      '80,50 67,12 76,120 99,140',
+
+      /*      [
+        [10, 5],
+        [70, 33],
+        [90, 67]
+      ],
+			*/
+      { stroke: 'lightblue' }
+    );
+
+    canvas.addTo(polyline, polygon);
+
+    const rect = new ShantanuJS.Shapes.Basic.Rect(90, 80, 60, 50, {
+      rx: 5,
+      ry: 7,
+      stroke: 'green',
+      fill: 'red'
+    });
+
+    canvas.addTo(rect);
+
+    const text = new ShantanuJS.Shapes.Media.Text(78, 100, 'Queen', {
+      stroke: 'white',
+      fill: 'black'
+    });
+    canvas.addTo(text);
+
+    const img = new ShantanuJS.Shapes.Media.Image(
+      40,
+      170,
+      160,
+      120,
+      '../../deps.png'
+    );
+
+    canvas.addTo(img);
+
+    const cubicCurve = new ShantanuJS.Shapes.Custom.CubicCurve({
+      x1: 20,
+      y1: 100,
+      x2: 130,
+      y2: 140,
+      curvature: 0.6,
+      smoothness: 80
+    });
+
+    canvas.addTo(cubicCurve);
+
+    const quadraticCurve = new ShantanuJS.Shapes.Custom.QuadraticCurve({
+      x1: 20,
+      y1: 100,
+      x2: 130,
+      y2: 140,
+      curvature: -0.6,
+      smoothness: 80
+    });
+
+    canvas.addTo(quadraticCurve);
+
+    const arcCurve = new ShantanuJS.Shapes.Custom.ArcCurve({
+      x1: 20,
+      y1: 100,
+      x2: 130,
+      y2: 140,
+      curvature: 0.6,
+      smoothness: 80
+    });
+
+    canvas.addTo(arcCurve);
+
+    const earcCurve = new ShantanuJS.Shapes.Custom.EarcCurve({
+      x1: 20,
+      y1: 100,
+      x2: 130,
+      y2: 140,
+      curvature: -0.6,
+      smoothness: 80
+    });
+
+    canvas.addTo(earcCurve);
+
+    const group = new ShantanuJS.Semantics.Group('newgroup');
+    canvas.addTo(group);
+
+    group.add(rect, ellipse);
+
+    line.toFront();
+
+    //  rect.Rotate({ angle: 45 });
+
+    //   group.Rotate({ angle: 45 });
+    rect.on('click', (e) => {
+      Log('click once on rect');
+    });
+  }, 7000);
+});

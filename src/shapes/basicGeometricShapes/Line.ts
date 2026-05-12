@@ -1,8 +1,8 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
 import {
   GraphicalElementProperties,
   CommonGeometricProperties,
@@ -16,7 +16,7 @@ import {
   isValidMatrix,
   validProps,
   parameterTypeValidator
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import { linePropsType } from '../../types/shapes';
 
@@ -34,7 +34,7 @@ import { linePropsType } from '../../types/shapes';
  * geometry logic and constraints.
  */
 
-export class Line extends Shape<'line'> {
+export class Line extends GraphicsEntity<'line'> {
   /**
    * Reference to the base class’s internal geometry object.
    *
@@ -98,16 +98,7 @@ export class Line extends Shape<'line'> {
   ) {
     // Initialize the base graphical element as a line and extract the optional identifier
     super('line', props?.id ?? '');
-
-    // Perform early validation on the raw input properties before any normalization
-    parameterTypeValidator(
-      props as linePropsType,
-      GraphicalElementProperties,
-      {},
-      {},
-      'line'
-    );
-
+    'id' in props && delete props.id;
     // Extract relative coordinate offsets from props, defaulting to zero when absent
     const {
       x1: dx1 = 0,
@@ -280,38 +271,6 @@ export class Line extends Shape<'line'> {
       // Propagate any error without modification
       throw e;
     }
-  }
-
-  /**
-   * Validates whether the provided matrix conforms to the expected line geometry format.
-   *
-   * This method verifies that the given matrix matches the dimensional requirements
-   * defined for a line shape. Validation is performed using internally defined
-   * dimensions and is restricted to privileged internal callers.
-   *
-   * The method does not mutate any internal state; it only performs structural
-   * validation on the supplied matrix.
-   *
-   * @param accessKey - A privileged symbol used to assert internal-only access.
-   * @param mat - A matrix represented as an array of `Float32Array` rows to be
-   *              validated against the line shape’s expected dimensions.
-   * @returns `true` if the matrix is structurally valid for a line shape,
-   *          otherwise `false`.
-   *
-   * @throws Error if access validation fails.
-   */
-  protected override validateShapeMatrix(
-    accessKey: symbol,
-    mat: Float32Array[]
-  ): boolean {
-    // Ensure the caller has privileged internal access
-    assertAccess(accessKey);
-
-    // Retrieve the expected matrix dimensions for a line shape
-    const [m, n] = dimensions['line'] as [number, number];
-
-    // Validate the matrix structure against the expected dimensions
-    return isValidMatrix(mat, m, n);
   }
 
   /**

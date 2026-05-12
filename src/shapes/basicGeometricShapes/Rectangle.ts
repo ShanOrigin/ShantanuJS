@@ -1,22 +1,23 @@
+import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
 import {
-  Shape,
   DEV_INTERNAL_ACCESS,
   assertAccess
-} from '../baseShape/Shape.js';
+} from '../../utils/provider/accesskeys.js';
 
 import {
   GraphicalElementProperties,
-  AllGShapeStyleProperties
+  AllGShapeStyleProperties,
+  dimensions
 } from '../../properties/provider/shapeProperties.js';
 
 import {
   parameterTypeValidator,
   autoFixGeometry
-} from '../../utils/providers/utils.js';
+} from '../../utils/provider/utils.js';
 
 import type { rectStyleTypes, rectPropsType } from '../../types/shapes';
 
-export class Rect extends Shape<'rect'> {
+export class Rect extends GraphicsEntity<'rect'> {
   #geometry = this.getIGeo(DEV_INTERNAL_ACCESS); // reference to base class original geometry
   #style = this.getIStyle(DEV_INTERNAL_ACCESS); // reference to  base class original style
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
@@ -66,15 +67,7 @@ export class Rect extends Shape<'rect'> {
         arg7
       ) as rectPropsType;
 
-      parameterTypeValidator(
-        props,
-        GraphicalElementProperties,
-        AllGShapeStyleProperties,
-        {},
-        'rect'
-      );
-
-      autoFixGeometry(props, ['width', 'height', 'stroke-width']); // fix if any available and if any of  negative because its not valid
+      'id' in props && delete props.id;
 
       const mendatoryProps = {
         x,
@@ -82,16 +75,6 @@ export class Rect extends Shape<'rect'> {
         width,
         height
       };
-
-      parameterTypeValidator(
-        mendatoryProps,
-        GraphicalElementProperties,
-        AllGShapeStyleProperties,
-        this.#classProp,
-        'rect'
-      );
-
-      autoFixGeometry(mendatoryProps, ['width', 'height']); // fix if any of negative because its not valid
 
       const {
         x: dx = 0,
@@ -116,6 +99,13 @@ export class Rect extends Shape<'rect'> {
         ...rest
       };
 
+      parameterTypeValidator(
+        mendatoryProps,
+        GraphicalElementProperties,
+        AllGShapeStyleProperties,
+        this.#classProp,
+        'rect'
+      );
       // console.log('safePropsprops ', safeProps);
       this.attrs(safeProps);
     } catch (e) {
@@ -243,35 +233,25 @@ export class Rect extends Shape<'rect'> {
         y: number;
         width: number;
         height: number;
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
+        buffer: Float32Array;
       };
 
       if (!geo) return;
 
       const { x = 0, y = 0, width: w = 0, height: h = 0 } = geo;
-      const shapeRows = 4;
-      const bboxRows = 4;
-      7;
-      const totalLength = (shapeRows + bboxRows) * 3;
+      // Retrieve expected matrix dimensions for a line
+      const [m, n] = dimensions['rect'] as [number, number];
 
-      // Allocate once and reuse
-      if (!geo.sharedBuffer || geo.sharedBuffer.length !== totalLength) {
-        geo.sharedBuffer = new Float32Array(totalLength);
+      // Compute total buffer length based on dimensions
+      const totalLength = m * n;
+
+      // Allocate the buffer once or reallocate only if the size has changed
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
       }
 
-      const sb = geo.sharedBuffer as Float32Array;
+      const sb = geo.buffer as Float32Array;
       sb.set([x, y, 1, x + w, y, 1, x + w, y + h, 1, x, y + h, 1], 0);
-
-      // Only recreate views if buffer was reallocated
-      if (!geo.canonicalMatrix) {
-        geo.canonicalMatrix = [
-          new Float32Array(sb.buffer, 0 * 4, 3),
-          new Float32Array(sb.buffer, 3 * 4, 3),
-          new Float32Array(sb.buffer, 6 * 4, 3),
-          new Float32Array(sb.buffer, 9 * 4, 3)
-        ];
-      }
 
       this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
       //     renderer.render({ el: this });
@@ -293,13 +273,21 @@ export class Rect extends Shape<'rect'> {
         y: number;
         width: number;
         height: number;
-        sharedBuffer: Float32Array;
-        canonicalMatrix: Float32Array[];
+        buffer: Float32Array;
       };
       if (!geo) return;
-      const m = geo.canonicalMatrix as Float32Array[];
+
+      const base = geo.buffer;
+
+      const m = [
+        base.subarray(0, 3),
+        base.subarray(3, 6),
+        base.subarray(6, 9),
+        base.subarray(9, 12)
+      ];
+
       //   if (!isValidMatrix(m, 4, 3)) return;
-      const dim = this.validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true) as [
+      const dim = this.#validateShapeMatrix(DEV_INTERNAL_ACCESS, m, true) as [
         number,
         number
       ];
@@ -315,7 +303,7 @@ export class Rect extends Shape<'rect'> {
     }
   }
 
-  protected override validateShapeMatrix(
+  #validateShapeMatrix(
     accessKey: symbol,
     matrix: Float32Array[],
     output: boolean = false

@@ -3,7 +3,6 @@ interface BaseTransformMeta {
   tType?: string;
   px?: number;
   py?: number;
-  callback?: Function;
 }
 
 // Translate
@@ -35,7 +34,6 @@ export interface FlipMethodProps {
   flipY: boolean;
   dirX?: 'x+' | 'x-';
   dirY?: 'y+' | 'y-';
-  callback?: Function;
 }
 
 export type ParsedDaTa = { tName: string; data: {} };
@@ -51,4 +49,12 @@ export type createTransformationMatrixProps = {
   arrayType?: 'normal' | 'float32';
   baseTMatrix?: Float32Array;
   multiplyWithBase?: boolean;
+};
+
+export type bboxProps = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  matrix: number[][];
 };

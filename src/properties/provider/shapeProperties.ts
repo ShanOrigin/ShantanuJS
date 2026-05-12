@@ -17,7 +17,8 @@ import type {
   IAllGShapeStyleProperties,
   TagToGShapeStyleKeyMap,
   StyleForGShapeTag,
-  IAllStyleProperties
+  IAllStyleProperties,
+  IShapeStyleProperties
 } from '../common/commonProperties';
 
 import type { IGraphicalElementProperties } from '../specific/specificProperties';
@@ -38,5 +39,6 @@ export type {
   IAllGShapeStyleProperties,
   TagToGShapeStyleKeyMap,
   StyleForGShapeTag,
-  IGraphicalElementProperties
+  IGraphicalElementProperties,
+  IShapeStyleProperties
 };
