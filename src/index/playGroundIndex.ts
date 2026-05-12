@@ -1,5 +1,5 @@
 /*
-import { Shantanu as s } from './index.js';
+import { ShantanuJS as s } from './index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
@@ -216,37 +216,39 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 */
 
-import { Shantanu } from './index.js';
+import { Log } from '../utils/helpers/helpers.js';
+import { DEV_INTERNAL_ACCESS } from '../utils/internals/accessKeys.js';
+import { ShantanuJS } from './index.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
-    const canvas = new Shantanu.Canvas('testing', 250, 400);
+    const canvas = new ShantanuJS.Canvas('testing', 250, 400);
 
-    const point = new Shantanu.Shapes.Basic.Point(20, 20, 5, {
+    const point = new ShantanuJS.Shapes.Basic.Point(20, 20, 5, {
       stroke: 'green',
       fill: 'red'
     });
 
     canvas.addTo(point);
 
-    const line = new Shantanu.Shapes.Basic.Line(10, 20, 20, 50, {
+    const line = new ShantanuJS.Shapes.Basic.Line(10, 20, 20, 50, {
       stroke: 'blue'
     });
 
     canvas.addTo(line);
 
-    const circle = new Shantanu.Shapes.Basic.Circle(70, 60, 10, {
+    const circle = new ShantanuJS.Shapes.Basic.Circle(70, 60, 10, {
       stroke: 'yellow',
       fill: 'brown'
     });
-    const ellipse = new Shantanu.Shapes.Basic.Ellipse(50, 100, 12, 15, {
+    const ellipse = new ShantanuJS.Shapes.Basic.Ellipse(50, 100, 12, 15, {
       stroke: 'brown',
       fill: 'pink'
     });
 
     canvas.addTo(circle, ellipse);
 
-    const polyline = new Shantanu.Shapes.Basic.Polyline(
+    const polyline = new ShantanuJS.Shapes.Basic.Polyline(
       // '30,35 45,50 60,20',
       [
         [30, 35],
@@ -257,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
       { stroke: 'purple' }
     ); // also supports path like '30 , 35 '
 
-    const polygon = new Shantanu.Shapes.Basic.Polygon(
+    const polygon = new ShantanuJS.Shapes.Basic.Polygon(
       '80,50 67,12 76,120 99,140',
 
       /*      [
@@ -271,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addTo(polyline, polygon);
 
-    const rect = new Shantanu.Shapes.Basic.Rect(90, 80, 60, 50, {
+    const rect = new ShantanuJS.Shapes.Basic.Rect(90, 80, 60, 50, {
       rx: 5,
       ry: 7,
       stroke: 'green',
@@ -280,13 +282,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addTo(rect);
 
-    const text = new Shantanu.Shapes.Media.Text(78, 100, 'Queen', {
+    const text = new ShantanuJS.Shapes.Media.Text(78, 100, 'Queen', {
       stroke: 'white',
       fill: 'black'
     });
     canvas.addTo(text);
 
-    const img = new Shantanu.Shapes.Media.Image(
+    const img = new ShantanuJS.Shapes.Media.Image(
       40,
       170,
       160,
@@ -296,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addTo(img);
 
-    const cubicCurve = new Shantanu.Shapes.Custom.CubicCurve({
+    const cubicCurve = new ShantanuJS.Shapes.Custom.CubicCurve({
       x1: 20,
       y1: 100,
       x2: 130,
@@ -307,9 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addTo(cubicCurve);
 
-    console.log(cubicCurve);
-
-    const quadraticCurve = new Shantanu.Shapes.Custom.QuadraticCurve({
+    const quadraticCurve = new ShantanuJS.Shapes.Custom.QuadraticCurve({
       x1: 20,
       y1: 100,
       x2: 130,
@@ -320,7 +320,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addTo(quadraticCurve);
 
-    const arcCurve = new Shantanu.Shapes.Custom.ArcCurve({
+    const arcCurve = new ShantanuJS.Shapes.Custom.ArcCurve({
       x1: 20,
       y1: 100,
       x2: 130,
@@ -331,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     canvas.addTo(arcCurve);
 
-    const earcCurve = new Shantanu.Shapes.Custom.EarcCurve({
+    const earcCurve = new ShantanuJS.Shapes.Custom.EarcCurve({
       x1: 20,
       y1: 100,
       x2: 130,
@@ -341,5 +341,19 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     canvas.addTo(earcCurve);
+
+    const group = new ShantanuJS.Semantics.Group('newgroup');
+    canvas.addTo(group);
+
+    group.add(rect, ellipse);
+
+    line.toFront();
+
+    //  rect.Rotate({ angle: 45 });
+
+    //   group.Rotate({ angle: 45 });
+    rect.on('click', (e) => {
+      Log('click once on rect');
+    });
   }, 7000);
 });
