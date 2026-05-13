@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/UsageError.js';
-import { ErrorContext } from '../../core/diagnostics/ErrorContext.js';
+import { UsageError } from '../../core/errors/usage-error.js';
+import { ErrorContext } from '../../core/diagnostics/error-context.js';
 
 /**
  * Error thrown when an operation requires a shape to be attached to a canvas,

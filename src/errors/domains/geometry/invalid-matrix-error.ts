@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/UsageError.js';
-import { ErrorContext } from '../../core/diagnostics/ErrorContext.js';
+import { UsageError } from '../../core/errors/usage-error.js';
+import { ErrorContext } from '../../core/diagnostics/error-context.js';
 
 /**
  * Error thrown when a transformation matrix violates required geometric invariants.

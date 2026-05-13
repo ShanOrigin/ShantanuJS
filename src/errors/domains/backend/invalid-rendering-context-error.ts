@@ -1,5 +1,5 @@
-import { ConfigurationError } from '../../core/errors/ConfigurationError.js';
-import { ErrorContext } from '../../core/diagnostics/ErrorContext.js';
+import { ConfigurationError } from '../../core/errors/configuration-error.js';
+import { ErrorContext } from '../../core/diagnostics/error-context.js';
 
 /**
  * Error thrown when the provided rendering element does not match

@@ -1,5 +1,5 @@
-import { StateError } from '../../core/errors/StateError.js';
-import { ErrorContext } from '../../core/diagnostics/ErrorContext.js';
+import { StateError } from '../../core/errors/state-error.js';
+import { ErrorContext } from '../../core/diagnostics/error-context.js';
 
 /**
  * Error thrown when an internal object or system state is invalid, inconsistent,

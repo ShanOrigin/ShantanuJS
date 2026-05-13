@@ -1,5 +1,5 @@
-import { ErrorContext } from '../../core/diagnostics/ErrorContext.js';
-import { UsageError } from '../../core/errors/UsageError.js';
+import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from '../../core/errors/usage-error.js';
 
 /**
  * Error thrown when a numeric value falls outside an allowed inclusive range.
