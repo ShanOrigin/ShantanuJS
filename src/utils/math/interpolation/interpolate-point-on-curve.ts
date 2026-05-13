@@ -2,10 +2,14 @@
 // Function to Calculate control points on curve
 //+++++++++++++++++++++++++++
 
-import type { Point, CurveType, CurveInfo } from '../../../types/animation';
-import { lerp } from '../../animation/preBuilds/helpers/helpers.js';
-import { getSemiCirclePoint } from '../curvePaths/arcCurve.js';
-import { getEllipsePoint } from '../curvePaths/ellipseArcCurve.js';
+import type {
+  Point,
+  CurveType,
+  CurveInfo
+} from '../../../models/types/animation';
+import { lerp } from '../../helpers/helpers.js';
+import { getSemiCirclePoint } from '../../geometry/curves/curve-paths/arc-curve.js';
+import { getEllipsePoint } from '../../geometry/curves/curve-paths/ellipse-arc-curve.js';
 
 /**
  * Computes the interpolated point at a given progress along a specified curve.
