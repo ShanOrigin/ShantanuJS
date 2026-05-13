@@ -1,4 +1,4 @@
-import { namedColorsList } from './colorsInfo.js';
+import { namedColorsList } from './colors-info.js';
 
 export default class Colors {
   #color: string;

@@ -1,4 +1,4 @@
-import type { ParsedDaTa } from '../../../../types/transformations';
+import type { ParsedDaTa } from '../../../../models/types/transformations';
 
 /**
  * Parses a transformation DSL expression into a structured transformation descriptor.

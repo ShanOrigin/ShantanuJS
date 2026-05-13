@@ -1,3 +1,4 @@
+/*
 import type { GraphicsEntity } from '../../shapes/graphicsEntity/graphicsEntity';
 import type { IGraphicalElementProperties } from '../../properties/specific/specificProperties';
 import { DEV_INTERNAL_ACCESS } from '../../utils/internals/accessKeys.js';
@@ -12,7 +13,7 @@ type HitTestCommonGeoSet = {
   rx: number;
   ry: number;
 };
-
+*/
 /**
  * Entry point for precise shape hit testing.
  *
@@ -38,6 +39,8 @@ type HitTestCommonGeoSet = {
  * @param y Pointer Y in world/canvas space
  * @returns true if hit detected
  */
+
+/*
 export function hitTestShape(shape: Shape, x: number, y: number): boolean {
   // ------------------------------------------------------------------
   // STEP 1: Extract internal geometry (trusted internal access)
@@ -73,7 +76,7 @@ export function hitTestShape(shape: Shape, x: number, y: number): boolean {
   // ------------------------------------------------------------------
   return hitTestByType(commonGeoSet, p.x, p.y);
 }
-
+*/
 /**
  * Dispatches hit testing based on shape type.
  *
@@ -101,6 +104,7 @@ export function hitTestShape(shape: Shape, x: number, y: number): boolean {
  * @param y Local Y coordinate (post-transform)
  * @returns true if point lies inside shape (including stroke region)
  */
+/*
 function hitTestByType(p: HitTestCommonGeoSet, x: number, y: number): boolean {
   switch (p.shape) {
     // ------------------------------------------------------------
@@ -164,7 +168,7 @@ function hitTestByType(p: HitTestCommonGeoSet, x: number, y: number): boolean {
       return false;
   }
 }
-
+*/
 /**
  * Applies a 2D affine transformation (column-major, homogeneous) to a point.
  *

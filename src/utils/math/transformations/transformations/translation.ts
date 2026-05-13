@@ -1,4 +1,4 @@
-import type { TranslateMethodProps } from '../../../../types/transformations';
+import type { TranslateMethodProps } from '../../../../models/types/transformations';
 
 /**
  * Applies a 2D translation transformation to an existing DOMMatrix.

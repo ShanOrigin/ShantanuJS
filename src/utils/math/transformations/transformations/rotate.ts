@@ -1,5 +1,4 @@
-import type { RotateMethodProps } from '../../../../types/transformations';
-
+import type { RotateMethodProps } from '../../../../models/types/transformations';
 /**
  * Applies a 2D rotation transformation to an existing DOMMatrix.
  *

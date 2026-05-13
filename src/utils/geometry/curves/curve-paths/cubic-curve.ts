@@ -2,7 +2,7 @@
 // Function to get control points on cubic curve
 //+++++++++++++++++++++++++++
 
-import type { Point } from '../../../types/animation';
+import type { Point } from '../../../../models/types/animation';
 
 /**
  * Calculates control points for a cubic Bézier curve between two points.

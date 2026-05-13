@@ -1,5 +1,4 @@
-import type { ScaleMethodProps } from '../../../../types/transformations';
-
+import type { ScaleMethodProps } from '../../../../models/types/transformations';
 /**
  * Applies a 2D scaling transformation to an existing DOMMatrix.
  *

@@ -1,7 +1,7 @@
 //+++++++++++++++++++++++++++
 //  Function to get control points on arc semi circle
 //+++++++++++++++++++++++++++
-import type { CurveInfo } from '../../../types/animation';
+import type { CurveInfo } from '../../../../models/types/animation';
 
 /**
  * Determines the curvature direction for an arc based on a bend factor.

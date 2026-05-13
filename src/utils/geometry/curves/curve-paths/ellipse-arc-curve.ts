@@ -1,4 +1,4 @@
-import type { CurveInfo } from '../../../types/animation';
+import type { CurveInfo } from '../../../../models/types/animation';
 /**
  * Computes the coordinates of a point along an elliptical arc between two points.
  *

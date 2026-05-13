@@ -1,6 +1,6 @@
-import type { FlipMethodProps } from '../../../../types/transformations';
-import { InvalidArgumentError } from '../../../errors/provider/shantanuJSErrors.js';
+import { InvalidArgumentError } from '../../../../errors/index.js';
 
+import type { FlipMethodProps } from '../../../../models/types/transformations';
 /**
  * Applies a 2D flip (mirror) transformation to an existing DOMMatrix.
  *

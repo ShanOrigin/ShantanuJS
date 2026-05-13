@@ -1,15 +1,15 @@
-import { interpolatePointOnCurve } from './interpolatePointOnCurve.js';
-import { getCubicCurveControlPoints } from '../curvePaths/cubicCurve.js';
-import { getQuadraticCurveControlPoint } from '../curvePaths/quadraticCurve.js';
-import { getArcCurveControlInfo } from '../curvePaths/arcCurve.js';
+import { interpolatePointOnCurve } from '../../../math/interpolation/interpolate-point-on-curve.js';
+import { getCubicCurveControlPoints } from '../curve-paths/cubic-curve.js';
+import { getQuadraticCurveControlPoint } from '../curve-paths/quadratic-curve.js';
+import { getArcCurveControlInfo } from '../curve-paths/arc-curve.js';
 
 import type {
   Point,
   CurveType,
   CurveInfo,
   ArcTableEntry
-} from '../../../types/animation';
-import { getCurveAdaptiveSmoothness } from '../../animation/preBuilds/helpers/helpers.js';
+} from '../../../../models/types/animation';
+import { getCurveAdaptiveSmoothness } from '../../../helpers/helpers.js';
 //import type { IGraphicalElementProperties as IG } from '../../../../properties/provider/shapeProperties';
 //import type { GraphicalElementComposer as GEC } from '../../../../core/graphics/graphics/graphicalElementComposer';
 
