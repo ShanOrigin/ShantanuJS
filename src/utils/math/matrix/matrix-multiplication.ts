@@ -1,4 +1,4 @@
-import { InvalidFormatError } from '../../../errors/provider/shantanuJSErrors.js';
+import { InvalidFormatError } from '../../../errors/index.js';
 
 /**
  * Applies a 2D affine transformation to a homogeneous coordinate buffer.
