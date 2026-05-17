@@ -1,45 +1,79 @@
-import {
-  AllGShapeStyleProperties,
-  CommonGeometricProperties,
-  GraphicalElementProperties
-} from '../../../properties/provider/shapeProperties.js';
-
-import { assertAccess } from '../../../utils/provider/accesskeys.js';
-
-import { Colors, generateId } from '../../../utils/provider/utils.js';
-
-import type {
-  ICommonGeometricProperties,
-  IGraphicalElementProperties,
-  TagToGShapeStyleKeyMap,
-  StyleForGShapeTag
-} from '../../../properties/provider/shapeProperties';
-
-import type {
-  getAttrsMethodsReturnTypes,
-  attrsMethodReturnTypes,
-  transformStack
-} from '../../../types/index';
-
-import { SVG_CONTEXT } from '../backends/svg/core/core.js';
-
-import type { CONTEXT, DeepReadonly } from '../../../types/graphicsElements';
+/* -------------------------------------------------------------------------- */
+/*                                   Errors                                   */
+/* -------------------------------------------------------------------------- */
 
 import {
   InvalidOptionError,
-  InvalidRenderingContextError,
   NotInitializedError,
   ReadOnlyPropertyError
-} from '../../../utils/errors/provider/shantanuJSErrors.js';
-// unused by this file
-export type GShpesTages = keyof IGraphicalElementProperties;
+} from '../../errors/index.js';
 
-type ValidKeys = Extract<
-  keyof IGraphicalElementProperties,
-  keyof TagToGShapeStyleKeyMap
->;
+/* -------------------------------------------------------------------------- */
+/*                         Internal Development Keys                          */
+/* -------------------------------------------------------------------------- */
 
-type GRAPHICS_TYPES = SVGElement;
+import {
+  assertAccess,
+  CLEAR_Z_ORDER_OPERATION_METHOD,
+  GET_INTERNAL_COMPUTED_STYLE_METHOD,
+  GET_INTERNAL_GEOMETRY_METHOD,
+  GET_INTERNAL_GRAPHICS_METHOD,
+  GET_INTERNAL_STYLE_METHOD,
+  GET_PARENT_METHOD,
+  GET_Z_ORDER_OPERATION_METHOD,
+  SET_INTERNAL_GRAPHICS_METHOD,
+  SET_PARENT_METHOD
+} from '../../internal/keys/dev-keys.js';
+
+/* -------------------------------------------------------------------------- */
+/*                   Graphics Interfaces + Helpers Types                      */
+/* -------------------------------------------------------------------------- */
+
+import type { IGraphicsModel } from '../../models/interfaces/graphics-model';
+
+import type {
+  InternalGeometry,
+  InternalStyle,
+  PublicGeometry,
+  PublicStyle,
+  ValidGraphicsShapes
+} from '../../models/types/graphics-model';
+
+/* -------------------------------------------------------------------------- */
+/*                                Common Types                                */
+/* -------------------------------------------------------------------------- */
+
+import type {
+  AttrsMethodReturnTypes,
+  GetAttrsMethodsReturnTypes,
+  GRAPHICS_TYPES,
+  TransformStack
+} from '../../models/types/common';
+
+import type { DeepReadonly } from '../../models/types/graphics-model';
+
+/* -------------------------------------------------------------------------- */
+/*                       Common Property Definitions                          */
+/* -------------------------------------------------------------------------- */
+
+import {
+  AllGShapeStyleProperties,
+  CommonGeometricProperties
+} from '../../property-definitions/common/common-properties.js';
+
+/* -------------------------------------------------------------------------- */
+/*                      Shape Property Definitions                            */
+/* -------------------------------------------------------------------------- */
+
+import { GraphicalElementProperties } from '../../property-definitions/specific/specific-properties.js';
+
+/* -------------------------------------------------------------------------- */
+/*                              Utility Modules                               */
+/* -------------------------------------------------------------------------- */
+
+import Colors from '../../utils/colors/colors.js';
+
+import { generateId } from '../../utils/helpers/helpers.js';
 
 /**
  * Abstract base model representing a graphical entity within the rendering system.
@@ -79,7 +113,7 @@ type GRAPHICS_TYPES = SVGElement;
  *         ↓
  *   -------------------
  *   | Internal State   |
- *   | (#geometry/#style)
+ *   | (#geometry/#style) |
  *   -------------------
  *         ↓
  *   -------------------
@@ -102,12 +136,11 @@ type GRAPHICS_TYPES = SVGElement;
  * - Transformation stack (matrix-based composition)
  * - Dirty flag (render invalidation trigger)
  * - Shape-specific geometric properties
- * - Rendering context reference (e.g., SVG)
  *
  * Invariants:
  * - `shape` is immutable once defined
  * - `transformStack` always initialized with identity matrix
- * - `dirty` reflects whether re-render is required
+ * - Dirty flags reflect whether re-render is required
  *
  *
  * 2. Style State (`#style`)
@@ -123,9 +156,14 @@ type GRAPHICS_TYPES = SVGElement;
  *
  * 3. Rendering Binding (`#fig`)
  * ------------------------------
- * Represents the actual rendering primitive:
- * - SVGElement (current)
- * - Future: Canvas / WebGL objects
+ * Represents the renderer-specific graphical binding associated
+ * with the logical graphics model.
+ *
+ * Possible bindings include:
+ * - SVG DOM elements
+ * - Canvas renderer objects
+ * - WebGL resources
+ * - Future backend-specific rendering primitives
  *
  * Invariants:
  * - Must match the assigned rendering context
@@ -141,15 +179,45 @@ type GRAPHICS_TYPES = SVGElement;
  * 1. Public Safe Access:
  *    - `geometry`, `style` (readonly proxies)
  *    - Prevents direct mutation
+ *    - Exposed through DeepReadonly type contracts
  *
- * 2. Privileged Internal Access:
- *    - `getIGeo`, `getIStyle`, `getIFig`
+ * 2. Privileged Internal Access Through Computed Methods:
  *    - Requires `accessKey` (symbol-based capability control)
  *    - Returns mutable internal references
+ *
+ * Internal engine operations are exposed through symbol-keyed
+ * computed methods to reduce accidental external access and
+ * provide capability-based internal mutation control.
  *
  * Security Model:
  * - Based on capability tokens (`symbol`)
  * - If accessKey is leaked → full internal mutation is possible
+ *
+ *
+ * ============================================================================
+ * TYPE SAFETY MODEL
+ * ============================================================================
+ *
+ * The class uses a layered generic type system to enforce:
+ * - Shape-specific geometry contracts
+ * - Shape-specific style contracts
+ * - Separation between mutable internal state and readonly public state
+ *
+ * Core Type Layers:
+ * - `InternalGeometry<T>`
+ * - `PublicGeometry<T>`
+ * - `InternalStyle<T>`
+ * - `PublicStyle<T>`
+ *
+ * Public-facing state is exposed through:
+ * - Runtime readonly proxy enforcement
+ * - Compile-time DeepReadonly type contracts
+ *
+ * Internal state remains mutable for:
+ * - Renderer operations
+ * - Validation pipelines
+ * - Mutation systems
+ * - Transform propagation
  *
  *
  * ============================================================================
@@ -170,8 +238,68 @@ type GRAPHICS_TYPES = SVGElement;
  * - Invalid mutations throw errors
  *
  * Dirty Flag:
- * - Any mutation triggers `#geometry.dirty = true`
+ * - Any mutation triggers dirty state update
  * - Signals rendering pipeline for update
+ *
+ *
+ * ============================================================================
+ * INTERNAL COMPUTED MUTATION / ACCESS METHODS
+ * ============================================================================
+ *
+ * The class exposes a controlled set of symbol-keyed computed methods
+ * for privileged internal engine operations.
+ *
+ * These methods:
+ * - Bypass the public readonly API layer
+ * - Allow direct mutable internal state access
+ * - Are protected through capability-based access validation
+ * - Require internal access key verification through `assertAccess()`
+ *
+ * Security Characteristics:
+ * - Access is symbol-token based
+ * - Unauthorized access attempts throw validation errors
+ * - Intended strictly for renderer and engine subsystems
+ *
+ * Internal Access / Mutation Methods:
+ *
+ * Geometry Access:
+ * - `GET_INTERNAL_GEOMETRY_METHOD`
+ *   → Returns mutable internal geometry state reference
+ *
+ * Style Access:
+ * - `GET_INTERNAL_STYLE_METHOD`
+ *   → Returns mutable internal style state reference
+ *
+ * Computed Style Access:
+ * - `GET_INTERNAL_COMPUTED_STYLE_METHOD`
+ *   → Returns internally computed style representation
+ *
+ * Graphics Binding Access:
+ * - `SET_INTERNAL_GRAPHICS_METHOD`
+ *   → Assigns renderer-specific graphical binding (`#fig`)
+ *
+ * - `GET_INTERNAL_GRAPHICS_METHOD`
+ *   → Returns renderer-specific graphical binding reference
+ *
+ * Parent Hierarchy Access:
+ * - `SET_PARENT_METHOD`
+ *   → Assigns structural parent relationship
+ *
+ * - `GET_PARENT_METHOD`
+ *   → Returns structural parent reference
+ *
+ * Z-Order Operations:
+ * - `GET_Z_ORDER_OPERATION_METHOD`
+ *   → Returns current pending z-order operation state
+ *
+ * - `CLEAR_Z_ORDER_OPERATION_METHOD`
+ *   → Clears pending z-order operation state
+ *
+ * Architectural Purpose:
+ * - Separates public safe API from privileged engine operations
+ * - Enables renderer synchronization without exposing mutable state publicly
+ * - Preserves strong encapsulation boundaries while supporting
+ *   internal engine orchestration
  *
  *
  * ============================================================================
@@ -183,12 +311,8 @@ type GRAPHICS_TYPES = SVGElement;
  *   attrs(string) → #getAttr()
  *
  * Behavior:
- * - Style properties take precedence over geometry
+ * - Geometry domain lookup takes precedence over style domain lookup
  * - Some values are defensively copied (e.g., buffers)
- * - Others are returned directly (partial immutability guarantee)
- *
- * Limitation:
- * - Read-side protection is inconsistent (not fully immutable)
  *
  *
  * ============================================================================
@@ -196,17 +320,16 @@ type GRAPHICS_TYPES = SVGElement;
  * ============================================================================
  *
  * 1. Binding:
- *    - `setIFig()` links logical model to rendering primitive
+ *    - `SET_INTERNAL_GRAPHICS_METHOD()` links logical model to rendering primitive
  *
- * 2. Context:
- *    - Stored in geometry
- *    - Currently supports SVG
- *    - Designed for extensibility (Canvas/WebGL)
+ * 2. Internal State Access:
+ *    - Internal geometry/style access exposed through symbol-keyed computed methods
+ *    - Used by renderer and engine subsystems
  *
  * 3. Z-Order Control:
  *    - `toFront`, `toBack`
- *    - Direct DOM manipulation (SVG-specific)
- *    - Bypasses mutation pipeline
+ *    - Updates only zIndex state in geometry
+ *    - Engine handles zIndex computation and ordering
  *
  *
  * ============================================================================
@@ -214,13 +337,19 @@ type GRAPHICS_TYPES = SVGElement;
  * ============================================================================
  *
  * - Maintains a transformation stack (`transformStack`)
- * - Each entry:
- *   - transformName
- *   - transformType
- *   - transformMatrix (Float32Array)
  *
- * - Initialized with identity matrix
- * - Designed for compositional transformations
+ * Structure:
+ * - `stack` → ordered collection of transformation matrices
+ * - `skip`  → optimization flag for transformation processing
+ *
+ * Matrix Representation:
+ * - Uses `Float32Array`
+ * - Identity matrix initialized by default
+ *
+ * Designed for:
+ * - Compositional transformations
+ * - Hierarchical transform propagation
+ * - Renderer-side matrix computation
  *
  *
  * ============================================================================
@@ -233,7 +362,6 @@ type GRAPHICS_TYPES = SVGElement;
  * - show()       → sets visibility visible
  * - toFront()    → move forward in z-order
  * - toBack()     → move backward in z-order
- * - getContext() → retrieve rendering context
  *
  * Internal Methods:
  * - #setAttrs()
@@ -247,43 +375,45 @@ type GRAPHICS_TYPES = SVGElement;
  * DESIGN CHARACTERISTICS
  * ============================================================================
  *
- * - Hybrid Architecture:
- *   - Declarative (attrs-based state)
- *   - Imperative (DOM manipulation for structure)
+ * - Declarative Architecture:
+ *   - Declarative attrs-based state interaction
  *
  * - Encapsulation:
  *   - Strong internal/private state separation
- *   - Controlled exposure via proxies
+ *   - Controlled exposure via readonly proxies
+ *   - Interface-driven state contracts
  *
  * - Validation-Driven Mutation:
  *   - All attribute changes are validated before mutation
  *
- * - Context-Aware:
- *   - Behavior varies based on rendering backend
+ * - Strong Typing:
+ *   - Shape-aware generic specialization
+ *   - DeepReadonly public state contracts
+ *   - Internal mutable engine state separation
  *
  *
  * ============================================================================
  * LIMITATIONS / KNOWN WEAKNESSES
  * ============================================================================
  *
- * 1. Inconsistent Immutability:
- *    - Write-side is controlled
- *    - Read-side partially exposed
+ * 1. Inconsistent Runtime Immutability:
+ *    - Runtime immutability depends on proxy enforcement
+ *    - Deep nested runtime objects may still require defensive handling
  *
  * 2. No Transactional Safety:
- *    - Partial mutations possible on failure
+ *    - Partial mutations may occur on failure
  *
- * 3. Context Coupling:
- *    - SVG-specific logic embedded in core class
+ * 3. Domain Overlap Risk:
+ *    - Geometry/style domains rely on validator separation
  *
- * 4. Domain Overlap Risk:
- *    - No strict enforcement between geometry and style domains
- *
- * 5. Performance Concerns:
+ * 4. Performance Concerns:
  *    - Proxy creation overhead
- *    - Repeated validation per attribute
+ *    - Recursive proxy wrapping cost
+ *    - Repeated validation per attribute mutation
  *
- *
+ * 5. Proxy Identity Concerns:
+ *    - Recursive proxy wrapping may affect object identity semantics
+ *    - Equality-sensitive systems may require additional handling
  *
  *
  * ============================================================================
@@ -294,11 +424,11 @@ type GRAPHICS_TYPES = SVGElement;
  * - Multiple rendering backends (SVG, Canvas, WebGL)
  * - Additional shape types via generic parameter `T`
  * - Expanded property registries
+ * - Renderer-specific graphical bindings
  *
  * Requires:
- * - Context abstraction layer (not yet implemented)
  * - Centralized property registry
- *
+ * - Consistent renderer integration contracts
  *
  *
  * ============================================================================
@@ -307,33 +437,70 @@ type GRAPHICS_TYPES = SVGElement;
  *
  * This class represents a:
  *
- *   "Controlled state engine for graphical entities with partial rendering abstraction"
+ *   "Controlled state engine for graphical entities with strong
+ *    interface-driven contractual architecture."
  *
  * It is:
  * - Structurally sound at core
- * - Complete in abstraction layers
- * - Sensitive to misuse due to mixed paradigms
+ * - Strongly typed through layered contracts
+ * - Complete in abstraction layering
+ * - Designed as the primary logical data model for graphical entities
  *
  * ============================================================================
  *
  * @template T - Constrained key representing a valid graphical shape type.
  */
-export abstract class GraphicsModel<T extends ValidKeys> {
+
+export abstract class GraphicsModel<T extends ValidGraphicsShapes>
+  implements IGraphicsModel<T>
+{
   /**
-   * Internal graphical representation reference.
+   * Internal renderer-bound graphics implementation reference.
    *
-   * Future Role:
-   * - May hold underlying rendering primitive depending on backend:
-   *   - HTMLCanvasElement
-   *   - WebGL buffers / objects
-   *   - SVG DOM node
+   * Architectural Purpose:
+   * - Stores the low-level backend-specific graphics object associated
+   *   with the current graphics entity.
+   * - Acts as an internal bridge between the abstract scene graph layer
+   *   and the concrete rendering backend implementation.
    *
-   * Current State:
-   * - Declared but not initialized in this context.
+   * Possible Backend Bindings:
+   * - Canvas rendering primitives
+   * - SVG DOM elements
+   * - WebGL buffers, programs, or GPU resources
+   * - Future renderer-specific native objects
    *
-   * Access: Strictly private (encapsulation of rendering backend binding)
+   * Access Characteristics:
+   * - Strictly private to prevent external renderer mutation.
+   * - Controlled only through internal rendering systems.
+   *
+   * Lifecycle:
+   * - Assigned internally during renderer attachment or entity creation.
+   * - Backend type depends on active rendering pipeline.
    */
   #fig!: GRAPHICS_TYPES;
+
+  /**
+   * Internal scene graph parent reference.
+   *
+   * Architectural Purpose:
+   * - Stores the hierarchical parent entity of the current graphics node.
+   * - Enables scene graph traversal, hierarchical transforms,
+   *   inheritance propagation, and structural ownership.
+   *
+   * Behavioral Characteristics:
+   * - Forms parent-child relationships between graphics entities.
+   * - Used internally for scene management and rendering organization.
+   * - May represent containers, groups, layers, or composite nodes.
+   *
+   * Access Characteristics:
+   * - Strictly internal scene graph linkage.
+   * - Not intended for uncontrolled external mutation.
+   *
+   * Generic Reasoning:
+   * - Uses `GraphicsModel<ValidGraphicsShapes>` intentionally because parent nodes
+   *   may contain heterogeneous graphics shape types.
+   */
+  #parent!: GraphicsModel<ValidGraphicsShapes>;
 
   /**
    * Internal geometry state container.
@@ -353,8 +520,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    *
    * Access: Private (mutations controlled internally only)
    */
-  #geometry: ICommonGeometricProperties['geometry'] &
-    IGraphicalElementProperties[T] = {};
+  #geometry: InternalGeometry<T> = {};
 
   /**
    * Internal style state container.
@@ -369,7 +535,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    *
    * Access: Private (exposed via readonly proxy externally)
    */
-  #style: StyleForGShapeTag<T> = {} as StyleForGShapeTag<T>;
+  #style: InternalStyle<T> = {} as InternalStyle<T>;
 
   /**
    * Internal computed style state container.
@@ -394,7 +560,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - Always reflects final visual state for the current frame
    * - No external system should write directly except Engine
    */
-  #computedStyle: StyleForGShapeTag<T> = {} as StyleForGShapeTag<T>;
+  #computedStyle: InternalStyle<T> = {} as InternalStyle<T>;
 
   /**
    * Internal z-order operation flag.
@@ -443,9 +609,10 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * Design Intent:
    * - Enforces strict separation between internal mutation logic and external consumption
    */
-  public geometry!: ICommonGeometricProperties['geometry'] &
-    IGraphicalElementProperties[T];
+  //  public geometry!: ICommonGeometricProperties['geometry'] &
+  //   IGraphicalElementProperties[T];
 
+  public geometry!: PublicGeometry<T>;
   /**
    * Public readonly proxy for style.
    *
@@ -456,7 +623,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * Design Intent:
    * - Ensures styling is controlled via defined APIs, not direct mutation
    */
-  public style!: StyleForGShapeTag<T>;
+  public style!: PublicStyle<T>;
 
   /**
    * Constructs a new graphical model instance.
@@ -482,167 +649,158 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - `style.id` is immutable after assignment
    * - Transformation stack always initialized with identity matrix
    */
+
   constructor(shapeName: T, ID: string = '') {
     try {
       /**
-       * Type assertion to ensure expected structural fields exist.
-       * No runtime enforcement — purely for type system alignment.
+       * Local structural references.
+       *
+       * Purpose:
+       * - Avoid repeated private field access
+       * - Improve constructor readability
+       * - Centralize mutable initialization flow
        */
-      this.#geometry as {
-        transformStack: transformStack;
+      const internalGeometry = this.#geometry as {
+        transformStack: TransformStack;
         shape: string;
+        localDirty: boolean;
+        worldMatrix: Float32Array;
+        localMatrix: Float32Array;
       };
 
+      const style = this.#style;
+
       /**
-       * Defensive validation: geometry container must exist.
+       * Defensive validation.
        */
-      if (!this.#geometry) {
+      if (!internalGeometry) {
         throw new NotInitializedError(
           'this.#geometry',
-
           'Internal geometry is not initialized due to internal state corruption (internal bug).',
           'core.graphicsModel.constructor()'
         );
       }
 
       /**
-       * Generate unique identifier for the graphical element.
+       * Immutable graphical identifier.
        */
       const id = generateId(ID);
 
       /**
-       * Initialize mutable fields before locking critical properties.
-       */
-      this.#geometry['shape'] = '';
-      this.#geometry['dirty'] = true;
-
-      /**
-       * Define immutable shape identity.
+       * Shared identity matrix.
        *
-       * Once assigned, cannot be:
-       * - Modified
-       * - Reconfigured
+       * Purpose:
+       * - Reduce repeated allocations
+       * - Improve constructor clarity
        */
-      Object.defineProperty(this.#geometry, 'shape', {
+      const identityMatrix = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+
+      // ============================================================
+      // Geometry Initialization
+      // ============================================================
+
+      internalGeometry.localDirty = true;
+
+      Object.defineProperty(internalGeometry, 'shape', {
         value: shapeName,
         writable: false,
         configurable: false,
         enumerable: true
       });
 
-      /**
-       * Apply default styling attributes via internal attribute handler.
-       *
-       * Includes:
-       * - Stroke width
-       * - Stroke color
-       * - Fill color
-       * - Vector effect behavior
-       */
+      internalGeometry.transformStack = {
+        stack: [identityMatrix],
+        skip: 0
+      };
+
+      internalGeometry.worldMatrix = new Float32Array(identityMatrix);
+
+      internalGeometry.localMatrix = new Float32Array(identityMatrix);
+
+      // ============================================================
+      // Default Style Initialization
+      // ============================================================
+
+      const color = new Colors('rgb(0,0,0)');
+
       GraphicsModel.prototype.attrs.call(this, {
         'stroke-width': 0.5,
-        stroke: new Colors('rgb(0,0,0)').isColor(),
-        fill: new Colors('none').isColor(),
-        'vector-effect': 'non-scaling-stroke'
+        stroke: color.isColor(),
+        fill: color.isColor('none', true)[1]
       });
 
-      /**
-       * Define immutable identifier on style object.
-       *
-       * Acts as:
-       * - DOM reference key
-       * - Internal tracking identifier
-       */
-      Object.defineProperty(this.#style, 'id', {
+      Object.defineProperty(style, 'id', {
         value: id,
         writable: false,
         configurable: false,
         enumerable: true
       });
 
-      /**
-       * Initialize transformation stack.
-       *
-       * Structure:
-       * - stack: ordered list of transformation operations
-       * - skip: optimization flag for transformation application
-       *
-       * Default State:
-       * - Single identity matrix (no transformation applied)
-       */
-      this.#geometry['transformStack'] = {
-        stack: [
-          {
-            transformName: 'composed',
-            transformType: 'all',
-            transformMatrix: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]) // Identity matrix
-          }
-        ],
-        skip: 0
-      };
-
-      this.#geometry['worldMatrix'] = new Float32Array([
-        1, 0, 0, 0, 1, 0, 0, 0, 1
-      ]); // Identity matrix
-
-      this.#geometry['localMatrix'] = new Float32Array([
-        1, 0, 0, 0, 1, 0, 0, 0, 1
-      ]); // Identity matrix
-
       // ============================================================
-      // Proxy Creation Phase
+      // Readonly Proxy Initialization
       // ============================================================
 
-      /**
-       * Create readonly proxy for geometry.
-       *
-       * Prevents:
-       * - External mutation
-       * - Direct state corruption
-       */
-      this.geometry = this.#createReadonlyProxy(this.#geometry as object);
-
-      /**
-       * Create readonly proxy for style.
-       *
-       * Ensures controlled styling mutations via internal APIs only.
-       */
-      this.style = this.#createReadonlyProxy(
-        this.#style as object
-      ) as StyleForGShapeTag<T>;
+      this.geometry = this.#createReadonlyProxy(
+        internalGeometry
+      ) as PublicGeometry<T>;
+      this.style = this.#createReadonlyProxy(style as object) as PublicStyle<T>;
 
       // ============================================================
     } catch (e) {
-      /**
-       * Transparent error propagation.
-       *
-       * Note:
-       * - No transformation of error type
-       * - Caller is responsible for handling
-       */
       throw e;
     }
   }
 
   /**
-   * Retrieves the rendering context associated with this graphical model.
+   * Assigns the internal graphical representation (`#fig`) along with its rendering context.
    *
-   * Context Semantics:
-   * - Represents the rendering backend context (e.g., SVG, Canvas, WebGL in future)
-   * - Stored internally within the geometry state
+   * Access Control:
+   * - Requires a valid `accessKey`
+   * - Enforced via `assertAccess`
+   *
+   * Responsibilities:
+   * - Binds a concrete rendering primitive (`shape`) to this model
+   * - Associates the rendering context (`context`) with internal geometry state
+   *
+   * Context Handling (Current Implementation):
+   * - Only supports `SVG_CONTEXT`
+   * - Validates that the provided `shape` is an instance of `SVGElement`
    *
    * Behavior:
-   * - Uses optional chaining to safely access `context`
-   * - Returns `null` if context is undefined or not yet initialized
+   * 1. Validates privileged access
+   * 2. Checks if the provided context matches `SVG_CONTEXT`
+   * 3. Ensures `shape` is a valid SVG DOM element
+   * 4. Assigns `#fig` to the provided shape
+   * 5. Updates geometry context if:
+   *    - Geometry exists
+   *    - Shape type is not `'canvas'`
    *
-   * @returns The rendering context if available, otherwise `null`
+   * @param accessKey - Symbol used to validate privileged access
+   * @param shape - Concrete graphical object corresponding to the context
    *
-   * Design Note:
-   * - This is a safe, non-privileged accessor (no access key required)
-   * - Intended for read-only contextual awareness, not mutation
+   * @throws {Error} If accessKey validation fails via `assertAccess`
+   * @throws {Error} If `shape` is not a valid instance for the given context
+   *
+   * Critical Invariants:
+   * - `#fig` must always align with the provided `context`
+   * - Geometry context must reflect the rendering backend
+   *
+   * Side Effects:
+   * - Mutates internal `#fig`
+   * - Mutates `#geometry.context` conditionally
+   *
+   *
+   * Security Note:
+   * - Direct mutation of rendering binding is restricted via access key
+   * - Prevents unauthorized reassignment of rendering primitives
    */
-  public getContext() {
-    return this.#geometry?.context || null;
+  [SET_INTERNAL_GRAPHICS_METHOD](shape: GRAPHICS_TYPES, accessKey: symbol) {
+    assertAccess(accessKey);
+
+    /**
+     * Bind the graphical element to internal state.
+     */
+    this.#fig = shape;
   }
 
   /**
@@ -666,9 +824,65 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - Prevents unauthorized access to rendering internals
    * - Ensures encapsulation of backend-specific implementation details
    */
-  public getIFig(accessKey: symbol) {
+  [GET_INTERNAL_GRAPHICS_METHOD](accessKey: symbol): GRAPHICS_TYPES {
     assertAccess(accessKey);
     return this.#fig;
+  }
+
+  /**
+   * Internal scene graph parent assignment method.
+   *
+   * Purpose:
+   * - Assigns the hierarchical parent reference of the current
+   *   graphics entity.
+   * - Used internally by container systems such as canvas or group
+   *   during structural insertion operations.
+   *
+   * Security:
+   * - Protected using internal development access validation.
+   * - Prevents unauthorized external mutation of scene graph links.
+   *
+   * Behavioral Notes:
+   * - Only structural container nodes should be passed as parents.
+   * - Intended exclusively for internal scene graph management.
+   * - Direct external usage is considered invalid architecture usage.
+   *
+   * @param parent - Structural parent graphics node
+   * @param accessKey - Internal privileged access token
+   */
+  [SET_PARENT_METHOD](
+    parent: GraphicsModel<ValidGraphicsShapes>,
+    accessKey: symbol
+  ): void {
+    assertAccess(accessKey);
+
+    this.#parent = parent;
+  }
+
+  /**
+   * Internal scene graph parent retrieval method.
+   *
+   * Purpose:
+   * - Returns the hierarchical parent reference associated with
+   *   the current graphics entity.
+   * - Used internally for scene traversal, transform propagation,
+   *   rendering flow, and structural inspection.
+   *
+   * Security:
+   * - Protected using internal development access validation.
+   * - Prevents unrestricted external access to scene graph internals.
+   *
+   * Behavioral Notes:
+   * - Returned parent is expected to be a structural container node.
+   * - Primarily consumed by renderer and scene management systems.
+   *
+   * @param accessKey - Internal privileged access token
+   * @returns Parent graphics container reference
+   */
+  [GET_PARENT_METHOD](accessKey: symbol): GraphicsModel<ValidGraphicsShapes> {
+    assertAccess(accessKey);
+
+    return this.#parent;
   }
 
   /**
@@ -699,9 +913,8 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - Any mutation here directly affects internal state
    * - Misuse can corrupt rendering pipeline invariants
    */
-  public getIGeo(
-    accessKey: symbol
-  ): ICommonGeometricProperties['geometry'] & IGraphicalElementProperties[T] {
+
+  [GET_INTERNAL_GEOMETRY_METHOD](accessKey: symbol): InternalGeometry<T> {
     assertAccess(accessKey);
     return this.#geometry;
   }
@@ -732,7 +945,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - Direct mutation affects rendering output immediately
    * - Must be used only in controlled internal flows
    */
-  public getIStyle(accessKey: symbol): StyleForGShapeTag<T> {
+  [GET_INTERNAL_STYLE_METHOD](accessKey: symbol): InternalStyle<T> {
     assertAccess(accessKey);
     return this.#style;
   }
@@ -764,106 +977,9 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - Must not be mutated outside Engine-controlled flows
    * - Direct mutation may desynchronize visual output
    */
-  public getIComputedStyle(key: symbol): StyleForGShapeTag<T> {
+  [GET_INTERNAL_COMPUTED_STYLE_METHOD](key: symbol): InternalStyle<T> {
     assertAccess(key);
     return this.#computedStyle;
-  }
-
-  /**
-   * Assigns the internal graphical representation (`#fig`) along with its rendering context.
-   *
-   * Access Control:
-   * - Requires a valid `accessKey`
-   * - Enforced via `assertAccess`
-   *
-   * Responsibilities:
-   * - Binds a concrete rendering primitive (`shape`) to this model
-   * - Associates the rendering context (`context`) with internal geometry state
-   *
-   * Context Handling (Current Implementation):
-   * - Only supports `SVG_CONTEXT`
-   * - Validates that the provided `shape` is an instance of `SVGElement`
-   *
-   * Behavior:
-   * 1. Validates privileged access
-   * 2. Checks if the provided context matches `SVG_CONTEXT`
-   * 3. Ensures `shape` is a valid SVG DOM element
-   * 4. Assigns `#fig` to the provided shape
-   * 5. Updates geometry context if:
-   *    - Geometry exists
-   *    - Shape type is not `'canvas'`
-   *
-   * @param accessKey - Symbol used to validate privileged access
-   * @param context - Rendering context identifier (currently supports SVG only)
-   * @param shape - Concrete graphical object corresponding to the context
-   *
-   * @throws {Error} If accessKey validation fails via `assertAccess`
-   * @throws {Error} If `shape` is not a valid instance for the given context
-   *
-   * Critical Invariants:
-   * - `#fig` must always align with the provided `context`
-   * - Geometry context must reflect the rendering backend
-   *
-   * Side Effects:
-   * - Mutates internal `#fig`
-   * - Mutates `#geometry.context` conditionally
-   *
-   * Future Extension Note:
-   * - This method is explicitly designed to support multiple rendering backends:
-   *   - HTML Canvas
-   *   - WebGL
-   * - Additional context branches must enforce strict type validation similar to SVG
-   *
-   * Security Note:
-   * - Direct mutation of rendering binding is restricted via access key
-   * - Prevents unauthorized reassignment of rendering primitives
-   */
-  public setIFig(accessKey: symbol, context: CONTEXT, shape: GRAPHICS_TYPES) {
-    assertAccess(accessKey);
-
-    // ============================================================
-    // Context-Specific Binding Logic (Extensible Section)
-    // ============================================================
-
-    /**
-     * SVG Context Handling:
-     *
-     * Ensures that:
-     * - The rendering primitive is a valid SVG DOM element
-     * - Context and shape type are consistent
-     */
-    if (context == SVG_CONTEXT) {
-      /**
-       * Runtime type validation:
-       * Prevents mismatch between declared context and actual graphical element.
-       */
-      if (!(shape instanceof SVGElement)) {
-        throw new InvalidRenderingContextError(
-          shape,
-          'SVGElement',
-          'core.graphicsModel.setIFig()'
-        );
-      }
-
-      /**
-       * Bind the graphical element to internal state.
-       */
-      this.#fig = shape;
-
-      /**
-       * Conditionally assign context to geometry:
-       *
-       * Conditions:
-       * - Geometry must exist
-       * - Shape type must not be `'canvas'`
-       *
-       * Rationale:
-       * - Prevents overwriting context for canvas-based shapes (special-case handling)
-       */
-      this.#geometry &&
-        this.#geometry.shape != 'canvas' &&
-        (this.#geometry['context'] = context);
-    }
   }
 
   /**
@@ -1106,8 +1222,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
       if (
         shape &&
         shape in GraphicalElementProperties &&
-        prop in
-          GraphicalElementProperties[shape as keyof IGraphicalElementProperties]
+        prop in GraphicalElementProperties[shape]
       ) {
         return true;
       } else if (prop in CommonGeometricProperties.geometry) {
@@ -1199,7 +1314,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
      * - Defaults to `'path'` if shape is undefined
      *   (implicit assumption of path-like structure)
      */
-    const shape = this.#geometry?.shape ?? 'path';
+    const shape = (this.#geometry as { shape: string })?.shape;
 
     /**
      * Early exit for invalid property input.
@@ -1331,7 +1446,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
          * Mark geometry as dirty to signal downstream systems
          * (e.g., renderer, layout engine) for update/recalculation.
          */
-        this.#geometry.dirty = true;
+        this.#geometry.localDirty = true;
       } else if (typeof this.#style == 'object' && this.#isStyleProp(key)) {
         /**
          * Route to style domain if property qualifies.
@@ -1374,7 +1489,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * 3. Otherwise checks in geometry object:
    *    - Applies special handling for specific keys:
    *      - `buffer` → returns a copied `Float32Array`
-   *      - `transformStack` → returns a shallow cloned object
+   *      - `TransformStack` → returns a shallow cloned object
    *    - Returns value directly for all other keys
    * 4. Returns `undefined` if key is not found in either domain
    *
@@ -1392,7 +1507,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    *   - Returns a new `Float32Array` via `.slice()`
    *   - Prevents external mutation of internal buffer data
    *
-   * - `transformStack`:
+   * - `TransformStack`:
    *   - Returns a new object using `Object.create`
    *   - Intended to avoid direct reference exposure (partial isolation)
    *
@@ -1403,7 +1518,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * Limitations:
    * - Copy strategy is inconsistent:
    *   - `buffer` → deep copy (safe)
-   *   - `transformStack` → prototype-based shallow copy (unsafe)
+   *   - `TransformStack` → prototype-based shallow copy (unsafe)
    * - No deep cloning for nested structures within geometry
    * - No validation of key domain before access
    *
@@ -1415,7 +1530,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - Partial defensive copying to reduce mutation risk
    * - Relies on caller discipline for non-protected properties
    */
-  #getAttr(key: string): getAttrsMethodsReturnTypes {
+  #getAttr(key: string): GetAttrsMethodsReturnTypes {
     try {
       /**
        * Guard: invalid or empty key results in undefined.
@@ -1447,9 +1562,9 @@ export abstract class GraphicsModel<T extends ValidKeys> {
          */
         if (key === 'buffer') {
           return (value as Float32Array).slice();
-        } else if (key == 'transformStack') {
+        } else if (key == 'TransformStack') {
           /**
-           * Special Case: transformStack
+           * Special Case: TransformStack
            *
            * Returns a new object with the original as prototype.
            * Intended to avoid direct reference exposure.
@@ -1533,7 +1648,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    *
    * @returns
    * - Setter Mode → `void`
-   * - Getter Mode → single value or array of values (`attrsMethodReturnTypes`)
+   * - Getter Mode → single value or array of values (`AttrsMethodReturnTypes`)
    *
    * @throws {Error} Propagates any errors from:
    * - `#setAttrs`
@@ -1576,7 +1691,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * Getter (multiple):
    *   attrs('x y fill') → [10, 20, 'red']
    */
-  public attrs(props: Object | string): attrsMethodReturnTypes {
+  public attrs(props: Object | string): AttrsMethodReturnTypes {
     try {
       // ============================================================
       // Setter Mode
@@ -1617,7 +1732,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
         /**
          * Split input string into attribute keys.
          */
-        const result: getAttrsMethodsReturnTypes[] = props.trim().split(' ');
+        const result: GetAttrsMethodsReturnTypes[] = props.trim().split(' ');
 
         /**
          * Multi-key retrieval.
@@ -1661,18 +1776,12 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    *
    * Behavior:
    * - Delegates attribute mutation to `#setAttrs`
-   * - Assigns `visibility: 'hidden'` to the style domain
+   * - Assigns `opacity: 0` to the style domain
    *
    * Effects:
-   * - Updates internal style state (`#style.visibility`)
+   * - Updates internal style state (`#style.opacity`)
    * - Marks geometry as dirty (via `#setAttrs`)
    * - Triggers downstream rendering update pipeline
-   *
-   * Context Dependency:
-   * - Current implementation assumes SVG-compatible `visibility` property
-   * - Future implementations may adapt behavior based on rendering backend:
-   *   - Canvas → may require manual redraw suppression
-   *   - WebGL → may involve shader/state toggling
    *
    * @returns void
    *
@@ -1684,19 +1793,12 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - Provide a semantic abstraction over direct style manipulation
    * - Encapsulate visibility control behind a method instead of raw attribute mutation
    *
-   * Limitations:
-   * - Relies on `#isStyleProp` validation indirectly
-   * - No check for current visibility state (idempotency not enforced explicitly)
    */
   public hide(): void {
-    // ============================================================
-    // Context-Specific Behavior Placeholder
-    // ============================================================
-
     /**
      * Sets visibility to hidden via attribute mutation pipeline.
      */
-    this.#setAttrs({ visibility: 'hidden' });
+    this.#setAttrs({ opacity: 0 });
   }
 
   /**
@@ -1704,18 +1806,12 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    *
    * Behavior:
    * - Delegates attribute mutation to `#setAttrs`
-   * - Assigns `visibility: 'visible'` to the style domain
+   * - Assigns `opacity: 1` to the style domain
    *
    * Effects:
-   * - Updates internal style state (`#style.visibility`)
+   * - Updates internal style state (`#style.opacity`)
    * - Marks geometry as dirty (via `#setAttrs`)
    * - Triggers downstream rendering update pipeline
-   *
-   * Context Dependency:
-   * - Current implementation assumes SVG-compatible `visibility` property
-   * - Future implementations may adapt behavior based on rendering backend:
-   *   - Canvas → may require explicit redraw logic
-   *   - WebGL → may involve enabling/disabling draw calls
    *
    * @returns void
    *
@@ -1727,19 +1823,12 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * - Provide a semantic abstraction over direct style manipulation
    * - Maintain API consistency for visibility control
    *
-   * Limitations:
-   * - No validation of current state (redundant updates possible)
-   * - Depends on style system recognizing `visibility` property
    */
   public show(): void {
-    // ============================================================
-    // Context-Specific Behavior Placeholder
-    // ============================================================
-
     /**
      * Sets visibility to visible via attribute mutation pipeline.
      */
-    this.#setAttrs({ visibility: 'visible' });
+    this.#setAttrs({ opacity: 1 });
   }
 
   /**
@@ -1794,7 +1883,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * ----------------------------------------------------------------------------
    * Must only be called by system components (Canvas / Engine).
    */
-  public getZOrderOp(key: symbol): -1 | 0 | 1 {
+  [GET_Z_ORDER_OPERATION_METHOD](key: symbol): -1 | 0 | 1 {
     assertAccess(key);
     return this.#zOrderOp;
   }
@@ -1812,7 +1901,7 @@ export abstract class GraphicsModel<T extends ValidKeys> {
    * ----------------------------------------------------------------------------
    * Must always be called after processing to avoid repeated application.
    */
-  public clearZOrderOp(key: symbol): void {
+  [CLEAR_Z_ORDER_OPERATION_METHOD](key: symbol): void {
     assertAccess(key);
     this.#zOrderOp = 0;
   }
