@@ -1,582 +1,409 @@
-import { IGraphicalElementProperties as IG } from '../../properties/specific/specificProperties.js';
-
-import { Colors } from '../../utils/provider/utils.js';
-
-import { createSVGElement } from '../graphics/backends/svg/core/core.js';
-
-import { GraphicsModel as G } from '../graphics/graphicsModel/graphicsModel.js';
-
-import { EventTarget } from '../eventTarget/eventTarget.js';
-
-import { DEV_INTERNAL_ACCESS } from '../../utils/provider/accesskeys.js';
-
-import { initRenderer } from '../graphics/backends/renderer.js';
-
-import { Renderer } from '../graphics/backends/renderers';
-
-import { Engine } from '../engine/engine.js';
-
-import {
-  setSVGAttrs,
-  SVG_CONTEXT,
-  addTo,
-  removeFrom
-} from '../provider/svgSpecific.js';
-
-import type { CONTEXT } from '../../types/graphicsElements';
-
-import { iShape } from '../../shapes/provider/shapesTypes';
-
-import { Group } from '../../shapes/group/Group.js';
+/* -------------------------------------------------------------------------- */
+/*                            Internal Capability Keys                         */
+/* -------------------------------------------------------------------------- */
 
 import {
   CanvasParentNotFoundError,
-  NotInitializedError,
-  ShapeAlreadyExistsInCanvasError,
-  ShapeNotAttachedToCanvasError,
-  UnsupportedRenderingBackendError
-} from '../../utils/errors/provider/shantanuJSErrors.js';
+  NotInitializedError
+} from '../../errors/index.js';
+import {
+  DEV_INTERNAL_ACCESS_KEY,
+  GET_INTERNAL_GRAPHICS_METHOD
+} from '../../internal/keys/dev-keys.js';
 
-type shapeType = keyof IG;
+import {
+  GET_SCENE_ELEMENTS_METHOD,
+  GET_SCENE_REMOVED_ELEMENTS_METHOD,
+  GET_SCENE_ELEMENT_ID_MAP_METHOD,
+  GET_SCENE_Z_ORDER_RESOLVER_METHOD,
+  SYSTEM_INTERNAL_ACCESS_KEY
+} from '../../internal/keys/system-keys.js';
 
-type GType = G<shapeType>;
+/* -------------------------------------------------------------------------- */
+/*                             Interface Contracts                             */
+/* -------------------------------------------------------------------------- */
 
-import { type GraphicsModel } from '../provider/graphics.js';
+import type { ICanvas } from '../../models/interfaces/canvas';
+
 import type {
-  IGraphicalElementProperties,
-  StyleForGShapeTag
-} from '../../properties/provider/shapeProperties';
-import { Warn } from '../../utils/helpers/helpers.js';
-import { EventSystem } from '../eventTarget/EventSystem.js';
+  GraphicsNode,
+  IGraphicsContainer
+} from '../../models/interfaces/graphics-container';
+import { Renderer } from '../../models/interfaces/renderer.js';
 
-// Point propsTypes
-type canvasGeoTypes = IGraphicalElementProperties['canvas'];
-type canvasStyleTypes = StyleForGShapeTag<'canvas'>;
-export type canvasPropsType = Partial<canvasGeoTypes> &
-  Partial<
-    Pick<canvasStyleTypes, 'stroke' | 'stroke-width' | 'selectable' | 'fill'>
-  >;
+/* -------------------------------------------------------------------------- */
+/*                                Common Types                                 */
+/* -------------------------------------------------------------------------- */
 
-type canvasAttrsMethodReturnTypes =
-  | void
-  | (string | number | undefined)[]
-  | (string | number | undefined);
+import type {
+  CanvasAttrsPropsTypes,
+  CanvasInitProps
+} from '../../models/types/canvas';
+
+import type { AttrsMethodReturnTypes } from '../../models/types/common';
+
+import type { GRAPHICS_CONTEXT } from '../../models/types/graphics-model';
+
+/* -------------------------------------------------------------------------- */
+/*                          Runtime Engine Subsystems                          */
+/* -------------------------------------------------------------------------- */
+
+import { Engine } from '../engine/engine.js';
+
+import { EventSystem } from '../event/event-system.js';
+
+import { initRenderer } from '../renderer/renderer.js';
+
+import { SceneModel } from '../scene/scene-model.js';
 
 /**
- * Canvas
- * -------
- * Core scene container and orchestration unit of the rendering system.
+ * Root graphical canvas container responsible for orchestrating:
+ * - Scene management
+ * - Rendering coordination
+ * - Engine lifecycle integration
+ * - Event dispatch integration
  *
- * OVERVIEW
- * --------
- * Canvas acts as the root of a scene graph responsible for:
- * - Managing a collection of shapes (`iShape`)
- * - Maintaining structural consistency (array + index map)
- * - Coordinating rendering via Renderer and Engine
- * - Handling DOM binding (SVG currently)
- * - Providing mutation APIs (add, remove, clear, attrs)
+ * ============================================================================
+ * ARCHITECTURAL ROLE
+ * ============================================================================
  *
- * It is NOT just a container — it is a controlled execution boundary enforcing
- * invariants between:
- *   1. Structural State  (array + indexMap)
- *   2. Semantic State    (style + geometry)
- *   3. Rendering State   (DOM / SVG nodes)
+ * `Canvas` acts as the primary orchestration layer of the rendering system.
  *
- *
- * CORE RESPONSIBILITIES
- * ---------------------
- * 1. Shape Lifecycle Management
- *    - addTo(): O(1) insertion using index map
- *    - remove(): O(1) removal using swap-pop
- *    - clear(): O(n) bulk cleanup without per-element overhead
- *
- * 2. Structural Integrity
- *    - Maintains strict invariant:
- *        elements[index] === shape
- *        indexMap.get(shape) === index
- *
- * 3. Rendering Coordination
- *    - Initializes renderer based on context
- *    - Delegates execution to Engine
- *    - Syncs DOM with internal state
- *
- * 4. Attribute System
- *    - Extends base `attrs()` for:
- *        - geometry updates
- *        - style propagation
- *        - DOM synchronization
- *
- * 5. Execution Control
- *    - start(): begin rendering loop
- *    - stop(): halt execution
- *    - flush(): force synchronous update
+ * It coordinates communication between:
+ * - SceneModel        → structural scene state
+ * - Renderer          → backend rendering abstraction
+ * - Engine            → rendering execution lifecycle
+ * - EventSystem       → synthetic interaction dispatching
  *
  *
- * INTERNAL ARCHITECTURE
- * ---------------------
- * The system operates on three layers of truth:
+ * ============================================================================
+ * RESPONSIBILITIES
+ * ============================================================================
  *
- *   Structural Layer (Authoritative)
- *     - #canvasElements: iShape[]
- *     - #elementIndexMap: Map<iShape, number>
+ * Structural Responsibilities:
+ * - Root scene graph ownership
+ * - Graphical entity registration/removal
+ * - Scene-level element access
  *
- *   Semantic Layer (Derived)
- *     - shape.style
- *     - shape.geometry
+ * Runtime Responsibilities:
+ * - Engine initialization
+ * - Renderer initialization
+ * - DOM event binding
+ * - Internal subsystem orchestration
  *
- *   Rendering Layer (Projection)
- *     - #fig (SVG root)
- *     - DOM nodes per shape
- *
- * Flow:
- *   Mutation → Structural Update → Semantic Sync → DOM Projection
- *
- *
- * PERFORMANCE CHARACTERISTICS
- * ---------------------------
- * - addTo():     O(1)
- * - remove():    O(1) (swap-pop, order NOT preserved)
- * - contain():   O(1)
- * - clear():     O(n)
- *
- * Trade-off:
- * - Order of elements is NOT stable after removal (intentional optimization)
+ * Event Responsibilities:
+ * - DOM pointer event bridging
+ * - Synthetic event dispatch delegation
  *
  *
- * DESIGN INVARIANTS
- * -----------------
- * 1. Structural Consistency
- *    - indexMap and array must always remain synchronized
+ * ============================================================================
+ * DESIGN CHARACTERISTICS
+ * ============================================================================
  *
- * 2. Single Ownership
- *    - A shape belongs to exactly one container at a time
- *
- * 3. Context Consistency
- *    - shape.geometry.context must match canvas context after insertion
- *
- * 4. No Partial Mutation
- *    - All operations are atomic (validate → commit)
- *
- * 5. DOM ↔ Structure Sync
- *    - No orphan DOM nodes
- *    - No detached shapes with active DOM
+ * - Acts as public-facing orchestration API
+ * - Delegates structural state management to `SceneModel`
+ * - Delegates rendering execution to `Engine`
+ * - Delegates event propagation to `EventSystem`
+ * - Uses capability-based internal access for privileged subsystem coordination
  *
  *
- * ERROR MODEL
- * -----------
- * - Fail-fast for invalid canvas state (e.g., missing #fig)
- * - Silent skip for invalid shapes (e.g., duplicates, already attached)
- * - DEV mode logs invariant violations (no runtime overhead in production)
+ * ============================================================================
+ * INTERNAL ACCESS MODEL
+ * ============================================================================
+ *
+ * Canvas internally accesses SceneModel state through:
+ * - Symbol-keyed computed methods
+ * - Capability-token validation
+ *
+ * This preserves:
+ * - Encapsulation boundaries
+ * - Structural invariants
+ * - Internal subsystem separation
  *
  *
- * GLOBAL FLAGS
- * ------------
- * Uses:
- *   __DEV__ (global)
+ * ============================================================================
+ * LIFECYCLE
+ * ============================================================================
  *
- * Purpose:
- *   - Enable invariant checks
- *   - Emit warnings for internal inconsistencies
+ * Initialization Flow:
  *
- * Behavior:
- *   - Present only if initialized via env.global.ts
- *   - No effect on production builds when stripped/replaced
- *
- *
- * CONTEXT SUPPORT
- * ---------------
- * Current:
- *   - SVG only
- *
- * Future:
- *   - HTML Canvas
- *
- * Context is immutable once set.
+ *   Canvas
+ *      ↓
+ *   SceneModel creation
+ *      ↓
+ *   Renderer initialization
+ *      ↓
+ *   Engine creation
+ *      ↓
+ *   EventSystem creation
+ *      ↓
+ *   DOM event binding
+ *      ↓
+ *   Engine startup
  *
  *
- * LIMITATIONS
- * -----------
- * - No stable ordering guarantee after removal
- * - No hierarchical parent graph (string-based ownership exists)
- * - No diff-based rendering (full mutation currently applied)
- * - No batching / scheduling optimization beyond Engine
+ * ============================================================================
+ * FINAL CHARACTERIZATION
+ * ============================================================================
  *
+ * This class represents:
  *
- * EXTENSION POINTS
- * ----------------
- * - Replace string-based ownership with parent reference graph
- * - Introduce dirty flags + diffing layer
- * - Add batched DOM updates
- * - Implement multi-context rendering
- * - Add scene graph hierarchy (Canvas ↔ Group ↔ Shape)
- *
- *
- * USAGE MODEL
- * -----------
- * const canvas = new Canvas('root', 800, 600);
- *
- * canvas.addTo(shape1, shape2);
- * canvas.remove(shape1);
- * canvas.clear();
- *
- * canvas.start();
- * canvas.stop();
- * canvas.flush();
- *
- *
- * CONCLUSION
- * ----------
- * Canvas is a high-performance, low-level rendering container designed
- * with strict control over state, performance, and consistency.
- *
- * It prioritizes:
- *   - deterministic behavior
- *   - O(1) structural operations
- *   - minimal runtime overhead
- *
- * while deliberately sacrificing:
- *   - implicit safety
- *   - stable ordering
- *   - convenience abstractions
- *
- * This design aligns with systems such as:
- *   - scene graph engines
- *   - game rendering pipelines
- *   - high-performance UI frameworks
- *
- * Any extension must preserve the core invariant:
- *   "Structure is the single source of truth."
+ *   "The root orchestration container coordinating scene state,
+ *    rendering systems, engine execution, and interaction flow."
  */
-
-export default class Canvas extends EventTarget<'canvas'> {
+export class Canvas implements IGraphicsContainer, ICanvas {
   /**
-   * Parent DOM container to which the canvas root (`#fig`) is attached.
+   * Host DOM container into which the rendered canvas
+   * root graphical primitive is mounted.
    *
-   * Semantics:
-   * - Represents the external mounting point.
-   * - Can be null if the canvas is not mounted or has been detached.
+   * Responsibilities:
+   * - Acts as browser-level mounting boundary
+   * - Owns external DOM attachment relationship
+   *
+   * Important:
+   * - Independent from logical scene graph hierarchy
+   * - Does not represent graphical parent relationship
+   */
+  #hostElement: HTMLElement | null = null;
+
+  /**
+   * Internal structural scene state container.
+   *
+   * Responsibilities:
+   * - Element collection ownership
+   * - Scene graph structural operations
+   * - Element lookup management
+   * - Z-order state coordination
+   *
+   * Architectural Note:
+   * - Does NOT own renderer or engine runtime systems.
+   * - Acts purely as structural scene-state layer.
+   */
+  #sceneModel!: SceneModel;
+
+  /**
+   * Rendering backend abstraction responsible for translating
+   * graphical entities into backend-specific drawable primitives.
+   *
+   * Supported Backend Types:
+   * - SVG
+   * - Canvas2D
+   * - Future rendering backends
+   *
+   * Responsibilities:
+   * - Primitive generation
+   * - Render synchronization
+   * - Backend-specific drawing operations
    *
    * Invariant:
-   * - If non-null, `#fig` must be a child of this element.
-   */
-  #parent: HTMLElement | null = null;
-
-  /**
-   * Internal storage of all shapes belonging to this canvas.
-   *
-   * Semantics:
-   * - Acts as the authoritative ordered collection of shapes.
-   * - Used for iteration, rendering order, and bulk operations.
-   *
-   * Constraints:
-   * - Must stay in sync with `#elementIndexMap`.
-   * - No duplicates allowed.
-   *
-   * Mutation Rules:
-   * - Only mutated via controlled methods (`addTo`, `remove`, `clear`).
-   */
-  #canvasElements: iShape[] = [];
-
-  /**
-   * O(1) index lookup map for shapes.
-   *
-   * Key: shape reference
-   * Value: index in `#canvasElements`
-   *
-   * Purpose:
-   * - Eliminates O(n) lookup cost.
-   * - Enables O(1) containment and removal (swap-pop strategy).
-   *
-   * Critical Invariant:
-   * - For every entry (shape → index):
-   *   `#canvasElements[index] === shape`
-   *
-   * Failure Impact:
-   * - Any desynchronization leads to structural corruption.
-   */
-  #elementIndexMap: Map<iShape, number> = new Map();
-  /**
-   * O(1) lookup map: id → shape
-   *
-   * PURPOSE:
-   * - Resolve parent via `inside`
-   * - Used by engine for hierarchy resolution
-   */
-  #elementIdMap: Map<string, GraphicsModel<shapeType>> = new Map();
-
-  /**
-   * Rendering abstraction responsible for translating shapes
-   * into drawable primitives (e.g., SVG, Canvas2D, WebGL).
-   *
-   * Lifecycle:
-   * - Must be initialized before any rendering operations.
-   *
-   * Invariant:
-   * - Non-null after initialization phase.
+   * - Must be initialized before rendering execution begins.
    */
   #renderer!: Renderer;
 
   /**
-   * Execution engine coordinating updates, reflows, and rendering cycles.
-   *
-   * Responsibilities:
-   * - Scheduling
+   * Rendering execution engine coordinating:
+   * - Frame lifecycle execution
+   * - Render scheduling
    * - State propagation
-   * - Frame lifecycle management
+   * - Render synchronization
+   *
+   * Architectural Role:
+   * - Acts as runtime execution coordinator for rendering operations.
    *
    * Invariant:
-   * - Must be initialized before any state mutation that affects rendering.
+   * - Must remain synchronized with scene state collections.
    */
-  #engine!: Engine;
+  public engine!: Engine;
 
   /**
-   * Centralized synthetic event dispatcher for this canvas.
+   * Centralized synthetic event dispatch system for the canvas.
    *
    * Responsibilities:
-   * - Receives native DOM pointer events
-   * - Performs hit testing across all canvas elements
-   * - Resolves event target based on z-index and geometry
-   * - Builds propagation path using ECS `inside` relationships
-   * - Executes event phases (capture → target → bubble)
+   * - Native DOM event ingestion
+   * - Pointer hit testing
+   * - Event target resolution
+   * - Propagation path construction
+   * - Capture/target/bubble phase execution
    *
    * Design Constraints:
-   * - Owned exclusively by Canvas (single dispatch authority)
-   * - Must operate on the same element registry used by rendering engine
-   * - Must remain stateless with respect to scene structure (consumes external maps)
-   *
-   * Invariant:
-   * - Must be initialized before any DOM event binding occurs
-   * - Must always reference the latest shapes array and element ID map
+   * - Single dispatch authority per canvas instance
+   * - Consumes live scene collections from SceneModel
+   * - Remains structurally decoupled from rendering backend
    *
    * Lifecycle:
-   * - Created once during Canvas initialization
-   * - Reused for all event dispatch operations
+   * - Created once during canvas initialization
+   * - Reused for all interaction dispatch operations
    */
   #eventSystem!: EventSystem;
 
   /**
-   * Root graphical node representing this canvas in the rendering layer.
+   * Creates a new root canvas container instance.
    *
-   * Semantics:
-   * - For SVG: <svg> or <g> element
-   * - For other renderers: equivalent root abstraction
+   * Responsibilities:
+   * - Initializes scene state
+   * - Initializes rendering backend
+   * - Mounts renderer output into DOM
+   * - Initializes rendering engine
+   * - Initializes event dispatch system
+   * - Binds native DOM interaction events
    *
-   * Initialization:
-   * - Retrieved via internal access hook.
+   * Initialization Flow:
    *
-   * Invariant:
-   * - Must remain consistent with renderer context.
+   *   SceneModel
+   *      ↓
+   *   Renderer
+   *      ↓
+   *   DOM Mount
+   *      ↓
+   *   Engine
+   *      ↓
+   *   EventSystem
+   *      ↓
+   *   Event Binding
+   *
+   * @param props - Canvas initialization configuration
    */
-  #fig = this.getIFig(DEV_INTERNAL_ACCESS);
+  constructor(props: CanvasInitProps & CanvasAttrsPropsTypes) {
+    // =========================================================
+    // Initialize Rendering Backend + Scene Model
+    // =========================================================
 
-  /**
-   * Internal style state of the canvas.
-   *
-   * Contains:
-   * - Unique identifier (`id`)
-   * - Styling attributes relevant to rendering
-   *
-   * Invariant:
-   * - `id` must be stable and unique across all canvases.
-   */
-  #style = this.getIStyle(DEV_INTERNAL_ACCESS);
+    const { id, width, height, x = 0, y = 0, context = 'SVG', ...rest } = props;
+    this.#sceneModel = new SceneModel({ id, width, height, x, y, ...rest });
 
-  /**
-   * Internal geometry state of the canvas.
-   *
-   * Contains:
-   * - Rendering context (e.g., SVG, Canvas2D)
-   * - Spatial metadata
-   *
-   * Invariant:
-   * - Context must remain consistent once initialized.
-   */
-  #geometry = this.getIGeo(DEV_INTERNAL_ACCESS);
+    this.#renderer = initRenderer(context, this.#sceneModel);
 
-  /**
-   * Minimum z-index boundary.
-   *
-   * ----------------------------------------------------------------------------
-   * ROLE
-   * ----------------------------------------------------------------------------
-   * Tracks the lowest assigned z-index in the current canvas.
-   *
-   * ----------------------------------------------------------------------------
-   * BEHAVIOR
-   * ----------------------------------------------------------------------------
-   * Decremented when elements are moved to the back.
-   */
-  #minZ: number = 0;
+    console.log(' scene = ', this.#sceneModel);
+    // =========================================================
+    // Create Initial Render Structure
+    // =========================================================
 
-  /**
-   * Maximum z-index boundary.
-   *
-   * ----------------------------------------------------------------------------
-   * ROLE
-   * ----------------------------------------------------------------------------
-   * Tracks the highest assigned z-index in the current canvas.
-   *
-   * ----------------------------------------------------------------------------
-   * BEHAVIOR
-   * ----------------------------------------------------------------------------
-   * Incremented on:
-   * - element insertion
-   * - move-to-front operations
-   */
-  #maxZ: number = 0;
-
-  /**
-   * Initializes a Canvas instance with a rendering context and DOM binding.
-   *
-   * Core Responsibilities:
-   * - Validates runtime environment and configuration
-   * - Resolves and binds DOM container
-   * - Initializes rendering root (`#fig`)
-   * - Sets immutable rendering context
-   * - Applies initial attributes (size, position, stroke defaults)
-   * - Bootstraps renderer and engine lifecycle
-   *
-   * Design Invariants:
-   * - `#geometry.context` is immutable after initialization
-   * - `#fig` must exist before attaching to DOM
-   * - `#parent` must be a valid DOM node
-   * - Renderer and Engine must be initialized before any mutation APIs are used
-   *
-   * Failure Model:
-   * - Constructor is fail-fast: any invalid state aborts initialization
-   * - No partial initialization is allowed
-   *
-   * @param id - DOM container id where canvas will be mounted
-   * @param width - Canvas width
-   * @param height - Canvas height
-   * @param context - Rendering context (currently SVG only)
-   * @param x - Initial x-offset
-   * @param y - Initial y-offset
-   */
-  constructor(
-    id: string,
-    width: number,
-    height: number,
-    context: CONTEXT = SVG_CONTEXT,
-    x: number = 0,
-    y: number = 0
-  ) {
-    super('canvas', `${id}-Canvas`);
+    this.#renderer.render(this.#sceneModel);
 
     // =========================================================
-    // Step 1: Dev Mode Warning (compile-time removable)
+    // Mount Renderer Output Into DOM
     // =========================================================
-    if (__DEV__) {
-      Warn(
-        'ShantanuJS is a pre-release build. Not recommended for production use.'
-      );
-    }
+
+    this.#mountToDOM(id);
 
     // =========================================================
-    // Step 2: Context Validation (strict)
+    // Resolve Internal Scene References
     // =========================================================
-    if (context !== SVG_CONTEXT) {
-      throw new UnsupportedRenderingBackendError(
-        context as unknown as string,
-        [SVG_CONTEXT],
-        'core.canvas.constructor()'
-      );
-    }
 
-    // =========================================================
-    // Step 3: Lock Geometry Context (immutable)
-    // =========================================================
-    Object.defineProperty(this.#geometry, 'context', {
-      value: context,
-      writable: false,
-      configurable: false,
-      enumerable: true
-    });
-
-    // =========================================================
-    // Step 4: Resolve Parent Container (DOM binding)
-    // =========================================================
-    const parent = document.getElementById(id);
-    if (!parent) {
-      throw new CanvasParentNotFoundError(id, 'core.canvas.constructor()');
-    }
-    this.#parent = parent;
-
-    // =========================================================
-    // Step 5: Ensure Root Figure Exists
-    // =========================================================
-    let fig = this.#fig;
-
-    if (!fig) {
-      const canvas = createSVGElement(SVG_CONTEXT) as SVGSVGElement;
-
-      // Pre-allocate defs (required for gradients, filters, etc.)
-      const defs = createSVGElement('defs');
-
-      addTo(canvas, defs);
-      this.setIFig(DEV_INTERNAL_ACCESS, context, canvas);
-      fig = this.getIFig(DEV_INTERNAL_ACCESS);
-      this.#fig = fig;
-    }
-
-    // =========================================================
-    // Step 6: Attach to DOM (single mutation point)
-    // =========================================================
-    parent.appendChild(fig);
-    parent.style.position = 'relative';
-
-    // =========================================================
-    // Step 7: Apply Initial Attributes (atomic)
-    // =========================================================
-    this.attrs({
-      width,
-      height,
-      x,
-      y,
-      stroke: this.#style.stroke ?? 'rgb(0,0,0)', // fixed typo
-      'stroke-width': this.#style['stroke-width'] ?? 0
-    });
-
-    // =========================================================
-    // Step 8: Initialize Renderer + Engine
-    // =========================================================
-    this.#renderer = initRenderer(context);
-
-    const engine = new Engine(
-      this.#canvasElements,
-      this.#renderer,
-      this.#resolveZOrder.bind(this),
-      this.#elementIdMap
+    const canvasElements = this.#sceneModel[GET_SCENE_ELEMENTS_METHOD](
+      SYSTEM_INTERNAL_ACCESS_KEY
     );
-    this.#engine = engine;
 
-    // Start engine only after full initialization
+    const resolveZOrder = this.#sceneModel[GET_SCENE_Z_ORDER_RESOLVER_METHOD](
+      SYSTEM_INTERNAL_ACCESS_KEY
+    );
+
+    const elementIdMap = this.#sceneModel[GET_SCENE_ELEMENT_ID_MAP_METHOD](
+      SYSTEM_INTERNAL_ACCESS_KEY
+    );
+
+    // =========================================================
+    // Initialize Rendering Engine
+    // =========================================================
+
+    const engine = new Engine(this.#sceneModel, this.#renderer);
+
+    this.engine = engine;
+
     engine.start();
-    this.#elementIdMap.set(this.style.id, this);
 
-    // Initialize event system with current canvas state (shapes + id map)
-    this.#eventSystem = new EventSystem(
-      this.#canvasElements,
-      this.#elementIdMap
-    );
+    // =========================================================
+    // Initialize Event System
+    // =========================================================
+
+    this.#eventSystem = new EventSystem(canvasElements, elementIdMap);
+
+    // =========================================================
+    // Bind DOM Interaction Events
+    // =========================================================
 
     this.#bindDOMEvents();
   }
 
   /**
-   * Binds native DOM events to the canvas surface.
+   * Mounts the rendered scene root into the target DOM container.
    *
-   * This is the entry point from browser → engine.
-   *
-   * Flow:
-   * DOM Event → Canvas → EventSystem → SyntheticEvent → Handlers
+   * Responsibilities:
+   * - Resolves host container
+   * - Validates renderer output existence
+   * - Attaches rendered scene root into DOM
+   * - Establishes positioning context when required
    *
    * Important:
-   * - Only Canvas interacts with DOM
-   * - All shapes remain DOM-independent
+   * - DOM hierarchy is independent from scene graph hierarchy
+   *
+   * @param id - Target DOM container identifier
+   */
+  #mountToDOM(id: string): void {
+    const rootGraphicsElement = this.#sceneModel[GET_INTERNAL_GRAPHICS_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    );
+
+    // =========================================================
+    // Resolve DOM Host Container
+    // =========================================================
+
+    const host = document.getElementById(id);
+    console.log('canvas id ', id, host);
+    if (!host) {
+      throw new CanvasParentNotFoundError(id, 'Canvas.#mountToDOM()');
+    }
+
+    this.#hostElement = host;
+
+    // =========================================================
+    // Validate Renderer Output
+    // =========================================================
+
+    if (!rootGraphicsElement) {
+      throw new NotInitializedError(
+        rootGraphicsElement,
+        'Root graphical primitive was not initialized by renderer',
+        'Canvas.#mountToDOM()'
+      );
+    }
+
+    // =========================================================
+    // Attach Renderer Output To DOM
+    // =========================================================
+
+    host.appendChild(rootGraphicsElement);
+
+    if (getComputedStyle(host).position === 'static') {
+      host.style.position = 'relative';
+    }
+  }
+
+  /**
+   * Binds native DOM interaction events to the internal
+   * synthetic event dispatch pipeline.
+   *
+   * Event Flow:
+   *
+   *   DOM Event
+   *      ↓
+   *   Canvas
+   *      ↓
+   *   EventSystem
+   *      ↓
+   *   Synthetic Event Dispatch
+   *      ↓
+   *   Graphical Entity Handlers
+   *
+   * Architectural Constraints:
+   * - Canvas acts as sole DOM interaction boundary
+   * - Graphical entities remain DOM-independent
+   * - All interaction dispatching flows through EventSystem
    */
   #bindDOMEvents(): void {
-    const el = this.#fig as unknown as HTMLElement; // actual <canvas> DOM node
+    const el = this.#sceneModel[GET_INTERNAL_GRAPHICS_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as unknown as HTMLElement;
 
     el.addEventListener('pointerdown', (e) => {
       this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
@@ -600,1102 +427,107 @@ export default class Canvas extends EventTarget<'canvas'> {
   }
 
   /**
-   * Starts the rendering engine.
+   * Unified canvas attribute access interface.
    *
-   * Semantics:
-   * - Transitions engine into active execution state.
-   * - No-op if already running (delegated to engine).
+   * Behavior:
+   * - Delegates attribute operations to SceneModel
+   * - Supports:
+   *   - Getter access
+   *   - Setter access
+   *   - Multi-property retrieval
    *
-   * Invariants:
-   * - Engine must be initialized.
-   *
-   * Failure Modes:
-   * - Throws if engine is not initialized.
+   * @param props - Attribute query or mutation input
+   * @returns Attribute operation result
    */
-  public start(): void {
-    const engine = this.#engine;
-    if (!engine) {
-      throw new NotInitializedError(
-        'this.#engine',
-        'engine must be initialized',
-        'core.canvas.start()'
-      );
-    }
-
-    engine.start();
+  public attrs(props: CanvasAttrsPropsTypes | string): AttrsMethodReturnTypes {
+    return this.#sceneModel.attrs(props);
   }
 
   /**
-   * Stops the rendering engine.
+   * Checks whether a graphical entity exists
+   * within the canvas scene membership.
    *
-   * Semantics:
-   * - Halts execution loop and rendering updates.
-   * - Idempotent: safe to call multiple times.
+   * Return Semantics:
+   * - `0`  → entity does not exist
+   * - `1`  → entity exists
    *
-   * Invariants:
-   * - Engine must be initialized.
+   * Architectural Note:
+   * - Internally delegates structural lookup to SceneModel.
+   * - Uses numeric containment semantics for lightweight
+   *   membership validation.
+   *
+   * @param shape - Graphical entity to test
+   * @returns Numeric containment state
    */
-  public stop(): void {
-    const engine = this.#engine;
-    if (!engine) {
-      throw new NotInitializedError(
-        'this.#engine',
-        'engine must be initialized',
-        'core.canvas.start()'
-      );
-    }
-
-    engine.stop();
-  }
-
-  /**
-   * Forces immediate processing of pending updates.
-   *
-   * Semantics:
-   * - Executes a synchronous render/update cycle.
-   * - Bypasses scheduling delays.
-   *
-   * Use Cases:
-   * - Deterministic rendering (testing, snapshots)
-   * - Immediate UI updates after batch mutations
-   *
-   * Invariants:
-   * - Engine must be initialized.
-   */
-  public flush(): void {
-    const engine = this.#engine;
-    if (!engine) {
-      throw new NotInitializedError(
-        'this.#engine',
-        'engine must be initialized',
-        'core.canvas.start()'
-      );
-    }
-
-    engine.flush();
-  }
-
-  /**
-   * Applies canvas-level visual and positional parameters to the root figure.
-   *
-   * Responsibilities:
-   * - Maps internal geometry (`x`, `y`) → DOM positioning
-   * - Maps style (`stroke`, `fill`, `stroke-width`) → CSS properties
-   * - Normalizes and validates color inputs
-   *
-   * Design Invariants:
-   * - `#fig` must be a valid HTMLElement/SVGElement with a style object
-   * - `#geometry` and `#style` must be initialized
-   *
-   * Performance Considerations:
-   * - Avoids object allocations (no Object.assign)
-   * - Minimizes repeated property access
-   * - Avoids redundant color validation calls
-   *
-   * Failure Model:
-   * - Fail-fast if critical state is missing
-   */
-  #setCanvasParams(): void {
-    const fig = this.#fig;
-    if (!fig) {
-      throw new NotInitializedError(
-        'this.#fig',
-        'canvas dom element not initialized',
-        'core.canvas.#setCanvasParams()'
-      );
-    }
-
-    const geometry = this.#geometry as { x: number; y: number };
-    const style = this.#style as {
-      stroke?: string;
-      fill?: string;
-      'stroke-width'?: number;
-    };
-
-    const x = geometry.x ?? 0;
-    const y = geometry.y ?? 0;
-
-    const stroke = style.stroke ?? 'black';
-    const fill = style.fill ?? 'white';
-    const sw = style['stroke-width'] ?? 0;
-
-    // Single instance → avoid redundant allocations per property
-    const colorUtil = new Colors(fill);
-
-    const resolvedStroke = colorUtil.isColor(stroke) as string;
-    const resolvedFill = colorUtil.isColor(fill) as string;
-
-    const domStyle = fig.style;
-
-    // =========================================================
-    // Direct assignments (faster than Object.assign)
-    // =========================================================
-    domStyle.position = 'absolute';
-    domStyle.left = `${x}px`;
-    domStyle.top = `${y}px`;
-
-    domStyle.borderColor = resolvedStroke;
-    domStyle.background = resolvedFill;
-
-    domStyle.borderWidth = `${sw}px`;
-    domStyle.borderStyle = sw > 0 ? 'solid' : 'none';
-  }
-
-  /**
-   * Sets or retrieves canvas attributes.
-   *
-   * Overloads:
-   * - Object input → sets attributes (write path)
-   * - String input → retrieves attributes (read path)
-   *
-   * Write Semantics:
-   * - Delegates to base `attrs` for state mutation
-   * - Applies canvas-specific DOM updates
-   * - Minimizes DOM writes by checking relevant keys
-   *
-   * Read Semantics:
-   * - Supports space-separated keys
-   * - Returns:
-   *    - single value → primitive
-   *    - multiple values → array
-   *    - no valid keys → undefined
-   *
-   * Performance:
-   * - Single pass parsing
-   * - Avoids unnecessary Object.keys()
-   * - Avoids redundant string trims/splits
-   *
-   * @param props - attribute object or query string
-   * @returns attribute value(s) or void
-   */
-  public override attrs(
-    props: canvasPropsType | string
-  ): canvasAttrsMethodReturnTypes {
-    // =========================================================
-    // Fast exit (null/undefined/empty)
-    // =========================================================
-    if (!props) return;
-
-    // =========================================================
-    // WRITE PATH (object)
-    // =========================================================
-    if (typeof props === 'object') {
-      // Avoid expensive Object.keys → direct check via iteration hint
-      let hasKeys = false;
-      for (const _ in props) {
-        hasKeys = true;
-        break;
-      }
-      if (!hasKeys) return;
-
-      // Base mutation
-      super.attrs(props);
-
-      // Apply canvas-level styling (position, border, etc.)
-      this.#setCanvasParams();
-
-      // SVG-specific dimension updates (only if relevant keys exist)
-      if (this.#geometry?.context === SVG_CONTEXT) {
-        const geo = this.#geometry as { width?: number; height?: number };
-
-        if ('width' in props && geo.width !== undefined) {
-          setSVGAttrs(this.#fig, 'width', geo.width);
-        }
-
-        if ('height' in props && geo.height !== undefined) {
-          setSVGAttrs(this.#fig, 'height', geo.height);
-        }
-      }
-
-      return;
-    }
-
-    // =========================================================
-    // READ PATH (string)
-    // =========================================================
-    const str = props.trim();
-    if (str === '') return;
-
-    const keys = str.split(' ');
-    const len = keys.length;
-
-    // Preallocate exact size (avoid dynamic array growth)
-    const result: canvasAttrsMethodReturnTypes = new Array(len);
-
-    let validCount = 0;
-
-    for (let i = 0; i < len; i++) {
-      const key = keys[i];
-      if (!key) continue;
-
-      const value = super.attrs(key);
-
-      if (typeof value === 'string' || typeof value === 'number') {
-        result[validCount++] = value;
-      } else {
-        result[validCount++] = undefined;
-      }
-    }
-
-    if (validCount === 0) return;
-
-    // Normalize return shape
-    if (validCount === 1) {
-      return result[0];
-    }
-
-    // Trim array if sparse
-    result.length = validCount;
-    return result;
-  }
-
-  /**
-   * Returns the 1-based index of a shape within this canvas.
-   *
-   * Core Semantics:
-   * - O(1) lookup via internal index map
-   * - Returns:
-   *    - index + 1 → if shape exists in this canvas
-   *    - 0 → if shape does not exist
-   *
-   * Design Decision:
-   * - `#elementIndexMap` is the authoritative source of containment
-   * - Ownership (`style.inside`) is treated as a secondary invariant
-   *
-   * Debug Behavior:
-   * - In development mode, validates internal consistency
-   *
-   * @param shape - Shape to query
-   * @returns 1-based index or 0 if not found
-   */
-  public contain(shape: iShape): number {
+  public contains(shape: GraphicsNode): number {
     if (!shape) return 0;
 
-    const index = this.#elementIndexMap.get(shape);
-    if (index === undefined) return 0;
+    const index = this.#sceneModel.contains(shape);
 
-    // =========================================================
-    // DEV-ONLY INVARIANT CHECK (no runtime cost in production)
-    // =========================================================
-    if (__DEV__) {
-      const expectedInside = `canvas-${this.#style.id}`;
-      const actualInside = shape.style?.inside;
+    if (!index) return 0;
 
-      if (actualInside !== expectedInside) {
-        Warn(
-          'Invariant violation: shape exists in indexMap but has mismatched ownership.',
-          { shape, expectedInside, actualInside }
-        );
-      }
-
-      // Stronger invariant: array-map sync
-      const arr = this.#canvasElements;
-      if (arr[index] !== shape) {
-        Warn('Invariant violation: indexMap and array are out of sync.', {
-          index,
-          shape,
-          actual: arr[index]
-        });
-      }
-    }
-
-    return index + 1;
+    return 1;
   }
 
   /**
-   * Adds shapes to the canvas with O(1) insertion and indexing.
+   * Adds one or more graphical entities
+   * to the canvas scene graph.
    *
-   * Core Semantics:
-   * - Each shape is validated independently
-   * - Ensures no duplicate insertion
-   * - Ensures shape is not already attached to any context
-   * - Maintains strict array ↔ map invariant
+   * Responsibilities:
+   * - Registers entities into scene structure
+   * - Enables rendering participation
+   * - Establishes structural ownership
    *
-   * Invariants:
-   * - After insertion:
-   *   - elements[index] === shape
-   *   - indexMap.get(shape) === index
-   *   - shape.style.inside === canvas identity
-   *   - shape.geometry.context === canvas context
-   *
-   * Failure Strategy:
-   * - Invalid shapes are skipped (no partial mutation)
-   *
-   * @param rest - Shapes to add
-   * @returns this (fluent API)
+   * @param rest - Graphical entities to add
+   * @returns Current canvas instance for chaining
    */
-
-  /*
-  public aaddTo(...rest: iShape[]): this {
-    const fig = this.#fig;
-    if (!fig) {
-      throw new NotInitializedError(
-        'this.#fig',
-        'canvas dom element not initialized',
-        'core.canvas.#setCanvasParams()'
-      );
-    }
-
-    const canvasContext = this.#geometry?.context as CONTEXT;
-    if (!canvasContext) {
-      throw new NotInitializedError(
-        'this.#geometry.context',
-        'Canvas context is not initialized.',
-        'core.canvas.#setCanvasParams()'
-      );
-    }
-
-    const elements = this.#canvasElements;
-    const indexMap = this.#elementIndexMap;
-    const insideValue = `canvas-${this.#style.id}`;
-
-    for (let i = 0; i < rest.length; i++) {
-      const shape = rest[i];
-      if (!shape) continue;
-
-      const geometry = shape.getIGeo(DEV_INTERNAL_ACCESS) as {
-        shape: string;
-        context?: string | null;
-      };
-
-      // =========================================================
-      // Step 1: Fast rejection (no mutation before this point)
-      // =========================================================
-
-      // Already attached to ANY context → reject
-      if (geometry.context != null) {
-        if (__DEV__) {
-          Warn(
-            `Shape already attached to a context may be in this canvas or any other canvas . Skipping.`,
-            shape
-          );
-        }
-        continue;
-      }
-
-      // Already exists in THIS canvas → reject
-      if (indexMap.has(shape)) {
-        throw new ShapeAlreadyExistsInCanvasError(
-          shape.style.id,
-          this.style.id,
-          'core.canvas.addTo()'
-        );
-      }
-
-      const style = shape.getIStyle(DEV_INTERNAL_ACCESS);
-
-      // =========================================================
-      // Step 2: DOM preparation (deferred commit)
-      // =========================================================
-
-      if (canvasContext === SVG_CONTEXT) {
-        let shapeName = geometry.shape;
-
-        // Normalize abstract → concrete SVG primitives
-        if (shapeName === 'curve') shapeName = 'polyline';
-        else if (shapeName === 'dot') shapeName = 'circle';
-
-        const node = createSVGElement(shapeName);
-
-        // Update shape internals ONLY after successful insertion
-        shape.setIFig(DEV_INTERNAL_ACCESS, canvasContext, node);
-        if (node) addTo(fig, node);
-      }
-
-      // =========================================================
-      // Step 3: Atomic commit (no failure beyond this point)
-      // =========================================================
-
-      const index = elements.length;
-
-      elements.push(shape);
-      indexMap.set(shape, index);
-
-      style.inside = insideValue;
-      geometry.context = canvasContext;
-
-      // =========================================================
-      // DEV-ONLY invariant validation
-      // =========================================================
-      if (__DEV__) {
-        if (elements[index] !== shape || indexMap.get(shape) !== index) {
-          Warn('Invariant violation after insertion', {
-            shape,
-            index,
-            arrayValue: elements[index],
-            mapValue: indexMap.get(shape)
-          });
-        }
-      }
-    }
-
-    return this;
-  }
-*/
-
-  /**
-   * Adds shapes to the canvas with O(1) insertion and indexing.
-   *
-   * ============================================================================
-   * CORE SEMANTICS
-   * ============================================================================
-   * - Each shape is validated independently before mutation
-   * - Prevents duplicate insertion into the same canvas
-   * - Prevents insertion if shape is already attached to any context
-   * - Maintains strict array ↔ map invariant
-   *
-   * ============================================================================
-   * Z-ORDER INITIALIZATION
-   * ============================================================================
-   * - On successful insertion, each shape is assigned a unique zIndex
-   * - zIndex is derived from an incrementing maxZ counter
-   * - This ensures:
-   *   - deterministic initial ordering
-   *   - no collisions in zIndex space
-   *   - insertion order === initial render order
-   *
-   * ============================================================================
-   * INVARIANTS (POST INSERTION)
-   * ============================================================================
-   * - elements[index] === shape
-   * - indexMap.get(shape) === index
-   * - shape.style.inside === canvas identity
-   * - shape.geometry.context === canvas context
-   * - shape.style.zIndex is unique and monotonically increasing
-   *
-   * ============================================================================
-   * FAILURE STRATEGY
-   * ============================================================================
-   * - Invalid shapes are skipped (no partial mutation)
-   * - Duplicate insertion throws explicit error
-   * - No mutation occurs before validation phase
-   *
-   * ============================================================================
-   * PERFORMANCE
-   * ============================================================================
-   * - O(1) insertion
-   * - O(1) index tracking via map
-   *
-   * ============================================================================
-   * @param rest - Shapes to add
-   * @returns this (fluent API)
-   */
-  public addTo(...rest: iShape[]): this {
-    const fig = this.#fig;
-    if (!fig) {
-      throw new NotInitializedError(
-        'this.#fig',
-        'canvas dom element not initialized',
-        'core.canvas.#setCanvasParams()'
-      );
-    }
-
-    const canvasContext = this.#geometry?.context as CONTEXT;
-    if (!canvasContext) {
-      throw new NotInitializedError(
-        'this.#geometry.context',
-        'Canvas context is not initialized.',
-        'core.canvas.#setCanvasParams()'
-      );
-    }
-
-    const elements = this.#canvasElements;
-    const indexMap = this.#elementIndexMap;
-    const insideValue = `canvas-${this.#style.id}`;
-
-    for (let i = 0; i < rest.length; i++) {
-      const shape = rest[i];
-      if (!shape) continue;
-
-      const geometry = shape.getIGeo(DEV_INTERNAL_ACCESS) as {
-        shape: string;
-        context?: string | null;
-        zIndex: number;
-        dirty: boolean;
-        worldDirty: boolean;
-      };
-
-      // =========================================================
-      // Step 1: Fast rejection (no mutation before this point)
-      // =========================================================
-
-      if (geometry.context != null) {
-        if (__DEV__) {
-          Warn(
-            `Shape already attached to a context may be in this canvas or any other canvas . Skipping.`,
-            shape
-          );
-        }
-        continue;
-      }
-
-      if (indexMap.has(shape)) {
-        throw new ShapeAlreadyExistsInCanvasError(
-          shape.style.id,
-          this.style.id,
-          'core.canvas.addTo()'
-        );
-      }
-
-      const style = shape.getIStyle(DEV_INTERNAL_ACCESS);
-
-      // =========================================================
-      // Step 2: DOM preparation (deferred commit)
-      // =========================================================
-
-      if (canvasContext === SVG_CONTEXT) {
-        let shapeName = geometry.shape;
-
-        if (shapeName === 'curve') shapeName = 'polyline';
-        else if (shapeName === 'dot') shapeName = 'circle';
-
-        const node = createSVGElement(shapeName);
-
-        shape.setIFig(DEV_INTERNAL_ACCESS, canvasContext, node);
-        if (node) addTo(fig, node);
-      }
-
-      // =========================================================
-      // Step 3: Atomic commit (authoritative state mutation)
-      // =========================================================
-
-      const index = elements.length;
-
-      elements.push(shape);
-      indexMap.set(shape, index);
-      this.#elementIdMap.set(shape.style.id, shape);
-
-      style.inside = insideValue;
-      geometry.context = canvasContext;
-      geometry.dirty = true;
-      geometry.worldDirty = true;
-
-      // =========================================================
-      // Step 4: Z-ORDER INITIALIZATION (CRITICAL)
-      // =========================================================
-      // Assign a strictly increasing zIndex so that:
-      // - insertion order becomes initial render order
-      // - no sorting ambiguity exists
-      // - future z-order operations remain consistent
-
-      this.#maxZ++;
-      geometry.zIndex = this.#maxZ;
-
-      // =========================================================
-      // DEV-ONLY invariant validation
-      // =========================================================
-      if (__DEV__) {
-        if (elements[index] !== shape || indexMap.get(shape) !== index) {
-          Warn('Invariant violation after insertion', {
-            shape,
-            index,
-            arrayValue: elements[index],
-            mapValue: indexMap.get(shape)
-          });
-        }
-
-        if (typeof geometry.zIndex !== 'number') {
-          Warn('zIndex initialization failed', shape);
-        }
-      }
-    }
+  public add(...rest: GraphicsNode[]): this {
+    this.#sceneModel.add(...rest);
 
     return this;
   }
 
   /**
-   * Removes shapes using O(1) swap-pop strategy.
-   * NOTE: Order is NOT preserved.
+   * Removes one or more graphical entities
+   * from the canvas scene graph.
    *
-   * ============================================================================
-   * CORE SEMANTICS
-   * ============================================================================
-   * - O(1) removal via indexMap + swap-pop
-   * - Safe against duplicate removals
-   * - Handles group recursion deterministically
+   * Responsibilities:
+   * - Detaches scene membership
+   * - Removes rendering participation
+   * - Clears structural ownership links
    *
-   * ============================================================================
-   * Z-ORDER HANDLING
-   * ============================================================================
-   * - Removed shape's zIndex is cleared
-   * - No reordering or normalization is performed here
-   * - Remaining shapes retain their zIndex values
-   *
-   * This ensures:
-   * - O(1) removal cost is preserved
-   * - zIndex space remains stable
-   * - Future normalization can be deferred
-   *
-   * ============================================================================
-   * INVARIANTS AFTER REMOVAL
-   * ============================================================================
-   * - elements[index] === shape (for all remaining)
-   * - indexMap reflects correct indices
-   * - Removed shape has no context or ownership
-   * - Removed shape has no zIndex association
-   *
-   * @param targets - Shapes to remove
-   * @returns this
+   * @param targets - Graphical entities to remove
+   * @returns Current canvas instance for chaining
    */
-  public remove(...targets: iShape[]): this {
-    const fig = this.#fig;
-    if (!fig) {
-      throw new NotInitializedError(
-        'this.#fig',
-        'canvas dom element not initialized',
-        'core.canvas.#setCanvasParams()'
-      );
-    }
-
-    const elements = this.#canvasElements;
-    const indexMap = this.#elementIndexMap;
-
-    for (let i = 0; i < targets.length; i++) {
-      const el = targets[i];
-      if (!el) continue;
-
-      let index = indexMap.get(el);
-      if (index === undefined) {
-        if (__DEV__) {
-          Warn(`Element not found or already removed`, el);
-        }
-        continue;
-      }
-
-      const style = (el as GType)?.getIStyle(DEV_INTERNAL_ACCESS);
-      const geometry = (el as GType)?.getIGeo(DEV_INTERNAL_ACCESS);
-
-      // =========================================================
-      // Ownership validation (soft check)
-      // =========================================================
-
-      const inside = style?.inside;
-      if (
-        !inside.startsWith('canvas-') ||
-        inside !== `canvas-${this.#style.inside}`
-      ) {
-        if (__DEV__) {
-          Warn(`Ownership mismatch detected`, el);
-        }
-        throw new ShapeNotAttachedToCanvasError(
-          style.id,
-          this.style.id,
-          'canvas.remove()'
-        );
-      }
-
-      // =========================================================
-      // Group handling
-      // =========================================================
-      if (el instanceof Group) {
-        const groupElements = el.getAllElements();
-        el.ungroup();
-
-        if (groupElements.length > 0) {
-          this.remove(...groupElements.slice());
-        }
-      }
-
-      // =========================================================
-      // DOM removal
-      // =========================================================
-      if (geometry?.context === SVG_CONTEXT) {
-        const node = el.getIFig(DEV_INTERNAL_ACCESS);
-        if (node) removeFrom(fig, node);
-      }
-
-      // =========================================================
-      // O(1) SWAP-POP
-      // =========================================================
-      index = indexMap.get(el);
-      if (index === undefined) continue;
-
-      const lastIndex = elements.length - 1;
-      const lastEl = elements[lastIndex];
-
-      if (index !== lastIndex) {
-        elements[index] = lastEl;
-        indexMap.set(lastEl, index);
-      }
-
-      elements.pop();
-      indexMap.delete(el);
-      this.#elementIdMap.delete(el.style.id);
-
-      // =========================================================
-      // CLEAN INTERNAL STATE
-      // =========================================================
-      if (style) {
-        style.inside = undefined as unknown as string;
-      }
-
-      if (geometry) {
-        geometry.context = undefined;
-        // Z-INDEX CLEANUP (CRITICAL ADDITION)
-        geometry.zIndex = undefined as unknown as number;
-
-        geometry.dirty = false;
-        geometry.worldDirty = false;
-      }
-      // =========================================================
-      // DEV invariant check
-      // =========================================================
-      if (__DEV__) {
-        if (indexMap.has(el)) {
-          Warn('Invariant violation: removed element still in map', el);
-        }
-      }
-    }
+  public remove(...targets: GraphicsNode[]): this {
+    this.#sceneModel.remove(...targets);
 
     return this;
   }
 
   /**
-   * Removes shapes using O(1) swap-pop strategy.
-   * NOTE: Order is NOT preserved.
+   * Clears all graphical entities from the canvas.
    *
-   * Core Semantics:
-   * - O(1) removal via indexMap + swap-pop
-   * - Safe against duplicate removals
-   * - Handles group recursion deterministically
+   * Responsibilities:
+   * - Resets scene graph membership
+   * - Clears render participation state
+   * - Removes all registered scene entities
    *
-   * Invariants After Removal:
-   * - elements[index] === shape (for all remaining)
-   * - indexMap reflects correct indices
-   * - Removed shape has no context or ownership
-   *
-   * @param targets - Shapes to remove
-   * @returns this
-   */
-
-  /*
-  public rremove(...targets: iShape[]): this {
-    const fig = this.#fig;
-    if (!fig) {
-      throw new NotInitializedError(
-        'this.#fig',
-        'canvas dom element not initialized',
-        'core.canvas.#setCanvasParams()'
-      );
-    }
-
-    const elements = this.#canvasElements;
-    const indexMap = this.#elementIndexMap;
-    const canvasId = this.#style.id;
-
-    for (let i = 0; i < targets.length; i++) {
-      const el = targets[i];
-      if (!el) continue;
-
-      let index = indexMap.get(el);
-      if (index === undefined) {
-        if (__DEV__) {
-          Warn(`Element not found or already removed`, el);
-        }
-        continue;
-      }
-
-      const style = (el as GType)?.style;
-      const geometry = (el as GType)?.geometry;
-
-      // =========================================================
-      // Ownership validation (soft check, not authority)
-      // =========================================================
-      if (__DEV__) {
-        const inside = style?.inside;
-        if (inside) {
-          const [container, sid] = inside.split('-');
-          if (!(container === 'canvas' && sid === canvasId)) {
-            Warn(`Ownership mismatch detected`, el);
-          }
-        }
-      }
-
-      // =========================================================
-      // Group handling (resolve BEFORE mutation)
-      // =========================================================
-      if (el instanceof Group) {
-        const groupElements = el.getElements();
-
-        // Important: detach children first
-        el.ungroup();
-
-        // Recursive removal on snapshot (avoid mutation issues)
-        if (groupElements.length > 0) {
-          this.remove(...groupElements.slice());
-        }
-      }
-
-      // =========================================================
-      // DOM removal (before structural mutation)
-      // =========================================================
-      if (geometry?.context === SVG_CONTEXT) {
-        const node = el.getIFig(DEV_INTERNAL_ACCESS);
-        if (node) removeFrom(fig, node);
-      }
-
-      // =========================================================
-      // O(1) SWAP-POP (index must be re-fetched if mutated)
-      // =========================================================
-      index = indexMap.get(el);
-      if (index === undefined) continue; // may have been removed via recursion
-
-      const lastIndex = elements.length - 1;
-      const lastEl = elements[lastIndex];
-
-      if (index !== lastIndex) {
-        elements[index] = lastEl;
-        indexMap.set(lastEl, index);
-      }
-
-      elements.pop();
-      indexMap.delete(el);
-
-      // =========================================================
-      // Clean internal state (avoid ghost ownership)
-      // =========================================================
-      if (style) style.inside = undefined as any;
-      if (geometry) geometry.context = undefined;
-
-      // =========================================================
-      // DEV invariant check
-      // =========================================================
-      if (__DEV__) {
-        if (indexMap.has(el)) {
-          Warn('Invariant violation: removed element still in map', el);
-        }
-      }
-    }
-
-    return this;
-  }
-*/
-
-  /**
-   * Removes all elements from the canvas.
-   *
-   * ============================================================================
-   * CORE SEMANTICS
-   * ============================================================================
-   * Performs a full teardown of all canvas-managed elements.
-   *
-   * This includes:
-   * - DOM detachment (if applicable)
-   * - Ownership reset
-   * - Geometry context cleanup
-   * - zIndex cleanup
-   *
-   * ============================================================================
-   * Z-ORDER RESET
-   * ============================================================================
-   * - Clears zIndex from all shapes
-   * - Resets internal z-order boundaries:
-   *   - #minZ → 0
-   *   - #maxZ → 0
-   *
-   * This ensures:
-   * - Fresh ordering state for future insertions
-   * - No stale zIndex leakage
-   *
-   * ============================================================================
-   * PERFORMANCE
-   * ============================================================================
-   * - O(n) linear pass for cleanup
-   * - Avoids repeated remove() calls (which incur extra checks and recursion)
-   * - Structural reset is O(1)
-   *
-   * ============================================================================
-   * INVARIANTS AFTER EXECUTION
-   * ============================================================================
-   * - #canvasElements is empty
-   * - #elementIndexMap is empty
-   * - All shapes are detached from DOM
-   * - All shapes have:
-   *   - no ownership (style.inside cleared)
-   *   - no context (geometry.context cleared)
-   *   - no zIndex (style.zIndex cleared)
-   * - z-order boundaries reset
-   *
-   * ============================================================================
-   * @returns this (fluent API)
+   * @returns Current canvas instance for chaining
    */
   public clear(): this {
-    const elements = this.#canvasElements;
-    if (elements.length === 0) return this;
-
-    const fig = this.#fig;
-    const indexMap = this.#elementIndexMap;
-
-    // =========================================================
-    // STEP 1: Linear cleanup
-    // =========================================================
-    for (let i = 0; i < elements.length; i++) {
-      const el = elements[i];
-
-      const style = (el as GType)?.getIStyle(DEV_INTERNAL_ACCESS);
-      const geometry = (el as GType)?.getIGeo(DEV_INTERNAL_ACCESS);
-
-      // -------------------------
-      // DOM cleanup (SVG only)
-      // -------------------------
-      if (geometry?.context === SVG_CONTEXT) {
-        const node = el.getIFig(DEV_INTERNAL_ACCESS);
-        if (node) removeFrom(fig, node);
-      }
-
-      // -------------------------
-      // Metadata cleanup
-      // -------------------------
-      if (style) {
-        style.inside = undefined as unknown as string;
-      }
-
-      if (geometry) {
-        geometry.context = undefined;
-        //  Z-INDEX CLEANUP (CRITICAL)
-        geometry.zIndex = undefined as unknown as number;
-        geometry.dirty = false;
-        geometry.worldDirty = false;
-      }
-    }
-
-    // =========================================================
-    // STEP 2: Structural reset (O(1))
-    // =========================================================
-    elements.length = 0;
-    indexMap.clear();
-
-    // =========================================================
-    // STEP 3: Z-ORDER BOUNDARY RESET (CRITICAL)
-    // =========================================================
-    this.#minZ = 0;
-    this.#maxZ = 0;
+    this.#sceneModel.clear();
 
     return this;
   }
 
   /**
-   * Returns a snapshot of all elements.
+   * Returns all graphical entities currently
+   * registered within the canvas scene graph.
    *
-   * Semantics:
-   * - Provides a shallow copy to protect internal state
-   *
-   * Performance:
-   * - O(n) copy (intentional for safety)
-   *
-   * @returns Array<iShape>
+   * @returns Array of scene graphical entities
    */
-  public getAllElements(): Array<iShape> {
-    return this.#canvasElements.slice();
-  }
-
-  /**
-   * Resolves all pending z-order operations for shapes in this canvas.
-   *
-   * ============================================================================
-   * CORE RESPONSIBILITY
-   * ============================================================================
-   * Converts transient z-order intents (stored in shapes) into persistent
-   * numeric zIndex values.
-   *
-   * ============================================================================
-   * EXECUTION MODEL
-   * ============================================================================
-   * - Iterates through all shapes
-   * - Reads pending z-order operation
-   * - Updates zIndex using min/max boundaries
-   * - Clears operation after applying
-   *
-   * ============================================================================
-   * ORDERING STRATEGY
-   * ============================================================================
-   * - Front:  zIndex = ++maxZ
-   * ============================================================================
-   * INVARIANTS
-   * ============================================================================
-   * - Every shape must have a unique zIndex
-   * - zIndex is the single source of truth for rendering order
-   * - No DOM manipulation occurs here
-   *
-   * ============================================================================
-   * PERFORMANCE
-   * ============================================================================
-   * O(n) where n = number of shapes (linear scan)
-   *
-   * ============================================================================
-   * SIDE EFFECTS
-   * ============================================================================
-   * Mutates:
-   * - shape.style.zIndex
-   * - internal min/max boundaries
-   */
-  #resolveZOrder(): void {
-    const elements = this.#canvasElements;
-
-    for (let i = 0; i < elements.length; i++) {
-      const shape = elements[i];
-
-      const op = shape.getZOrderOp(DEV_INTERNAL_ACCESS);
-
-      const elGeo = shape.getIGeo(DEV_INTERNAL_ACCESS) as {
-        zIndex: number;
-        dirty: boolean;
-      };
-      if (op === 1) {
-        this.#maxZ++;
-        elGeo.zIndex = this.#maxZ;
-        elGeo.dirty = true;
-      }
-
-      if (op === -1) {
-        this.#minZ--;
-        elGeo.zIndex = this.#minZ;
-        elGeo.dirty = true;
-      }
-
-      shape.clearZOrderOp(DEV_INTERNAL_ACCESS);
-    }
-  }
-
-  /**
-   * Marks all descendants of a container as worldDirty.
-   *
-   * ============================================================================
-   * PURPOSE
-   * ============================================================================
-   * - Propagates transform invalidation through full hierarchy
-   * - Used when container transform or hierarchy changes
-   *
-   * ============================================================================
-   * DESIGN
-   * ============================================================================
-   * - Uses iterative DFS (no recursion)
-   * - Respects shallow getAllElements() contract
-   * - Traverses only through containers (groups)
-   *
-   * ============================================================================
-   * @param container - Root container (Canvas or Group)
-   */
-  #markWorldDirtyCascade() {
-    const stack = [...this.getAllElements()];
-
-    while (stack.length) {
-      const el = stack.pop() as iShape;
-      const geo = el.geometry as { shape: string; worldDirty: boolean };
-
-      if (!geo.worldDirty) {
-        geo.worldDirty = true;
-      }
-
-      /*
-      // Only groups can expand traversal
-      if (geo.shape === 'group') {
-        const children = (el as Group).getAllElements();
-        for (let i = 0; i < children.length; i++) {
-          stack.push(children[i]);
-        }
-      }
-			*/
-    }
+  public getAllElements(): Array<GraphicsNode> {
+    return this.#sceneModel.getAllElements();
   }
 }
