@@ -9,7 +9,7 @@ import type {
   CurveInfo,
   ArcTableEntry
 } from '../../../../models/types/animation';
-import { getCurveAdaptiveSmoothness } from '../../../helpers/helpers.js';
+import { getCurveAdaptiveSmoothness } from '../curve-utils.js';
 //import type { IGraphicalElementProperties as IG } from '../../../../properties/provider/shapeProperties';
 //import type { GraphicalElementComposer as GEC } from '../../../../core/graphics/graphics/graphicalElementComposer';
 
