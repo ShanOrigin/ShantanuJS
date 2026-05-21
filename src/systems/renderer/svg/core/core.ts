@@ -20,7 +20,7 @@
 /**
  * SVG namespace URI used for creating SVG elements.
  */
-const SVGSOURCE = 'http://www.w3.org/2000/svg';
+export const SVGSOURCE = 'http://www.w3.org/2000/svg';
 
 /**
  * Identifier representing SVG rendering context.

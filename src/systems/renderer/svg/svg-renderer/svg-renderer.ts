@@ -1,19 +1,89 @@
-import type { Renderer } from '../../renderers';
-import type { iShape } from '../../../../../shapes/provider/shapesTypes';
+/* -------------------------------------------------------------------------- */
+/*                            Internal Capability Keys                         */
+/* -------------------------------------------------------------------------- */
 
 import {
-  GraphicsModel,
-  type GShpesTages
-} from '../../../graphicsModel/graphicsModel.js';
+  DEV_INTERNAL_ACCESS_KEY,
+  GET_INTERNAL_GRAPHICS_METHOD,
+  GET_INTERNAL_GEOMETRY_METHOD,
+  GET_INTERNAL_STYLE_METHOD,
+  CLEAR_Z_ORDER_OPERATION_METHOD,
+  GET_Z_ORDER_OPERATION_METHOD,
+  SET_PARENT_METHOD,
+  GET_PARENT_METHOD,
+  SET_INTERNAL_GRAPHICS_METHOD
+} from '../../../../internal/keys/dev-keys.js';
 
-import { DEV_INTERNAL_ACCESS } from '../../../../../utils/provider/accesskeys.js';
+import {
+  assertSystemAccess,
+  GET_SCENE_ELEMENTS_METHOD,
+  GET_SCENE_REMOVED_ELEMENTS_METHOD,
+  GET_SCENE_Z_ORDER_RESOLVER_METHOD,
+  SYSTEM_INTERNAL_ACCESS_KEY
+} from '../../../../internal/keys/system-keys.js';
 
-import { transformStack } from '../../../../../types/index.js';
+/* -------------------------------------------------------------------------- */
+/*                             Interface Contracts                             */
+/* -------------------------------------------------------------------------- */
+
+import type {
+  GraphicsNode,
+  IGraphicsContainer,
+  GetInternalGraphicsAccessor,
+  SetInternalGraphicsAccessor,
+  GetParentAccessor,
+  SetParentAccessor,
+  ZOrderResolutionFuncAccessor,
+  ZOrderResolutionCleanUpFuncAccessor,
+  GetSceneRemovedElementsAccessor,
+  GetSceneElementsAccessor
+} from '../../../../models/interfaces/graphics-container';
+
+/* -------------------------------------------------------------------------- */
+/*                                Common Types                                 */
+/* -------------------------------------------------------------------------- */
+
+import type {
+  InternalGeometryAccessor,
+  InternalStyleAccessor
+} from '../../../../models/types/graphics-model';
+import type { RenderInfrastructure } from '../../../../models/types/render-infrastructure';
+/* -------------------------------------------------------------------------- */
+/*                          Runtime Engine Subsystems                          */
+/* -------------------------------------------------------------------------- */
+
+import { GraphicsModel } from '../../../../core/graphics-model/graphics-model.js';
+import { Renderer } from '../../../../models/interfaces/renderer';
+import {
+  GRAPHICS_TYPES,
+  TransformStack
+} from '../../../../models/types/common';
+
+//import { Warn } from '../../utils/hshapepers/helpers.js';
 import {
   InvalidInternalStateError,
   InvalidRenderableShapeError,
-  OperationInProgressError
-} from '../../../../../utils/errors/provider/shantanuJSErrors.js';
+  NotInitializedError,
+  OperationInProgressError,
+  ShapeAlreadyExistsInCanvasError,
+  ShapeNotAttachedToCanvasError
+} from '../../../../errors/index.js';
+import Colors from '../../../../utils/colors/colors.js';
+import { createSVGElement, SVGSOURCE, removeFrom } from '../core/core.js';
+import { SceneModel } from '../../../scene/scene-model.js';
+//import Colors from '../../utils/colors/colors.js';
+
+type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
+  InternalGeometryAccessor &
+  InternalStyleAccessor &
+  GetInternalGraphicsAccessor &
+  SetInternalGraphicsAccessor &
+  GetParentAccessor &
+  SetParentAccessor &
+  ZOrderResolutionFuncAccessor &
+  ZOrderResolutionCleanUpFuncAccessor &
+  GetSceneElementsAccessor &
+  GetSceneRemovedElementsAccessor;
 
 /**
  * ============================================================================
@@ -26,7 +96,7 @@ import {
  * responsible for writing minimal DOM updates for SVG-based rendering.
  *
  * It is designed as a **diff-based, cache-aware renderer**, where:
- * - All heavy computations happen outside (in model / geometry layer)
+ * - All heavy computations happen outside (in modshape / geometry layer)
  * - Renderer performs ONLY minimal DOM mutations
  *
  * ----------------------------------------------------------------------------
@@ -42,7 +112,7 @@ import {
  * ----------------------------------------------------------------------------
  * KEY FEATURES
  * ----------------------------------------------------------------------------
- * - WeakMap-based per-element caching
+ * - WeakMap-based per-shapeement caching
  * - Geometry diffing using string comparison
  * - Reference-based optimization for buffers (polyline/polygon)
  * - Style diffing
@@ -52,7 +122,7 @@ import {
  * DESIGN ARCHITECTURE
  * ----------------------------------------------------------------------------
  * Input:
- *   shapesStack: Array<GraphicsModel>
+ *   shapesStack: Array<GraphicsModshape>
  *
  * For each shape:
  *   1. Check if dirty → skip if not
@@ -74,7 +144,7 @@ import {
  * - dot
  * - line
  * - circle
- * - ellipse
+ * - shapelipse
  * - rect
  * - polyline / polygon / curve
  * - path
@@ -92,14 +162,14 @@ import {
  * ----------------------------------------------------------------------------
  * ERROR CONDITIONS
  * ----------------------------------------------------------------------------
- * - Non-GraphicsModel shape → throws error
+ * - Non-GraphicsModshape shape → throws error
  * - Missing geometry → throws error
  * - Active batching state → throws error
  *
  * ----------------------------------------------------------------------------
  * SUMMARY
  * ----------------------------------------------------------------------------
- * SVGRenderer is an optimized, low-level DOM writer that ensures:
+ * SVGRenderer is an optimized, low-levshape DOM writer that ensures:
  * - minimal DOM mutations
  * - high rendering performance
  * - strict separation between computation and rendering
@@ -128,16 +198,60 @@ export class SVGRenderer implements Renderer {
    * DESIGN CHOICE
    * ----------------------------------------------------------------------------
    * WeakMap is used because:
-   * - Keys are DOM elements (no manual cleanup required)
+   * - Keys are DOM shapeements (no manual cleanup required)
    * - Garbage collection automatically removes unused entries
    *
-   * Each DOM element gets its own independent cache object.
+   * Each DOM shapeement gets its own independent cache object.
    */
+
+  /**
+   * ============================================================================
+   * Authoritative scene graph reference.
+   * ============================================================================
+   *
+   * Represents the root scene model observed and projected by this renderer.
+   *
+   * Responsibilities:
+   * - Provides scene hierarchy access
+   * - Provides geometry/style state access
+   * - Acts as renderer synchronization source
+   *
+   * IMPORTANT:
+   * The renderer observes this scene but does not own authoritative scene state.
+   * ============================================================================
+   */
+  #scene!: SceneModel;
+
+  /**
+   * ============================================================================
+   * Renderer-owned projection infrastructure registry.
+   * ============================================================================
+   *
+   * Stores backend-specific render infrastructure associated with scene models.
+   *
+   * Infrastructure examples:
+   * - viewport hosts
+   * - render surfaces
+   * - resource containers
+   * - render content roots
+   *
+   * IMPORTANT:
+   * - Infrastructure is renderer-local state
+   * - Infrastructure is NOT authoritative scene state
+   * - Scene models remain backend-agnostic
+   *
+   * WeakMap is intentionally used to:
+   * - avoid strong ownership coupling
+   * - allow automatic garbage collection
+   * - isolate backend projection state
+   * ============================================================================
+   */
+  #sceneInfrastructure = new WeakMap<SceneModel, RenderInfrastructure>();
 
   /**
    * Geometry cache:
    *
-   * Stores last applied **geometry-related attributes** for each DOM element.
+   * Stores last applied **geometry-rshapeated attributes** for each DOM element.
    *
    * Examples of cached keys:
    * - '__x', '__y'
@@ -155,14 +269,14 @@ export class SVGRenderer implements Renderer {
    *
    * RESULT
    * ----------------------------------------------------------------------------
-   * Eliminates redundant geometry updates.
+   * shapeiminates redundant geometry updates.
    */
   #geoCache? = new WeakMap<Element, Record<string, unknown>>();
 
   /**
    * Style cache:
    *
-   * Stores last applied **style-related attributes** for each DOM element.
+   * Stores last applied **style-rshapeated attributes** for each DOM element.
    *
    * Examples:
    * - fill
@@ -180,16 +294,240 @@ export class SVGRenderer implements Renderer {
    */
   #styleCache = new WeakMap<Element, Record<string, string>>();
 
+  /**
+   * ============================================================================
+   * Initializes SVG scene projection infrastructure.
+   * ============================================================================
+   *
+   * Creates and registers stable renderer-owned SVG infrastructure required
+   * for scene projection and rendering.
+   *
+   * Structure:
+   *
+   * <svg>
+   *   <defs />
+   *   <rect />      // surface host
+   *   <g />         // render content host
+   * </svg>
+   *
+   * Responsibilities:
+   * - svg      -> viewport host
+   * - defs     -> reusable SVG resources
+   * - rect     -> visual scene surface/background
+   * - g        -> render root for scene children
+   *
+   * NOTE:
+   * Infrastructure nodes are renderer-owned and are intentionally isolated
+   * from user renderable ordering logic.
+   * ============================================================================
+   */
+  constructor(scene: SceneModel) {
+    this.#scene = scene;
+
+    // =========================================================
+    // Viewport Host
+    // =========================================================
+
+    const svg = createSVGElement('svg', SVGSOURCE);
+
+    // =========================================================
+    // Resource Host
+    // =========================================================
+
+    const defs = createSVGElement('defs', SVGSOURCE);
+
+    // =========================================================
+    // Surface Host
+    // =========================================================
+
+    const surface = createSVGElement('rect', SVGSOURCE);
+
+    // =========================================================
+    // Scene Content Host
+    // =========================================================
+
+    const contentRoot = createSVGElement('g', SVGSOURCE);
+
+    // =========================================================
+    // Stable Infrastructure Hierarchy
+    // =========================================================
+
+    svg.append(defs);
+    svg.append(surface);
+    svg.append(contentRoot);
+
+    // =========================================================
+    // Bind Primary Graphics Host To Scene
+    // =========================================================
+
+    this.#scene[SET_INTERNAL_GRAPHICS_METHOD](svg, DEV_INTERNAL_ACCESS_KEY);
+
+    // =========================================================
+    // Static DOM Configuration
+    // =========================================================
+
+    const domStyle = svg.style;
+
+    domStyle.position = 'absolute';
+    domStyle.display = 'block';
+    domStyle.boxSizing = 'border-box';
+    domStyle.overflow = 'hidden';
+
+    // =========================================================
+    // Register Renderer Infrastructure
+    // =========================================================
+
+    this.#sceneInfrastructure.set(this.#scene, {
+      viewportHost: svg,
+      resourceHost: defs,
+      surfaceHost: surface,
+      contentHost: contentRoot
+    });
+  }
+
+  /**
+   * ============================================================================
+   * Synchronizes scene state into SVG projection infrastructure.
+   * ============================================================================
+   *
+   * Updates:
+   * - viewport geometry
+   * - viewport positioning
+   * - surface geometry
+   * - surface styling
+   *
+   * This method performs incremental synchronization using internal caches
+   * to avoid redundant DOM mutations.
+   * ============================================================================
+   */
+  #processScene() {
+    // =========================================================
+    // Scene State References
+    // =========================================================
+
+    const geoRef = this.#scene[GET_INTERNAL_GEOMETRY_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    );
+
+    const styleRef = this.#scene[GET_INTERNAL_STYLE_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    );
+
+    const figRef = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as SVGSVGElement;
+
+    // =========================================================
+    // Renderer Infrastructure
+    // =========================================================
+
+    const infrastructure = this.#sceneInfrastructure.get(this.#scene);
+
+    if (!infrastructure) return;
+
+    const surface = infrastructure.surfaceHost as SVGRectElement;
+
+    // =========================================================
+    // Incremental Update Caches
+    // =========================================================
+
+    const geoCache = this.#getOrInitGeoCache(figRef);
+
+    const styleCache = this.#getOrInitStyleCache(figRef);
+
+    // =========================================================
+    // Geometry State
+    // =========================================================
+
+    const { x, y, width, height } = geoRef as {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+
+    const xs = this.#numToStr(x);
+    const ys = this.#numToStr(y);
+    const ws = this.#numToStr(width);
+    const hs = this.#numToStr(height);
+
+    // =========================================================
+    // Viewport Sizing
+    // =========================================================
+
+    geoCache['__width'] !== ws &&
+      (figRef.setAttribute('width', ws), (geoCache['__width'] = ws));
+
+    geoCache['__height'] !== hs &&
+      (figRef.setAttribute('height', hs), (geoCache['__height'] = hs));
+
+    // =========================================================
+    // Viewport Coordinate Space
+    // =========================================================
+
+    figRef.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+    // =========================================================
+    // DOM Positioning
+    // =========================================================
+
+    const domStyle = figRef.style;
+
+    geoCache['__x'] !== xs &&
+      ((domStyle.left = `${x}px`), (geoCache['__x'] = xs));
+
+    geoCache['__y'] !== ys &&
+      ((domStyle.top = `${y}px`), (geoCache['__y'] = ys));
+
+    // =========================================================
+    // Surface Geometry
+    // =========================================================
+
+    surface.setAttribute('x', '0');
+    surface.setAttribute('y', '0');
+
+    geoCache['__surfaceWidth'] !== ws &&
+      (surface.setAttribute('width', ws), (geoCache['__surfaceWidth'] = ws));
+
+    geoCache['__surfaceHeight'] !== hs &&
+      (surface.setAttribute('height', hs), (geoCache['__surfaceHeight'] = hs));
+
+    // =========================================================
+    // Surface Styling
+    // =========================================================
+
+    const stroke = styleRef.stroke ?? 'black';
+
+    const fill = styleRef.fill ?? 'white';
+
+    const sw = styleRef['stroke-width'] ?? 0;
+
+    const sws = this.#numToStr(sw);
+
+    // Fill
+    styleCache['fill'] !== fill &&
+      (surface.setAttribute('fill', fill), (styleCache['fill'] = fill));
+
+    // Stroke
+    styleCache['stroke'] !== stroke &&
+      (surface.setAttribute('stroke', stroke), (styleCache['stroke'] = stroke));
+
+    // Stroke Width
+    styleCache['stroke-width'] !== sws &&
+      (surface.setAttribute('stroke-width', sws),
+      (styleCache['stroke-width'] = sws));
+  }
+
   /* ============================================================================
    * INTERNAL HELPERS
    * ============================================================================ */
 
   /**
-   * Retrieves or initializes the geometry cache for a given element.
+   * Retrieves or initializes the geometry cache for a given shapeement.
    *
    * HOW IT WORKS
    * ----------------------------------------------------------------------------
-   * - Checks if a cache object exists for the element
+   * - Checks if a cache object exists for the shapeement
    * - If not:
    *     - creates a new empty object (no prototype)
    *     - stores it in WeakMap
@@ -199,37 +537,37 @@ export class SVGRenderer implements Renderer {
    * - No prototype chain → faster lookups
    * - No inherited properties → safer key storage
    *
-   * @param el - Target DOM element
-   * @returns Geometry cache object for that element
+   * @param shape - Target DOM element
+   * @returns Geometry cache object for that shapeement
    */
-  #getOrInitGeoCache(el: Element): Record<string, unknown> {
-    let c = this.#geoCache?.get(el);
+  #getOrInitGeoCache(shape: Element): Record<string, unknown> {
+    let c = this.#geoCache?.get(shape);
 
     if (c === undefined) {
       c = Object.create(null) as Record<string, unknown>;
-      this.#geoCache?.set(el, c);
+      this.#geoCache?.set(shape, c);
     }
 
     return c;
   }
 
   /**
-   * Retrieves or initializes the style cache for a given element.
+   * Retrieves or initializes the style cache for a given shapeement.
    *
    * HOW IT WORKS
    * ----------------------------------------------------------------------------
    * - Same logic as geometry cache
-   * - Ensures each element has its own style cache
+   * - Ensures each shapeement has its own style cache
    *
-   * @param el - Target DOM element
-   * @returns Style cache object for that element
+   * @param shape - Target DOM element
+   * @returns Style cache object for that shapeement
    */
-  #getOrInitStyleCache(el: Element): Record<string, string> {
-    let c = this.#styleCache.get(el);
+  #getOrInitStyleCache(shape: Element): Record<string, string> {
+    let c = this.#styleCache.get(shape);
 
     if (c === undefined) {
       c = Object.create(null) as Record<string, string>;
-      this.#styleCache.set(el, c);
+      this.#styleCache.set(shape, c);
     }
 
     return c;
@@ -261,7 +599,7 @@ export class SVGRenderer implements Renderer {
    * ============================================================================ */
 
   /**
-   * Renders a stack of shapes to their respective SVG elements.
+   * Renders a stack of shapes to their respective SVG shapeements.
    *
    * ----------------------------------------------------------------------------
    * CORE FLOW
@@ -278,7 +616,7 @@ export class SVGRenderer implements Renderer {
    * ----------------------------------------------------------------------------
    * PARAMETERS
    * ----------------------------------------------------------------------------
-   * @param shapesStack - Array of GraphicsModel instances to render
+   * @param shapesStack - Array of GraphicsModshape instances to render
    *
    * ----------------------------------------------------------------------------
    * PERFORMANCE NOTES
@@ -290,12 +628,37 @@ export class SVGRenderer implements Renderer {
    * ----------------------------------------------------------------------------
    * ERROR CONDITIONS
    * ----------------------------------------------------------------------------
-   * - Throws if shape is not GraphicsModel
+   * - Throws if shape is not GraphicsModshape
    * - Throws if geometry is missing
    * - Throws if batching mode is active
    */
 
-  public render(shapesStack: Array<GraphicsModel<GShpesTages>>): void {
+  public render(...shapesStack: GraphicsNode[]): void {
+    const domScene = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    );
+
+    const removedElements: GraphicsNode[] = this.#scene[
+      GET_SCENE_REMOVED_ELEMENTS_METHOD
+    ](SYSTEM_INTERNAL_ACCESS_KEY);
+
+    for (let i = removedElements.length; i > 0; i--) {
+      const element = removedElements[
+        i
+      ] as GraphicsNodeWithInternalAccessMethods;
+      const domEle = element[GET_INTERNAL_GRAPHICS_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      );
+
+      removeFrom(domScene, domEle);
+
+      element[SET_INTERNAL_GRAPHICS_METHOD](null, DEV_INTERNAL_ACCESS_KEY);
+
+      removedElements.pop();
+    }
+
+    this.#processScene();
+
     /**
      * ============================================================================
      * RENDER LOOP — VALIDATION, STATE EXTRACTION & PREPARATION
@@ -309,7 +672,7 @@ export class SVGRenderer implements Renderer {
      * - validating renderable objects
      * - extracting internal state (geometry, style, DOM reference)
      * - filtering out non-dirty shapes
-     * - preparing per-element caches
+     * - preparing per-shapeement caches
      * - initializing a minimal diff container (`desiredAttrs`)
      *
      * This stage ensures that only **valid and necessary shapes** proceed to the
@@ -320,7 +683,7 @@ export class SVGRenderer implements Renderer {
      * ----------------------------------------------------------------------------
      * For each shape:
      *
-     * 1. Validate shape type (must be GraphicsModel)
+     * 1. Validate shape type (must be GraphicsModshape)
      * 2. Extract geometry reference
      * 3. Skip if not dirty (no changes)
      * 4. Extract style and DOM references
@@ -339,36 +702,38 @@ export class SVGRenderer implements Renderer {
      * ----------------------------------------------------------------------------
      * ERROR CONDITIONS
      * ----------------------------------------------------------------------------
-     * - Throws if shape is not an instance of GraphicsModel
+     * - Throws if shape is not an instance of GraphicsModshape
      * - Throws if geometry reference is missing
      * - Throws if transformation batching is still active
      *
      * ----------------------------------------------------------------------------
      * IMPORTANT INVARIANTS
      * ----------------------------------------------------------------------------
-     * - Every element processed here must be renderable
+     * - Every shapeement processed here must be renderable
      * - Geometry must exist before rendering
-     * - Dirty flag must control rendering eligibility
+     * - Dirty flag must control rendering shapeigibility
      * - No rendering allowed during batching phase
      */
 
     // Iterate through all shapes in the render stack
     for (let index = 0; index < shapesStack.length; index++) {
-      const el = shapesStack[index];
+      const shape = shapesStack[index] as GraphicsNodeWithInternalAccessMethods;
 
       // --------------------------------------------------------------------------
       // STEP 1: Validate renderable shape
       // --------------------------------------------------------------------------
-      if (!(el instanceof GraphicsModel)) {
-        throw new InvalidRenderableShapeError(el, 'Renderer.render');
+      if (!(shape instanceof GraphicsModel)) {
+        throw new InvalidRenderableShapeError(shape, 'Renderer.render');
       }
       // --------------------------------------------------------------------------
       // STEP 2: Extract geometry reference (internal state)
       // --------------------------------------------------------------------------
-      const geoRef = el.getIGeo(DEV_INTERNAL_ACCESS) as Partial<{
-        dirty: boolean; // indicates if re-render is needed
+      const geoRef = shape[GET_INTERNAL_GEOMETRY_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      ) as Partial<{
+        localDirty: boolean; // indicates if re-render is needed
         buffer: Float32Array; // geometry buffer (used in poly shapes)
-        transformStack: transformStack; // transformation stack (if applicable)
+        transformStack: TransformStack; // transformation stack (if applicable)
         shape: string; // shape type identifier
         worldMatrix: Float32Array; // parent -> child composed transformation matrix
         worldDirty: boolean; // indicates if re-render is needed for dependancy
@@ -387,14 +752,34 @@ export class SVGRenderer implements Renderer {
       // --------------------------------------------------------------------------
       // STEP 3: Skip non-dirty shapes (performance optimization)
       // --------------------------------------------------------------------------
-      if (!geoRef.dirty) continue;
+      if (!geoRef.localDirty) continue;
 
       // --------------------------------------------------------------------------
       // STEP 4: Extract style and DOM references
       // --------------------------------------------------------------------------
-      const styleRef = el.getIStyle(DEV_INTERNAL_ACCESS); // style object
-      const figRef = el.getIFig(DEV_INTERNAL_ACCESS); // actual SVG DOM node
-      const shape = geoRef?.shape; // shape type
+      const styleRef = shape[GET_INTERNAL_STYLE_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      ); // style object
+      let figRef = shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY); // actual SVG DOM node
+      const shapeType = geoRef?.shape; // shape type
+
+      // --------------------------------------------------------------------------
+      // DOM Element creation and mount
+      // --------------------------------------------------------------------------
+
+      if (!figRef) {
+        const tagName: string = (
+          shapeType === 'dot'
+            ? 'circle'
+            : shapeType === 'curve'
+            ? 'polyline'
+            : shapeType
+        ) as string;
+
+        figRef = createSVGElement(tagName, SVGSOURCE);
+
+        shape[SET_INTERNAL_GRAPHICS_METHOD](figRef, DEV_INTERNAL_ACCESS_KEY);
+      }
 
       /**
        * DOM ORDER SYNCHRONIZATION (SVG)
@@ -402,61 +787,43 @@ export class SVGRenderer implements Renderer {
        * Ensures that the SVG DOM order matches the engine-defined render order
        * (`shapesStack`, already sorted by ).
        *
-       * In SVG, visual stacking is determined purely by DOM order:
+       * In SVG, visual stacking is determined purshapey by DOM order:
        * - earlier nodes → rendered behind
        * - later nodes   → rendered on top
        *
-       * ----------------------------------------------------------------------------
-       * LOGIC
-       * ----------------------------------------------------------------------------
-       * - Each iteration represents the correct logical order
-       * - Compare expected DOM position with actual position
-       * - If mismatch → move node using `appendChild`
-       *
-       * ----------------------------------------------------------------------------
-       * STRUCTURE NOTE
-       * ----------------------------------------------------------------------------
-       * `<defs>` occupies index 0 in the SVG root, so:
-       *   DOM index = array index + 1
-       *
-       * ----------------------------------------------------------------------------
-       * BEHAVIOR
-       * ----------------------------------------------------------------------------
-       * - Uses O(1) check per element
-       * - Moves node only when necessary
-       * - `appendChild` repositions existing nodes (no recreation)
-       *
-       * ----------------------------------------------------------------------------
-       * RESULT
-       * ----------------------------------------------------------------------------
-       * After execution:
-       * - DOM order === shapesStack order
-       * - `<defs>` remains untouched at index 0
        */
-      const parent = figRef.ownerSVGElement as SVGSVGElement;
 
-      if (parent) {
-        const domIndex = index + 1; // account for <defs> at index 0
-        const currentNodeAtIndex = parent.children[domIndex];
+      if (figRef) {
+        const infrastructure = this.#sceneInfrastructure.get(this.#scene);
 
-        if (currentNodeAtIndex !== figRef) {
-          parent.appendChild(figRef);
+        if (!infrastructure) return;
+
+        const sceneRoot = infrastructure.contentHost as SVGGElement;
+        if (sceneRoot) {
+          const domIndex = index;
+          const currentNodeAtIndex = sceneRoot.children[domIndex];
+
+          if (currentNodeAtIndex !== figRef) {
+            sceneRoot.appendChild(figRef);
+          }
         }
       }
 
       // --------------------------------------------------------------------------
       // STEP 5: Prevent rendering during transformation batching
       // --------------------------------------------------------------------------
-      if ((el as iShape).isBatching()) {
+      /*
+      if ((shape  ).isBatching()) {
         throw new OperationInProgressError(
           'transformation batching',
           'render operation',
           'Renderer.render'
         );
       }
+			*/
 
       // --------------------------------------------------------------------------
-      // STEP 6: Initialize per-element caches
+      // STEP 6: Initialize per-shapeement caches
       // --------------------------------------------------------------------------
       // Geometry cache → avoids redundant geometry updates
       const geoCache = this.#getOrInitGeoCache(figRef);
@@ -481,7 +848,7 @@ export class SVGRenderer implements Renderer {
        * This block computes **minimal geometry changes per shape type**.
        *
        * For each shape:
-       * - Extract required geometry fields
+       * - Extract required geometry fishapeds
        * - Convert numeric values → string (DOM-compatible)
        * - Compare with cached values
        * - Add ONLY changed attributes into `desiredAttrs`
@@ -497,7 +864,13 @@ export class SVGRenderer implements Renderer {
        * `desiredAttrs` contains only attributes that actually changed.
        */
 
-      switch (shape) {
+      //       throw new NotInitializedError(
+      //         'this.#fig',
+      //         'canvas dom element not initialized',
+      //         'core.canvas.#setCanvasParams()'
+      //       );
+
+      switch (shapeType) {
         /**
          * DOT
          * ----------------------------------------------------------------------------
@@ -565,7 +938,7 @@ export class SVGRenderer implements Renderer {
         /**
          * CIRCLE
          * ----------------------------------------------------------------------------
-         * Standard SVG circle element.
+         * Standard SVG circle shapeement.
          *
          * Attributes:
          * - cx, cy → center
@@ -592,9 +965,9 @@ export class SVGRenderer implements Renderer {
         }
 
         /**
-         * ELLIPSE
+         * shapeLIPSE
          * ----------------------------------------------------------------------------
-         * Represents an ellipse with different radii.
+         * Represents an shapelipse with different radii.
          *
          * Attributes:
          * - cx, cy → center
@@ -795,7 +1168,7 @@ export class SVGRenderer implements Renderer {
          * DEFAULT
          * ----------------------------------------------------------------------------
          * No operation for unsupported or unknown shapes.
-         * Renderer safely ignores unrecognized shape types.
+         * Renderer safshapey ignores unrecognized shape types.
          */
         default:
           break;
@@ -854,10 +1227,10 @@ export class SVGRenderer implements Renderer {
        *
        * PURPOSE
        * ----------------------------------------------------------------------------
-       * Applies style-related attributes to the SVG element using the same
+       * Applies style-rshapeated attributes to the SVG element using the same
        * diff-based strategy as geometry.
        *
-       * Styles are treated separately because:
+       * Styles are treated separatshapey because:
        * - they come from a different source (styleRef)
        * - they may change independently of geometry
        *
@@ -870,9 +1243,9 @@ export class SVGRenderer implements Renderer {
        *
        * OPTIMIZATION
        * ----------------------------------------------------------------------------
-       * - Eliminates redundant style writes
+       * - shapeiminates redundant style writes
        * - Prevents unnecessary style recalculations in browser
-       * - Uses per-element cache for O(1) comparisons
+       * - Uses per-shapeement cache for O(1) comparisons
        *
        * LIMITATION (BY DESIGN)
        * ----------------------------------------------------------------------------
@@ -903,7 +1276,7 @@ export class SVGRenderer implements Renderer {
       }
 
       /**
-       * Applies the computed world transform to the DOM element.
+       * Applies the computed world transform to the DOM shapeement.
        *
        * - Uses `worldMatrix` as the single source of truth for rendering.
        * - Updates only when `dirty` or `worldDirty` is true to avoid redundant writes.
@@ -912,7 +1285,7 @@ export class SVGRenderer implements Renderer {
        */
       const world = geoRef.worldMatrix as Float32Array;
 
-      if (geoRef.worldDirty || geoRef.dirty) {
+      if (geoRef.worldDirty || geoRef.localDirty) {
         const a = world[0],
           b = world[1],
           c = world[3],
@@ -948,7 +1321,7 @@ export class SVGRenderer implements Renderer {
        * INVARIANT
        * ----------------------------------------------------------------------------
        * A shape with dirty = false:
-       *   → will NOT enter rendering pipeline in next frame
+       *   → will NOT enter rendering pipshapeine in next frame
        *
        * PERFORMANCE IMPACT
        * ----------------------------------------------------------------------------
@@ -956,7 +1329,7 @@ export class SVGRenderer implements Renderer {
        *   O(changed_shapes) rendering instead of O(total_shapes)
        */
 
-      geoRef.dirty = false;
+      geoRef.localDirty = false;
     }
   }
 }
