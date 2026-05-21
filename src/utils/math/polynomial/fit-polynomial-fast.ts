@@ -1,72 +1,12 @@
 import {
   TransformGeometry,
   TransformGeometryWithPivot
-} from '../../../../types/animation';
+} from '../../../models/types/animation';
 
-import { interpolateAlongCurve } from '../../../curve/curveGenerator/interpolateAlongCurve.js';
-import { createTransformationMatrixProps } from '../../../../types/transformations.js';
+import { interpolateAlongCurve } from '../interpolation/interpolate-along-curve.js';
+import { CreateTransformationMatrixProps } from '../../../models/types/affine-transformations';
 
-// --- Cubic helper ---
-interface CubicPoly {
-  a0: number;
-  a1: number;
-  a2: number;
-  a3: number;
-}
-
-/**
- * Creates a cubic polynomial for smooth interpolation between two numeric values.
- *
- * Purpose:
- * - Generates a cubic polynomial defined by start and end values, optionally with start and end velocities.
- * - Useful for smooth animations or transitions where gradual acceleration/deceleration is needed.
- *
- * Dependency:
- * - Pure JavaScript; does not depend on any graphics or DOM API.
- *
- * @param start - The starting value of the cubic interpolation.
- * @param end - The ending value of the cubic interpolation.
- * @param startVel - Optional starting velocity (default 0).
- * @param endVel - Optional ending velocity (default 0).
- *
- * @returns An object `{ a0, a1, a2, a3 }` representing the cubic polynomial coefficients.
- */
-
-function makeCubic(
-  start: number,
-  end: number,
-  startVel = 0,
-  endVel = 0
-): CubicPoly {
-  const a0 = start;
-  const a1 = startVel;
-  const a2 = 3 * (end - start) - 2 * startVel - endVel;
-  const a3 = -2 * (end - start) + startVel + endVel;
-  return { a0, a1, a2, a3 };
-}
-
-/**
- * Evaluates a cubic polynomial at a specific normalized time.
- *
- * Purpose:
- * - Computes the interpolated value at `t` using the cubic polynomial coefficients.
- * - Typically used for smooth animations, easing, or frame-by-frame interpolation.
- *
- * Dependency:
- * - Pure JavaScript; does not depend on graphics, DOM, or external APIs.
- *
- * @param poly - Cubic polynomial coefficients `{ a0, a1, a2, a3 }`.
- * @param t - Normalized progress (0 to 1) along the cubic interpolation.
- *
- * @returns The interpolated numeric value at the given `t`.
- */
-
-function evalCubic(poly: CubicPoly, t: number) {
-  const t2 = t * t,
-    t3 = t2 * t;
-  return poly.a0 + poly.a1 * t + poly.a2 * t2 + poly.a3 * t3;
-}
-
+import { makeCubic } from './polynomial-utils.js';
 /**
  * Generates cubic polynomials for each transformation matrix coefficient to enable smooth animation.
  *
@@ -129,7 +69,7 @@ export function fitTransformPolynomialsFast(
       arrayType: 'float32'
       // baseTMatrix: base,
       // multiplyWithBase: true
-    } as createTransformationMatrixProps) as Float32Array;
+    } as CreateTransformationMatrixProps) as Float32Array;
   }
 
   let a1!: number,
@@ -167,7 +107,7 @@ export function fitTransformPolynomialsFast(
       arrayType: 'float32'
       //  baseTMatrix: base,
       //  multiplyWithBase: true
-    } as createTransformationMatrixProps) as Float32Array;
+    } as CreateTransformationMatrixProps) as Float32Array;
   }
 
   // Build cubic per coefficient
@@ -179,46 +119,4 @@ export function fitTransformPolynomialsFast(
     e: makeCubic(e0, e1),
     f: makeCubic(f0, f1)
   };
-}
-
-/**
- * Evaluates cubic interpolation for transformation matrices at a given time `t`.
- *
- * Purpose:
- * - Interpolates each matrix coefficient (a–f) from the cubic polynomials produced by `fitTransformPolynomialsFast`.
- * - Optionally adds translation along a precomputed curve (path following).
- * - Returns a valid SVG `matrix(a b c d e f)` string for use in transforms.
- *
- * Dependencies:
- * - Requires cubic polynomials from `fitTransformPolynomialsFast`.
- * - Uses `evalCubic` to evaluate coefficients.
- * - Uses `interpolateAlongCurve` if `isTranslate` is enabled.
- *
- * @param polys - Cubic polynomials for each matrix coefficient (`a–f`).
- * @param curvePoints - List of sampled curve points for path interpolation.
- * @param t - Normalized time parameter in `[0, 1]`.
- * @param isTranslate - If `true`, apply additional translation along the curve.
- *
- * @returns A delta animation column-major Float32Array Matrix  representing the transform at time `t`.
- */
-
-export function transformUsingPolynomialFast(
-  // el: SVGElement,
-  polys: ReturnType<typeof fitTransformPolynomialsFast>,
-  curvePoints: { x: number; y: number }[],
-  t: number,
-  isTranslate: boolean
-) {
-  const tr = isTranslate
-    ? interpolateAlongCurve(curvePoints, t)
-    : { x: 0, y: 0 };
-  const a = evalCubic(polys.a, t);
-  const b = evalCubic(polys.b, t);
-  const c = evalCubic(polys.c, t);
-  const d = evalCubic(polys.d, t);
-  const e = evalCubic(polys.e, t) + tr.x;
-  const f = evalCubic(polys.f, t) + tr.y;
-
-  // column major
-  return new Float32Array([a, b, 0, c, d, 0, e, f, 1]);
 }
