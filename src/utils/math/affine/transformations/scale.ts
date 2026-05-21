@@ -1,102 +1,86 @@
-import type { TranslateMethodProps } from '../../../../models/types/transformations';
-
+import type { ScaleMethodProps } from '../../../../models/types/affine-transformations';
 /**
- * Applies a 2D translation transformation to an existing DOMMatrix.
+ * Applies a 2D scaling transformation to an existing DOMMatrix.
  *
  * -------------------------------------------------------------------------
  * CORE RESPONSIBILITY
  * -------------------------------------------------------------------------
  * This function mutates the provided transformation matrix by composing
- * a translation operation based on the supplied parameters.
+ * a scaling operation based on the supplied parameters.
  *
- * It does NOT create a new matrix.
+ * It does NOT allocate or return a new matrix.
  * It operates directly on the passed `oMatrix` instance.
  *
  * -------------------------------------------------------------------------
- * SUPPORTED TRANSLATION MODES
+ * SUPPORTED SCALING MODES
  * -------------------------------------------------------------------------
- * The translation behavior is determined by the `tType` parameter:
+ * The scaling behavior is determined by the `tType` parameter:
  *
  * - Absolute ('a' | 'absolute')
- *   Applies translation relative to a reference pivot.
- *
- * - Center ('c' | 'center')
- *   Applies translation assuming the object is already centered
- *   around the provided pivot.
+ *   Applies pivot-aware scaling using the provided pivot coordinates.
  *
  * - Pivot ('p' | 'pivot')
- *   Performs a pivot-aware translation by:
- *   1. translating to the pivot
- *   2. applying the offset
- *   3. translating back
+ *   Behaves identically to absolute scaling, explicitly indicating
+ *   that scaling is performed around a pivot point.
  *
  * - Relative ('r' | 'relative')
- *   Applies translation directly relative to the current matrix state.
+ *   Applies scaling directly to the current matrix state
+ *   without any pivot translation.
  *
  * -------------------------------------------------------------------------
  * DESIGN INVARIANTS
  * -------------------------------------------------------------------------
  * - The provided DOMMatrix is treated as mutable state
- * - Translation is composed using DOMMatrix.translateSelf
- * - No validation of numeric ranges is performed here
- * - All higher-level validation is assumed to be done upstream
+ * - Scaling is composed using DOMMatrix.scaleSelf
+ * - Z-axis scaling is fixed to 1 for 2D transformations
+ * - No validation of scale factors is performed here
  *
  * -------------------------------------------------------------------------
  * ERROR BEHAVIOR
  * -------------------------------------------------------------------------
  * Any error thrown by DOMMatrix operations is propagated as-is.
- * This function does not perform error translation or wrapping.
+ * This function does not translate, wrap, or suppress errors.
  *
  * -------------------------------------------------------------------------
  * PARAMETERS
  * -------------------------------------------------------------------------
- * @param x       Horizontal translation offset.
- * @param y       Vertical translation offset.
- * @param tType - Translation mode:
- *               'a' | 'absolute' → absolute translation,
- *               'r' | 'relative' → relative translation,
- *               'p' | 'pivot' → pivot-based translation,
- *               'c' | 'center' → center-based translation.
+ * @param sx      Scale factor along the X-axis.
+ * @param sy      Scale factor along the Y-axis.
+ * @param tType - Scaling mode:
+ *               'a' | 'absolute' → scale around center,
+ *               'r' | 'relative' → direct scaling,
+ *               'p' | 'pivot' → scale around pivot point.
  *               Default is 'a'.
  * @param px - X coordinate of the pivot point (used for pivot mode). Default is 0.
  * @param py - Y coordinate of the pivot point (used for pivot mode). Default is 0.
  * @param oMatrix Target DOMMatrix to be mutated.
  */
-export function Translate({
-  x,
-  y,
+export function Scale({
+  sx,
+  sy,
   tType = 'a',
   px = 0,
   py = 0,
   oMatrix
-}: TranslateMethodProps & { oMatrix: DOMMatrix }) {
+}: ScaleMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
       case 'absolute':
       case 'a': {
-        oMatrix.translateSelf(-px, -py).translateSelf(x, y);
-        break;
-      }
-
-      case 'center':
-      case 'c': {
-        oMatrix.translateSelf(x - px, y - py);
+        oMatrix.scaleSelf(sx, sy, 1, px, py);
         break;
       }
 
       case 'pivot':
       case 'p': {
-        oMatrix
-          .translateSelf(-px, -py)
-          .translateSelf(x, y)
-          .translateSelf(px, py);
+        oMatrix.scaleSelf(sx, sy, 1, px, py);
         break;
       }
 
       case 'relative':
       case 'r':
       default: {
-        oMatrix.translateSelf(x, y);
+        oMatrix.scaleSelf(sx, sy);
         break;
       }
     }

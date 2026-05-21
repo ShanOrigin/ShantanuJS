@@ -1,6 +1,6 @@
 import { InvalidArgumentError } from '../../../../errors/index.js';
 
-import type { FlipMethodProps } from '../../../../models/types/transformations';
+import type { FlipMethodProps } from '../../../../models/types/affine-transformations.js';
 /**
  * Applies a 2D flip (mirror) transformation to an existing DOMMatrix.
  *

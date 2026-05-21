@@ -1,3 +1,5 @@
+/*
+
 function* phaserSync(values, commonDelta = 0) {
   const props = [];
 
@@ -78,3 +80,5 @@ console.log('sync, common delta = 5');
 for (const frame of phaserSync({ translate: [70, -40], rotate: 78 }, 5)) {
   console.log(frame);
 }
+
+*/

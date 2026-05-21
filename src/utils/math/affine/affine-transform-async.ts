@@ -1,5 +1,5 @@
 // yield for each frame no storage of big data
-
+/*
 function* phaserASynch(values, deltas) {
   const props = [];
 
@@ -82,3 +82,5 @@ const deltas0 = {
 for (const frame of phaserASynch(values0, deltas0)) {
   console.log(frame);
 }
+
+*/

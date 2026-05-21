@@ -1,4 +1,5 @@
-import type { SkewMethodProps } from '../../../../models/types/transformations';
+import type { SkewMethodProps } from '../../../../models/types/affine-transformations';
+
 /**
  * Applies a 2D skew (shear) transformation to an existing DOMMatrix.
  *
