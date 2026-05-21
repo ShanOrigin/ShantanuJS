@@ -1,8 +1,10 @@
-import { SVGRenderer } from './svg/svgRenderer/svgRenderer.js';
+import { SVGRenderer } from './svg/svg-renderer/svg-renderer.js';
 
-import type { CONTEXT } from '../../../types/graphicsElements';
-import type { Renderer } from './renderers';
-import { UnsupportedRenderingBackendError } from '../../../utils/errors/provider/shantanuJSErrors.js';
+import type { GRAPHICS_CONTEXT } from '../../models/types/graphics-model';
+
+import { UnsupportedRenderingBackendError } from '../../errors/index.js';
+import type { Renderer } from '../../models/interfaces/renderer';
+import { SceneModel } from '../scene/scene-model.js';
 
 /**
  * Initializes and returns the appropriate rendering backend based on the provided context.
@@ -38,7 +40,7 @@ import { UnsupportedRenderingBackendError } from '../../../utils/errors/provider
  *    this switch without modifying external code.
  *
  * ============================================================================
- * SUPPORTED CONTEXTS
+ * SUPPORTED GRAPHICS_CONTEXTS
  * ============================================================================
  * Currently:
  * - 'svg' → SVGRenderer
@@ -81,14 +83,17 @@ import { UnsupportedRenderingBackendError } from '../../../utils/errors/provider
  * It guarantees that only valid and supported rendering backends are used
  * within the system.
  */
-export function initRenderer(context: CONTEXT): Renderer {
+export function initRenderer(
+  context: GRAPHICS_CONTEXT,
+  scene: SceneModel
+): Renderer {
   // --------------------------------------------------------------------------
   // Select renderer implementation based on context
   // --------------------------------------------------------------------------
   switch (context) {
-    case 'svg':
+    case 'SVG':
       // Instantiate SVG rendering backend
-      return new SVGRenderer();
+      return new SVGRenderer(scene);
 
     default:
       // ----------------------------------------------------------------------
