@@ -7,7 +7,7 @@ import type {
   CurveType,
   CurveInfo
 } from '../../../models/types/animation';
-import { lerp } from '../../helpers/helpers.js';
+import { lerp } from '../interpolation/lerp.js';
 import { getSemiCirclePoint } from '../../geometry/curves/curve-paths/arc-curve.js';
 import { getEllipsePoint } from '../../geometry/curves/curve-paths/ellipse-arc-curve.js';
 

@@ -1,6 +1,6 @@
 import type { Point, ArcTableEntry } from '../../../models/types/animation';
 
-import { lerp } from '../../helpers/helpers.js';
+import { lerp } from '../interpolation/lerp.js';
 
 /**
  * Interpolates a point along a precomputed array of points on a curve.
