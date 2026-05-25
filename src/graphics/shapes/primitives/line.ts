@@ -1,24 +1,35 @@
-import { GraphicsEntity } from '../graphicsEntity/graphicsEntity.js';
+import { RenderNode } from '../../render-node/render-node.js';
 import {
-  DEV_INTERNAL_ACCESS,
+  DEV_INTERNAL_ACCESS_KEY,
+  GET_INTERNAL_GEOMETRY_METHOD,
+  GET_INTERNAL_STYLE_METHOD,
   assertAccess
-} from '../../utils/provider/accesskeys.js';
+} from '../../../internal/keys/dev-keys.js';
+import {
+  CommonGeometricProperties,
+  AllGShapeStyleProperties
+} from '../../../property-definitions/common/common-properties.js';
+
 import {
   GraphicalElementProperties,
-  CommonGeometricProperties,
-  AllGShapeStyleProperties,
   dimensions
-} from '../../properties/provider/shapeProperties.js';
+} from '../../../property-definitions/specific/specific-properties.js';
+import { AttrsMethodPropsTypes } from '../../../models/types/common.js';
 
-import { StyleForGShapeTag } from '../../properties/provider/shapeProperties';
+import {
+  Log,
+  parameterTypeValidator,
+  validProps
+} from '../../../utils/helpers/helpers.js';
 
+/*
 import {
   isValidMatrix,
   validProps,
   parameterTypeValidator
 } from '../../utils/provider/utils.js';
-
-import { linePropsType } from '../../types/shapes';
+*/
+//import { linePropsType } from '../../types/shapes';
 
 /**
  * Represents a line shape defined by two endpoints in 2D space.
@@ -34,7 +45,8 @@ import { linePropsType } from '../../types/shapes';
  * geometry logic and constraints.
  */
 
-export class Line extends GraphicsEntity<'line'> {
+export class Line extends RenderNode<'line'> {
+  #copies: number = 0;
   /**
    * Reference to the base class’s internal geometry object.
    *
@@ -44,7 +56,7 @@ export class Line extends GraphicsEntity<'line'> {
    *
    * @private
    */
-  #geometry = this.getIGeo(DEV_INTERNAL_ACCESS);
+  #geometry = this[GET_INTERNAL_GEOMETRY_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
   /**
    * Reference to the base class’s internal style object.
@@ -55,7 +67,7 @@ export class Line extends GraphicsEntity<'line'> {
    *
    * @private
    */
-  #style = this.getIStyle(DEV_INTERNAL_ACCESS);
+  #style = this[GET_INTERNAL_STYLE_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
   /**
    * Reference to the parent class’s internal private properties container.
@@ -66,7 +78,7 @@ export class Line extends GraphicsEntity<'line'> {
    *
    * @private
    */
-  #classProp = this.getClassProps(DEV_INTERNAL_ACCESS);
+  #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
   /**
    * Creates a line graphical element between two points.
@@ -89,47 +101,24 @@ export class Line extends GraphicsEntity<'line'> {
    *                coordinate offsets, styling options, and an optional element
    *                identifier.
    */
-  constructor(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    props: linePropsType = {}
-  ) {
+  constructor(props: AttrsMethodPropsTypes<'line'>) {
     // Initialize the base graphical element as a line and extract the optional identifier
     super('line', props?.id ?? '');
     'id' in props && delete props.id;
-    // Extract relative coordinate offsets from props, defaulting to zero when absent
-    const {
-      x1: dx1 = 0,
-      y1: dy1 = 0,
-      x2: dx2 = 0,
-      y2: dy2 = 0,
-      ...rest
-    } = props as linePropsType;
-
-    // Normalize coordinates, inject defaults, and merge remaining properties
-    const safeProps = {
-      'stroke-linecap': 'square',
-      initial: true,
-      x1: x1 + +dx1,
-      y1: y1 + +dy1,
-      x2: x2 + +dx2,
-      y2: y2 + +dy2,
-      ...rest
-    };
 
     // Perform final validation on the normalized property set before mutating state
     parameterTypeValidator(
-      safeProps,
+      props,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
       'line'
     );
 
+    // for initial setup through RenderNode
+    props['initial'] = true;
     // Commit the validated and normalized attributes to the element
-    this.attrs(safeProps);
+    this.attrs(props);
   }
 
   /**
@@ -176,34 +165,31 @@ export class Line extends GraphicsEntity<'line'> {
    *
    * @throws Error if the internal geometry or style state is missing or invalid.
    */
+
   public clone(offsetX: number = 10, offsetY: number = 10): Line {
     // Ensure internal geometry and style references exist and are valid objects
     if (this.#geometry && this.#style) {
       // Extract geometry values and current clone count with safe defaults
-      const { copies = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0 } = this.#geometry;
-
-      // Compute the next clone index
-      const nextCopies = copies + 1;
+      const { x1 = 0, y1 = 0, x2 = 0, y2 = 0 } = this.#geometry;
 
       // Create a shallow copy of the style to avoid mutating the original style object
-      const style = { ...this.#style } as StyleForGShapeTag<'line'>;
+      const style = { ...this.#style }; //as StyleForGShapeTag<'line'>;
 
       // Update the style identifier to reflect the clone number, if an id exists
       if ('id' in style && style.id !== '') {
-        style.id = `${style.id}-c${nextCopies}`;
+        style.id = `${style.id}-c${++this.#copies}`;
       }
 
       // Persist the updated clone count on the original geometry
-      this.#geometry['copies'] = nextCopies;
 
       // Create and return a new Line instance with offset coordinates and cloned style
-      return new Line(
-        offsetX + x1,
-        offsetY + y1,
-        offsetX + x2,
-        offsetY + y2,
-        style as linePropsType
-      );
+      return new Line({
+        x1: offsetX + x1,
+        y1: offsetY + y1,
+        x2: offsetX + x2,
+        y2: offsetY + y2,
+        ...style
+      });
     }
 
     // Fail fast if cloning is not possible due to invalid internal state
@@ -266,7 +252,7 @@ export class Line extends GraphicsEntity<'line'> {
       sb.set([x1, y1, 1, x2, y2, 1], 0);
 
       // Restore or normalize the buffer layout according to internal dimensional rules
-      this.restoreDimension(DEV_INTERNAL_ACCESS, sb);
+      this.restoreDimension(DEV_INTERNAL_ACCESS_KEY, sb);
     } catch (e) {
       // Propagate any error without modification
       throw e;
