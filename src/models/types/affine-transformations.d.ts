@@ -38,7 +38,7 @@ export interface FlipMethodProps {
 
 export type ParsedDaTa = { tName: string; data: {} };
 
-export type createTransformationMatrixProps = {
+export type CreateTransformationMatrixProps = {
   transformations: {
     rotate?: RotateProps;
     skew?: SkewProps;
@@ -51,7 +51,7 @@ export type createTransformationMatrixProps = {
   multiplyWithBase?: boolean;
 };
 
-export type bboxProps = {
+export type BboxProps = {
   x: number;
   y: number;
   width: number;
