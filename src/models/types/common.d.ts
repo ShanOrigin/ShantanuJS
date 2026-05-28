@@ -1,3 +1,7 @@
+import { StyleForGShapeTag } from '../../property-definitions/common/common-properties';
+import { IGraphicalElementProperties } from '../../property-definitions/specific/specific-properties';
+import type { ValidGraphicsShapes } from './graphics-model';
+
 export type GRAPHICS_TYPES = SVGElement;
 
 export type GetAttrsMethodsReturnTypes =
@@ -38,3 +42,20 @@ export type NativeTypedArray =
   | Float64Array
   | BigInt64Array
   | BigUint64Array;
+
+export type AttrsMethodPropsTypes<T extends ValidGraphicsShapes> = Omit<
+  Partial<IGraphicalElementProperties[T]> &
+    Partial<
+      StyleForGShapeTag<T>,
+      | 'id'
+      | 'localDirty'
+      | 'worldDirty'
+      | 'inverseWorldMatrix'
+      | 'shape'
+      | 'zIndex'
+      | 'buffer'
+      | 'parentMatrix'
+      | 'localMatrix'
+      | 'transformStack'
+    >
+>;
