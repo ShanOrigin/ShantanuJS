@@ -57,7 +57,7 @@ import type {
 /* -------------------------------------------------------------------------- */
 
 import { GraphicsModel } from '../../core/graphics-model/graphics-model.js';
-import { Warn } from '../../utils/helpers/helpers.js';
+import { Log, Warn } from '../../utils/helpers/helpers.js';
 import {
   NotInitializedError,
   ShapeAlreadyExistsInCanvasError,
@@ -92,7 +92,7 @@ export class SceneModel
    * Mutation Rules:
    * - Only mutated via controlled methods (`addTo`, `remove`, `clear`).
    */
-  #canvasElements: GraphicsNode[] = [];
+  #sceneElements: GraphicsNode[] = [];
 
   #removedElements: GraphicsNode[] = [];
 
@@ -100,7 +100,7 @@ export class SceneModel
    * O(1) index lookup map for shapes.
    *
    * Key: shape reference
-   * Value: index in `#canvasElements`
+   * Value: index in `#sceneElements`
    *
    * Purpose:
    * - Eliminates O(n) lookup cost.
@@ -108,7 +108,7 @@ export class SceneModel
    *
    * Critical Invariant:
    * - For every entry (shape → index):
-   *   `#canvasElements[index] === shape`
+   *   `#sceneElements[index] === shape`
    *
    * Failure Impact:
    * - Any desynchronization leads to structural corruption.
@@ -285,7 +285,7 @@ export class SceneModel
   [GET_SCENE_ELEMENTS_METHOD](systemAccessKey: symbol) {
     assertSystemAccess(systemAccessKey);
 
-    return this.#canvasElements;
+    return this.#sceneElements;
   }
 
   [GET_SCENE_REMOVED_ELEMENTS_METHOD](systemAccessKey: symbol) {
@@ -406,7 +406,7 @@ export class SceneModel
       }
 
       // Stronger invariant: array-map sync
-      const arr = this.#canvasElements;
+      const arr = this.#sceneElements;
       if (arr[index] !== shape) {
         Warn('Invariant violation: indexMap and array are out of sync.', {
           index,
@@ -467,7 +467,7 @@ export class SceneModel
    * @returns this (fluent API)
    */
   public add(...rest: GraphicsNode[]): this {
-    const fig = this.#fig;
+    const fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
     if (!fig) {
       throw new NotInitializedError(
         'this.#fig',
@@ -476,7 +476,7 @@ export class SceneModel
       );
     }
 
-    const elements = this.#canvasElements;
+    const elements = this.#sceneElements;
     const indexMap = this.#elementIndexMap;
 
     for (let i = 0; i < rest.length; i++) {
@@ -571,6 +571,8 @@ export class SceneModel
       }
     }
 
+    Log(' scene elements = ', this.#sceneElements);
+
     return this;
   }
 
@@ -618,7 +620,7 @@ export class SceneModel
       );
     }
 
-    const elements = this.#canvasElements;
+    const elements = this.#sceneElements;
     const indexMap = this.#elementIndexMap;
 
     for (let i = 0; i < targets.length; i++) {
@@ -755,7 +757,7 @@ export class SceneModel
    * ============================================================================
    * INVARIANTS AFTER EXECUTION
    * ============================================================================
-   * - #canvasElements is empty
+   * - #sceneElements is empty
    * - #elementIndexMap is empty
    * - All shapes are detached from DOM
    * - All shapes have:
@@ -768,7 +770,7 @@ export class SceneModel
    * @returns this (fluent API)
    */
   public clear(): this {
-    const elements = this.#canvasElements;
+    const elements = this.#sceneElements;
     if (elements.length === 0) return this;
 
     // =========================================================
@@ -796,9 +798,9 @@ export class SceneModel
     // =========================================================
     // STEP 2: Structural reset (O(1))
     // =========================================================
-    this.#removedElements = [...this.#canvasElements];
+    this.#removedElements = [...this.#sceneElements];
 
-    this.#canvasElements.length = 0;
+    this.#sceneElements.length = 0;
     this.#elementIndexMap.clear();
     this.#elementIdMap.clear();
 
@@ -823,7 +825,7 @@ export class SceneModel
    * @returns Array<GraphicsNode>
    */
   public getAllElements(): Array<GraphicsNode> {
-    return this.#canvasElements.slice();
+    return this.#sceneElements.slice();
   }
 
   /**
@@ -867,7 +869,7 @@ export class SceneModel
    * - internal min/max boundaries
    */
   #resolveZOrder(): void {
-    const elements = this.#canvasElements;
+    const elements = this.#sceneElements;
 
     for (let i = 0; i < elements.length; i++) {
       const shape = elements[i] as GraphicsNodeWithInternalAccessMethods;
