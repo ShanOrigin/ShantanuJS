@@ -22,7 +22,7 @@ export const dimensions = {
 };
 
 export const GraphicalElementProperties = Object.seal({
-  canvas: { x: 0, y: 0, width: 0, height: 0 },
+  scene: { x: 0, y: 0, width: 0, height: 0 },
   dot: { cx: 0, cy: 0, r: 0 },
   line: { x1: 0, y1: 0, x2: 0, y2: 0 },
   polyline: { points: '' },
@@ -41,16 +41,7 @@ export const GraphicalElementProperties = Object.seal({
     textLength: 0,
     lengthAdjust: '' // 'spacing' , 'spacingAndGlyphs' , none
   },
-  /*
-  tspan: {
-    dx: 0,
-    dy: 0,
-    text: '',
-    rotate: '',
-    textLength: 0,
-    lengthAdjust: '' // 'spacing' , 'spacingAndGlyphs' , none
-  },
-*/
+
   image: { href: '', x: 0, y: 0, width: 0, height: 0 },
   g: {},
   triangle: { a: 0, b: 0, c: 0, A: 0, B: 0, C: 0 },
