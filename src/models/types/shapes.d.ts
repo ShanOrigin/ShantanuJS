@@ -1,81 +1,92 @@
+import { I } from 'vitest/dist/chunks/reporters.d.BFLkQcL6';
 import type {
   IGraphicalElementProperties,
   StyleForGShapeTag
-} from '../properties/provider/shapeProperties';
+} from '../../property-definitions/common/common-properties';
+import { ValidGraphicsShapes } from './graphics-model';
 
 // Point propsTypes
-type pointGeoTypes = IGraphicalElementProperties['dot'];
-type pointStyleTypes = StyleForGShapeTag<'dot'>;
-export type pointPropsType = Partial<pointGeoTypes> & Partial<pointStyleTypes>;
+type PointGeoTypes = IGraphicalElementProperties['dot'];
+type PointStyleTypes = StyleForGShapeTag<'dot'>;
+export type PointPropsType = Partial<PointGeoTypes> & Partial<PointStyleTypes>;
 
 // Line propsTypes
-type lineGeoTypes = IGraphicalElementProperties['line'];
-type lineStyleTypes = StyleForGShapeTag<'line'>;
-export type linePropsType = Partial<lineGeoTypes> & Partial<lineStyleTypes>;
+type LineGeoTypes = IGraphicalElementProperties['line'];
+type LineStyleTypes = StyleForGShapeTag<'line'>;
+export type LinePropsType = Partial<LineGeoTypes> & Partial<LineStyleTypes>;
 
 // Polyline propsTypes
-type polylineGeoTypes = IGraphicalElementProperties['polyline'];
-type polylineStyleTypes = StyleForGShapeTag<'polyline'>;
-export type polylinePropsType = Partial<polylineGeoTypes> &
-  Partial<polylineStyleTypes>;
+type PolylineGeoTypes = IGraphicalElementProperties['polyline'];
+type PolylineStyleTypes = StyleForGShapeTag<'polyline'>;
+export type PolylinePropsType = Partial<PolylineGeoTypes> &
+  Partial<PolylineStyleTypes>;
 
 // Polygon propsTypes
-type polygonGeoTypes = IGraphicalElementProperties['polygon'];
-type polygonStyleTypes = StyleForGShapeTag<'polygon'>;
-export type polygonPropsType = Partial<polygonGeoTypes> &
-  Partial<polygonStyleTypes>;
+type PolygonGeoTypes = IGraphicalElementProperties['polygon'];
+type PolygonStyleTypes = StyleForGShapeTag<'polygon'>;
+export type PolygonPropsType = Partial<PolygonGeoTypes> &
+  Partial<PolygonStyleTypes>;
 
 // Circle propsTypes
-type circleGeoTypes = IGraphicalElementProperties['circle'];
-type circleStyleTypes = StyleForGShapeTag<'circle'>;
-export type circlePropsType = Partial<circleGeoTypes> &
-  Partial<circleStyleTypes>;
+type CircleGeoTypes = IGraphicalElementProperties['circle'];
+type CircleStyleTypes = StyleForGShapeTag<'circle'>;
+export type CirclePropsType = Partial<CircleGeoTypes> &
+  Partial<CircleStyleTypes>;
 
 // Ellipse propsTypes
-type ellipseGeoTypes = IGraphicalElementProperties['ellipse'];
-type ellipseStyleTypes = StyleForGShapeTag<'ellipse'>;
-export type ellipsePropsType = Partial<ellipseGeoTypes> &
-  Partial<ellipseStyleTypes>;
+type EllipseGeoTypes = IGraphicalElementProperties['ellipse'];
+type EllipseStyleTypes = StyleForGShapeTag<'ellipse'>;
+export type EllipsePropsType = Partial<EllipseGeoTypes> &
+  Partial<EllipseStyleTypes>;
 
 // Path propsTypes
-type pathGeoTypes = IGraphicalElementProperties['path'];
-type pathStyleTypes = StyleForGShapeTag<'path'>;
-export type pathPropsType = Partial<pathGeoTypes> & Partial<pathStyleTypes>;
+type PathGeoTypes = IGraphicalElementProperties['path'];
+type PathStyleTypes = StyleForGShapeTag<'path'>;
+export type PathPropsType = Partial<PathGeoTypes> & Partial<PathStyleTypes>;
 
 // Curve propsTypes
-type curveGeoTypes = IGraphicalElementProperties['curve'];
-type curveStyleTypes = StyleForGShapeTag<'curve'>;
-export type curvePropsType = Partial<curveGeoTypes> & Partial<curveStyleTypes>;
+type CurveGeoTypes = IGraphicalElementProperties['curve'];
+type CurveStyleTypes = StyleForGShapeTag<'curve'>;
+export type CurvePropsType = Partial<CurveGeoTypes> & Partial<CurveStyleTypes>;
 
 // Rectangle propsTypes
-type rectGeoTypes = IGraphicalElementProperties['rect'];
-type rectStyleTypes = StyleForGShapeTag<'rect'>;
-export type rectPropsType = Partial<rectGeoTypes> & Partial<rectStyleTypes>;
+type RectGeoTypes = IGraphicalElementProperties['rect'];
+type RectStyleTypes = StyleForGShapeTag<'rect'>;
+export type RectPropsType = Partial<RectGeoTypes> & Partial<RectStyleTypes>;
 
-type textPropsType = Partial<IGraphicalElementProperties['text']> &
+type TextPropsType = Partial<IGraphicalElementProperties['text']> &
   Partial<StyleForGShapeTag<'text'>>;
 
-type imagePropsType = Partial<IGraphicalElementProperties['image']> &
+type ImagePropsType = Partial<IGraphicalElementProperties['image']> &
   Partial<StyleForGShapeTag<'image'>>;
 
-export type groupPropsType = Partial<IGraphicalElementProperties['group']> &
+export type GroupPropsType = Partial<IGraphicalElementProperties['group']> &
   Partial<StyleForGShapeTag<'g'>>;
 
-export type shapesAllPropsType =
-  | pointPropsType
-  | linePropsType
-  | polygonPropsType
-  | polylinePropsType
-  | pathPropsType
-  | circlePropsType
-  | ellipsePropsType
-  | rectPropsType
-  | curvePropsType
-  | textPropsType
-  | imagePropsType
-  | (curvePropsType & polylinePropsType);
+export type AllShapesPropsTypes =
+  | PointPropsType
+  | LinePropsType
+  | PolygonPropsType
+  | PolylinePropsType
+  | PathPropsType
+  | CirclePropsType
+  | EllipsePropsType
+  | RectPropsType
+  | CurvePropsType
+  | TextPropsType
+  | ImagePropsType
+  | (CurvePropsType & PolylinePropsType);
 
-export type shapesPropsType = Omit<
-  shapesAllPropsType,
-  'transform' | 'vector-effect' | 'id' | 'inside' | 'context'
+export type AllShapesPropertiesTypes = Omit<
+  AllShapesPropsTypes,
+  | 'id'
+  | 'localDirty'
+  | 'worldDirty'
+  | 'inverseWorldMatrix'
+  | 'shape'
+  | 'zIndex'
+  | 'buffer'
+  | 'parentMatrix'
+  | 'localMatrix'
+  | 'transformStack'
 >;
