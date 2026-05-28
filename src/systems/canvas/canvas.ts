@@ -43,6 +43,7 @@ import type {
 import type { AttrsMethodReturnTypes } from '../../models/types/common';
 
 import type { GRAPHICS_CONTEXT } from '../../models/types/graphics-model';
+import { Log } from '../../utils/helpers/helpers.js';
 
 /* -------------------------------------------------------------------------- */
 /*                          Runtime Engine Subsystems                          */
@@ -272,13 +273,6 @@ export class Canvas implements IGraphicsContainer, ICanvas {
     this.#sceneModel = new SceneModel({ id, width, height, x, y, ...rest });
 
     this.#renderer = initRenderer(context, this.#sceneModel);
-
-    console.log(' scene = ', this.#sceneModel);
-    // =========================================================
-    // Create Initial Render Structure
-    // =========================================================
-
-    this.#renderer.render(this.#sceneModel);
 
     // =========================================================
     // Mount Renderer Output Into DOM
