@@ -22,7 +22,7 @@ export type EasingFunction = (t: number) => number;
 
 // animation module
 
-export type IcommonGeometryAnimatableProperties = {
+export type CommonGeometryAnimatableProperties = {
   translate?: { x?: number; y?: number };
   scale?: {
     sx?: number;
@@ -37,7 +37,7 @@ export type IcommonGeometryAnimatableProperties = {
   };
 };
 
-export type anchors =
+export type Anchors =
   | 'TL'
   | 'TM'
   | 'TR'
@@ -47,47 +47,51 @@ export type anchors =
   | 'BL'
   | 'LM'
   | 'C'; // according to OOBB
-export type modes = 'r' | 'c' | 'p' | 'relative' | 'pivot' | 'center';
-type curvePaths = string | 'linear' | 'quadratic' | 'cubic' | 'arc';
-type directions = 'normal' | 'reverse' | 'alternate';
-export type opt = 'fitPolynomialCofficient' | 'preComputeFrames';
-export type physicsParams = { physicsMotion?: boolean; speed?: number };
-type pivotOptions = [number, number] | anchors;
 
-export type curveParams = {
+type PivotOptions = [number, number] | anchors;
+
+export type Modes = 'r' | 'c' | 'p' | 'relative' | 'pivot' | 'center';
+type CurvePaths = string | 'linear' | 'quadratic' | 'cubic' | 'arc';
+type Directions = 'normal' | 'reverse' | 'alternate';
+export type OptimizationTechniques =
+  | 'fitPolynomialCofficient'
+  | 'preComputeFrames';
+export type PhysicsParams = { physicsMotion?: boolean; speed?: number };
+
+export type CurveParams = {
   curvePathMotion?: boolean;
-  curvePath?: curvePaths;
+  curvePath?: CurvePaths;
   stepness?: number;
   smoothness?: number;
 };
 // new
-export type pivotParams = {
-  mode?: modes; //1- only for 'r' or 'relative' , 'c' or 'center' for translate ( note : if translate availabe and mode not given or mode is given 'p' or 'pivot' by default 'c' is mode set by system and all other user pivots will be override and system will decide which pivot would be goining to give other transform expect translate  )
+export type PivotParams = {
+  mode?: Modes; //1- only for 'r' or 'relative' , 'c' or 'center' for translate ( note : if translate availabe and mode not given or mode is given 'p' or 'pivot' by default 'c' is mode set by system and all other user pivots will be override and system will decide which pivot would be goining to give other transform expect translate  )
 
   // 2 - 'p' or 'pivot' mode is given  and translate not availabe then all transform respect pivot works if not given CommonPivot will work
 
   // all below can take either [ number | undefined , number | undefined ] or  anchors
-  scalePivot?: pivotOptions;
-  skewPivot?: pivotOptions;
-  rotatePivot?: pivotOptions;
-  commonPivot?: pivotOptions;
+  scalePivot?: PivotOptions;
+  skewPivot?: PivotOptions;
+  rotatePivot?: PivotOptions;
+  commonPivot?: PivotOptions;
 };
 
-export type controlsParams = {
+export type ControlsParams = {
   loop?: boolean;
-  direction?: directions;
-  optimizationTechnique?: opt;
+  direction?: Directions;
+  optimizationTechnique?: OptimizationTechniques;
 };
 
 // new version
 
 // these are advance propes taken by animation module method animate from user you want control lets take not only control but control itself
-export type IadvanceProps = {
+export type AdvanceProps = {
   //  animationMode?: 'deltas-based' | 'time-based'; // by default it is 'time-based' experimental
-  physics?: physicsParams;
-  curve?: curveParams;
-  pivot?: pivotParams;
-  controls?: controlsParams;
+  physics?: PhysicsParams;
+  curve?: CurveParams;
+  pivot?: PivotParams;
+  controls?: ControlsParams;
 };
 
 export type NumberType = [number, number];
@@ -101,10 +105,10 @@ export type TransformGeometry = {
 
 export type TransformGeometryWithPivot = TransformGeometry & {
   Pivot?: NumberType;
-  scalePivot?: pivotOptions;
-  skewPivot?: pivotOptions;
-  rotatePivot?: pivotOptions;
-  CommonPivot?: pivotOptions;
+  scalePivot?: PivotOptions;
+  skewPivot?: PivotOptions;
+  rotatePivot?: PivotOptions;
+  CommonPivot?: PivotOptions;
 };
 
 export type TGWPkeys = keyof TransformGeometryWithPivot;
