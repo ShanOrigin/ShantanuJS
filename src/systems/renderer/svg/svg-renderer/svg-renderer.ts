@@ -71,6 +71,7 @@ import {
 import Colors from '../../../../utils/colors/colors.js';
 import { createSVGElement, SVGSOURCE, removeFrom } from '../core/core.js';
 import { SceneModel } from '../../../scene/scene-model.js';
+import { Log } from '../../../../utils/helpers/helpers.js';
 //import Colors from '../../utils/colors/colors.js';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
@@ -383,6 +384,8 @@ export class SVGRenderer implements Renderer {
       surfaceHost: surface,
       contentHost: contentRoot
     });
+
+    console.log('svg ', svg);
   }
 
   /**
@@ -796,9 +799,13 @@ export class SVGRenderer implements Renderer {
       if (figRef) {
         const infrastructure = this.#sceneInfrastructure.get(this.#scene);
 
+        Log(' shape fig = ', figRef);
+
         if (!infrastructure) return;
 
         const sceneRoot = infrastructure.contentHost as SVGGElement;
+
+        Log(' sceneRoot = ', sceneRoot);
         if (sceneRoot) {
           const domIndex = index;
           const currentNodeAtIndex = sceneRoot.children[domIndex];
