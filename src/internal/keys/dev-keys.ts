@@ -249,6 +249,70 @@ const GET_INTERNAL_COMPUTED_STYLE_METHOD = Symbol(
 const SET_INTERNAL_GRAPHICS_METHOD = Symbol('SET_INTERNAL_GRAPHICS_METHOD');
 
 /* -------------------------------------------------------------------------- */
+/*                         Internal Graphics Retrieval                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Computed method symbol used to retrieve the renderer-specific
+ * graphics implementation object attached to a graphics entity.
+ *
+ * Architectural Purpose:
+ * Provides controlled low-level access to the actual backend rendering
+ * object associated with an engine entity.
+ *
+ * This enables internal systems to:
+ * - synchronize renderer state
+ * - perform backend-specific optimizations
+ * - access GPU/resource handles
+ * - execute renderer-level operations
+ * - bridge logical entities with rendering infrastructure
+ *
+ * Returned Objects May Include:
+ * - Canvas rendering objects
+ * - WebGL render resources
+ * - SVG DOM nodes
+ * - GPU-backed graphics handles
+ * - renderer adapter objects
+ * - backend primitive representations
+ *
+ * Access Requirements:
+ * Requires `DEV_INTERNAL_ACCESS_KEY`.
+ *
+ * Expected Usage:
+ * ```ts
+ * const graphicsObject =
+ *   entity[GET_INTERNAL_GRAPHICS_METHOD](
+ *     DEV_INTERNAL_ACCESS_KEY
+ *   );
+ * ```
+ *
+ * Important:
+ * The returned graphics object represents INTERNAL renderer state.
+ *
+ * External mutation can cause:
+ * - render pipeline corruption
+ * - backend state desynchronization
+ * - invalid cache state
+ * - renderer invariant violations
+ * - undefined rendering behavior
+ *
+ * Design Recommendation:
+ * Returned objects should preferably:
+ * - remain readonly
+ * - be proxy-protected
+ * - expose minimal mutable surface
+ * - avoid direct lifecycle ownership transfer
+ *
+ * Architectural Note:
+ * This symbol complements:
+ * `SET_INTERNAL_GRAPHICS_METHOD`
+ *
+ * Together they form the controlled backend graphics
+ * attachment/retrieval interface for renderer infrastructure.
+ */
+const GET_INTERNAL_GRAPHICS_METHOD = Symbol('GET_INTERNAL_GRAPHICS_METHOD');
+
+/* -------------------------------------------------------------------------- */
 /*                         Internal Z-Order Retrieval                          */
 /* -------------------------------------------------------------------------- */
 
@@ -377,6 +441,28 @@ const GET_INTERNAL_ANIMATION_METHOD = Symbol('GET_INTERNAL_ANIMATION_METHOD');
 const GET_RENDER_CACHE_METHOD = Symbol('GET_RENDER_CACHE_METHOD');
 
 /**
+ * Computed method symbol used to assign the internal
+ * parent entity reference for scene graph hierarchy.
+ *
+ * Used internally by scene graph and renderer systems
+ * to maintain parent-child relationships and traversal.
+ *
+ * Access must remain restricted to engine systems only.
+ */
+const SET_PARENT_METHOD = Symbol('SET_PARENT_METHOD');
+
+/**
+ * Computed method symbol used to retrieve the internal
+ * parent entity reference from the scene graph hierarchy.
+ *
+ * Used internally for traversal, hierarchy resolution,
+ * transform propagation, and render ordering.
+ *
+ * Access must remain restricted to engine systems only.
+ */
+const GET_PARENT_METHOD = Symbol('GET_PARENT_METHOD');
+
+/**
  * Validates whether the provided access key is authorized
  * for internal engine operations.
  *
@@ -446,10 +532,13 @@ export {
   GET_INTERNAL_STYLE_METHOD,
   GET_INTERNAL_COMPUTED_STYLE_METHOD,
   SET_INTERNAL_GRAPHICS_METHOD,
+  GET_INTERNAL_GRAPHICS_METHOD,
   GET_Z_ORDER_OPERATION_METHOD,
   CLEAR_Z_ORDER_OPERATION_METHOD,
   GET_INTERNAL_TRANSFORM_METHOD,
   GET_INTERNAL_ANIMATION_METHOD,
   GET_RENDER_CACHE_METHOD,
+  SET_PARENT_METHOD,
+  GET_PARENT_METHOD,
   assertAccess
 };
