@@ -43,19 +43,19 @@ export type NativeTypedArray =
   | BigInt64Array
   | BigUint64Array;
 
-export type AttrsMethodPropsTypes<T extends ValidGraphicsShapes> = Omit<
-  Partial<IGraphicalElementProperties[T]> &
-    Partial<
-      StyleForGShapeTag<T>,
-      | 'id'
-      | 'localDirty'
-      | 'worldDirty'
-      | 'inverseWorldMatrix'
-      | 'shape'
-      | 'zIndex'
-      | 'buffer'
-      | 'parentMatrix'
-      | 'localMatrix'
-      | 'transformStack'
-    >
->;
+export type InternalKeys =
+  | 'id'
+  | 'localDirty'
+  | 'worldDirty'
+  | 'inverseWorldMatrix'
+  | 'shape'
+  | 'zIndex'
+  | 'buffer'
+  | 'parentMatrix'
+  | 'localMatrix'
+  | 'transformStack';
+
+export type AttrsMethodPropsTypes<T extends ValidGraphicsShapes> = Partial<
+  IGraphicalElementProperties[T]
+> &
+  Partial<Omit<StyleForGShapeTag<T>, InternalKeys>>;
