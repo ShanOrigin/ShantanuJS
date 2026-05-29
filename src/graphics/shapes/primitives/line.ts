@@ -14,22 +14,13 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../../property-definitions/specific/specific-properties.js';
-import { AttrsMethodPropsTypes } from '../../../models/types/common.js';
+import type { AttrsMethodPropsTypes } from '../../../models/types/common';
 
 import {
   Log,
   parameterTypeValidator,
   validProps
 } from '../../../utils/helpers/helpers.js';
-
-/*
-import {
-  isValidMatrix,
-  validProps,
-  parameterTypeValidator
-} from '../../utils/provider/utils.js';
-*/
-//import { linePropsType } from '../../types/shapes';
 
 /**
  * Represents a line shape defined by two endpoints in 2D space.
