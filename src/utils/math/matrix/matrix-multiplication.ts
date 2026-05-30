@@ -46,7 +46,7 @@ import { InvalidFormatError } from '../../../errors/index.js';
  * This may be the original buffer if inPlace is true.
  */
 export function applyTransformToHomogeneousBuffer(
-  transformation: DOMMatrix,
+  transformation: DOMMatrix | Float32Array,
   buffer: Float32Array,
   inPlace: boolean = false
 ): Float32Array {
@@ -75,13 +75,28 @@ export function applyTransformToHomogeneousBuffer(
   // STEP 3: Cache transformation matrix coefficients
   // -----------------------------------------------------------
 
+  let a: number = 1,
+    b: number = 0,
+    c: number = 0,
+    d: number = 1,
+    e: number = 0,
+    f: number = 0;
   // Cache matrix values (critical for perf)
-  const a = transformation.a;
-  const b = transformation.b;
-  const c = transformation.c;
-  const d = transformation.d;
-  const e = transformation.e;
-  const f = transformation.f;
+  if (transformation instanceof DOMMatrix) {
+    a = transformation.a;
+    b = transformation.b;
+    c = transformation.c;
+    d = transformation.d;
+    e = transformation.e;
+    f = transformation.f;
+  } else if (transformation instanceof Float32Array) {
+    a = transformation[0];
+    b = transformation[1];
+    c = transformation[3];
+    d = transformation[4];
+    e = transformation[6];
+    f = transformation[7];
+  }
 
   // -----------------------------------------------------------
   // STEP 4: Apply affine transformation per point
@@ -97,4 +112,146 @@ export function applyTransformToHomogeneousBuffer(
   }
 
   return out;
+}
+/**
+ * Computes the affine composition of two {@link DOMMatrix} instances.
+ *
+ * Matrix multiplication is performed using the following order:
+ *
+ * M0 × M1
+ *
+ * Where:
+ * - M0 represents the parent transformation matrix.
+ * - M1 represents the child transformation matrix.
+ *
+ * Since matrix multiplication is not commutative, the order is important.
+ * The resulting matrix represents a transformation where the parent
+ * transformation is applied first, followed by the child transformation.
+ *
+ * Example:
+ * ```ts
+ * const worldMatrix = affineCompositionUsingDOMMatrix(
+ *   parentMatrix,
+ *   childMatrix
+ * );
+ * ```
+ *
+ * @param M0 Parent affine transformation matrix.
+ * @param M1 Child affine transformation matrix.
+ *
+ * @returns A new {@link DOMMatrix} containing the composed affine
+ * transformation. Returns an identity matrix if either argument is
+ * invalid or not a {@link DOMMatrix} instance.
+ */
+export function affineMatrixMultiplyUsingDOMMatrix(
+  M0: DOMMatrix,
+  M1: DOMMatrix
+): DOMMatrix {
+  if (M0 instanceof DOMMatrix && M1 instanceof DOMMatrix) {
+    // M0 -> Parent matrix
+    // M1 -> Child matrix
+    // Composition order: Parent × Child
+    return M0.multiply(M1);
+  }
+
+  return new DOMMatrix();
+}
+
+/**
+ * Computes the composition of two 2D affine transformation matrices.
+ *
+ * ============================================================================
+ * MATRIX LAYOUT
+ * ============================================================================
+ * Each matrix is stored using the following layout:
+ *
+ * [
+ *   a, b, 0,
+ *   c, d, 0,
+ *   e, f, 1
+ * ]
+ *
+ * Which represents:
+ *
+ * ┌           ┐
+ * │ a  b  0 │
+ * │ c  d  0 │
+ * │ e  f  1 │
+ * └           ┘
+ *
+ * ============================================================================
+ * OPERATION
+ * ============================================================================
+ * O = M0 × M1
+ *
+ * Transformation order:
+ *
+ * 1. Apply M0
+ * 2. Apply M1
+ *
+ * ============================================================================
+ * OPTIMIZATION
+ * ============================================================================
+ * This implementation is specialized for affine 2D matrices and avoids
+ * dynamic memory allocation by writing directly into the supplied output
+ * buffer.
+ *
+ * The third column is constant:
+ *
+ * [
+ *   0,
+ *   0,
+ *   1
+ * ]
+ *
+ * and is therefore omitted from the multiplication process.
+ *
+ * ============================================================================
+ * INDEX MAPPING
+ * ============================================================================
+ * a -> matrix[0]
+ * b -> matrix[1]
+ * c -> matrix[3]
+ * d -> matrix[4]
+ * e -> matrix[6]
+ * f -> matrix[7]
+ *
+ * @param M0 Left-hand affine matrix.
+ * @param M1 Right-hand affine matrix.
+ * @param O Output matrix receiving the multiplication result.
+ *
+ * @returns Reference to the output matrix.
+ */
+export function affineMatrixMultiply(
+  M0: Float32Array,
+  M1: Float32Array,
+  O: Float32Array
+): Float32Array {
+  const a0 = M0[0];
+  const b0 = M0[1];
+  const c0 = M0[3];
+  const d0 = M0[4];
+  const e0 = M0[6];
+  const f0 = M0[7];
+
+  const a1 = M1[0];
+  const b1 = M1[1];
+  const c1 = M1[3];
+  const d1 = M1[4];
+  const e1 = M1[6];
+  const f1 = M1[7];
+
+  O[0] = a0 * a1 + b0 * c1;
+  O[1] = a0 * b1 + b0 * d1;
+  O[2] = 0;
+
+  O[3] = c0 * a1 + d0 * c1;
+  O[4] = c0 * b1 + d0 * d1;
+  O[5] = 0;
+
+  O[6] = e0 * a1 + f0 * c1 + e1;
+  O[7] = e0 * b1 + f0 * d1 + f1;
+  O[8] = 1;
+
+  return O;
 }
