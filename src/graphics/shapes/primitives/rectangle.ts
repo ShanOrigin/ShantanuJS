@@ -14,7 +14,10 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../../property-definitions/specific/specific-properties.js';
-import type { AttrsMethodPropsTypes } from '../../../models/types/common';
+import type {
+  InitialProps,
+  ConstructorPropsTypes
+} from '../../../models/types/common';
 
 import {
   Log,
@@ -58,7 +61,7 @@ export class Rect extends RenderNode<'rect'> {
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
   // Actual implementation
-  constructor(props: AttrsMethodPropsTypes<'rect'>) {
+  constructor(props: ConstructorPropsTypes<'rect'>) {
     super('rect', props?.id ?? '');
 
     'id' in props && delete props.id;
@@ -72,7 +75,7 @@ export class Rect extends RenderNode<'rect'> {
     );
 
     // for initial setup through RenderNode
-    props['initial'] = true;
+    (props as ConstructorPropsTypes<'rect'> & InitialProps)['initial'] = true;
     this.attrs(props);
   }
 
@@ -121,8 +124,9 @@ export class Rect extends RenderNode<'rect'> {
         height: (height ?? 0) + h,
         rx,
         ry,
+        initial: true,
         ...style
-      });
+      } as ConstructorPropsTypes<'rect'> & InitialProps);
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');

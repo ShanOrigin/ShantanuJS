@@ -14,7 +14,10 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../property-definitions/specific/specific-properties.js';
-import type { AttrsMethodPropsTypes } from '../../models/types/common';
+import type {
+  InitialProps,
+  ConstructorPropsTypes
+} from '../../models/types/common';
 
 import {
   Log,
@@ -57,7 +60,7 @@ export class Text extends RenderNode<'text'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(props: AttrsMethodPropsTypes<'text'>) {
+  constructor(props: ConstructorPropsTypes<'text'>) {
     super('text', props.id ?? '');
 
     parameterTypeValidator(
@@ -69,8 +72,7 @@ export class Text extends RenderNode<'text'> {
     );
 
     // for initial setup through RenderNode
-    props['initial'] = true;
-
+    (props as ConstructorPropsTypes<'text'> & InitialProps)['initial'] = true;
     this.attrs(props);
   }
 
@@ -103,8 +105,9 @@ export class Text extends RenderNode<'text'> {
         x: offsetX + x,
         y: offsetY + y,
         text,
-        style
-      });
+        initial: true,
+        ...style
+      } as ConstructorPropsTypes<'text'> & InitialProps);
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');

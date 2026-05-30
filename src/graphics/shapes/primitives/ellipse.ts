@@ -14,7 +14,10 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../../property-definitions/specific/specific-properties.js';
-import type { AttrsMethodPropsTypes } from '../../../models/types/common';
+import type {
+  InitialProps,
+  ConstructorPropsTypes
+} from '../../../models/types/common';
 
 import {
   Log,
@@ -57,7 +60,7 @@ export class Ellipse extends RenderNode<'ellipse'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(props: AttrsMethodPropsTypes<'ellipse'>) {
+  constructor(props: ConstructorPropsTypes<'ellipse'>) {
     super('ellipse', props?.id ?? '');
 
     'id' in props && delete props.id;
@@ -70,7 +73,8 @@ export class Ellipse extends RenderNode<'ellipse'> {
     );
 
     // for initial setup through RenderNode
-    props['initial'] = true;
+    (props as ConstructorPropsTypes<'ellipse'> & InitialProps)['initial'] =
+      true;
     this.attrs(props);
   }
 
@@ -109,8 +113,9 @@ export class Ellipse extends RenderNode<'ellipse'> {
         cy: offsetY + cy,
         rx: (visibleRadiusX ?? 0) + rx,
         ry: (visibleRadiusY ?? 0) + ry,
+        initial: true,
         ...style
-      });
+      } as ConstructorPropsTypes<'ellipse'> & InitialProps);
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');

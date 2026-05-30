@@ -1,8 +1,8 @@
-import type { AttrsMethodPropsTypes } from '../../../models/types/common';
+import type { ConstructorPropsTypes } from '../../../models/types/common';
 import { Curve } from './curve.js';
 
 export class QuadraticCurve extends Curve {
-  constructor(props: AttrsMethodPropsTypes<'curve'>) {
+  constructor(props: Omit<ConstructorPropsTypes<'curve'>, 'curveName'>) {
     super({
       ...props,
       curveName: 'quadratic',

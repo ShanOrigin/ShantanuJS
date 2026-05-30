@@ -14,7 +14,10 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../../property-definitions/specific/specific-properties.js';
-import type { AttrsMethodPropsTypes } from '../../../models/types/common';
+import type {
+  InitialProps,
+  ConstructorPropsTypes
+} from '../../../models/types/common';
 
 import {
   Log,
@@ -92,7 +95,7 @@ export class Line extends RenderNode<'line'> {
    *                coordinate offsets, styling options, and an optional element
    *                identifier.
    */
-  constructor(props: AttrsMethodPropsTypes<'line'>) {
+  constructor(props: ConstructorPropsTypes<'line'>) {
     // Initialize the base graphical element as a line and extract the optional identifier
     super('line', props?.id ?? '');
     'id' in props && delete props.id;
@@ -107,8 +110,7 @@ export class Line extends RenderNode<'line'> {
     );
 
     // for initial setup through RenderNode
-    props['initial'] = true;
-    // Commit the validated and normalized attributes to the element
+    (props as ConstructorPropsTypes<'line'> & InitialProps)['initial'] = true;
     this.attrs(props);
   }
 
@@ -179,8 +181,9 @@ export class Line extends RenderNode<'line'> {
         y1: offsetY + y1,
         x2: offsetX + x2,
         y2: offsetY + y2,
+        initial: true,
         ...style
-      });
+      } as ConstructorPropsTypes<'line'> & InitialProps);
     }
 
     // Fail fast if cloning is not possible due to invalid internal state

@@ -14,14 +14,16 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../../property-definitions/specific/specific-properties.js';
-import type { AttrsMethodPropsTypes } from '../../../models/types/common';
+import type {
+  InitialProps,
+  ConstructorPropsTypes
+} from '../../../models/types/common';
 
 import {
   Log,
   parameterTypeValidator,
   validProps
 } from '../../../utils/helpers/helpers.js';
-import { points } from 'happy-dom/lib/PropertySymbol.js';
 
 export class Polyline extends RenderNode<'polyline'> {
   #copies: number = 0;
@@ -59,7 +61,7 @@ export class Polyline extends RenderNode<'polyline'> {
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
   constructor(
-    props: AttrsMethodPropsTypes<'polyline'> & { points: string | number[][] }
+    props: ConstructorPropsTypes<'polyline'> & { points: number[][] }
   ) {
     super('polyline', props?.id ?? '');
 
@@ -103,7 +105,8 @@ export class Polyline extends RenderNode<'polyline'> {
       'polyline'
     );
     // for initial setup through RenderNode
-    props['initial'] = true;
+    (props as ConstructorPropsTypes<'polyline'> & InitialProps)['initial'] =
+      true;
     this.attrs(props);
   }
 
@@ -139,7 +142,11 @@ export class Polyline extends RenderNode<'polyline'> {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
-      return new Polyline({ points: newPoints, ...style });
+      return new Polyline({
+        points: newPoints,
+        ...style,
+        initial: true
+      } as ConstructorPropsTypes<'polyline'> & InitialProps & { points: number[][] });
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');

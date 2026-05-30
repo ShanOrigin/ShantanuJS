@@ -14,14 +14,16 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../../property-definitions/specific/specific-properties.js';
-import type { AttrsMethodPropsTypes } from '../../../models/types/common';
+import type {
+  InitialProps,
+  ConstructorPropsTypes
+} from '../../../models/types/common';
 
 import {
   Log,
   parameterTypeValidator,
   validProps
 } from '../../../utils/helpers/helpers.js';
-import { points } from 'happy-dom/lib/PropertySymbol.js';
 
 export class Polygon extends RenderNode<'polygon'> {
   #copies: number = 0;
@@ -59,7 +61,7 @@ export class Polygon extends RenderNode<'polygon'> {
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
   constructor(
-    props: AttrsMethodPropsTypes<'polyline'> & { points: string | number[][] }
+    props: ConstructorPropsTypes<'polygon'> & { points: number[][] }
   ) {
     super('polygon', props?.id ?? '');
 
@@ -74,7 +76,7 @@ export class Polygon extends RenderNode<'polygon'> {
       // Form: [[x1, y1], [x2, y2], ...]
       if (
         (points && !Array.isArray(points)) ||
-        !points.every(
+        !(points as number[][]).every(
           (row: number[]) =>
             Array.isArray(row) &&
             row.length === 2 &&
@@ -105,8 +107,10 @@ export class Polygon extends RenderNode<'polygon'> {
       this.#classProp,
       'polygon'
     );
+
     // for initial setup through RenderNode
-    props['initial'] = true;
+    (props as ConstructorPropsTypes<'polygon'> & InitialProps)['initial'] =
+      true;
     this.attrs(props);
   }
 
@@ -142,7 +146,11 @@ export class Polygon extends RenderNode<'polygon'> {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
-      return new Polygon({ points: newPoints, ...style });
+      return new Polygon({
+        points: newPoints,
+        ...style,
+        initial: true
+      } as ConstructorPropsTypes<'polygon'> & InitialProps & { points: number[][] });
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');

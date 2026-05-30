@@ -14,7 +14,10 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../../property-definitions/specific/specific-properties.js';
-import type { AttrsMethodPropsTypes } from '../../../models/types/common';
+import type {
+  InitialProps,
+  ConstructorPropsTypes
+} from '../../../models/types/common';
 import {
   parameterTypeValidator,
   validProps
@@ -55,7 +58,7 @@ export class Circle extends RenderNode<'circle'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(props: AttrsMethodPropsTypes<'circle'>) {
+  constructor(props: ConstructorPropsTypes<'circle'>) {
     super('circle', props?.id ?? '');
 
     'id' in props && delete props.id;
@@ -69,7 +72,7 @@ export class Circle extends RenderNode<'circle'> {
     );
 
     // for initial setup through RenderNode
-    props['initial'] = true;
+    (props as ConstructorPropsTypes<'circle'> & InitialProps)['initial'] = true;
     this.attrs(props);
   }
 
@@ -102,8 +105,9 @@ export class Circle extends RenderNode<'circle'> {
         cx: offsetX + cx,
         cy: offsetY + cy,
         r,
+        initial: true,
         ...style
-      });
+      } as ConstructorPropsTypes<'circle'> & InitialProps);
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');

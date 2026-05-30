@@ -16,6 +16,8 @@ import {
 } from '../../../property-definitions/specific/specific-properties.js';
 import type {
   AttrsMethodPropsTypes,
+  InitialProps,
+  ConstructorPropsTypes,
   AttrsMethodReturnTypes
 } from '../../../models/types/common';
 
@@ -63,7 +65,7 @@ export class Curve extends RenderNode<'curve'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(props: AttrsMethodPropsTypes<'curve'>) {
+  constructor(props: ConstructorPropsTypes<'curve'>) {
     super('curve', props?.id ?? '');
 
     try {
@@ -93,7 +95,7 @@ export class Curve extends RenderNode<'curve'> {
         curveName,
         initial: true,
         ...props
-      };
+      } as ConstructorPropsTypes<'curve'> & InitialProps;
 
       this.attrs(safeProps);
     } catch (e) {
@@ -129,12 +131,12 @@ export class Curve extends RenderNode<'curve'> {
 
         if (needRecalculatePath) {
           const {
-            x1,
-            y1,
-            x2,
-            y2,
+            x1 = 0,
+            y1 = 0,
+            x2 = 0,
+            y2 = 0,
             curvature = 0.5,
-            smoothness,
+            smoothness = 100,
             continuous = false,
             continuousCount = 1,
             curveName = 'linear'
@@ -238,7 +240,7 @@ export class Curve extends RenderNode<'curve'> {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
-      const pl = new Curve({
+      return new Curve({
         x1,
         x2,
         y1,
@@ -248,10 +250,9 @@ export class Curve extends RenderNode<'curve'> {
         continuous,
         continuousCount,
         curveName,
+        initial: true,
         ...style
-      });
-      //   pl.Translate({ x: offsetX, y: offsetY, type: 'r' });
-      return pl;
+      } as ConstructorPropsTypes<'curve'> & InitialProps);
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');

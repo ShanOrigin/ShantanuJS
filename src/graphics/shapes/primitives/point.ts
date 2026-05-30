@@ -14,7 +14,10 @@ import {
   GraphicalElementProperties,
   dimensions
 } from '../../../property-definitions/specific/specific-properties.js';
-import type { AttrsMethodPropsTypes } from '../../../models/types/common';
+import type {
+  InitialProps,
+  ConstructorPropsTypes
+} from '../../../models/types/common';
 
 import {
   Log,
@@ -83,7 +86,7 @@ export class Point extends RenderNode<'dot'> {
    * Throws:
    * - Propagates any validation or normalization errors without interception.
    */
-  constructor(props: AttrsMethodPropsTypes<'dot'>) {
+  constructor(props: ConstructorPropsTypes<'dot'>) {
     super('dot', props.id ?? '');
 
     // Prevent id leakage into attribute validation
@@ -98,8 +101,7 @@ export class Point extends RenderNode<'dot'> {
     );
 
     // for initial setup through RenderNode
-    props['initial'] = true;
-    // Apply attributes to internal state
+    (props as ConstructorPropsTypes<'dot'> & InitialProps)['initial'] = true;
     this.attrs(props);
   }
 
@@ -163,8 +165,9 @@ export class Point extends RenderNode<'dot'> {
         cx: offsetX + cx,
         cy: offsetY + cy,
         r: visibleRadius ?? r,
+        initial: true,
         ...style
-      });
+      } as ConstructorPropsTypes<'dot'> & InitialProps);
     }
 
     throw new Error('Cannot clone: geometry or style is invalid.');
