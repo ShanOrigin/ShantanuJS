@@ -62,7 +62,7 @@ import type { TranslateMethodProps } from '../../../../models/types/affine-trans
  * @param py - Y coordinate of the pivot point (used for pivot mode). Default is 0.
  * @param oMatrix Target DOMMatrix to be mutated.
  */
-export function Translate({
+export function translate({
   x,
   y,
   tType = 'a',

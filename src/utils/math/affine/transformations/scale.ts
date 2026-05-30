@@ -55,7 +55,7 @@ import type { ScaleMethodProps } from '../../../../models/types/affine-transform
  * @param py - Y coordinate of the pivot point (used for pivot mode). Default is 0.
  * @param oMatrix Target DOMMatrix to be mutated.
  */
-export function Scale({
+export function scale({
   sx,
   sy,
   tType = 'a',

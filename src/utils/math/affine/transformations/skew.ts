@@ -57,7 +57,7 @@ import type { SkewMethodProps } from '../../../../models/types/affine-transforma
  * @param py - Y coordinate of the pivot point (used in pivot/absolute modes). Default is 0.
  * @param oMatrix Target DOMMatrix to be mutated.
  */
-export function Skew({
+export function skew({
   sx,
   sy,
   tType = 'a',

@@ -54,7 +54,7 @@ import type { RotateMethodProps } from '../../../../models/types/affine-transfor
  * @param py - Y coordinate of the pivot point (used for pivot mode). Default is 0.
  * @param oMatrix Target DOMMatrix to be mutated.
  */
-export function Rotate({
+export function rotate({
   angle,
   tType = 'a',
   px = 0,
