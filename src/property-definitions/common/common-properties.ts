@@ -120,11 +120,6 @@ export const CommonGeometricProperties = Object.seal({
  */
 export const CommonStyleProperties = Object.seal({
   /**
-   * Internal parent tracking property.
-   */
-  inside: '',
-
-  /**
    * Unique graphical entity identifier.
    */
   id: '',
