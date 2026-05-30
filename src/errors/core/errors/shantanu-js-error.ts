@@ -1,4 +1,4 @@
-import type { ErrorContext } from '../diagnostics/ErrorContext.js';
+import type { ErrorContext } from '../diagnostics/error-context';
 /**
  * Base class for all errors thrown by the ShantanuJS library.
  *
