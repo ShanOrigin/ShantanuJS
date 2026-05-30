@@ -59,3 +59,10 @@ export type AttrsMethodPropsTypes<T extends ValidGraphicsShapes> = Partial<
   IGraphicalElementProperties[T]
 > &
   Partial<Omit<StyleForGShapeTag<T>, InternalKeys>>;
+
+export type ConstructorPropsTypes<T extends ValidGraphicsShapes> = Partial<
+  IGraphicalElementProperties[T]
+> &
+  Partial<StyleForGShapeTag<T>>;
+
+export type InitialProps = { initial?: boolean };
