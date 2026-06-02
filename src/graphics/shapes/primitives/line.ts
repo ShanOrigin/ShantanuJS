@@ -24,6 +24,7 @@ import {
   parameterTypeValidator,
   validProps
 } from '../../../utils/helpers/helpers.js';
+import { computeAABBPoints } from '../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
 
 /**
  * Represents a line shape defined by two endpoints in 2D space.
@@ -298,5 +299,24 @@ export class Line extends RenderNode<'line'> {
 
     // Restore end point coordinates from the buffer
     [geo.x2, geo.y2] = [m[3] as number, m[4] as number];
+
+    this.#computeBounds(m);
+  }
+
+  #computeBounds(buffer: Float32Array) {
+    const geo = this.#geometry as {
+      bounds: Float32Array;
+    };
+    const bounds = computeAABBPoints(buffer);
+
+    // Allocate the buffer once or reallocate only if the size has changed
+    if (!geo.bounds || geo.bounds.length !== 4) {
+      geo.bounds = new Float32Array(4);
+    }
+
+    geo.bounds[0] = bounds.maxX;
+    geo.bounds[1] = bounds.minY;
+    geo.bounds[2] = bounds.maxX;
+    geo.bounds[3] = bounds.maxY;
   }
 }

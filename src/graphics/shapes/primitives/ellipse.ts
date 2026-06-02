@@ -160,8 +160,7 @@ export class Ellipse extends RenderNode<'ellipse'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array,
-    basic: boolean = true
+    temporaryState: Float32Array
   ) {
     try {
       assertAccess(accessKey);
@@ -173,11 +172,33 @@ export class Ellipse extends RenderNode<'ellipse'> {
 
       const b = Math.hypot(temporaryState[6]! - cx, temporaryState[7]! - cy);
 
-      basic &&
-        (([this.#geometry.rx, this.#geometry.ry] = [a, b]),
-        ([this.#geometry.cx, this.#geometry.cy] = [cx, cy]));
+      [this.#geometry.rx, this.#geometry.ry] = [a, b];
+      [this.#geometry.cx, this.#geometry.cy] = [cx, cy];
+
+      this.#computeBounds(temporaryState);
     } catch (e) {
       throw e;
     }
+  }
+
+  #computeBounds(buffer: Float32Array) {
+    const geo = this.#geometry as {
+      bounds: Float32Array;
+      rx: number;
+      ry: number;
+    };
+
+    const [cx, cy, _] = buffer;
+    // Allocate the buffer once or reallocate only if the size has changed
+    if (!geo.bounds || geo.bounds.length !== 4) {
+      geo.bounds = new Float32Array(4);
+    }
+
+    const rx = geo.rx;
+    const ry = geo.ry;
+    geo.bounds[0] = cx - rx;
+    geo.bounds[1] = cy - ry;
+    geo.bounds[2] = cx + rx;
+    geo.bounds[3] = cy + ry;
   }
 }

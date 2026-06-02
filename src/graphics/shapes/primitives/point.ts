@@ -249,8 +249,29 @@ export class Point extends RenderNode<'dot'> {
         temporaryState[0] as number,
         temporaryState[1] as number
       ]; // center if circle
+
+      this.#computeBounds(temporaryState);
     } catch (e) {
       throw e;
     }
+  }
+
+  #computeBounds(buffer: Float32Array) {
+    const geo = this.#geometry as {
+      bounds: Float32Array;
+      r: number;
+    };
+
+    const [cx, cy, _] = buffer;
+    // Allocate the buffer once or reallocate only if the size has changed
+    if (!geo.bounds || geo.bounds.length !== 4) {
+      geo.bounds = new Float32Array(4);
+    }
+
+    const r = geo.r;
+    geo.bounds[0] = cx - r;
+    geo.bounds[1] = cy - r;
+    geo.bounds[2] = cx + r;
+    geo.bounds[3] = cy + r;
   }
 }

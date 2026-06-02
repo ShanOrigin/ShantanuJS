@@ -149,8 +149,7 @@ export class Circle extends RenderNode<'circle'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array,
-    basic: boolean = true
+    temporaryState: Float32Array
   ) {
     try {
       assertAccess(accessKey);
@@ -159,14 +158,34 @@ export class Circle extends RenderNode<'circle'> {
       const [cx, cy] = [temporaryState[0]!, temporaryState[1]!]; // center if circle
       const [rx, ry] = [temporaryState[3]!, temporaryState[4]!]; // right most point on circle
 
-      basic &&
-        ((this.#geometry.r = Math.hypot(rx - cx, ry - cy)),
-        ([this.#geometry.cx, this.#geometry.cy] = [
-          temporaryState[0]!,
-          temporaryState[1]!
-        ]));
+      this.#geometry.r = Math.hypot(rx - cx, ry - cy);
+      [this.#geometry.cx, this.#geometry.cy] = [
+        temporaryState[0]!,
+        temporaryState[1]!
+      ];
+
+      this.#computeBounds(temporaryState);
     } catch (e) {
       throw e;
     }
+  }
+
+  #computeBounds(buffer: Float32Array) {
+    const geo = this.#geometry as {
+      bounds: Float32Array;
+      r: number;
+    };
+
+    const [cx, cy, _] = buffer;
+    // Allocate the buffer once or reallocate only if the size has changed
+    if (!geo.bounds || geo.bounds.length !== 4) {
+      geo.bounds = new Float32Array(4);
+    }
+
+    const r = geo.r;
+    geo.bounds[0] = cx - r;
+    geo.bounds[1] = cy - r;
+    geo.bounds[2] = cx + r;
+    geo.bounds[3] = cy + r;
   }
 }
