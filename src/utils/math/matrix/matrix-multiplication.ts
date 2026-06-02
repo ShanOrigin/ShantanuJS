@@ -113,48 +113,60 @@ export function applyTransformToHomogeneousBuffer(
 
   return out;
 }
+
 /**
- * Computes the affine composition of two {@link DOMMatrix} instances.
+ * Computes the affine composition of two {@link DOMMatrix} instances and
+ * stores the result directly inside the first matrix.
  *
- * Matrix multiplication is performed using the following order:
+ * ============================================================================
+ * OPERATION
+ * ============================================================================
+ * M0 = M0 × M1
  *
- * M0 × M1
+ * Transformation order:
  *
- * Where:
- * - M0 represents the parent transformation matrix.
- * - M1 represents the child transformation matrix.
+ * 1. Apply M0
+ * 2. Apply M1
  *
- * Since matrix multiplication is not commutative, the order is important.
- * The resulting matrix represents a transformation where the parent
- * transformation is applied first, followed by the child transformation.
+ * Since matrix multiplication is not commutative:
  *
- * Example:
- * ```ts
- * const worldMatrix = affineCompositionUsingDOMMatrix(
- *   parentMatrix,
- *   childMatrix
- * );
- * ```
+ * M0 × M1 ≠ M1 × M0
  *
- * @param M0 Parent affine transformation matrix.
- * @param M1 Child affine transformation matrix.
+ * ============================================================================
+ * MEMORY BEHAVIOR
+ * ============================================================================
+ * This function performs the multiplication in-place using
+ * {@link DOMMatrix.multiplySelf}.
  *
- * @returns A new {@link DOMMatrix} containing the composed affine
- * transformation. Returns an identity matrix if either argument is
- * invalid or not a {@link DOMMatrix} instance.
+ * No additional DOMMatrix instances are allocated.
+ *
+ * ============================================================================
+ * EXAMPLE
+ * ============================================================================
+ * const parent = new DOMMatrix();
+ * const child = new DOMMatrix();
+ *
+ * affineMatrixMultiplyUsingDOMMatrix(parent, child);
+ *
+ * // parent now contains:
+ * // parent × child
+ *
+ * @param M0 Destination matrix and left-hand operand.
+ * @param M1 Right-hand operand.
+ *
+ * @returns Reference to M0 after composition.
  */
 export function affineMatrixMultiplyUsingDOMMatrix(
   M0: DOMMatrix,
   M1: DOMMatrix
 ): DOMMatrix {
-  if (M0 instanceof DOMMatrix && M1 instanceof DOMMatrix) {
-    // M0 -> Parent matrix
-    // M1 -> Child matrix
-    // Composition order: Parent × Child
-    return M0.multiply(M1);
+  if (!(M0 instanceof DOMMatrix) || !(M1 instanceof DOMMatrix)) {
+    return M0;
   }
 
-  return new DOMMatrix();
+  M0.multiplySelf(M1);
+
+  return M0;
 }
 
 /**
