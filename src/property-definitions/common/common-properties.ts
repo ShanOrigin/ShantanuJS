@@ -97,7 +97,34 @@ export const CommonGeometricProperties = Object.seal({
      *
      * Higher values are rendered above lower values.
      */
-    zIndex: 0
+    zIndex: 0,
+
+    /**
+     * Cached geometric axis-aligned bounding box (AABB).
+     *
+     * Represents the minimum rectangular region that fully
+     * encloses the underlying geometry in world coordinate space.
+     *
+     * Storage layout:
+     *
+     * [ minX, minY, maxX, maxY ]
+     *
+     * Where:
+     * - minX is the smallest x-coordinate.
+     * - minY is the smallest y-coordinate.
+     * - maxX is the largest x-coordinate.
+     * - maxY is the largest y-coordinate.
+     *
+     * This bounding box describes only the geometric extent
+     * of the entity and does not include visual expansions
+     * such as stroke width, filters, shadows, masks, or
+     * other rendering effects.
+     *
+     * The value is cached to reduce repeated extent
+     * calculations during geometry processing, hit testing,
+     * spatial queries, and scene graph operations.
+     */
+    bounds: new Float32Array([0, 0, 0, 0])
   }
 });
 
