@@ -54,25 +54,17 @@ import type { RenderInfrastructure } from '../../../../models/types/render-infra
 
 import { GraphicsModel } from '../../../../core/graphics-model/graphics-model.js';
 import { Renderer } from '../../../../models/interfaces/renderer';
-import {
-  GRAPHICS_TYPES,
-  TransformStack
-} from '../../../../models/types/common';
+import { TransformStack } from '../../../../models/types/common';
 
 //import { Warn } from '../../utils/hshapepers/helpers.js';
 import {
   InvalidInternalStateError,
-  InvalidRenderableShapeError,
-  NotInitializedError,
-  OperationInProgressError,
-  ShapeAlreadyExistsInCanvasError,
-  ShapeNotAttachedToCanvasError
+  InvalidRenderableShapeError
 } from '../../../../errors/index.js';
-import Colors from '../../../../utils/colors/colors.js';
+
 import { createSVGElement, SVGSOURCE, removeFrom } from '../core/core.js';
 import { SceneModel } from '../../../scene/scene-model.js';
 import { Log } from '../../../../utils/helpers/helpers.js';
-//import Colors from '../../utils/colors/colors.js';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -384,8 +376,6 @@ export class SVGRenderer implements Renderer {
       surfaceHost: surface,
       contentHost: contentRoot
     });
-
-    console.log('svg ', svg);
   }
 
   /**
@@ -799,13 +789,10 @@ export class SVGRenderer implements Renderer {
       if (figRef) {
         const infrastructure = this.#sceneInfrastructure.get(this.#scene);
 
-        Log(' shape fig = ', figRef);
-
         if (!infrastructure) return;
 
         const sceneRoot = infrastructure.contentHost as SVGGElement;
 
-        Log(' sceneRoot = ', sceneRoot);
         if (sceneRoot) {
           const domIndex = index;
           const currentNodeAtIndex = sceneRoot.children[domIndex];
