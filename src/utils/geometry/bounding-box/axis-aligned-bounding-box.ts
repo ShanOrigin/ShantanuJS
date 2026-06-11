@@ -87,3 +87,25 @@ export function computeAABBPoints(
 
   return { minX, minY, maxX, maxY };
 }
+
+/**
+ * Computes the center point of an axis-aligned bounding box (AABB).
+ *
+ * Expected bounds layout:
+ *
+ * [ minX, minY, maxX, maxY ]
+ *
+ * @param bounds Bounding box represented as
+ *               [ minX, minY, maxX, maxY ].
+ *
+ * @returns An object containing the center coordinates.
+ */
+export function getBoundsCenter(bounds: Float32Array): {
+  cx: number;
+  cy: number;
+} {
+  return {
+    cx: (bounds[0] + bounds[2]) * 0.5,
+    cy: (bounds[1] + bounds[3]) * 0.5
+  };
+}
