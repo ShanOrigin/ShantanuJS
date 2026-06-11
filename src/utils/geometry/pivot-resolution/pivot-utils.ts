@@ -5,6 +5,10 @@ import type {
   TransformGeometryWithPivot
 } from '../../../models/types/animation';
 
+import type {
+  TransformTypes,
+  CenterType
+} from '../../../models/types/affine-transformations';
 /**
  * Determines the pivot point coordinates for a shape based on a specified mode or anchor.
  *
@@ -24,8 +28,8 @@ import type {
  * @returns A tuple `[x, y]` representing the coordinates of the chosen pivot point.
  */
 export function pivotSetter(
-  mode: Modes | Anchors | undefined,
-  OBB: number[][] // Float32Array
+  mode: TransformTypes | CenterType | Anchors,
+  OBB: number[][] // Float32Array [ minX , minY , maxX , maxY]
 ): [number, number] {
   const [x1, y1] = OBB[0] as [number, number];
   const [x2, y2] = OBB[1] as [number, number];
@@ -55,6 +59,87 @@ export function pivotSetter(
   };
 
   return lookup[mode ?? 'TL'] ?? [x1, y1];
+}
+
+/**
+ * Resolves a pivot point from an axis-aligned bounding box (AABB).
+ *
+ * Expected bounds layout:
+ *
+ * [ minX, minY, maxX, maxY ]
+ *
+ * Supported pivot positions:
+ *
+ * tl  tm  tr
+ * lm   c  rm
+ * bl  bm  br
+ *
+ * Aliases:
+ *
+ * r, relative, a, absolute -> tl
+ * c, center                -> center
+ *
+ * @param mode Pivot resolution mode.
+ * @param bounds Bounding box represented as
+ *               [ minX, minY, maxX, maxY ].
+ *
+ * @returns The resolved pivot coordinates as
+ *          [ x, y ].
+ */
+export function resolvePivots(
+  mode:
+    | TransformTypes
+    | Uppercase<TransformTypes>
+    | CenterType
+    | Uppercase<CenterType>
+    | Anchors
+    | Uppercase<Anchors>,
+  bounds: Float32Array
+): [number, number] {
+  const minX = bounds[0] as number;
+  const minY = bounds[1] as number;
+  const maxX = bounds[2] as number;
+  const maxY = bounds[3] as number;
+
+  const centerX = (minX + maxX) * 0.5;
+  const centerY = (minY + maxY) * 0.5;
+
+  const normalizedMode = mode.toLowerCase();
+
+  switch (normalizedMode) {
+    case 'c':
+    case 'center':
+      return [centerX, centerY];
+
+    case 'tm':
+      return [centerX, minY];
+
+    case 'tr':
+      return [maxX, minY];
+
+    case 'rm':
+      return [maxX, centerY];
+
+    case 'br':
+      return [maxX, maxY];
+
+    case 'bm':
+      return [centerX, maxY];
+
+    case 'bl':
+      return [minX, maxY];
+
+    case 'lm':
+      return [minX, centerY];
+
+    case 'r':
+    case 'relative':
+    case 'a':
+    case 'absolute':
+    case 'tl':
+    default:
+      return [minX, minY];
+  }
 }
 
 /**
