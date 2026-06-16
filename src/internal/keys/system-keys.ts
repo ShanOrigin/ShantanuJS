@@ -25,8 +25,61 @@ import { UnauthorizedInternalAccessError } from '../../errors/index.js';
  * - External/public mutation is not permitted.
  */
 const GET_SCENE_ELEMENTS_METHOD = Symbol('GET_SCENE_ELEMENTS_METHOD');
-const GET_SCENE_REMOVED_ELEMENTS_METHOD = Symbol(
-  'GET_SCENE_REMOVED_ELEMENTS_METHOD'
+
+/**
+ * Computed method symbol used to retrieve the internal
+ * canvas pending creation element collection.
+ *
+ * Architectural Purpose:
+ * - Provides privileged internal access to graphical
+ *   elements awaiting backend renderer initialization.
+ * - Used by internal engine subsystems such as:
+ *   - Rendering engine
+ *   - Scene lifecycle management
+ *   - Element materialization pipeline
+ *
+ * Security Characteristics:
+ * - Protected through capability-based access validation.
+ * - Intended strictly for trusted internal engine systems.
+ *
+ * Behavioral Notes:
+ * - Returns the live internal collection reference.
+ * - Elements in this collection do not yet have a
+ *   corresponding backend graphical representation.
+ * - Elements are transferred to the active scene
+ *   collection after successful renderer creation.
+ * - External/public mutation is not permitted.
+ */
+const GET_PENDING_CREATION_ELEMENTS_METHOD = Symbol(
+  'GET_PENDING_CREATION_ELEMENTS_METHOD'
+);
+
+/**
+ * Computed method symbol used to retrieve the internal
+ * canvas pending deletion element collection.
+ *
+ * Architectural Purpose:
+ * - Provides privileged internal access to graphical
+ *   elements awaiting backend renderer destruction.
+ * - Used by internal engine subsystems such as:
+ *   - Rendering engine
+ *   - Scene lifecycle management
+ *   - Resource cleanup pipeline
+ *
+ * Security Characteristics:
+ * - Protected through capability-based access validation.
+ * - Intended strictly for trusted internal engine systems.
+ *
+ * Behavioral Notes:
+ * - Returns the live internal collection reference.
+ * - Elements in this collection are scheduled for
+ *   removal from the backend rendering environment.
+ * - Elements are permanently discarded after successful
+ *   renderer cleanup and resource release.
+ * - External/public mutation is not permitted.
+ */
+const GET_PENDING_DELETION_ELEMENTS_METHOD = Symbol(
+  'GET_PENDING_DELETION_ELEMENTS_METHOD'
 );
 
 /**
@@ -71,6 +124,94 @@ const GET_SCENE_REMOVED_ELEMENTS_METHOD = Symbol(
  * - Mutations bypass normal public API protections.
  */
 const GET_SCENE_ELEMENT_ID_MAP_METHOD = Symbol('GET_ELEMENT_ID_MAP_METHOD');
+
+/**
+ * Computed method symbol used to activate a successfully
+ * initialized scene element.
+ *
+ * Architectural Purpose:
+ * - Provides privileged internal access to the scene
+ *   activation pipeline.
+ * - Transfers a shape from the pending creation collection
+ *   into the active scene collection.
+ * - Establishes all scene-level invariants required for
+ *   normal engine processing.
+ *
+ * Used By:
+ * - Rendering engine
+ * - Renderer backends (SVG, Canvas, WebGL, etc.)
+ * - Internal scene lifecycle systems
+ *
+ * Security Characteristics:
+ * - Protected through capability-based access validation.
+ * - Intended strictly for trusted internal engine systems.
+ * - Must never be exposed through the public API.
+ *
+ * Lifecycle Semantics:
+ * - Invoked only after renderer initialization succeeds.
+ * - Removes the target shape from the pending creation queue.
+ * - Inserts the target shape into the active scene collection.
+ * - Registers the shape within all required indexing structures.
+ *
+ * State Invariants:
+ * - The target shape must exist in the pending creation collection.
+ * - The target shape must not already exist in the active scene collection.
+ * - The target shape must not already be registered in the
+ *   scene index map.
+ * - Upon successful completion:
+ *   - `#sceneElements` contains the shape.
+ *   - `#elementIndexMap` contains a valid index entry.
+ *   - `#sceneElements[index] === shape`.
+ *   - The shape is eligible for normal engine processing.
+ *
+ * Failure Impact:
+ * - Any violation may corrupt scene membership state.
+ * - Any index synchronization failure may invalidate O(1)
+ *   lookup guarantees.
+ *
+ * Behavioral Notes:
+ * - This method performs scene activation only.
+ * - Renderer-specific initialization must already be completed.
+ * - Does not create backend graphical resources.
+ * - Does not perform rendering.
+ */
+const COMMIT_PENDING_CREATION_METHOD = Symbol('COMMIT_PENDING_CREATION_METHOD');
+
+/**
+ * Internal commit method responsible for resolving all pending
+ * scene deletion requests into authoritative scene mutations.
+ *
+ * Architectural Purpose:
+ * - Finalizes deletion intents previously registered through
+ *   the public removal API.
+ * - Synchronizes the scene graph by removing queued elements
+ *   from the active scene collection.
+ *
+ * Responsibilities:
+ * - Executes scene removal using the configured removal strategy
+ *   (swap-pop).
+ * - Updates index and identifier lookup structures.
+ * - Clears ownership relationships.
+ * - Resets scene-specific state associated with removed elements.
+ * - Empties the pending deletion queue after successful commit.
+ *
+ * Lifecycle Semantics:
+ * - Invoked during the renderer preparation phase before
+ *   active scene snapshot generation.
+ * - Represents the authoritative deletion boundary of the scene.
+ *
+ * Invariants After Execution:
+ * - No committed element exists in `#sceneElements`.
+ * - No committed element exists in `#elementIndexMap`.
+ * - No committed element exists in `#elementIdMap`.
+ * - All committed elements have detached ownership.
+ * - Pending deletion queue is empty.
+ *
+ * Security Characteristics:
+ * - Restricted to trusted internal engine and renderer systems.
+ * - Protected through capability-based access validation.
+ */
+const COMMIT_PENDING_DELETION_METHOD = Symbol('COMMIT_PENDING_DELETION_METHOD');
 
 /* -------------------------------------------------------------------------- */
 /*                         System Internal Capability                          */
@@ -182,9 +323,12 @@ function assertSystemAccess(key: symbol): true {
 
 export {
   GET_SCENE_ELEMENTS_METHOD,
-  GET_SCENE_REMOVED_ELEMENTS_METHOD,
+  GET_PENDING_CREATION_ELEMENTS_METHOD,
+  GET_PENDING_DELETION_ELEMENTS_METHOD,
   GET_SCENE_ELEMENT_ID_MAP_METHOD,
   GET_SCENE_Z_ORDER_RESOLVER_METHOD,
   SYSTEM_INTERNAL_ACCESS_KEY,
+  COMMIT_PENDING_CREATION_METHOD,
+  COMMIT_PENDING_DELETION_METHOD,
   assertSystemAccess
 };

@@ -12,8 +12,7 @@ import {
 import {
   GET_SCENE_ELEMENTS_METHOD,
   GET_SCENE_ELEMENT_ID_MAP_METHOD,
-  GET_SCENE_Z_ORDER_RESOLVER_METHOD,
-  GET_SCENE_REMOVED_ELEMENTS_METHOD
+  GET_SCENE_Z_ORDER_RESOLVER_METHOD
 } from '../../internal/keys/system-keys.js';
 
 import type { ValidGraphicsShapes } from '../types/graphics-model';
@@ -59,10 +58,6 @@ export type ZOrderResolutionCleanUpFuncAccessor = {
 
 export type GetSceneElementsAccessor = {
   [GET_SCENE_ELEMENTS_METHOD]: (key: symbol) => GraphicsNode[];
-};
-
-export type GetSceneRemovedElementsAccessor = {
-  [GET_SCENE_REMOVED_ELEMENTS_METHOD]: (key: symbol) => GraphicsNode[];
 };
 
 export type GetSceneElementIdMapAccessor = {
