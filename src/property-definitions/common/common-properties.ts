@@ -124,7 +124,27 @@ export const CommonGeometricProperties = Object.seal({
      * calculations during geometry processing, hit testing,
      * spatial queries, and scene graph operations.
      */
-    bounds: new Float32Array([0, 0, 0, 0])
+    bounds: new Float32Array([0, 0, 0, 0]),
+    /**
+     * Describes which renderer update path should be executed
+     * during the next render pass.
+     *
+     * Semantics:
+     * - LOCAL:
+     *   Geometry or style properties changed.
+     *   Renderer should resolve property updates.
+     *
+     * - TRANSFORM:
+     *   Transform state changed.
+     *   Renderer should resolve transform updates.
+     *
+     * Notes:
+     * - This is not a traditional dirty flag.
+     * - It acts as an update classification mechanism
+     *   used by the renderer to select the appropriate
+     *   synchronization path.
+     */
+    renderUpdateType: 'TRANSFORM'
   }
 });
 
@@ -240,6 +260,58 @@ export const ShapeStyleProperties = Object.seal({
  *   for text rendering entities.
  * - Used exclusively by text-based graphical elements.
  */
+
+/*
+ // Possible different values of text properties
+ 
+font-weight:
+[
+  'normal',
+  'bold',
+  'bolder',
+  'lighter'
+]
+
+font-style:
+[
+  'normal',
+  'italic',
+  'oblique'
+]
+
+text-anchor:
+[
+  'start',
+  'middle',
+  'end'
+]
+
+alignment-baseline:
+[
+  'baseline',
+  'middle',
+  'central',
+  'hanging',
+  'top',
+  'bottom',
+  'text-top',
+  'text-bottom'
+]
+
+dominant-baseline:
+[
+  '',
+  'auto',
+  'middle',
+  'central',
+  'hanging',
+  'alphabetic',
+  'mathematical',
+  'ideographic'
+]
+
+	 */
+
 export const TextStyleProperties = Object.seal({
   /**
    * Font family name.
