@@ -13,23 +13,27 @@
  */
 
 import type {
-  bboxProps,
-  createTransformationMatrixProps,
-  FlipMethodProps,
+  BboxProps,
+  CreateTransformationMatrixProps,
   ParsedDaTa,
   RotateMethodProps,
   ScaleMethodProps,
   SkewMethodProps,
-  TranslateMethodProps
-} from '../../types/transformations';
+  TranslateMethodProps,
+  TransformTypes,
+  CenterType
+} from '../../models/types/affine-transformations';
 
-import type { iShape } from '../../shapes/provider/shapesTypes';
-import type { transformStack } from '../../types/index';
-
+import type {
+  GetInternalGraphicsAccessor,
+  GraphicsNode
+} from '../../models/interfaces/graphics-container';
+import type { TransformStack } from '../../models/types/common';
+import type { InternalGeometryAccessor } from '../../models/types/graphics-model';
 import type {
   ICommonGeometricProperties,
   IShapeStyleProperties
-} from '../../properties/common/commonProperties';
+} from '../../property-definitions/common/common-properties';
 
 /**
  * ============================================================================
@@ -50,7 +54,7 @@ import {
   InvalidFormatError,
   InvalidInternalStateError,
   OperationInProgressError
-} from '../errors/provider/shantanuJSErrors.js';
+} from '../../errors/index.js';
 
 /**
  * ============================================================================
@@ -63,60 +67,31 @@ import {
  * - low-level type and property checks
  */
 
-import { parameterTypeValidator } from '../helpers/helpers.js';
+import { resetMatrix } from '../../utils/math/matrix/matrix-utils.js';
+import {
+  DEV_INTERNAL_ACCESS_KEY,
+  GET_INTERNAL_GEOMETRY_METHOD,
+  GET_INTERNAL_GRAPHICS_METHOD
+} from '../../internal/keys/dev-keys.js';
 
 import {
+  affineMatrixMultiplyUsingDOMMatrix,
+  applyTransformToHomogeneousBuffer
+} from '../../utils/math/matrix/matrix-multiplication.js';
+import { composeAffineTransformations } from '../../utils/math/affine/affine-composition.js';
+import { computeAABBPoints } from '../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
+import {
+  parameterTypeValidator,
   propTypes,
-  resetMatrix,
   typeCheck
-} from './preBuilds/helpers/helpers.js';
-
-/**
- * ============================================================================
- * TRANSFORMATION PRIMITIVES
- * ============================================================================
- *
- * Atomic transformation implementations.
- *
- * Each module encapsulates the logic for a single affine transformation
- * and is composed by higher-level orchestration logic.
- */
-
-import { Flip } from './preBuilds/transformations/flip.js';
-import { Rotate } from './preBuilds/transformations/rotate.js';
-import { Scale } from './preBuilds/transformations/scale.js';
-import { Skew } from './preBuilds/transformations/skew.js';
-import { Translate } from './preBuilds/transformations/translation.js';
-
-/**
- * ============================================================================
- * TRANSFORMATION DSL & GEOMETRY PROCESSING
- * ============================================================================
- *
- * Modules responsible for:
- * - parsing transformation expressions
- * - applying matrix math to geometry buffers
- * - computing spatial bounds in screen space
- */
-
-import { parseExpression } from './preBuilds/transformDSL/parsingAndApply.js';
-import { computeAABBPoints } from './preBuilds/boundingBoxes/axisAlignedBoundingBox.js';
-import { applyTransformToHomogeneousBuffer } from './preBuilds/matrix/matrixMultiplication.js';
-
-/**
- * ============================================================================
- * ACCESS CONTROL
- * ============================================================================
- *
- * Internal access keys and guards used to enforce controlled access
- * to engine-internal geometry and style state.
- *
- * These imports are strictly for trusted engine modules and must never
- * be exposed to userland APIs.
- */
-
-import { assertAccess, DEV_INTERNAL_ACCESS } from '../provider/accesskeys.js';
-import { SVG_CONTEXT } from '../../core/graphics/backends/svg/core/core.js';
+} from '../../utils/helpers/helpers.js';
+import { translate } from '../../utils/math/affine/transformations/translation.js';
+import { scale } from '../../utils/math/affine/transformations/scale.js';
+import { rotate } from '../../utils/math/affine/transformations/rotate.js';
+import { skew } from '../../utils/math/affine/transformations/skew.js';
+import { parseExpression } from '../../utils/math/affine/affine-expression-parser.js';
+import type { ITransformation } from '../../models/interfaces/transformation';
+import { resolvePivots } from '../../utils/geometry/pivot-resolution/pivot-utils.js';
 
 /**
  * ============================================================================
@@ -209,7 +184,7 @@ import { SVG_CONTEXT } from '../../core/graphics/backends/svg/core/core.js';
  * transformation features.
  */
 
-export class Transformation {
+export class Transformation implements ITransformation {
   /**
    * Readonly Reference to the original shape instance associated with this engine.
    *
@@ -229,7 +204,7 @@ export class Transformation {
    * - Used as the authoritative source for internal geometry and style access
    * - Never reassigned or mutated
    */
-  readonly #gModel!: iShape;
+  readonly #gModel!: GraphicsNode;
 
   /**
    * Readonly Internal geometry state of the associated shape.
@@ -272,7 +247,7 @@ export class Transformation {
    * - Assumes trusted, validated usage
    * - Must never be exposed directly to users
    */
-  readonly #style: Partial<IShapeStyleProperties>;
+  // readonly #style: Partial<IShapeStyleProperties>;
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //++++++++++++++ Transformation Batching  Methods +++++++++++++++
@@ -297,29 +272,7 @@ export class Transformation {
    *
    * This matrix is reset or finalized when batching ends.
    */
-  #__batchedComposeTMatrix: DOMMatrix = new DOMMatrix();
-
-  /**
-   * Composed transformation matrix for non-batched operations.
-   *
-   * -------------------------------------------------------------------------
-   * ROLE
-   * -------------------------------------------------------------------------
-   * Represents the final composed affine transformation matrix
-   * derived from individual transform operations such as:
-   * - translate
-   * - rotate
-   * - scale
-   * - skew
-   *
-   * -------------------------------------------------------------------------
-   * USAGE
-   * -------------------------------------------------------------------------
-   * - Used by all affine transformation methods
-   * - Represents the authoritative transformation state
-   *   when batching is disabled
-   */
-  #__composeTMatrix: DOMMatrix = new DOMMatrix();
+  #composedMatrix: DOMMatrix = new DOMMatrix();
 
   /**
    * Temporary transformation matrix used during matrix multiplication.
@@ -336,7 +289,7 @@ export class Transformation {
    * Reusing a temporary matrix significantly reduces GC pressure
    * during high-frequency transformation operations.
    */
-  #__tempTMatrix: DOMMatrix = new DOMMatrix();
+  #tempMatrix: DOMMatrix = new DOMMatrix();
 
   /**
    * Flag indicating whether transformation batching is currently active.
@@ -383,11 +336,13 @@ export class Transformation {
    *                 will be transformed by this module.
    */
 
-  constructor(gModel: iShape) {
+  constructor(gModel: GraphicsNode) {
     this.#gModel = gModel;
 
-    this.#geometry = this.#gModel.getIGeo(DEV_INTERNAL_ACCESS);
-    this.#style = this.#gModel.getIStyle(DEV_INTERNAL_ACCESS);
+    this.#geometry = (this.#gModel as GraphicsNode & InternalGeometryAccessor)[
+      GET_INTERNAL_GEOMETRY_METHOD
+    ](DEV_INTERNAL_ACCESS_KEY);
+    //   this.#style = this.#gModel.getIStyle(DEV_INTERNAL_ACCESS);
   }
 
   /**
@@ -460,30 +415,6 @@ export class Transformation {
   }
 
   /**
-   * Resets a transformation matrix to the identity state.
-   *
-   * -------------------------------------------------------------------------
-   * ROLE
-   * -------------------------------------------------------------------------
-   * Clears all accumulated transformation data from the given matrix,
-   * restoring it to a neutral identity matrix.
-   *
-   * This is used internally to:
-   * - reset composed matrices
-   * - clear batched transformation state
-   *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param mat - The DOMMatrix instance to reset.
-   *              Defaults to the primary composed transformation matrix.
-   */
-
-  #resetMatrix(mat: DOMMatrix = this.#__composeTMatrix): void {
-    resetMatrix(mat);
-  }
-
-  /**
    * Ends transformation batching and applies the accumulated transformation.
    *
    * -------------------------------------------------------------------------
@@ -514,360 +445,23 @@ export class Transformation {
    * This ensures correct semantic tagging downstream.
    */
 
-  public endT(): void | Float32Array {
-    if (!this.#isBatching) return;
+  public endT(): Float32Array {
+    if (!this.#isBatching) return new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
 
     this.#isBatching = false;
 
-    const finalMat: Float32Array | void =
-      this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#__batchedComposeTMatrix
-      });
+    const finalMatrix = this.#batchingAndFinalizeTransformHandler({
+      transformMatrix: this.#composedMatrix
+    }) as Float32Array;
 
-    this.#resetMatrix(this.#__batchedComposeTMatrix);
-    return finalMat;
-  }
+    resetMatrix(this.#composedMatrix);
 
-  /**
-   * Accumulates a transformation matrix into the current batching buffer.
-   *
-   * -------------------------------------------------------------------------
-   * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * Composes the provided transformation matrix into the internal
-   * batched transformation matrix when batching is active.
-   *
-   * This method affects ONLY the internal transformation buffer
-   * and does NOT trigger any visual updates.
-   *
-   * -------------------------------------------------------------------------
-   * SAFETY CHECKS
-   * -------------------------------------------------------------------------
-   * The operation proceeds only if:
-   * - Batching mode is active
-   * - The provided matrix is a valid DOMMatrix instance
-   * - The internal batched matrix is valid
-   *
-   * Invalid input is silently ignored to preserve engine stability.
-   *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param T - Transformation matrix to be composed into the batch buffer.
-   */
-
-  #batch__composeTMatrix(T: DOMMatrix): void {
-    if (
-      this.#isBatching &&
-      T &&
-      T instanceof DOMMatrix &&
-      this.#__batchedComposeTMatrix &&
-      this.#__batchedComposeTMatrix instanceof DOMMatrix
-    ) {
-      this.#__batchedComposeTMatrix.multiplySelf(T);
-    }
-  }
-
-  /**
-   * Creates a composed 2D transformation matrix from declarative transform input.
-   *
-   * -------------------------------------------------------------------------
-   * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * This method translates a high-level transformation description into a
-   * concrete 3×3 affine transformation matrix.
-   *
-   * It supports:
-   * - selective application of scale, skew, rotate, and translate
-   * - optional multiplication with an existing base matrix
-   * - configurable output layout (row-major / column-major)
-   * - configurable output type (Float32Array / nested arrays)
-   *
-   * -------------------------------------------------------------------------
-   * WHY THIS FUNCTION EXISTS
-   * -------------------------------------------------------------------------
-   * The transformation engine operates internally using DOMMatrix for accuracy
-   * and composability.
-   *
-   * This method acts as a controlled export layer that:
-   * - executes transformations through the engine pipeline
-   * - extracts final matrix values from a single source of truth
-   * - serializes the result into user-consumable formats
-   *
-   * -------------------------------------------------------------------------
-   * DESIGN INVARIANTS
-   * -------------------------------------------------------------------------
-   * - DOMMatrix is the authoritative internal representation
-   * - All transformations are composed through batching
-   * - No visual side-effects occur during matrix creation
-   * - Output always represents a valid 3×3 affine matrix
-   *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param transformations   Declarative transform instructions (scale, rotate, etc.)
-   * @param baseTMatrix       Optional base transformation matrix
-   * @param multiplyWithBase  Whether to multiply composed matrix with base
-   * @param major             Matrix layout convention ('row' | 'column')
-   * @param arrayType         Output representation ('float32' | 'normal')
-   *
-   * -------------------------------------------------------------------------
-   * RETURNS
-   * -------------------------------------------------------------------------
-   * A 3×3 affine transformation matrix in the requested format.
-   */
-
-  public createTransformMatrix({
-    transformations,
-    baseTMatrix,
-    multiplyWithBase = false,
-    major = 'row',
-    arrayType = 'normal'
-  }: createTransformationMatrixProps): Float32Array | number[][] {
-    // -----------------------------------------------------------
-    // STEP 1: Resolve transformation presence flags
-    // -----------------------------------------------------------
-
-    // quick flags
-    const hasTransforms = !!transformations;
-    const doScale =
-      hasTransforms && 'scale' in transformations && transformations.scale;
-    const doSkew =
-      hasTransforms && 'skew' in transformations && transformations.skew;
-    const doRotate =
-      hasTransforms && 'rotate' in transformations && transformations.rotate;
-    const doTranslate =
-      hasTransforms &&
-      'translate' in transformations &&
-      transformations.translate;
-
-    // -----------------------------------------------------------
-    // STEP 2: Reset internal matrices and initialize batching
-    // -----------------------------------------------------------
-
-    // reset temp matrices once up-front and begin batching only if needed
-    this.#resetMatrix(this.#__batchedComposeTMatrix);
-    this.#resetMatrix(this.#__tempTMatrix);
-
-    if (doScale || doSkew || doRotate || doTranslate) {
-      this.beginT();
-
-      doSkew && this.Skew(transformations.skew as SkewMethodProps);
-      doScale && this.Scale(transformations.scale as ScaleMethodProps);
-      doRotate && this.Rotate(transformations.rotate as RotateMethodProps);
-      doTranslate &&
-        this.Translate(transformations.translate as TranslateMethodProps);
-    }
-
-    // -----------------------------------------------------------
-    // STEP 3: Extract composed matrix values from DOMMatrix
-    // -----------------------------------------------------------
-
-    // Extract composed matrix elements from the batched DOMMatrix (single source of truth)
-    // DOMMatrix 2D properties: a, b, c, d, e, f (and m31,m32 for translation in 3x3 form)
-    const composed = this.#__batchedComposeTMatrix as DOMMatrix;
-
-    // If no transforms were applied, composed should be identity; still safe to read properties.
-    let a = composed.a as number;
-    let b = composed.b as number;
-    let c = composed.c as number;
-    let d = composed.d as number;
-    let e = composed.e as number;
-    let f = composed.f as number;
-    let m31 = composed.m31 as number;
-    let m32 = composed.m32 as number;
-
-    // -----------------------------------------------------------
-    // STEP 4: Multiply with base matrix if requested
-    // -----------------------------------------------------------
-
-    // If baseTMatrix is provided and we must multiply with base, do a 3x3 multiplication:
-    // result = base * composed
-    if (baseTMatrix instanceof Float32Array && multiplyWithBase) {
-      // Interpret baseTMatrix as 'column' major 1D matrix
-
-      // COLUMN-major output layout (major === 'column'):
-      //  [ a, b, m31,
-      //    c, d, m32,
-      //    e, f, 1 ]
-      //
-      // We'll extract base elements consistently into baseA..baseM32 and perform base * composed.
-      let ba: number,
-        bb: number,
-        bc: number,
-        bd: number,
-        be: number,
-        bf: number,
-        bm31: number,
-        bm32: number;
-
-      // column-major layout
-      // index mapping:
-      // [0]=a_b, [1]=b_b, [2]=m31_b, [3]=c_b, [4]=d_b, [5]=m32_b, [6]=e_b, [7]=f_b, [8]=1
-      ba = baseTMatrix[0] as number;
-      bb = baseTMatrix[1] as number;
-      bm31 = baseTMatrix[2] as number;
-      bc = baseTMatrix[3] as number;
-      bd = baseTMatrix[4] as number;
-      bm32 = baseTMatrix[5] as number;
-      be = baseTMatrix[6] as number;
-      bf = baseTMatrix[7] as number;
-
-      // Build base 3x3:
-      // base 3x3 matrix (row-major conceptual):
-      // [ ba  bc  be ]
-      // [ bb  bd  bf ]
-      // [ bm31 bm32 1 ]
-
-      // composed 3x3 matrix (row-major conceptual):
-      // [ a  c  e ]
-      // [ b  d  f ]
-      // [ m31 m32 1 ]
-
-      // Multiply base * composed (3x3)
-      const r00 = ba * a + bc * b + be * m31;
-      const r01 = ba * c + bc * d + be * m32;
-      const r02 = ba * e + bc * f + be * 1;
-
-      const r10 = bb * a + bd * b + bf * m31;
-      const r11 = bb * c + bd * d + bf * m32;
-      const r12 = bb * e + bd * f + bf * 1;
-
-      const r20 = bm31 * a + bm32 * b + 1 * m31;
-      const r21 = bm31 * c + bm32 * d + 1 * m32;
-      //const r22 = bm31 * e + bm32 * f + 1 * 1;
-
-      // Now assign back to the a..f,m31,m32 in the same variable names expected later
-      a = r00;
-      c = r01;
-      e = r02;
-
-      b = r10;
-      d = r11;
-      f = r12;
-
-      m31 = r20;
-      m32 = r21;
-      // r22 should be 1 (or close), ignore
-    }
-
-    // -----------------------------------------------------------
-    // STEP 5: Cleanup batching state
-    // -----------------------------------------------------------
-
-    // Clean-up batching state once
-    this.#resetMatrix(this.#__batchedComposeTMatrix);
-    this.#resetMatrix(this.#__tempTMatrix);
-    this.#isBatching = false;
-
-    // -----------------------------------------------------------
-    // STEP 6: Build output in requested format
-    // -----------------------------------------------------------
-
-    // Build output in requested format
-    if (arrayType === 'float32') {
-      let out!: Float32Array;
-
-      major === 'row' &&
-        (out = new Float32Array([a, c, e, b, d, f, m31, m32, 1]));
-      major === 'column' &&
-        (out = new Float32Array([a, b, m31, c, d, m32, e, f, 1]));
-
-      return out;
-    } else {
-      // normal nested arrays
-      const tM: number[][] = [];
-
-      if (major === 'row') {
-        // rows: [ [a, c, e], [b, d, f], [m31, m32, 1] ]
-        tM[0] = [a, c, e];
-        tM[1] = [b, d, f];
-        tM[2] = [m31, m32, 1];
-      } else {
-        // columns interpreted as rows here: [ [a, b, m31], [c, d, m32], [e, f, 1] ]
-        tM[0] = [a, b, m31];
-        tM[1] = [c, d, m32];
-        tM[2] = [e, f, 1];
-      }
-      return tM;
-    }
+    return finalMatrix;
   }
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   //++++++++++++++ Healper  Methods +++++++++++++++
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-  /**
-   * Applies a transformation matrix to the shape's geometry buffer
-   * and returns the transformed result.
-   *
-   * -------------------------------------------------------------------------
-   * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * This method performs a matrix–geometry multiplication by:
-   * - validating internal geometry availability
-   * - extracting the underlying homogeneous coordinate buffer
-   * - applying the provided transformation matrix
-   *
-   * The operation is executed against the shape’s internal geometry state
-   * and may optionally mutate the buffer based on the `assign` flag.
-   *
-   * -------------------------------------------------------------------------
-   * WHY THIS FUNCTION EXISTS
-   * -------------------------------------------------------------------------
-   * Geometry is stored internally in homogeneous buffer form for performance
-   * and mathematical correctness. Transform operations require applying a
-   * DOMMatrix to this buffer in a controlled and validated manner.
-   *
-   * This method centralizes that logic to ensure:
-   * - invariant enforcement
-   * - consistent transform application
-   * - isolation of low-level math operations
-   *
-   * -------------------------------------------------------------------------
-   * DESIGN INVARIANTS
-   * -------------------------------------------------------------------------
-   * - Geometry must be initialized before transformation
-   * - Geometry buffer must be a valid Float32Array
-   * - Buffer length must be non-zero
-   * - Transformation is applied via homogeneous coordinates
-   *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param T      - Transformation matrix to apply.
-   * @param assign - Whether the transformation mutates the internal buffer
-   *                 or produces a derived result.
-   *
-   * -------------------------------------------------------------------------
-   * RETURNS
-   * -------------------------------------------------------------------------
-   * The result of applying the transformation matrix to the geometry buffer.
-   */
-  public matrixProductTxM(T: DOMMatrix, assign: boolean = false) {
-    if (!this.#geometry) {
-      throw new InvalidInternalStateError(
-        this.#geometry,
-        'proper object of GraphicsModel class',
-        'Cannot perform matrix multiplication.',
-        'transformation.#matrixProductTxM()'
-      );
-    }
-
-    const buffer = this.#geometry.buffer as Float32Array;
-
-    if (!(buffer instanceof Float32Array) || buffer.length < 1) {
-      throw new InvalidInternalStateError(
-        buffer,
-        'non-empty Float32Array geometry buffer',
-        'Cannot perform matrix multiplication.',
-        'transformation.#matrixProductTxM()'
-      );
-    }
-
-    // Delegate the actual math operation to the transform utility
-    return applyTransformToHomogeneousBuffer(T, buffer, assign);
-  }
 
   /**
    * Handles transformation application by routing between batched and
@@ -926,7 +520,7 @@ export class Transformation {
      */
     if (this.#isBatching) {
       // Accumulate transformation into the batch composition matrix
-      this.#batch__composeTMatrix(transformMatrix);
+      affineMatrixMultiplyUsingDOMMatrix(this.#composedMatrix, transformMatrix);
 
       // Enable chaining while batching
       return;
@@ -956,281 +550,6 @@ export class Transformation {
 
       return tm;
     }
-  }
-
-  /**
-   * Composes transformation matrices from the internal transform stack
-   * into a single DOMMatrix.
-   *
-   * -------------------------------------------------------------------------
-   * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * This method resolves the current transformation state by:
-   * - reading transformation matrices from the transform stack
-   * - optionally skipping composition when not required
-   * - multiplying matrices in correct sequence
-   * - returning a reusable DOMMatrix representing the composed result
-   *
-   * It serves as the single source of truth for transform composition.
-   *
-   * -------------------------------------------------------------------------
-   * WHY THIS FUNCTION EXISTS
-   * -------------------------------------------------------------------------
-   * Transformations may be accumulated incrementally (e.g. batching,
-   * animations, chained transforms). Rendering and geometry application
-   * require a single resolved matrix.
-   *
-   * This method performs that resolution efficiently without allocating
-   * new matrix objects.
-   *
-   * -------------------------------------------------------------------------
-   * DESIGN INVARIANTS
-   * -------------------------------------------------------------------------
-   * - Transform stack must contain a valid base matrix at index 0
-   * - Matrices are stored as homogeneous Float32Array representations
-   * - Matrix multiplication order is preserved
-   * - Reusable matrices are reset before use
-   *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param required - Whether full composition of the transform stack
-   *                   is required. If false, only the base transform
-   *                   is returned.
-   *
-   * -------------------------------------------------------------------------
-   * RETURNS
-   * -------------------------------------------------------------------------
-   * A DOMMatrix representing the composed transformation.
-   */
-  public composeTransforms(required = false) {
-    const { stack, skip } = (
-      this.#geometry as { transformStack: transformStack }
-    ).transformStack;
-
-    /* ---------------------------------------------------------------------
-     * STEP 1: Reset reusable matrices
-     * ---------------------------------------------------------------------
-     * Ensure all scratch and composition matrices start from identity
-     * before loading or multiplying transforms.
-     */
-    this.#resetMatrix(this.#__tempTMatrix);
-
-    /* ---------------------------------------------------------------------
-     * STEP 2: Fast-path when full composition is not required
-     * ---------------------------------------------------------------------
-     * If only the base transform is needed, load it directly into the
-     * reusable DOMMatrix and return early.
-     */
-    if (!required) {
-      const t = stack[0].transformMatrix as Float32Array;
-
-      this.#resetMatrix(this.#__tempTMatrix);
-
-      // Load base transform into reusable DOMMatrix
-      this.#__tempTMatrix.a = t[0] as number;
-      this.#__tempTMatrix.b = t[1] as number;
-      this.#__tempTMatrix.c = t[3] as number;
-      this.#__tempTMatrix.d = t[4] as number;
-      this.#__tempTMatrix.e = t[6] as number;
-      this.#__tempTMatrix.f = t[7] as number;
-
-      return this.#__tempTMatrix;
-    }
-
-    /* ---------------------------------------------------------------------
-     * STEP 3: Reset composition matrix for full transform resolution
-     * ---------------------------------------------------------------------
-     * Prepare the reusable composition matrix to accumulate transforms.
-     */
-    this.#resetMatrix();
-
-    /* ---------------------------------------------------------------------
-     * STEP 4: Iterate and compose active transforms
-     * ---------------------------------------------------------------------
-     * Sequentially load each transform matrix from the stack (excluding
-     * skipped entries) and multiply it into the composition matrix.
-     */
-    for (let i = 1; i < stack.length - skip; i++) {
-      const t = stack?.[i]?.transformMatrix as Float32Array;
-
-      // Load current transform into scratch matrix (no allocation)
-      this.#__tempTMatrix.a = t[0] as number;
-      this.#__tempTMatrix.b = t[1] as number;
-      this.#__tempTMatrix.c = t[3] as number;
-      this.#__tempTMatrix.d = t[4] as number;
-      this.#__tempTMatrix.e = t[6] as number;
-      this.#__tempTMatrix.f = t[7] as number;
-
-      // Multiply into reusable composition matrix
-      this.#__composeTMatrix.multiplySelf(this.#__tempTMatrix);
-    }
-
-    /* ---------------------------------------------------------------------
-     * STEP 5: Return composed transformation
-     * ---------------------------------------------------------------------
-     * The composition matrix now represents the cumulative transformation
-     * of all active transforms.
-     */
-    return this.#__composeTMatrix;
-  }
-
-  /**
-   * Computes the axis-aligned bounding box (AABB) of the shape
-   * in screen space after applying all active transformations.
-   *
-   * -------------------------------------------------------------------------
-   * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * This method calculates the final bounding rectangle of the shape by:
-   * - transforming canonical geometry into screen space
-   * - computing the axis-aligned bounds
-   * - optionally expanding bounds to account for stroke width
-   *
-   * The result represents the visual footprint of the shape
-   * after all transformations are applied.
-   *
-   * -------------------------------------------------------------------------
-   * WHY THIS FUNCTION EXISTS
-   * -------------------------------------------------------------------------
-   * Geometry is stored internally in canonical (local) space.
-   * Rendering, hit-testing, and layout require bounds in screen space.
-   *
-   * This method bridges that gap in a deterministic and reusable way.
-   *
-   * -------------------------------------------------------------------------
-   * DESIGN INVARIANTS
-   * -------------------------------------------------------------------------
-   * - Geometry buffer is treated as immutable input
-   * - Transform composition is the single source of truth
-   * - Bounding box is always axis-aligned (not oriented)
-   * - Stroke expansion is applied in screen space
-   *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param includeStroke - Whether stroke width should be included
-   *                        in the bounding box computation.
-   *
-   * -------------------------------------------------------------------------
-   * RETURNS
-   * -------------------------------------------------------------------------
-   * An object containing:
-   * - x, y           : top-left corner of the bounding box
-   * - width, height  : dimensions of the bounding box
-   * - matrix         : 4-corner homogeneous representation of the AABB
-   */
-  public getBBox(includeStroke = true): bboxProps {
-    // -----------------------------------------------------------
-    // STEP 1: Validate required internal state
-    // -----------------------------------------------------------
-
-    if (!this.#geometry || !this.#style) {
-      throw new InvalidInternalStateError(
-        this.#geometry ?? this.#style,
-        'proper object of GraphicsModel class',
-        'Cannot compute bounding box.',
-        'transformation.getBBox()'
-      );
-    }
-
-    // -----------------------------------------------------------
-    // STEP 2: Resolve stroke expansion
-    // -----------------------------------------------------------
-
-    let sw = includeStroke ? (this.#style['stroke-width'] ?? 0) / 2 : 0;
-
-    // -----------------------------------------------------------
-    // STEP 3: Extract canonical geometry and composed transform
-    // -----------------------------------------------------------
-
-    const { shape, context } = this.#geometry as {
-      shape: string;
-      context: string;
-    };
-
-    let canonical: Float32Array;
-
-    //-----------------------------------
-    // ONLY SVG TEXT SPECIFIC
-    //-----------------------------------
-
-    if (shape == 'text' && context == SVG_CONTEXT) {
-      const text = this.#gModel.getIFig(DEV_INTERNAL_ACCESS) as SVGTextElement;
-
-      const {
-        x,
-        y,
-        width: w,
-        height: h
-      } = text.getBBox() as {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      };
-      canonical = new Float32Array([
-        x,
-        y,
-        1,
-        x + w,
-        y,
-        1,
-        x + w,
-        y + h,
-        1,
-        x,
-        y + h,
-        1
-      ]);
-
-      sw = 0;
-    } else {
-      canonical = this.#geometry.buffer as Float32Array;
-    }
-    const M = this.composeTransforms(true) as DOMMatrix;
-
-    // -----------------------------------------------------------
-    // STEP 4: Transform canonical points into screen space
-    // -----------------------------------------------------------
-
-    const transformed = applyTransformToHomogeneousBuffer(M, canonical);
-
-    // -----------------------------------------------------------
-    // STEP 5: Cleanup internal transformation matrices
-    // -----------------------------------------------------------
-
-    this.#resetMatrix(this.#__composeTMatrix);
-    this.#resetMatrix(this.#__tempTMatrix);
-
-    // -----------------------------------------------------------
-    // STEP 6: Compute axis-aligned bounding box (AABB)
-    // -----------------------------------------------------------
-
-    const { minX, minY, maxX, maxY } = computeAABBPoints(transformed);
-
-    // -----------------------------------------------------------
-    // STEP 7: Apply stroke expansion in screen space
-    // -----------------------------------------------------------
-
-    const x = minX - sw;
-    const y = minY - sw;
-    const width = maxX + sw - x;
-    const height = maxY + sw - y;
-
-    // -----------------------------------------------------------
-    // STEP 8: Construct user-friendly corner matrix
-    // -----------------------------------------------------------
-
-    // Extra user-friendly 4-corner matrix (optional but valid for AABB)
-    const matrix = [
-      [x, y, 1],
-      [x + width, y, 1],
-      [x + width, y + height, 1],
-      [x, y + height, 1]
-    ];
-
-    return { x, y, width, height, matrix };
   }
 
   //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1286,7 +605,7 @@ export class Transformation {
    * - returns `void` when batching is active
    * - return a Float32Array  when used in deferred contexts
    */
-  public Translate({
+  public translate({
     x,
     y,
     tType = 'a',
@@ -1299,7 +618,7 @@ export class Transformation {
        * ---------------------------------------------------------------------
        * Resolve shorthand and alias forms into canonical translation types.
        */
-      tType = tType == 'c' || tType == 'center' ? 'c' : typeCheck(tType);
+      //   tType = tType == 'c' || tType == 'center' ? 'c' : typeCheck(tType);
 
       /* ---------------------------------------------------------------------
        * STEP 2: Validate parameter types
@@ -1314,24 +633,26 @@ export class Transformation {
        * When translation depends on shape geometry, compute the pivot
        * point using the current bounding box.
        */
-      if (
-        tType == 'a' ||
-        tType == 'absolute' ||
-        tType == 'c' ||
-        tType == 'center'
-      ) {
-        const obb = this.getBBox(false) as {
-          x: number;
-          y: number;
-          width: number;
-          height: number;
-        };
-
-        (tType == 'a' || tType == 'absolute') && ([px, py] = [obb.x, obb.y]);
-
-        (tType == 'c' || tType == 'center') &&
-          ([px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2]);
-      }
+      //       if (
+      //         tType == 'a' ||
+      //         tType == 'absolute' ||
+      //         tType == 'c' ||
+      //         tType == 'center'
+      //       ) {
+      //         const obb = this.getBBox(false) as {
+      //           x: number;
+      //           y: number;
+      //           width: number;
+      //           height: number;
+      //         };
+      //
+      //         (tType == 'a' || tType == 'absolute') && ([px, py] = [obb.x, obb.y]);
+      //
+      //         (tType == 'c' || tType == 'center') &&
+      //           ([px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2]);
+      //       }
+      //
+      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
 
       /* ---------------------------------------------------------------------
        * STEP 4: Generate translation matrix
@@ -1339,8 +660,8 @@ export class Transformation {
        * Reset the reusable matrix and populate it with the translation
        * transformation.
        */
-      this.#resetMatrix(this.#__tempTMatrix);
-      Translate({ x, y, tType, px, py, oMatrix: this.#__tempTMatrix });
+      resetMatrix(this.#tempMatrix);
+      translate({ x, y, tType, px, py, oMatrix: this.#tempMatrix });
 
       /* ---------------------------------------------------------------------
        * STEP 5: Route transformation through batching or finalization
@@ -1350,7 +671,7 @@ export class Transformation {
        */
 
       return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#__tempTMatrix
+        transformMatrix: this.#tempMatrix
       }) as Float32Array | void;
     } catch (e) {
       // Propagate errors without interception to preserve original semantics
@@ -1411,7 +732,7 @@ export class Transformation {
    * - returns `void` when batching is active
    * - return a Float32Array  when used in deferred contexts
    */
-  public Scale({
+  public scale({
     sx,
     sy,
     tType = 'a',
@@ -1424,7 +745,7 @@ export class Transformation {
        * ---------------------------------------------------------------------
        * Resolve shorthand and alias forms into canonical scaling types.
        */
-      tType = typeCheck(tType);
+      // tType = typeCheck(tType);
 
       /* ---------------------------------------------------------------------
        * STEP 2: Validate parameter types
@@ -1439,25 +760,25 @@ export class Transformation {
        * When scaling is absolute, the pivot is derived from the shape’s
        * bounding box center.
        */
-      if (tType == 'a' || tType == 'absolute') {
-        const obb = this.getBBox(false) as {
-          x: number;
-          y: number;
-          width: number;
-          height: number;
-        };
-
-        [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
-      }
-
+      //       if (tType == 'a' || tType == 'absolute') {
+      //         const obb = this.getBBox(false) as {
+      //           x: number;
+      //           y: number;
+      //           width: number;
+      //           height: number;
+      //         };
+      //
+      //         [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
+      //       }
+      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
       /* ---------------------------------------------------------------------
        * STEP 4: Generate scaling matrix
        * ---------------------------------------------------------------------
        * Reset the reusable matrix and populate it with the scale
        * transformation.
        */
-      this.#resetMatrix(this.#__tempTMatrix);
-      Scale({ sx, sy, tType, px, py, oMatrix: this.#__tempTMatrix });
+      resetMatrix(this.#tempMatrix);
+      scale({ sx, sy, tType, px, py, oMatrix: this.#tempMatrix });
 
       /* ---------------------------------------------------------------------
        * STEP 5: Route transformation through batching or finalization
@@ -1466,7 +787,7 @@ export class Transformation {
        * transformation lifecycle handling.
        */
       return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#__tempTMatrix
+        transformMatrix: this.#tempMatrix
       }) as Float32Array | void;
     } catch (e) {
       // Preserve original error semantics
@@ -1527,7 +848,7 @@ export class Transformation {
    * - returns `void` when batching is active
    * - return a Float32Array  when used in deferred contexts
    */
-  public Rotate({
+  public rotate({
     angle,
     tType = 'a',
     px = 0,
@@ -1539,7 +860,7 @@ export class Transformation {
        * ---------------------------------------------------------------------
        * Resolve shorthand and alias forms into canonical rotation types.
        */
-      tType = typeCheck(tType);
+      //  tType = typeCheck(tType);
 
       /* ---------------------------------------------------------------------
        * STEP 2: Validate parameter types
@@ -1555,32 +876,32 @@ export class Transformation {
        * to avoid unbounded accumulation.
        */
       angle = angle % 360;
-
+      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
       /* ---------------------------------------------------------------------
        * STEP 4: Resolve pivot coordinates for absolute rotation
        * ---------------------------------------------------------------------
        * When rotation is absolute, the pivot is derived from the shape’s
        * bounding box center.
        */
-      if (tType == 'a' || tType == 'absolute') {
-        const obb = this.getBBox(false) as {
-          x: number;
-          y: number;
-          width: number;
-          height: number;
-        };
-
-        [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
-      }
-
+      //       if (tType == 'a' || tType == 'absolute') {
+      //         const obb = this.getBBox(false) as {
+      //           x: number;
+      //           y: number;
+      //           width: number;
+      //           height: number;
+      //         };
+      //
+      //         [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
+      //       }
+      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
       /* ---------------------------------------------------------------------
        * STEP 5: Generate rotation matrix
        * ---------------------------------------------------------------------
        * Reset the reusable matrix and populate it with the rotation
        * transformation.
        */
-      this.#resetMatrix(this.#__tempTMatrix);
-      Rotate({ angle, tType, px, py, oMatrix: this.#__tempTMatrix });
+      resetMatrix(this.#tempMatrix);
+      rotate({ angle, tType, px, py, oMatrix: this.#tempMatrix });
 
       /* ---------------------------------------------------------------------
        * STEP 6: Route transformation through batching or finalization
@@ -1589,7 +910,7 @@ export class Transformation {
        * transformation lifecycle handling.
        */
       return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#__tempTMatrix
+        transformMatrix: this.#tempMatrix
       }) as Float32Array | void;
     } catch (e) {
       // Preserve original error semantics
@@ -1651,7 +972,7 @@ export class Transformation {
    * - returns `void` when batching is active
    * - return a Float32Array  when used in deferred contexts
    */
-  public Skew({
+  public skew({
     sx,
     sy,
     tType = 'a',
@@ -1664,7 +985,7 @@ export class Transformation {
        * ---------------------------------------------------------------------
        * Resolve shorthand and alias forms into canonical skew types.
        */
-      tType = typeCheck(tType);
+      // tType = typeCheck(tType);
 
       /* ---------------------------------------------------------------------
        * STEP 2: Validate parameter types
@@ -1687,25 +1008,25 @@ export class Transformation {
        * When skew is absolute, the pivot is derived from the shape’s
        * bounding box center.
        */
-      if (tType == 'a' || tType == 'absolute') {
-        const obb = this.getBBox(false) as {
-          x: number;
-          y: number;
-          width: number;
-          height: number;
-        };
-
-        [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
-      }
-
+      //       if (tType == 'a' || tType == 'absolute') {
+      //         const obb = this.getBBox(false) as {
+      //           x: number;
+      //           y: number;
+      //           width: number;
+      //           height: number;
+      //         };
+      //
+      //         [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
+      //       }
+      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
       /* ---------------------------------------------------------------------
        * STEP 5: Generate skew matrix
        * ---------------------------------------------------------------------
        * Reset the reusable matrix and populate it with the skew
        * transformation.
        */
-      this.#resetMatrix(this.#__tempTMatrix);
-      Skew({ sx, sy, tType, px, py, oMatrix: this.#__tempTMatrix });
+      resetMatrix(this.#tempMatrix);
+      skew({ sx, sy, tType, px, py, oMatrix: this.#tempMatrix });
 
       /* ---------------------------------------------------------------------
        * STEP 6: Route transformation through batching or finalization
@@ -1714,126 +1035,7 @@ export class Transformation {
        * transformation lifecycle handling.
        */
       return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#__tempTMatrix
-      }) as Float32Array | void;
-    } catch (e) {
-      // Preserve original error semantics
-      throw e;
-    }
-  }
-
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  //+++++++++++++ FLIP METHOD +++++++++++++++
-  //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-  /**
-   * Applies a flip (mirror) transformation to the shape.
-   *
-   * -------------------------------------------------------------------------
-   * CORE RESPONSIBILITY
-   * -------------------------------------------------------------------------
-   * This method computes and applies a flip transformation by:
-   * - validating input parameters
-   * - resolving flip directions along each axis
-   * - deriving geometric bounds required for flip computation
-   * - generating a flip transformation matrix
-   * - routing the transformation through batching or immediate finalization
-   *
-   * It serves as the public entry point for flip and mirror operations.
-   *
-   * -------------------------------------------------------------------------
-   * WHY THIS FUNCTION EXISTS
-   * -------------------------------------------------------------------------
-   * Flipping a shape requires knowledge of its current spatial bounds in order
-   * to correctly mirror geometry around the desired axis or direction.
-   *
-   * This method provides a consistent, validated interface for flip operations
-   * while integrating seamlessly with batching, animation, and transform
-   * composition pipelines.
-   *
-   * -------------------------------------------------------------------------
-   * DESIGN INVARIANTS
-   * -------------------------------------------------------------------------
-   * - Parameters must conform to expected type contracts
-   * - Bounding box must be resolved before flip computation
-   * - Flip direction semantics must remain consistent
-   * - Transformation must go through the unified finalization pipeline
-   *
-   * -------------------------------------------------------------------------
-   * PARAMETERS
-   * -------------------------------------------------------------------------
-   * @param flipX    - Whether to apply flip along the x-axis.
-   * @param flipY    - Whether to apply flip along the y-axis.
-   * @param dirX     - Direction indicator for x-axis flipping.
-   * @param dirY     - Direction indicator for y-axis flipping..
-   *
-   * -------------------------------------------------------------------------
-   * RETURNS
-   * -------------------------------------------------------------------------
-   * Depending on the execution context:
-   * - returns `void` when batching is active
-   * - return a Float32Array  when used in deferred contexts
-   */
-  public Flip({
-    flipX,
-    flipY,
-    dirX = 'x+',
-    dirY = 'y+'
-  }: FlipMethodProps): void | Float32Array {
-    try {
-      /* ---------------------------------------------------------------------
-       * STEP 1: Validate parameter types
-       * ---------------------------------------------------------------------
-       * Ensure all flip-related inputs conform to the expected type contracts.
-       */
-      parameterTypeValidator(
-        { flipX, flipY, dirX, dirY },
-        propTypes,
-        {},
-        {},
-        ''
-      );
-
-      /* ---------------------------------------------------------------------
-       * STEP 2: Resolve geometric bounds
-       * ---------------------------------------------------------------------
-       * Obtain the current bounding box to determine the spatial region
-       * around which the flip transformation will be applied.
-       */
-      const { x, y, width, height } = this.getBBox() as {
-        height: number;
-        width: number;
-        x: number;
-        y: number;
-      };
-
-      /* ---------------------------------------------------------------------
-       * STEP 3: Generate flip matrix
-       * ---------------------------------------------------------------------
-       * Reset the reusable matrix and populate it with the flip
-       * transformation based on direction and bounds.
-       */
-      this.#resetMatrix(this.#__tempTMatrix);
-      Flip({
-        flipX,
-        flipY,
-        dirX,
-        dirY,
-        x,
-        y,
-        width,
-        height,
-        oMatrix: this.#__tempTMatrix
-      });
-
-      /* ---------------------------------------------------------------------
-       * STEP 4: Route transformation through batching or finalization
-       * ---------------------------------------------------------------------
-       * Delegate to the batching/finalization handler to ensure consistent
-       * transformation lifecycle handling.
-       */
-      return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#__tempTMatrix
+        transformMatrix: this.#tempMatrix
       }) as Float32Array | void;
     } catch (e) {
       // Preserve original error semantics
