@@ -3,7 +3,7 @@ import { SVGRenderer } from './svg/svg-renderer/svg-renderer.js';
 import type { GRAPHICS_CONTEXT } from '../../models/types/graphics-model';
 
 import { UnsupportedRenderingBackendError } from '../../errors/index.js';
-import type { Renderer } from '../../models/interfaces/renderer';
+import type { IRenderer } from '../../models/interfaces/renderer';
 import { SceneModel } from '../scene/scene-model.js';
 
 /**
@@ -86,7 +86,7 @@ import { SceneModel } from '../scene/scene-model.js';
 export function initRenderer(
   context: GRAPHICS_CONTEXT,
   scene: SceneModel
-): Renderer {
+): IRenderer {
   // --------------------------------------------------------------------------
   // Select renderer implementation based on context
   // --------------------------------------------------------------------------

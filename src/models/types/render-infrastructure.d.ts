@@ -82,3 +82,5 @@ export type RenderInfrastructure<
    */
   contentHost: TContentHost;
 };
+
+export type RenderUpdateType = 'LOCAL' | 'TRANSFORM';
