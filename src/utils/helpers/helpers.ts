@@ -1,5 +1,10 @@
 import { InvalidArgumentError } from '../../errors/index.js';
 
+export enum RenderPhase {
+  PREPARE = 'PREPARE',
+  RENDER = 'RENDER'
+}
+
 export function generateId(userId?: string): string {
   try {
     if (userId && userId.trim() !== '') return userId;
