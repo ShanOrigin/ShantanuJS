@@ -6,24 +6,51 @@ import type {
   ScaleMethodProps,
   RotateMethodProps,
   SkewMethodProps,
-  FlipMethodProps
+  FlipMethodProps,
+  BboxProps,
+  BaseTransformMeta
 } from '../../models/types/affine-transformations';
+
+import type {
+  GraphicsNode,
+  GetInternalGraphicsAccessor,
+  GetParentAccessor
+} from '../../models/interfaces/graphics-container';
+import type {
+  InternalGeometryAccessor,
+  InternalStyleAccessor,
+  InternalComputedStyleAccessor
+} from '../../models/types/graphics-model';
+
+type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
+  InternalGeometryAccessor &
+  InternalStyleAccessor &
+  InternalComputedStyleAccessor &
+  GetInternalGraphicsAccessor &
+  GetParentAccessor;
 
 import { GraphicsModel } from '../../core/graphics-model/graphics-model.js';
 
 import {
   assertAccess,
   DEV_INTERNAL_ACCESS_KEY,
+  GET_INTERNAL_COMPUTED_STYLE_METHOD,
   GET_INTERNAL_GEOMETRY_METHOD,
-  GET_INTERNAL_GRAPHICS_METHOD
+  GET_INTERNAL_GRAPHICS_METHOD,
+  GET_INTERNAL_STYLE_METHOD,
+  GET_PARENT_METHOD
 } from '../../internal/keys/dev-keys.js';
 
 import {
   RESTORE_DIMENSION_METHOD,
-  GENERATE_MATRIX_METHOD
+  GENERATE_MATRIX_METHOD,
+  UPDATE_TRANSFORM_METHOD
 } from '../../internal/keys/render-node-keys.js';
-import { OperationInProgressError } from '../../errors/index.js';
 import {
+  InvalidInternalStateError,
+  OperationInProgressError
+} from '../../errors/index.js';
+import type {
   TransformStack,
   AttrsMethodPropsTypes,
   AttrsMethodReturnTypes
@@ -33,19 +60,24 @@ import {
   Log,
   parameterTypeValidator
 } from '../../utils/helpers/helpers.js';
-import { getTransformationMatrix } from '../../utils/math/matrix/matrix-utils';
+import { getTransformationMatrix } from '../../utils/math/matrix/matrix-utils.js';
 import {
   GraphicalElementProperties,
   type IGraphicalElementProperties
 } from '../../property-definitions/specific/specific-properties.js';
 import { AllGShapeStyleProperties } from '../../property-definitions/common/common-properties.js';
-import type { ComponentsObject } from '../../models/types/components';
+
+import { composeAffineTransformations } from '../../utils/math/affine/affine-composition.js';
+import {
+  affineMatrixMultiply,
+  applyTransformToHomogeneousBuffer
+} from '../../utils/math/matrix/matrix-multiplication.js';
+import { computeAABBPoints } from '../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
+
 export abstract class RenderNode<T extends ValidGraphicsShapes>
   extends GraphicsModel<T>
   implements IRenderNode<T>
 {
-  #components!: ComponentsObject;
-
   /**
    * Internal reference to the rendering primitive (`#fig`) from base class.
    *
@@ -279,10 +311,9 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * - Converts transformation matrix/state back into shape-specific dimensions
    * - Used for reverse-mapping transformations (e.g., scaling, rotation adjustments)
    *
-   * @param accessKeys - Symbol used for privileged access validation
+
    * @param temporaryState - Transformation state (typically matrix representation)
-   * @param basic - Optional flag indicating simplified restoration mode
-   *
+
    * @returns void
    *
    * @throws {Error} If access validation fails or restoration logic is invalid
@@ -315,11 +346,14 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * - This is effectively the inverse of `generateMatrix`
    */
   protected abstract restoreDimension(
-    accessKeys: symbol,
-    temporaryState: Float32Array,
-    basic?: boolean
+    accessKey: symbol,
+    temporaryState: Float32Array
   ): void;
 
+  [RESTORE_DIMENSION_METHOD](key: symbol, temporaryState: Float32Array): void {
+    assertAccess(key);
+    this.restoreDimension(key, temporaryState);
+  }
   /**
    * Validates whether a given matrix (or set of matrices) is valid for the shape.
    *
@@ -373,72 +407,71 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
   ): boolean | number[] | number;
 */
 
-  //   #flattenTransforms(
-  //     applyUserParams: Function,
-  //     userParams: Record<string, string | number>
-  //   ) {
-  //     if (__DEV__) {
-  //       Log('in flatten transform func');
-  //     }
-  //
-  //     /**
-  //      * Step 1: Compose full transformation stack into a single matrix.
-  //      */
-  //     const composedMatrix = this.#transformComponent.composeTransforms(
-  //       true
-  //     ) as DOMMatrix;
-  //
-  //     /**
-  //      * Step 2: Apply composed matrix to local geometry buffer.
-  //      *
-  //      * Result:
-  //      * - Geometry transformed into world-space coordinates
-  //      */
-  //     const updatedBuffer = this.#transformComponent.matrixProductTxM(
-  //       composedMatrix
-  //     ) as Float32Array;
-  //
-  //     /**
-  //      * Step 3: Convert transformed buffer into parametric representation.
-  //      *
-  //      * Delegates to shape-specific logic.
-  //      */
-  //     this.restoreDimension(DEV_INTERNAL_ACCESS_KEY, updatedBuffer);
-  //
-  //     /**
-  //      * Step 4: Apply user-provided parameter updates.
-  //      *
-  //      * - Forces transform reset (`transform: ''`)
-  //      * - Ensures no residual transformation is reintroduced
-  //      */
-  //     applyUserParams({ ...userParams, transform: '' });
-  //
-  //     /**
-  //      * Step 5: Regenerate canonical geometry matrix from updated parameters.
-  //      */
-  //     this.generateMatrix(DEV_INTERNAL_ACCESS_KEY);
-  //
-  //     /**
-  //      * Step 6: Reset transformation stack to identity.
-  //      */
-  //     const geo = this.#geometry as {
-  //       transformStack: TransformStack;
-  //     };
-  //
-  //     /**
-  //      * Clear all transformation entries except base.
-  //      */
-  //     geo.transformStack.stack.length = 1;
-  //
-  //     /**
-  //      * Assign identity matrix to base transformation.
-  //      */
-  //     (geo.transformStack.stack[0] as Float32Array).set(
-  //       [1, 0, 0, 0, 1, 0, 0, 0, 1],
-  //       0
-  //     );
-  //   }
-  //
+  #flattenTransforms(
+    applyUserParams: Function,
+    userParams: Record<string, string | number>
+  ) {
+    if (__DEV__) {
+      Log('in flatten transform func');
+    }
+
+    const geo = this.#geometry as {
+      transformStack: TransformStack;
+      buffer: Float32Array;
+    };
+
+    /**
+     * Step 1: Compose full transformation stack into a single matrix.
+     */
+    const affineComposedMatrix = composeAffineTransformations(
+      geo.transformStack,
+      true
+    );
+
+    /**
+     * Step 2: Apply composed matrix to local geometry buffer.
+     *
+     * Result:
+     * - Geometry transformed into world-space coordinates
+     */
+    applyTransformToHomogeneousBuffer(affineComposedMatrix, geo?.buffer, true);
+    /**
+     * Step 3: Convert transformed buffer into parametric representation.
+     *
+     * Delegates to shape-specific logic.
+     */
+    this.restoreDimension(DEV_INTERNAL_ACCESS_KEY, geo.buffer);
+
+    /**
+     * Step 4: Apply user-provided parameter updates.
+     *
+     * - Forces transform reset (`transform: ''`)
+     * - Ensures no residual transformation is reintroduced
+     */
+    applyUserParams({ ...userParams, transform: '' });
+
+    /**
+     * Step 5: Regenerate canonical geometry matrix from updated parameters.
+     */
+    this.generateMatrix(DEV_INTERNAL_ACCESS_KEY);
+
+    /**
+     * Step 6: Reset transformation stack to identity.
+     */
+    /**
+     * Clear all transformation entries except base.
+     */
+    geo.transformStack.stack.length = 1;
+
+    /**
+     * Assign identity matrix to base transformation.
+     */
+    (geo.transformStack.stack[0] as Float32Array).set(
+      [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      0
+    );
+  }
+
   /**
    * Overrides the base `attrs` method to introduce shape-aware validation,
    * transformation flattening, and parametric control.
@@ -591,8 +624,9 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * - Partial mutation possible if error occurs mid-processing
    * - No transactional rollback mechanism
    */
+
   public override attrs(
-    props: AttrsMethodPropsTypes<T> | string
+    props: AttrsMethodPropsTypes<T> | (string | string[])
   ): AttrsMethodReturnTypes {
     try {
       /**
@@ -602,7 +636,11 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
       if (!shape || shape == '') {
         throw new Error('Shape is not difined');
       }
-
+      /**
+       * Retrieve shape-specific property registries.
+       */
+      const geometryProps =
+        GraphicalElementProperties[shape as keyof IGraphicalElementProperties];
       /**
        * ============================
        * SETTER MODE
@@ -629,6 +667,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
           /**
            * Step 1: Validate input properties.
            */
+
           /*
           parameterTypeValidator(
             props,
@@ -637,14 +676,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
             this.#classProp,
             shape
           );
-*/
-          /**
-           * Retrieve shape-specific property registries.
-           */
-          const elementProps =
-            GraphicalElementProperties[
-              shape as keyof IGraphicalElementProperties
-            ];
+					*/
 
           const styleProps =
             AllGShapeStyleProperties[
@@ -661,8 +693,8 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
            * Step 2: Split properties into geometry and style domains.
            */
           for (const key in props) {
-            if (key in elementProps) {
-              const k = key as keyof typeof elementProps;
+            if (key in geometryProps) {
+              const k = key as keyof typeof geometryProps;
               g[k] = props[k];
             } else if (key in styleProps) {
               const k = key as keyof typeof styleProps;
@@ -689,8 +721,8 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
            *
            * Only executed if geometry updates exist.
            */
-          // Object.keys(g).length > 0 &&
-          //  this.#flattenTransforms(super.attrs.bind(this), g);
+          Object.keys(g).length > 0 &&
+            this.#flattenTransforms(super.attrs.bind(this), g);
 
           /**
            * Final state:
@@ -698,13 +730,22 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
            * - Transform stack reset (if flattening occurred)
            * - Style applied
            */
+          this.#geometry!.renderUpdateType = 'LOCAL';
         }
-      } else if (typeof props === 'string') {
+      } else if (typeof props === 'string' || Array.isArray(props)) {
         /**
          * ============================
          * GETTER MODE
          * ============================
          */
+        const isThereGeometryParameter =
+          Array.isArray(props) && props.some((p) => p in geometryProps);
+
+        if (isThereGeometryParameter) {
+          // trigger lazy query synchronization first
+          this.#lazyQuerySynchronization();
+        }
+
         let result = super.attrs(props);
 
         /**
@@ -773,33 +814,19 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * - Does NOT perform composition
    * - Only mutates stack and invalidation flags
    */
-  //   #finalizeTransform({
-  //     transformMatrix,
-  //     transformName,
-  //     transformType
-  //   }: {
-  //     transformMatrix: Float32Array | void;
-  //     transformName: string;
-  //     transformType: string;
-  //   }) {
-  //     if (!transformMatrix) return;
-  //
-  //     const geo = this.#geometry as {
-  //       dirty: boolean;
-  //       worldDirty: boolean;
-  //       transformStack: transformStack;
-  //     };
-  //     const stack = geo.transformStack.stack;
-  //
-  //     stack.push({
-  //       transformMatrix,
-  //       transformName,
-  //       transformType
-  //     });
-  //
-  //     geo.dirty = true;
-  //     geo.worldDirty = true;
-  //   }
+  #finalizeTransform(transformMatrix: Float32Array) {
+    const geo = this.#geometry as {
+      localDirty: boolean;
+      worldDirty: boolean;
+      transformStack: TransformStack;
+    };
+    const stack = geo.transformStack.stack;
+
+    stack.push(transformMatrix);
+
+    geo.localDirty = true;
+    geo.worldDirty = true;
+  }
 
   /**
    * Composes and updates the local transformation matrix.
@@ -841,27 +868,12 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * - Must be invoked by engine before world resolution
    * - Uses DOMMatrix as composition backend
    */
-  //   public updateTransformation(key: symbol) {
-  //     assertAccess(key);
-  //
-  //     const geo = this.#geometry as {
-  //       transformStack: TransformStack;
-  //     };
-  //
-  //     // compose ONLY local transforms
-  //     const composed = this.#transformComponent.composeTransforms(true) as DOMMatrix;
-  //
-  //     const { a, b, c, d, e, f } = composed;
-  //
-  //     const localMatrix = geo.transformStack.stack[0];
-  //
-  //     localMatrix[0] = a;
-  //     localMatrix[1] = b;
-  //     localMatrix[3] = c;
-  //     localMatrix[4] = d;
-  //     localMatrix[6] = e;
-  //     localMatrix[7] = f;
-  //   }
+
+  [UPDATE_TRANSFORM_METHOD](key: symbol): void {
+    assertAccess(key);
+
+    this.#resolveLocalMatrix();
+  }
 
   /**
    * Computes the bounding box of the entity.
@@ -891,79 +903,335 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
   //   }
 
   /**
-   * Normalizes transformation mode before execution.
+   * Computes the axis-aligned bounding box (AABB) of the shape
+   * in screen space after applying all active transformations.
    *
-   * ============================================================================
+   * -------------------------------------------------------------------------
    * CORE RESPONSIBILITY
+   * -------------------------------------------------------------------------
+   * This method calculates the final bounding rectangle of the shape by:
+   * - transforming canonical geometry into screen space
+   * - computing the axis-aligned bounds
+   * - optionally expanding bounds to account for stroke width
+   *
+   * The result represents the visual footprint of the shape
+   * after all transformations are applied.
+   *
+   * -------------------------------------------------------------------------
+   * WHY THIS FUNCTION EXISTS
+   * -------------------------------------------------------------------------
+   * Geometry is stored internally in canonical (local) space.
+   * Rendering, hit-testing, and layout require bounds in screen space.
+   *
+   * This method bridges that gap in a deterministic and reusable way.
+   *
+   * -------------------------------------------------------------------------
+   * DESIGN INVARIANTS
+   * -------------------------------------------------------------------------
+   * - Geometry buffer is treated as immutable input
+   * - Transform composition is the single source of truth
+   * - Bounding box is always axis-aligned (not oriented)
+   * - Stroke expansion is applied in screen space
+   *
+   * -------------------------------------------------------------------------
+   * PARAMETERS
+   * -------------------------------------------------------------------------
+   * @param includeStroke - Whether stroke width should be included
+   *                        in the bounding box computation.
+   *
+   * -------------------------------------------------------------------------
+   * RETURNS
+   * -------------------------------------------------------------------------
+   * An object containing:
+   * - x, y           : top-left corner of the bounding box
+   * - width, height  : dimensions of the bounding box
+   * - matrix         : 4-corner homogeneous representation of the AABB
+   */
+  public getBBox(includeStroke = true): BboxProps {
+    // -----------------------------------------------------------
+    // STEP 1: Validate required internal state
+    // -----------------------------------------------------------
+
+    if (!this.#geometry) {
+      throw new InvalidInternalStateError(
+        this.#geometry,
+        'proper object of GraphicsModel class',
+        'Cannot compute bounding box.',
+        'transformation.getBBox()'
+      );
+    }
+
+    this.#lazyQuerySynchronization();
+
+    // -----------------------------------------------------------
+    // STEP 2: Resolve stroke expansion
+    // -----------------------------------------------------------
+
+    let sw = includeStroke ? (this.style['stroke-width'] ?? 0) / 2 : 0;
+
+    // -----------------------------------------------------------
+    // STEP 6: Compute axis-aligned bounding box (AABB)
+    // -----------------------------------------------------------
+
+    const [minX, minY, maxX, maxY] = this.#geometry.bounds as Float32Array;
+
+    // -----------------------------------------------------------
+    // STEP 7: Apply stroke expansion in screen space
+    // -----------------------------------------------------------
+
+    const x = minX - sw;
+    const y = minY - sw;
+    const width = maxX + sw - x;
+    const height = maxY + sw - y;
+
+    // -----------------------------------------------------------
+    // STEP 8: Construct user-friendly corner matrix
+    // -----------------------------------------------------------
+
+    // Extra user-friendly 4-corner matrix (optional but valid for AABB)
+    const matrix = [
+      [x, y, 1],
+      [x + width, y, 1],
+      [x + width, y + height, 1],
+      [x, y + height, 1]
+    ];
+
+    return { x, y, width, height, matrix };
+  }
+
+  #lazyQuerySynchronization() {
+    this.#resolveLocalMatrix();
+    this.#resolveWorldRecursive(this);
+    this.#geometry!.renderUpdateType = 'TRANSFORM';
+
+    const buffer = this.#geometry!.buffer as Float32Array;
+    const worldMatrix = this.#geometry!.worldMatrix as Float32Array;
+    const tempState = applyTransformToHomogeneousBuffer(worldMatrix, buffer);
+
+    // restore dimension of shape
+    this.restoreDimension(DEV_INTERNAL_ACCESS_KEY, tempState);
+  }
+  /**
+   * Recursively resolves world state (transform + inherited style) for a shape.
+   *
    * ============================================================================
+   * PURPOSE
+   * ============================================================================
+   * Ensures correct hierarchical evaluation:
+   *   parent → child
    *
-   * - Validates and adjusts transformation mode based on pivot inputs
+   * Extends world resolution to include:
+   * - transformation propagation (worldMatrix)
+   * - styling inheritance (group → children)
    *
    * ============================================================================
-   * WORKING
+   * LOGIC
    * ============================================================================
-   *
-   * - If pivot mode is requested but pivot point is (0,0):
-   *   → converts mode to relative ('r')
-   *   → optionally emits warning in development mode
-   *
-   * ============================================================================
-   * @param mode
-   * - Transformation mode (e.g., 'p', 'pivot', 'r')
-   *
-   * @param px
-   * @param py
-   * - Pivot coordinates
+   * 1. Skip if already resolved
+   * 2. Resolve parent first (if exists)
+   * 3. Compute world matrix (transform propagation)
+   * 4. Apply inherited style (if parent is a Group, not Canvas)
    *
    * ============================================================================
-   * @returns string
+   * STYLE PROPAGATION RULES
+   * ============================================================================
+   * - Only Group styles propagate to children
+   * - Canvas styles are NOT propagated
+   * - Only inheritable style properties are applied
+   * - Child-local style always overrides inherited style
    *
-   * - Normalized transformation mode
+   * ============================================================================
+   * TERMINATION GUARANTEE
+   * ============================================================================
+   * - worldDirty flag ensures each shape is resolved only once
+   * - prevents infinite recursion (assuming no cyclic parent)
+   *
+   * ============================================================================
+   * @param shape - Target shape to resolve
+   */
+  #resolveWorldRecursive(shape: GraphicsNodeWithInternalAccessMethods) {
+    const geo = shape[GET_INTERNAL_GEOMETRY_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+    // Skip if already resolved and not dirty
+    if (!geo?.worldDirty) return;
+
+    //    const inside = shape.style.inside;
+
+    let parent: GraphicsNodeWithInternalAccessMethods | null = null;
+    /*
+    if (inside) {
+      const parentId = inside.slice(inside.indexOf('-') + 1);
+      parent = this.#shapeIdMap.get(parentId) || null;
+    }
+*/
+    parent = shape[GET_PARENT_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as GraphicsNodeWithInternalAccessMethods;
+
+    // Resolve parent first
+    if (parent) {
+      this.#resolveWorldRecursive(parent);
+    }
+
+    // -----------------------------------------------------------
+    // TRANSFORM PROPAGATION
+    // -----------------------------------------------------------
+    this.#resolveWorldMatrix(shape, parent);
+
+    // -----------------------------------------------------------
+    // STYLE PROPAGATION (Group only, NOT Canvas)
+    // -----------------------------------------------------------
+    if (parent && parent.geometry?.shape === 'g') {
+      this.#resolveWorldStyle(shape, parent);
+    }
+
+    geo.worldDirty = false;
+  }
+
+  /**
+   * Computes inherited styling into computedStyle.
+   *
+   * ============================================================================
+   * PURPOSE
+   * ============================================================================
+   * Resolves final visual style for a shape by combining:
+   * - parent computed style (if parent is a Group)
+   * - local style overrides
+   *
+   * ============================================================================
+   * LOGIC
+   * ============================================================================
+   * 1. Copy parent computed style (if applicable)
+   * 2. Override with local style (always wins)
+   *
+   * ============================================================================
+   * DESIGN STRATEGY
+   * ============================================================================
+   * - Uses in-place overwrite model (NO object reset or deletion)
+   * - Assumes monotonic property accumulation (no property removal)
+   * - Ensures minimal allocation and maximum performance
+   *
+   * ============================================================================
+   * RULES
+   * ============================================================================
+   * - No mutation of local style
+   * - No per-property condition checks (direct overwrite)
+   * - Canvas does NOT propagate style
    *
    * ============================================================================
    * INVARIANT
    * ============================================================================
-   *
-   * - Pivot mode is only meaningful when pivot ≠ (0,0)
+   * - computedStyle always converges to correct final state via overwrite
+   * - Previously written keys are safely overridden each frame
    *
    * ============================================================================
-   * NOTE
-   * ============================================================================
-   *
-   * - Optimization step to avoid unnecessary pivot computation
+   * @param shape  - Target shape
+   * @param parent - Parent shape (nullable)
    */
-  #preChecks(mode: string, px: number, py: number) {
-    if ((mode == 'p' || mode == 'pivot') && px == 0 && py == 0) {
-      if (__DEV__)
-        Warn(
-          "pivot px , py both are zero so effect is same as relative transformation even if type is 'pivot' or 'p' , falling to 'relative' type to save computations."
-        );
-      mode = 'r';
+  #resolveWorldStyle(
+    shape: GraphicsNodeWithInternalAccessMethods,
+    parent: GraphicsNodeWithInternalAccessMethods | null
+  ) {
+    const computed = shape[GET_INTERNAL_COMPUTED_STYLE_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as Record<string, string | number | boolean>;
+
+    const local = shape[GET_INTERNAL_STYLE_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as Record<string, string | number | boolean>;
+
+    // -----------------------------------------------------------
+    // STEP 1: Inherit from parent (Group only)
+    // -----------------------------------------------------------
+    if (parent && parent.geometry?.shape === 'g') {
+      const parentComputed = parent[GET_INTERNAL_COMPUTED_STYLE_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      ) as Record<string, any>;
+
+      for (const k in parentComputed) {
+        computed[k] = parentComputed[k];
+      }
     }
-    return mode;
+
+    // -----------------------------------------------------------
+    // STEP 2: Override with local style
+    // -----------------------------------------------------------
+    for (const k in local) {
+      computed[k] = local[k];
+    }
   }
 
-  public translate(translateProps: TranslateMethodProps): this {
-    return this;
+  #resolveLocalMatrix() {
+    const geo = this.#geometry as {
+      transformStack: TransformStack;
+    };
+
+    // compose ONLY local transforms
+
+    const affineComposedMatrix = composeAffineTransformations(
+      geo.transformStack,
+      true
+    );
+
+    const localMatrix = geo.transformStack.stack[0];
+
+    localMatrix.set(affineComposedMatrix, 0);
   }
-  public scale(scaleProps: ScaleMethodProps): this {
-    return this;
+  /**
+   * Computes world matrix for a shape.
+   *
+   * ============================================================================
+   * FORMULA
+   * ============================================================================
+   * worldMatrix = localMatrix × parent.worldMatrix
+   *
+   * ============================================================================
+   * DATA FLOW
+   * ==================→ multiply → Float32Array (world)
+   *
+   * ============================================================================
+   * DESIGN NOTES
+   * ============================================================================
+   * - DOMMatrix used only for multiplication
+   * - Final result stored back into Float32Array for consistency
+   *
+   * ============================================================================
+   * @param shape  - Target shape
+   * @param parent - Parent shape (nullable)
+   */
+  #resolveWorldMatrix(
+    shape: GraphicsNodeWithInternalAccessMethods,
+    parent: GraphicsNodeWithInternalAccessMethods | null
+  ) {
+    const childGeometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as {
+      shape: string;
+      localMatrix: Float32Array;
+      worldMatrix: Float32Array;
+    };
+
+    const childLocalMatrix = childGeometry?.localMatrix as Float32Array;
+
+    if (parent) {
+      const parentGeometry = parent[GET_INTERNAL_GEOMETRY_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      );
+      const parentWorldMatrix = parentGeometry?.worldMatrix as Float32Array;
+      const childWorldMatrix = childGeometry?.worldMatrix as Float32Array;
+
+      affineMatrixMultiply(
+        parentWorldMatrix,
+        childLocalMatrix,
+        childWorldMatrix
+      );
+
+      if (childGeometry.shape == 'rect') {
+        Log('worldMatrix', JSON.stringify(childWorldMatrix));
+      }
+    }
   }
-  public rotate(rotateProps: RotateMethodProps): this {
-    return this;
-  }
-  public skew(skewProps: SkewMethodProps): this {
-    return this;
-  }
-  public transform(dsl: string): this {
-    return this;
-  }
-  public beginT(): this {
-    return this;
-  }
-  public endT(): this {
-    return this;
-  }
+
   /**
    * Applies a translation transform to the entity.
    *
