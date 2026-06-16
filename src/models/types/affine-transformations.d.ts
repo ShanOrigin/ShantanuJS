@@ -1,12 +1,26 @@
+export type TransformTypes =
+  | 'r'
+  | 'relative'
+  | 'a'
+  | 'absolute'
+  | 'p'
+  | 'pivot';
+export type CenterType = 'c' | 'center';
+
 // Core transform metadata shared by all except flip
-interface BaseTransformMeta {
-  tType?: string;
+export interface BaseTransformMeta {
+  tType?: TransformTypes | Uppercase<TransformTypes>;
   px?: number;
   py?: number;
 }
 
 // Translate
 export interface TranslateMethodProps extends BaseTransformMeta {
+  tType?:
+    | TransformTypes
+    | Uppercase<TransformTypes>
+    | CenterType
+    | Uppercase<CenterType>;
   x: number;
   y: number;
 }
