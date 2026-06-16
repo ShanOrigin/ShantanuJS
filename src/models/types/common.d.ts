@@ -1,5 +1,6 @@
-import { StyleForGShapeTag } from '../../property-definitions/common/common-properties';
-import { IGraphicalElementProperties } from '../../property-definitions/specific/specific-properties';
+import type { StyleForGShapeTag } from '../../property-definitions/common/common-properties';
+import type { IGraphicalElementProperties } from '../../property-definitions/specific/specific-properties';
+
 import type { ValidGraphicsShapes } from './graphics-model';
 
 export type GRAPHICS_TYPES = SVGElement;

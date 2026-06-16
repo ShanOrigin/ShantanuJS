@@ -17,8 +17,10 @@ import type {
   InternalStyle,
   PublicStyle
 } from '../types/graphics-model';
+import { IGraphicsModel } from './graphics-model';
 
-export interface IRenderNode<T extends ValidGraphicsShapes> {
+export interface IRenderNode<T extends ValidGraphicsShapes>
+  extends IGraphicsModel<T> {
   attrs(props: AttrsMethodPropsTypes<T> | string): AttrsMethodReturnTypes;
 
   /*
