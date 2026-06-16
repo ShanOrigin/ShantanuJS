@@ -21,6 +21,13 @@ import type {
   InternalStyleAccessor,
   InternalComputedStyleAccessor
 } from '../../models/types/graphics-model';
+import type {
+  TransformStack,
+  AttrsMethodPropsTypes,
+  AttrsMethodReturnTypes
+} from '../../models/types/common';
+
+import type { ComponentsRegistry } from '../../models/types/components';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -43,18 +50,13 @@ import {
 
 import {
   RESTORE_DIMENSION_METHOD,
-  GENERATE_MATRIX_METHOD,
   UPDATE_TRANSFORM_METHOD
 } from '../../internal/keys/render-node-keys.js';
 import {
   InvalidInternalStateError,
   OperationInProgressError
 } from '../../errors/index.js';
-import type {
-  TransformStack,
-  AttrsMethodPropsTypes,
-  AttrsMethodReturnTypes
-} from '../../models/types/common';
+
 import {
   Warn,
   Log,
@@ -72,6 +74,8 @@ import {
   affineMatrixMultiply,
   applyTransformToHomogeneousBuffer
 } from '../../utils/math/matrix/matrix-multiplication.js';
+
+import { Transformation } from '../../components/transformation/transformation.js';
 import { computeAABBPoints } from '../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
 
 export abstract class RenderNode<T extends ValidGraphicsShapes>
@@ -626,7 +630,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
 
   public override attrs(
-    props: AttrsMethodPropsTypes<T> | (string | string[])
+    props: AttrsMethodPropsTypes<T> | string | string[]
   ): AttrsMethodReturnTypes {
     try {
       /**
@@ -751,9 +755,8 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
         /**
          * Return result if available.
          */
-        if (result != null) {
-          return result;
-        }
+
+        return result;
       }
 
       /**
@@ -1001,7 +1004,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
 
   #lazyQuerySynchronization() {
     this.#resolveLocalMatrix();
-    this.#resolveWorldRecursive(this);
+    this.#resolveWorldRecursive(this as GraphicsNodeWithInternalAccessMethods);
     this.#geometry!.renderUpdateType = 'TRANSFORM';
 
     const buffer = this.#geometry!.buffer as Float32Array;
@@ -1231,536 +1234,4 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
       }
     }
   }
-
-  /**
-   * Applies a translation transform to the entity.
-   *
-   * ============================================================================
-   * CORE RESPONSIBILITY
-   * ============================================================================
-   *
-   * - Moves the entity by `(x, y)` in coordinate space
-   * - Integrates translation into transformation pipeline
-   *
-   * ============================================================================
-   * WORKING
-   * ============================================================================
-   *
-   * 1. Validates that no animation is currently active
-   * 2. Normalizes transformation type and pivot via pre-checks
-   * 3. Generates translation matrix using transformation module
-   * 4. Finalizes and applies transformation to geometry
-   *
-   * ============================================================================
-   * @param x
-   * - Translation along X-axis
-   *
-   * @param y
-   * - Translation along Y-axis
-   *
-   * @param tType
-   * - Transformation type (default: 'a')
-   * - Controls how transform is applied (e.g., batched/immediate)
-   *
-   * @param px
-   * @param py
-   * - Pivot point for translation (default: 0, 0)
-   *
-   * ============================================================================
-   * @returns this
-   *
-   * - Enables method chaining
-   *
-   * ============================================================================
-   * INVARIANT
-   * ============================================================================
-   *
-   * - Transformation is not applied if animation is active
-   * - Geometry is updated via transformation pipeline
-   *
-   * ============================================================================
-   * EXAMPLE
-   * ============================================================================
-   *
-   * ```ts
-   * entity.Translate({ x: 10, y: 20 })
-   * entity.beginT().Translate({ x: 5, y: 5 }).endT()
-   * ```
-   *
-   * ============================================================================
-   * WARNING
-   * ============================================================================
-   *
-   * - Throws error if animation is in progress
-   * - Mutates geometry and updates visual state
-   */
-  //   public Translate({
-  //     x,
-  //     y,
-  //     tType = 'a',
-  //     px = 0,
-  //     py = 0
-  //   }: TranslateMethodProps): this {
-  //     //   Required<Pick<TranslateMethodProps, 'x' | 'y'>> &  Partial<Omit<TranslateMethodProps, 'x' | 'y'>>)
-  //     try {
-  //       /**
-  //        * Prevent transformation during active animation.
-  //        */
-  //       if (this.#isAnimation) {
-  //         throw new OperationInProgressError(
-  //           'transform.Translate',
-  //           'animation.animation',
-  //           'GraphicsEntity.Translate()'
-  //         );
-  //       }
-  //
-  //       /**
-  //        * Normalize transformation type and pivot.
-  //        */
-  //       tType = this.#preChecks(tType, px, py);
-  //
-  //       /**
-  //        * Generate translation matrix.
-  //        */
-  //       const transformMatrix = this.#transformComponent.Translate({
-  //         x,
-  //         y,
-  //         tType,
-  //         px,
-  //         py
-  //       }) as Float32Array | void;
-  //
-  //       /**
-  //        * Apply transformation to geometry.
-  //        */
-  //       if (transformMatrix) {
-  //         this.#finalizeTransform({
-  //           transformMatrix,
-  //           transformName: 'translate',
-  //           transformType: tType
-  //         });
-  //       }
-  //
-  //       return this;
-  //     } catch (e) {
-  //       throw e;
-  //     }
-  //   }
-
-  /**
-   * Applies a scaling transform to the entity.
-   *
-   * ============================================================================
-   * CORE RESPONSIBILITY
-   * ============================================================================
-   *
-   * - Scales the entity along X and Y axes
-   * - Integrates scaling into transformation pipeline
-   *
-   * ============================================================================
-   * WORKING
-   * ============================================================================
-   *
-   * 1. Prevents execution if animation is active
-   * 2. Normalizes transformation mode and pivot
-   * 3. Generates scaling matrix via transformation module
-   * 4. Finalizes and applies transformation to geometry
-   *
-   * ============================================================================
-   * @param sx
-   * - Scale factor along X-axis (default: 1)
-   *
-   * @param sy
-   * - Scale factor along Y-axis (default: 1)
-   *
-   * @param tType
-   * - Transformation type (default: 'a')
-   *
-   * @param px
-   * @param py
-   * - Pivot point for scaling (default: 0, 0)
-   *
-   * ============================================================================
-   * @returns this
-   *
-   * - Enables method chaining
-   *
-   * ============================================================================
-   * INVARIANT
-   * ============================================================================
-   *
-   * - Scaling is blocked during active animation
-   * - Geometry is updated through transformation pipeline
-   *
-   * ============================================================================
-   * EXAMPLE
-   * ============================================================================
-   *
-   * ```ts
-   * entity.Scale({ sx: 2, sy: 2 })
-   * entity.Scale({ sx: 1.5, sy: 1, px: 50, py: 50 })
-   * ```
-   *
-   * ============================================================================
-   * WARNING
-   * ============================================================================
-   *
-   * - Mutates geometry and updates visual transform
-   * - Throws error if animation is in progress
-   */
-  //   public Scale({
-  //     sx = 1,
-  //     sy = 1,
-  //     tType = 'a',
-  //     px = 0,
-  //     py = 0
-  //   }: ScaleMethodProps): this {
-  //     try {
-  //       /**
-  //        * Prevent scaling during active animation.
-  //        */
-  //       if (this.#isAnimation) {
-  //         throw new OperationInProgressError(
-  //           'transform.Scale',
-  //           'animation.animation',
-  //           'GraphicsEntity.Scale()'
-  //         );
-  //       }
-  //
-  //       /**
-  //        * Normalize transformation mode and pivot.
-  //        */
-  //       tType = this.#preChecks(tType, px, py);
-  //
-  //       /**
-  //        * Generate scaling matrix.
-  //        */
-  //       const transformMatrix = this.#transformComponent.Scale({
-  //         sx,
-  //         sy,
-  //         tType,
-  //         px,
-  //         py
-  //       }) as Float32Array | void;
-  //
-  //       /**
-  //        * Apply transformation to geometry.
-  //        */
-  //       if (transformMatrix) {
-  //         this.#finalizeTransform({
-  //           transformMatrix,
-  //           transformName: 'scale',
-  //           transformType: tType
-  //         });
-  //       }
-  //       return this;
-  //     } catch (e) {
-  //       throw e;
-  //     }
-  //   }
-
-  /**
-   * Applies a rotation transform to the entity.
-   *
-   * ============================================================================
-   * CORE RESPONSIBILITY
-   * ============================================================================
-   *
-   * - Rotates the entity by a given angle
-   * - Integrates rotation into transformation pipeline
-   *
-   * ============================================================================
-   * WORKING
-   * ============================================================================
-   *
-   * 1. Prevents execution if animation is active
-   * 2. Normalizes transformation mode and pivot
-   * 3. Generates rotation matrix via transformation module
-   * 4. Finalizes and applies transformation to geometry
-   *
-   * ============================================================================
-   * @param angle
-   * - Rotation angle (typically in degrees, depends on implementation)
-   *
-   * @param tType
-   * - Transformation type (default: 'a')
-   *
-   * @param px
-   * @param py
-   * - Pivot point for rotation (default: 0, 0)
-   *
-   * ============================================================================
-   * @returns this
-   *
-   * - Enables method chaining
-   *
-   * ============================================================================
-   * INVARIANT
-   * ============================================================================
-   *
-   * - Rotation is blocked during active animation
-   * - Geometry is updated through transformation pipeline
-   *
-   * ============================================================================
-   * EXAMPLE
-   * ============================================================================
-   *
-   * ```ts
-   * entity.Rotate({ angle: 45 })
-   * entity.Rotate({ angle: 90, px: 50, py: 50 })
-   * ```
-   *
-   * ============================================================================
-   * WARNING
-   * ============================================================================
-   *
-   * - Mutates geometry and updates visual transform
-   * - Throws error if animation is in progress
-   */
-  //   public Rotate({
-  //     angle,
-  //     tType = 'a',
-  //     px = 0,
-  //     py = 0
-  //   }: RotateMethodProps): this {
-  //     try {
-  //       /**
-  //        * Prevent rotation during active animation.
-  //        */
-  //       if (this.#isAnimation) {
-  //         throw new OperationInProgressError(
-  //           'transform.Rotate',
-  //           'animation.animation',
-  //           'GraphicsEntity.Rotate()'
-  //         );
-  //       }
-  //
-  //       /**
-  //        * Normalize transformation mode and pivot.
-  //        */
-  //       tType = this.#preChecks(tType, px, py);
-  //
-  //       /**
-  //        * Generate rotation matrix.
-  //        */
-  //       const transformMatrix = this.#transformComponent.Rotate({
-  //         angle,
-  //         tType,
-  //         px,
-  //         py
-  //       }) as Float32Array | void;
-  //
-  //       /**
-  //        * Apply transformation to geometry.
-  //        */
-  //       if (transformMatrix) {
-  //         this.#finalizeTransform({
-  //           transformMatrix,
-  //           transformName: 'rotate',
-  //           transformType: tType
-  //         });
-  //       }
-  //       return this;
-  //     } catch (e) {
-  //       throw e;
-  //     }
-  //   }
-
-  /**
-   * Applies a skew (shear) transform to the entity.
-   *
-   * ============================================================================
-   * CORE RESPONSIBILITY
-   * ============================================================================
-   *
-   * - Skews the entity along X and/or Y axes
-   * - Integrates skew transformation into the pipeline
-   *
-   * ============================================================================
-   * WORKING
-   * ============================================================================
-   *
-   * 1. Prevents execution if animation is active
-   * 2. Normalizes transformation mode and pivot
-   * 3. Generates skew matrix via transformation module
-   * 4. Finalizes and applies transformation to geometry
-   *
-   * ============================================================================
-   * @param sx
-   * - Skew factor along X-axis
-   *
-   * @param sy
-   * - Skew factor along Y-axis
-   *
-   * @param tType
-   * - Transformation type (default: 'a')
-   *
-   * @param px
-   * @param py
-   * - Pivot point for skew (default: 0, 0)
-   *
-   * ============================================================================
-   * @returns this
-   *
-   * - Enables method chaining
-   *
-   * ============================================================================
-   * INVARIANT
-   * ============================================================================
-   *
-   * - Skew is blocked during active animation
-   * - Geometry is updated via transformation pipeline
-   *
-   * ============================================================================
-   * EXAMPLE
-   * ============================================================================
-   *
-   * ```ts
-   * entity.Skew({ sx: 10, sy: 0 })
-   * entity.Skew({ sx: 0, sy: 15, px: 50, py: 50 })
-   * ```
-   *
-   * ============================================================================
-   * WARNING
-   * ============================================================================
-   *
-   * - Mutates geometry and updates visual transform
-   * - Throws error if animation is in progress
-   */
-  //   public Skew({ sx, sy, tType = 'a', px = 0, py = 0 }: SkewMethodProps): this {
-  //     try {
-  //       /**
-  //        * Prevent skew during active animation.
-  //        */
-  //       if (this.#isAnimation) {
-  //         throw new OperationInProgressError(
-  //           'transform.Skew',
-  //           'animation.animation',
-  //           'GraphicsEntity.Skew()'
-  //         );
-  //       }
-  //
-  //       /**
-  //        * Normalize transformation mode and pivot.
-  //        */
-  //       tType = this.#preChecks(tType, px, py);
-  //
-  //       /**
-  //        * Generate skew matrix.
-  //        */
-  //       const transformMatrix = this.#transformComponent.Skew({
-  //         sx,
-  //         sy,
-  //         tType,
-  //         px,
-  //         py
-  //       }) as Float32Array | void;
-  //
-  //       /**
-  //        * Apply transformation to geometry.
-  //        */
-  //       if (transformMatrix) {
-  //         this.#finalizeTransform({
-  //           transformMatrix,
-  //           transformName: 'skew',
-  //           transformType: tType
-  //         });
-  //       }
-  //       return this;
-  //     } catch (e) {
-  //       throw e;
-  //     }
-  //   }
-  //
-
-  /**
-   * Applies a transformation using a raw transform string.
-   *
-   * ============================================================================
-   * CORE RESPONSIBILITY
-   * ============================================================================
-   *
-   * - Parses and applies transformation defined as a string
-   * - Acts as a flexible entry point for custom or combined transforms
-   *
-   * ============================================================================
-   * WORKING
-   * ============================================================================
-   *
-   * 1. Prevents execution if animation is active
-   * 2. Performs basic normalization via pre-checks
-   * 3. Parses input string into transformation matrix
-   * 4. Finalizes and applies transformation to geometry
-   *
-   * ============================================================================
-   * @param input
-   * - Transformation string (e.g., "translate(10,20) rotate(45)")
-   *
-   * ============================================================================
-   * @returns this
-   *
-   * - Enables method chaining
-   *
-   * ============================================================================
-   * INVARIANT
-   * ============================================================================
-   *
-   * - Transformation is blocked during active animation
-   * - Parsed transformation is applied through standard pipeline
-   *
-   * ============================================================================
-   * EXAMPLE
-   * ============================================================================
-   *
-   * ```ts
-   * entity.transform("translate(10,20) rotate(45)")
-   * ```
-   *
-   * ============================================================================
-   * WARNING
-   * ============================================================================
-   *
-   * - Input must be valid transform syntax
-   * - Mutates geometry and updates visual state
-   */
-  //   public transform(input: string): this {
-  //     try {
-  //       /**
-  //        * Prevent transform during active animation.
-  //        */
-  //       if (this.#isAnimation) {
-  //         throw new OperationInProgressError(
-  //           'transform.transform',
-  //           'animation.animation',
-  //           'GraphicsEntity.transform()'
-  //         );
-  //       }
-  //
-  //       /**
-  //        * Basic normalization (no pivot-specific logic).
-  //        */
-  //       this.#preChecks('', 1, 1);
-  //
-  //       /**
-  //        * Parse and generate transformation matrix.
-  //        */
-  //       const transformMatrix = this.#transformComponent.transform(
-  //         input
-  //       ) as Float32Array | void;
-  //
-  //       /**
-  //        * Apply transformation to geometry.
-  //        */
-  //       if (transformMatrix) {
-  //         this.#finalizeTransform({
-  //           transformMatrix,
-  //           transformName: 'batched',
-  //           transformType: 'batched'
-  //         });
-  //       }
-  //       return this;
-  //     } catch (e) {
-  //       throw e;
-  //     }
-  //   }
 }
