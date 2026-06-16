@@ -17,9 +17,12 @@ import {
 import {
   assertSystemAccess,
   GET_SCENE_ELEMENTS_METHOD,
-  GET_SCENE_REMOVED_ELEMENTS_METHOD,
+  GET_PENDING_CREATION_ELEMENTS_METHOD,
+  GET_PENDING_DELETION_ELEMENTS_METHOD,
   GET_SCENE_ELEMENT_ID_MAP_METHOD,
-  GET_SCENE_Z_ORDER_RESOLVER_METHOD
+  GET_SCENE_Z_ORDER_RESOLVER_METHOD,
+  COMMIT_PENDING_CREATION_METHOD,
+  COMMIT_PENDING_DELETION_METHOD
 } from '../../internal/keys/system-keys.js';
 
 /* -------------------------------------------------------------------------- */
@@ -64,6 +67,7 @@ import {
   ShapeNotAttachedToCanvasError
 } from '../../errors/index.js';
 import Colors from '../../utils/colors/colors.js';
+import { RenderUpdateType } from '../../models/types/render-infrastructure.js';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -78,6 +82,22 @@ export class SceneModel
   extends GraphicsModel<'scene'>
   implements IGraphicsContainer
 {
+  /**
+   * Shapes awaiting backend renderer creation.
+   *
+   * Semantics:
+   * - Contains shapes recently added to the scene.
+   * - Renderer must create corresponding backend resources
+   *   (SVG nodes, DOM nodes, etc.) before normal updates occur.
+   *
+   * Lifecycle:
+   * - Added when a shape enters the scene.
+   * - Removed after successful renderer initialization.
+   *
+   * Constraints:
+   * - Must not contain shapes scheduled for deletion.
+   */
+  #pendingCreationElements: GraphicsNode[] = [];
   /**
    * Internal storage of all shapes belonging to this canvas.
    *
@@ -94,6 +114,21 @@ export class SceneModel
    */
   #sceneElements: GraphicsNode[] = [];
 
+  /**
+   * Shapes awaiting backend renderer destruction.
+   *
+   * Semantics:
+   * - Contains shapes removed from the scene.
+   * - Renderer must dispose associated backend resources.
+   *
+   * Lifecycle:
+   * - Added when a shape is removed.
+   * - Cleared after renderer deletion completes.
+   *
+   * Constraints:
+   * - Shapes in this collection must not be rendered.
+   */
+  #pendingDeletionElements: GraphicsNode[] = [];
   #removedElements: GraphicsNode[] = [];
 
   /**
@@ -282,16 +317,22 @@ export class SceneModel
     });
   }
 
+  [GET_PENDING_CREATION_ELEMENTS_METHOD](systemAccessKey: symbol) {
+    assertSystemAccess(systemAccessKey);
+
+    return this.#pendingCreationElements;
+  }
+
   [GET_SCENE_ELEMENTS_METHOD](systemAccessKey: symbol) {
     assertSystemAccess(systemAccessKey);
 
     return this.#sceneElements;
   }
 
-  [GET_SCENE_REMOVED_ELEMENTS_METHOD](systemAccessKey: symbol) {
+  [GET_PENDING_DELETION_ELEMENTS_METHOD](systemAccessKey: symbol) {
     assertSystemAccess(systemAccessKey);
 
-    return this.#removedElements;
+    return this.#pendingDeletionElements;
   }
 
   [GET_SCENE_Z_ORDER_RESOLVER_METHOD](systemAccessKey: symbol) {
@@ -466,7 +507,7 @@ export class SceneModel
    * @param rest - Shapes to add
    * @returns this (fluent API)
    */
-  public add(...rest: GraphicsNode[]): this {
+  [COMMIT_PENDING_CREATION_METHOD]() {
     const fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
     if (!fig) {
       throw new NotInitializedError(
@@ -479,6 +520,93 @@ export class SceneModel
     const elements = this.#sceneElements;
     const indexMap = this.#elementIndexMap;
 
+    const pendingCreatedElements = this.#pendingCreationElements;
+    for (let i = 0; i < pendingCreatedElements.length; i++) {
+      const shape = pendingCreatedElements[
+        i
+      ] as GraphicsNodeWithInternalAccessMethods;
+
+      if (!shape) continue;
+
+      const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      ) as {
+        shape: string;
+        zIndex: number;
+        renderUpdateType: RenderUpdateType;
+      };
+
+      // =========================================================
+      // Step 1: Fast rejection (no mutation before this point)
+      // =========================================================
+
+      if (indexMap.has(shape)) {
+        throw new ShapeAlreadyExistsInCanvasError(
+          shape.style.id,
+          this.style.id,
+          'core.canvas.add()'
+        );
+      }
+
+      // =========================================================
+      // Step 3: Atomic commit (authoritative state mutation)
+      // =========================================================
+
+      const index = elements.length;
+
+      elements.push(shape);
+      indexMap.set(shape, index);
+      this.#elementIdMap.set(shape.style.id, shape);
+
+      // =========================================================
+      // Step 4: Z-ORDER INITIALIZATION (CRITICAL)
+      // =========================================================
+      // Assign a strictly increasing zIndex so that:
+      // - insertion order becomes initial render order
+      // - no sorting ambiguity exists
+      // - future z-order operations remain consistent
+
+      this.#maxZ++;
+      geometry.zIndex = this.#maxZ;
+
+      geometry.renderUpdateType = 'TRANSFORM';
+
+      // =========================================================
+      // DEV-ONLY invariant validation
+      // =========================================================
+      if (__DEV__) {
+        if (elements[index] !== shape || indexMap.get(shape) !== index) {
+          Warn('Invariant violation after insertion', {
+            shape,
+            index,
+            arrayValue: elements[index],
+            mapValue: indexMap.get(shape)
+          });
+        }
+
+        if (typeof geometry.zIndex !== 'number') {
+          Warn('zIndex initialization failed', shape);
+        }
+      }
+    }
+
+    Log(' scene elements = ', this.#sceneElements);
+    this.#pendingCreationElements.length = 0;
+    Log(this.#pendingCreationElements);
+  }
+
+  public add(...rest: GraphicsNode[]): this {
+    const fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
+    if (!fig) {
+      throw new NotInitializedError(
+        'this.#fig',
+        'canvas dom element not initialized',
+        'core.canvas.#setCanvasParams()'
+      );
+    }
+
+    const indexMap = this.#elementIndexMap;
+
     for (let i = 0; i < rest.length; i++) {
       const shape = rest[i] as GraphicsNodeWithInternalAccessMethods;
 
@@ -488,7 +616,6 @@ export class SceneModel
         DEV_INTERNAL_ACCESS_KEY
       ) as {
         shape: string;
-        zIndex: number;
         dirty: boolean;
         worldDirty: boolean;
       };
@@ -530,48 +657,13 @@ export class SceneModel
       // Step 3: Atomic commit (authoritative state mutation)
       // =========================================================
 
-      const index = elements.length;
-
-      elements.push(shape);
-      indexMap.set(shape, index);
-      this.#elementIdMap.set(shape.style.id, shape);
-
       shape[SET_PARENT_METHOD](this, DEV_INTERNAL_ACCESS_KEY);
 
       geometry.dirty = true;
       geometry.worldDirty = true;
 
-      // =========================================================
-      // Step 4: Z-ORDER INITIALIZATION (CRITICAL)
-      // =========================================================
-      // Assign a strictly increasing zIndex so that:
-      // - insertion order becomes initial render order
-      // - no sorting ambiguity exists
-      // - future z-order operations remain consistent
-
-      this.#maxZ++;
-      geometry.zIndex = this.#maxZ;
-
-      // =========================================================
-      // DEV-ONLY invariant validation
-      // =========================================================
-      if (__DEV__) {
-        if (elements[index] !== shape || indexMap.get(shape) !== index) {
-          Warn('Invariant violation after insertion', {
-            shape,
-            index,
-            arrayValue: elements[index],
-            mapValue: indexMap.get(shape)
-          });
-        }
-
-        if (typeof geometry.zIndex !== 'number') {
-          Warn('zIndex initialization failed', shape);
-        }
-      }
+      this.#pendingCreationElements.push(shape);
     }
-
-    Log(' scene elements = ', this.#sceneElements);
 
     return this;
   }
@@ -610,8 +702,62 @@ export class SceneModel
    * @param targets - Shapes to remove
    * @returns this
    */
+  [COMMIT_PENDING_DELETION_METHOD]() {
+    const elements = this.#sceneElements;
+    const indexMap = this.#elementIndexMap;
+
+    const pending = this.#pendingDeletionElements;
+
+    for (let i = 0; i < pending.length; i++) {
+      const shape = pending[i] as GraphicsNodeWithInternalAccessMethods;
+
+      let index = indexMap.get(shape);
+
+      if (index === undefined) {
+        continue;
+      }
+
+      // =========================================================
+      // O(1) SWAP-POP
+      // =========================================================
+
+      const lastIndex = elements.length - 1;
+
+      const lastElement = elements[lastIndex];
+
+      if (index !== lastIndex) {
+        elements[index] = lastElement;
+
+        indexMap.set(lastElement, index);
+      }
+
+      elements.pop();
+
+      indexMap.delete(shape);
+
+      this.#elementIdMap.delete(shape.style.id);
+
+      const geo = shape[GET_INTERNAL_GEOMETRY_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+      // =========================================================
+      // CLEAN INTERNAL STATE
+      // =========================================================
+      if (geo) {
+        geo.zIndex = undefined as unknown as number;
+
+        geo.localDirty = false;
+        geo.worldDirty = false;
+      }
+
+      shape[SET_PARENT_METHOD](null, DEV_INTERNAL_ACCESS_KEY);
+    }
+
+    pending.length = 0;
+  }
+
   public remove(...targets: GraphicsNode[]): this {
     const fig = this.#fig;
+
     if (!fig) {
       throw new NotInitializedError(
         'this.#fig',
@@ -620,43 +766,33 @@ export class SceneModel
       );
     }
 
-    const elements = this.#sceneElements;
     const indexMap = this.#elementIndexMap;
 
     for (let i = 0; i < targets.length; i++) {
       const shape = targets[i] as GraphicsNodeWithInternalAccessMethods;
+
       if (!shape) continue;
 
-      let index = indexMap.get(shape);
-      if (index === undefined) {
-        if (__DEV__) {
-          Warn(`Element not found or already removed`, shape);
-        }
-        continue;
-      }
-
-      const style = shape[GET_INTERNAL_STYLE_METHOD](DEV_INTERNAL_ACCESS_KEY);
-      const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
-      );
+      const index = indexMap.get(shape);
 
       // =========================================================
       // Ownership validation (soft check)
       // =========================================================
-
-      if (indexMap.has(shape)) {
-        const parent = shape[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
-
-        if (parent !== this) {
-          Warn(
-            `shape is not present in Canvas but maybe present in any other group or nested group so first on group that shape from that particular group then try to delete from Scene `
-          );
-          throw new ShapeNotAttachedToCanvasError(
-            style.id,
-            this.style.id,
-            'canvas.remove()'
-          );
+      if (index === undefined) {
+        if (__DEV__) {
+          Warn('Element not found or already removed', shape);
         }
+        continue;
+      }
+
+      const parent = shape[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+      if (parent !== this) {
+        throw new ShapeNotAttachedToCanvasError(
+          shape.style.id,
+          this.style.id,
+          'canvas.remove()'
+        );
       }
 
       // =========================================================
@@ -667,55 +803,13 @@ export class SceneModel
         const groupElements = el.getAllElements();
         el.ungroup();
 
-        if (groupElements.length > 0) {
-          this.remove(...groupElements.slice());
-        }
+      //  if (groupElements.length > 0) {
+      //    this.remove(...groupElements.slice());
+      //  }
       }
 			*/
 
-      // =========================================================
-      // O(1) SWAP-POP
-      // =========================================================
-      index = indexMap.get(shape);
-
-      if (index === undefined) continue;
-
-      const lastIndex = elements.length - 1;
-      const lastEl = elements[lastIndex];
-
-      if (index !== lastIndex) {
-        elements[index] = lastEl;
-        indexMap.set(lastEl, index);
-      }
-
-      const removedShape =
-        elements.pop() as GraphicsNodeWithInternalAccessMethods;
-      indexMap.delete(shape);
-      this.#elementIdMap.delete(shape.style.id);
-
-      this.#removedElements.push(removedShape);
-
-      // =========================================================
-      // CLEAN INTERNAL STATE
-      // =========================================================
-
-      removedShape[SET_PARENT_METHOD](null, DEV_INTERNAL_ACCESS_KEY);
-
-      if (geometry) {
-        // Z-INDEX CLEANUP (CRITICAL ADDITION)
-        geometry.zIndex = undefined as unknown as number;
-
-        geometry.localDirty = false;
-        geometry.worldDirty = false;
-      }
-      // =========================================================
-      // DEV invariant check
-      // =========================================================
-      if (__DEV__) {
-        if (indexMap.has(shape)) {
-          Warn('Invariant violation: removed element still in map', shape);
-        }
-      }
+      this.#pendingDeletionElements.push(shape);
     }
 
     return this;
@@ -736,80 +830,20 @@ export class SceneModel
    * - zIndex cleanup
    *
    * ============================================================================
-   * Z-ORDER RESET
-   * ============================================================================
-   * - Clears zIndex from all shapes
-   * - Resets internal z-order boundaries:
-   *   - #minZ → 0
-   *   - #maxZ → 0
-   *
-   * This ensures:
-   * - Fresh ordering state for future insertions
-   * - No stale zIndex leakage
-   *
-   * ============================================================================
-   * PERFORMANCE
-   * ============================================================================
-   * - O(n) linear pass for cleanup
-   * - Avoids repeated remove() calls (which incur extra checks and recursion)
-   * - Structural reset is O(1)
-   *
-   * ============================================================================
    * INVARIANTS AFTER EXECUTION
    * ============================================================================
    * - #sceneElements is empty
    * - #elementIndexMap is empty
    * - All shapes are detached from DOM
    * - All shapes have:
-   *   - no ownership (style.inside cleared)
-   *   - no context (geometry.context cleared)
    *   - no zIndex (style.zIndex cleared)
    * - z-order boundaries reset
    *
    * ============================================================================
-   * @returns this (fluent API)
+   * @returns this
    */
   public clear(): this {
-    const elements = this.#sceneElements;
-    if (elements.length === 0) return this;
-
-    // =========================================================
-    // STEP 1: Linear cleanup
-    // =========================================================
-    for (let i = 0; i < elements.length; i++) {
-      const shape = elements[i] as GraphicsNodeWithInternalAccessMethods;
-
-      const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
-      );
-
-      // -------------------------
-      // Metadata cleanup
-      // -------------------------
-
-      if (geometry) {
-        //  Z-INDEX CLEANUP (CRITICAL)
-        geometry.zIndex = undefined as unknown as number;
-        geometry.localDirty = false;
-        geometry.worldDirty = false;
-      }
-    }
-
-    // =========================================================
-    // STEP 2: Structural reset (O(1))
-    // =========================================================
-    this.#removedElements = [...this.#sceneElements];
-
-    this.#sceneElements.length = 0;
-    this.#elementIndexMap.clear();
-    this.#elementIdMap.clear();
-
-    // =========================================================
-    // STEP 3: Z-ORDER BOUNDARY RESET (CRITICAL)
-    // =========================================================
-    this.#minZ = 0;
-    this.#maxZ = 0;
-
+    this.remove(...this.#sceneElements.slice());
     return this;
   }
 
