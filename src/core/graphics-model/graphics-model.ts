@@ -44,6 +44,7 @@ import type {
 /* -------------------------------------------------------------------------- */
 
 import type {
+  AttrsMethodPropsTypes,
   AttrsMethodReturnTypes,
   GetAttrsMethodsReturnTypes,
   GRAPHICS_TYPES,
@@ -1691,7 +1692,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
    * Getter (multiple):
    *   attrs('x y fill') → [10, 20, 'red']
    */
-  public attrs(props: Object | string): AttrsMethodReturnTypes {
+  public attrs(props: object | string | string[]): AttrsMethodReturnTypes {
     try {
       // ============================================================
       // Setter Mode
@@ -1703,7 +1704,8 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        */
       if (
         (typeof props === 'object' && Object.keys(props).length === 0) ||
-        (typeof props === 'string' && props.trim() === '')
+        (typeof props === 'string' && props.trim() === '') ||
+        (Array.isArray(props) && props.length == 0)
       )
         return;
 
@@ -1729,10 +1731,14 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
         // Getter Mode
         // ============================================================
       } else if (typeof props === 'string') {
+        return this.#getAttr(props.trim());
+      } else if (Array.isArray(props)) {
+        props = props as string[];
         /**
          * Split input string into attribute keys.
          */
-        const result: GetAttrsMethodsReturnTypes[] = props.trim().split(' ');
+        const result: GetAttrsMethodsReturnTypes[] =
+          props as GetAttrsMethodsReturnTypes[];
 
         /**
          * Multi-key retrieval.
@@ -1751,17 +1757,11 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
             result[f] = this.#getAttr((result[f] as string).trim());
             result[l] = this.#getAttr((result[l] as string).trim());
           }
-
-          /**
-           * Return array if multiple results exist.
-           */
-          return result.length > 1 ? result : result[0];
         }
-
         /**
-         * Single-key retrieval.
+         * Return array if multiple results exist.
          */
-        return this.#getAttr((result[0] as string).trim());
+        return result;
       }
     } catch (e) {
       /**
