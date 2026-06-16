@@ -16,8 +16,11 @@ import {
 
 import {
   assertSystemAccess,
+  GET_PENDING_CREATION_ELEMENTS_METHOD,
+  COMMIT_PENDING_CREATION_METHOD,
+  GET_PENDING_DELETION_ELEMENTS_METHOD,
+  COMMIT_PENDING_DELETION_METHOD,
   GET_SCENE_ELEMENTS_METHOD,
-  GET_SCENE_REMOVED_ELEMENTS_METHOD,
   GET_SCENE_Z_ORDER_RESOLVER_METHOD,
   SYSTEM_INTERNAL_ACCESS_KEY
 } from '../../../../internal/keys/system-keys.js';
@@ -35,10 +38,11 @@ import type {
   SetParentAccessor,
   ZOrderResolutionFuncAccessor,
   ZOrderResolutionCleanUpFuncAccessor,
-  GetSceneRemovedElementsAccessor,
   GetSceneElementsAccessor
 } from '../../../../models/interfaces/graphics-container';
 
+import type { IRenderer } from '../../../../models/interfaces/renderer';
+import type { TransformStack } from '../../../../models/types/common';
 /* -------------------------------------------------------------------------- */
 /*                                Common Types                                 */
 /* -------------------------------------------------------------------------- */
@@ -47,14 +51,15 @@ import type {
   InternalGeometryAccessor,
   InternalStyleAccessor
 } from '../../../../models/types/graphics-model';
-import type { RenderInfrastructure } from '../../../../models/types/render-infrastructure';
+import type {
+  RenderInfrastructure,
+  RenderUpdateType
+} from '../../../../models/types/render-infrastructure';
 /* -------------------------------------------------------------------------- */
 /*                          Runtime Engine Subsystems                          */
 /* -------------------------------------------------------------------------- */
 
 import { GraphicsModel } from '../../../../core/graphics-model/graphics-model.js';
-import { Renderer } from '../../../../models/interfaces/renderer';
-import { TransformStack } from '../../../../models/types/common';
 
 //import { Warn } from '../../utils/hshapepers/helpers.js';
 import {
@@ -64,7 +69,7 @@ import {
 
 import { createSVGElement, SVGSOURCE, removeFrom } from '../core/core.js';
 import { SceneModel } from '../../../scene/scene-model.js';
-import { Log } from '../../../../utils/helpers/helpers.js';
+import { Log, RenderPhase } from '../../../../utils/helpers/helpers.js';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -75,8 +80,7 @@ type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   SetParentAccessor &
   ZOrderResolutionFuncAccessor &
   ZOrderResolutionCleanUpFuncAccessor &
-  GetSceneElementsAccessor &
-  GetSceneRemovedElementsAccessor;
+  GetSceneElementsAccessor;
 
 /**
  * ============================================================================
@@ -167,7 +171,7 @@ type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
  * - high rendering performance
  * - strict separation between computation and rendering
  */
-export class SVGRenderer implements Renderer {
+export class SVGRenderer implements IRenderer {
   /**
    * ============================================================================
    * INTERNAL RENDER CACHES
@@ -587,6 +591,85 @@ export class SVGRenderer implements Renderer {
     return String(n);
   }
 
+  #processPendingDeletions() {
+    const removedElements: GraphicsNode[] = this.#scene[
+      GET_PENDING_DELETION_ELEMENTS_METHOD
+    ](SYSTEM_INTERNAL_ACCESS_KEY);
+
+    if (!removedElements.length) return;
+
+    const domScene = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    );
+
+    for (let i = removedElements.length; i > 0; i--) {
+      const element = removedElements[
+        i
+      ] as GraphicsNodeWithInternalAccessMethods;
+      const domEle = element[GET_INTERNAL_GRAPHICS_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      );
+
+      removeFrom(domScene, domEle);
+
+      element[SET_INTERNAL_GRAPHICS_METHOD](null, DEV_INTERNAL_ACCESS_KEY);
+
+      removedElements.pop();
+    }
+  }
+
+  #processPendingCreations() {
+    const creationElements: GraphicsNode[] = this.#scene[
+      GET_PENDING_CREATION_ELEMENTS_METHOD
+    ](SYSTEM_INTERNAL_ACCESS_KEY);
+
+    if (!creationElements.length) return;
+
+    const domScene = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    );
+
+    // Iterate through all shapes in the render stack
+    for (let index = 0; index < creationElements.length; index++) {
+      const shape = creationElements[
+        index
+      ] as GraphicsNodeWithInternalAccessMethods;
+
+      // --------------------------------------------------------------------------
+      // STEP 1: Validate renderable shape
+      // --------------------------------------------------------------------------
+      if (!(shape instanceof GraphicsModel)) {
+        throw new InvalidRenderableShapeError(shape, 'Renderer.render');
+      }
+      // --------------------------------------------------------------------------
+      // STEP 2: Extract geometry reference (internal state)
+      // --------------------------------------------------------------------------
+
+      const shapeType = shape.geometry.shape; // shape type
+
+      let figRef = shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY); // actual SVG DOM node
+
+      // --------------------------------------------------------------------------
+      // DOM Element creation and mount
+      // --------------------------------------------------------------------------
+
+      if (!figRef) {
+        const tagName: string = (
+          shapeType === 'dot'
+            ? 'circle'
+            : shapeType === 'curve'
+            ? 'polyline'
+            : shapeType
+        ) as string;
+
+        figRef = createSVGElement(tagName, SVGSOURCE);
+
+        shape[SET_INTERNAL_GRAPHICS_METHOD](figRef, DEV_INTERNAL_ACCESS_KEY);
+
+        this.#attributeSetter(shape);
+      }
+    }
+  }
   /* ============================================================================
    * PUBLIC API
    * ============================================================================ */
@@ -626,89 +709,99 @@ export class SVGRenderer implements Renderer {
    * - Throws if batching mode is active
    */
 
+  /*
   public render(...shapesStack: GraphicsNode[]): void {
-    const domScene = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
-    );
-
-    const removedElements: GraphicsNode[] = this.#scene[
-      GET_SCENE_REMOVED_ELEMENTS_METHOD
-    ](SYSTEM_INTERNAL_ACCESS_KEY);
-
-    for (let i = removedElements.length; i > 0; i--) {
-      const element = removedElements[
-        i
-      ] as GraphicsNodeWithInternalAccessMethods;
-      const domEle = element[GET_INTERNAL_GRAPHICS_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
-      );
-
-      removeFrom(domScene, domEle);
-
-      element[SET_INTERNAL_GRAPHICS_METHOD](null, DEV_INTERNAL_ACCESS_KEY);
-
-      removedElements.pop();
+    if (__DEV__) {
+      Log(' in render');
     }
+    this.#processPendingDeletions();
 
     this.#processScene();
 
-    /**
-     * ============================================================================
-     * RENDER LOOP — VALIDATION, STATE EXTRACTION & PREPARATION
-     * ============================================================================
-     *
-     * PURPOSE
-     * ----------------------------------------------------------------------------
-     * This block represents the **initial phase of rendering for each shape**.
-     *
-     * It is responsible for:
-     * - validating renderable objects
-     * - extracting internal state (geometry, style, DOM reference)
-     * - filtering out non-dirty shapes
-     * - preparing per-shapeement caches
-     * - initializing a minimal diff container (`desiredAttrs`)
-     *
-     * This stage ensures that only **valid and necessary shapes** proceed to the
-     * expensive rendering phase.
-     *
-     * ----------------------------------------------------------------------------
-     * EXECUTION FLOW
-     * ----------------------------------------------------------------------------
-     * For each shape:
-     *
-     * 1. Validate shape type (must be GraphicsModshape)
-     * 2. Extract geometry reference
-     * 3. Skip if not dirty (no changes)
-     * 4. Extract style and DOM references
-     * 5. Validate batching state
-     * 6. Initialize caches
-     * 7. Prepare diff container for attributes
-     *
-     * ----------------------------------------------------------------------------
-     * PERFORMANCE STRATEGY
-     * ----------------------------------------------------------------------------
-     * - Early exit for non-dirty shapes → avoids unnecessary computation
-     * - Direct access to internal references → avoids abstraction overhead
-     * - Cache initialization ensures O(1) lookup later
-     * - `desiredAttrs` collects only changed attributes → minimal DOM writes
-     *
-     * ----------------------------------------------------------------------------
-     * ERROR CONDITIONS
-     * ----------------------------------------------------------------------------
-     * - Throws if shape is not an instance of GraphicsModshape
-     * - Throws if geometry reference is missing
-     * - Throws if transformation batching is still active
-     *
-     * ----------------------------------------------------------------------------
-     * IMPORTANT INVARIANTS
-     * ----------------------------------------------------------------------------
-     * - Every shapeement processed here must be renderable
-     * - Geometry must exist before rendering
-     * - Dirty flag must control rendering shapeigibility
-     * - No rendering allowed during batching phase
-     */
+    this.#processPendingCreations();
+    this.#processActiveElements(...shapesStack);
+  }
+	*/
 
+  public render(phase: RenderPhase, ...shapes: GraphicsNode[]) {
+    switch (phase) {
+      case RenderPhase.PREPARE:
+        this.#processPendingDeletions();
+        this.#scene[COMMIT_PENDING_DELETION_METHOD]();
+        this.#processPendingCreations();
+        this.#scene[COMMIT_PENDING_CREATION_METHOD]();
+        break;
+
+      case RenderPhase.RENDER:
+        this.#processScene();
+
+        this.#processActiveElements(...shapes);
+
+        break;
+    }
+  }
+  /**
+   * ============================================================================
+   * RENDER LOOP — VALIDATION, STATE EXTRACTION & PREPARATION
+   * ============================================================================
+   *
+   * PURPOSE
+   * ----------------------------------------------------------------------------
+   * This block represents the **initial phase of rendering for each shape**.
+   *
+   * It is responsible for:
+   * - validating renderable objects
+   * - extracting internal state (geometry, style, DOM reference)
+   * - filtering out non-dirty shapes
+   * - preparing per-shapeement caches
+   * - initializing a minimal diff container (`desiredAttrs`)
+   *
+   * This stage ensures that only **valid and necessary shapes** proceed to the
+   * expensive rendering phase.
+   *
+   * ----------------------------------------------------------------------------
+   * EXECUTION FLOW
+   * ----------------------------------------------------------------------------
+   * For each shape:
+   *
+   * 1. Validate shape type (must be GraphicsModshape)
+   * 2. Extract geometry reference
+   * 3. Skip if not dirty (no changes)
+   * 4. Extract style and DOM references
+   * 5. Validate batching state
+   * 6. Initialize caches
+   * 7. Prepare diff container for attributes
+   *
+   * ----------------------------------------------------------------------------
+   * PERFORMANCE STRATEGY
+   * ----------------------------------------------------------------------------
+   * - Early exit for non-dirty shapes → avoids unnecessary computation
+   * - Direct access to internal references → avoids abstraction overhead
+   * - Cache initialization ensures O(1) lookup later
+   * - `desiredAttrs` collects only changed attributes → minimal DOM writes
+   *
+   * ----------------------------------------------------------------------------
+   * ERROR CONDITIONS
+   * ----------------------------------------------------------------------------
+   * - Throws if shape is not an instance of GraphicsModshape
+   * - Throws if geometry reference is missing
+   * - Throws if transformation batching is still active
+   *
+   * ----------------------------------------------------------------------------
+   * IMPORTANT INVARIANTS
+   * ----------------------------------------------------------------------------
+   * - Every shapeement processed here must be renderable
+   * - Geometry must exist before rendering
+   * - Dirty flag must control rendering shapeigibility
+   * - No rendering allowed during batching phase
+   */
+
+  #processActiveElements(...shapesStack: GraphicsNode[]) {
+    const infrastructure = this.#sceneInfrastructure.get(this.#scene);
+
+    if (!infrastructure) return;
     // Iterate through all shapes in the render stack
+
     for (let index = 0; index < shapesStack.length; index++) {
       const shape = shapesStack[index] as GraphicsNodeWithInternalAccessMethods;
 
@@ -725,11 +818,9 @@ export class SVGRenderer implements Renderer {
         DEV_INTERNAL_ACCESS_KEY
       ) as Partial<{
         localDirty: boolean; // indicates if re-render is needed
-        buffer: Float32Array; // geometry buffer (used in poly shapes)
-        transformStack: TransformStack; // transformation stack (if applicable)
-        shape: string; // shape type identifier
+        renderUpdateType: RenderUpdateType;
         worldMatrix: Float32Array; // parent -> child composed transformation matrix
-        worldDirty: boolean; // indicates if re-render is needed for dependancy
+        worldDirty: boolean;
       }>;
 
       // Geometry must exist for rendering
@@ -750,29 +841,8 @@ export class SVGRenderer implements Renderer {
       // --------------------------------------------------------------------------
       // STEP 4: Extract style and DOM references
       // --------------------------------------------------------------------------
-      const styleRef = shape[GET_INTERNAL_STYLE_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
-      ); // style object
+
       let figRef = shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY); // actual SVG DOM node
-      const shapeType = geoRef?.shape; // shape type
-
-      // --------------------------------------------------------------------------
-      // DOM Element creation and mount
-      // --------------------------------------------------------------------------
-
-      if (!figRef) {
-        const tagName: string = (
-          shapeType === 'dot'
-            ? 'circle'
-            : shapeType === 'curve'
-            ? 'polyline'
-            : shapeType
-        ) as string;
-
-        figRef = createSVGElement(tagName, SVGSOURCE);
-
-        shape[SET_INTERNAL_GRAPHICS_METHOD](figRef, DEV_INTERNAL_ACCESS_KEY);
-      }
 
       /**
        * DOM ORDER SYNCHRONIZATION (SVG)
@@ -787,10 +857,6 @@ export class SVGRenderer implements Renderer {
        */
 
       if (figRef) {
-        const infrastructure = this.#sceneInfrastructure.get(this.#scene);
-
-        if (!infrastructure) return;
-
         const sceneRoot = infrastructure.contentHost as SVGGElement;
 
         if (sceneRoot) {
@@ -816,483 +882,36 @@ export class SVGRenderer implements Renderer {
       }
 			*/
 
-      // --------------------------------------------------------------------------
-      // STEP 6: Initialize per-shapeement caches
-      // --------------------------------------------------------------------------
-      // Geometry cache → avoids redundant geometry updates
-      const geoCache = this.#getOrInitGeoCache(figRef);
-
-      // Style cache → avoids redundant style updates
-      const styleCache = this.#getOrInitStyleCache(figRef);
-
-      // --------------------------------------------------------------------------
-      // STEP 7: Prepare diff container
-      // --------------------------------------------------------------------------
-      // This object will store ONLY changed attributes.
-      // Later applied to DOM in a minimal update pass.
-      const desiredAttrs: Record<string, string> = Object.create(null);
-
-      /**
-       * ============================================================================
-       * STEP 8: SHAPE-SPECIFIC GEOMETRY DIFFING & ATTRIBUTE BUILDING
-       * ============================================================================
-       *
-       * PURPOSE
-       * ----------------------------------------------------------------------------
-       * This block computes **minimal geometry changes per shape type**.
-       *
-       * For each shape:
-       * - Extract required geometry fishapeds
-       * - Convert numeric values → string (DOM-compatible)
-       * - Compare with cached values
-       * - Add ONLY changed attributes into `desiredAttrs`
-       *
-       * KEY STRATEGY
-       * ----------------------------------------------------------------------------
-       * - No direct DOM writes here
-       * - Only diff computation
-       * - Cache-driven comparison to avoid redundant updates
-       *
-       * RESULT
-       * ----------------------------------------------------------------------------
-       * `desiredAttrs` contains only attributes that actually changed.
-       */
-
-      //       throw new NotInitializedError(
-      //         'this.#fig',
-      //         'canvas dom element not initialized',
-      //         'core.canvas.#setCanvasParams()'
-      //       );
-
-      switch (shapeType) {
+      const renderUpdateType = geoRef.renderUpdateType;
+      if (renderUpdateType === 'TRANSFORM') {
+        const styleCache = this.#getOrInitStyleCache(figRef);
         /**
-         * DOT
-         * ----------------------------------------------------------------------------
-         * Represents a point rendered as a small circle.
-         * Radius is clamped to a visual range [1, 5] for consistency.
+         * Applies the computed world transform to the DOM shapeement.
          *
-         * Only updates:
-         * - cx (x position)
-         * - cy (y position)
-         * - r  (radius)
-         *
-         * Cache ensures DOM updates only when values change.
+         * - Uses `worldMatrix` as the single source of truth for rendering.
+         * - Updates only when `dirty` or `worldDirty` is true to avoid redundant writes.
+         * - Converts Float32Array matrix into SVG `matrix(a b c d e f)` format.
+         * - Uses `styleCache` to prevent unnecessary DOM mutations.
          */
-        case 'dot': {
-          const { cx, cy, r } = geoRef as {
-            cx: number;
-            cy: number;
-            r: number;
-          };
-          const cr = r < 1 ? 1 : r > 5 ? 5 : r;
+        const world = geoRef.worldMatrix as Float32Array;
 
-          const cxStr = this.#numToStr(cx);
-          const cyStr = this.#numToStr(cy);
-          const rStr = this.#numToStr(cr);
+        if (geoRef.worldDirty || geoRef.localDirty) {
+          const a = world[0],
+            b = world[1],
+            c = world[3],
+            d = world[4],
+            e = world[6],
+            f = world[7];
 
-          geoCache['__cx'] !== cxStr && (desiredAttrs['cx'] = cxStr);
-          geoCache['__cy'] !== cyStr && (desiredAttrs['cy'] = cyStr);
-          geoCache['__r'] !== rStr && (desiredAttrs['r'] = rStr);
+          const transformStr = `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
 
-          break;
-        }
-
-        /**
-         * LINE
-         * ----------------------------------------------------------------------------
-         * Represents a straight line between two points.
-         *
-         * Attributes:
-         * - x1, y1 → start point
-         * - x2, y2 → end point
-         *
-         * Each coordinate is diff-checked independently.
-         */
-        case 'line': {
-          const { x1, y1, x2, y2 } = geoRef as {
-            x1: number;
-            y1: number;
-            x2: number;
-            y2: number;
-          };
-
-          const x1s = this.#numToStr(x1);
-          const y1s = this.#numToStr(y1);
-          const x2s = this.#numToStr(x2);
-          const y2s = this.#numToStr(y2);
-
-          geoCache['__x1'] !== x1s && (desiredAttrs['x1'] = x1s);
-          geoCache['__y1'] !== y1s && (desiredAttrs['y1'] = y1s);
-          geoCache['__x2'] !== x2s && (desiredAttrs['x2'] = x2s);
-          geoCache['__y2'] !== y2s && (desiredAttrs['y2'] = y2s);
-
-          break;
-        }
-
-        /**
-         * CIRCLE
-         * ----------------------------------------------------------------------------
-         * Standard SVG circle shapeement.
-         *
-         * Attributes:
-         * - cx, cy → center
-         * - r      → radius
-         *
-         * Uses direct numeric-to-string conversion and cache comparison.
-         */
-        case 'circle': {
-          const { cx, cy, r } = geoRef as {
-            cx: number;
-            cy: number;
-            r: number;
-          };
-
-          const cxs = this.#numToStr(cx);
-          const cys = this.#numToStr(cy);
-          const rs = this.#numToStr(r);
-
-          geoCache['__cx'] !== cxs && (desiredAttrs['cx'] = cxs);
-          geoCache['__cy'] !== cys && (desiredAttrs['cy'] = cys);
-          geoCache['__r'] !== rs && (desiredAttrs['r'] = rs);
-
-          break;
-        }
-
-        /**
-         * shapeLIPSE
-         * ----------------------------------------------------------------------------
-         * Represents an shapelipse with different radii.
-         *
-         * Attributes:
-         * - cx, cy → center
-         * - rx, ry → radii on x and y axes
-         *
-         * Each attribute is independently diff-checked.
-         */
-        case 'ellipse': {
-          const { cx, cy, rx, ry } = geoRef as {
-            cx: number;
-            cy: number;
-            rx: number;
-            ry: number;
-          };
-
-          const cxs = this.#numToStr(cx);
-          const cys = this.#numToStr(cy);
-          const rxs = this.#numToStr(rx);
-          const rys = this.#numToStr(ry);
-
-          geoCache['__cx'] !== cxs && (desiredAttrs['cx'] = cxs);
-          geoCache['__cy'] !== cys && (desiredAttrs['cy'] = cys);
-          geoCache['__rx'] !== rxs && (desiredAttrs['rx'] = rxs);
-          geoCache['__ry'] !== rys && (desiredAttrs['ry'] = rys);
-
-          break;
-        }
-
-        /**
-         * RECT
-         * ----------------------------------------------------------------------------
-         * Represents a rectangle with optional rounded corners.
-         *
-         * Attributes:
-         * - x, y           → position
-         * - width, height  → size
-         * - rx, ry         → corner radius
-         *
-         * Default values ensure stable rendering even if not provided.
-         */
-        case 'rect': {
-          const {
-            x,
-            y,
-            width,
-            height,
-            rx = 0,
-            ry = 0
-          } = geoRef as {
-            x: number;
-            y: number;
-            width: number;
-            height: number;
-            rx: number;
-            ry: number;
-          };
-
-          const xs = this.#numToStr(x);
-          const ys = this.#numToStr(y);
-          const ws = this.#numToStr(width);
-          const hs = this.#numToStr(height);
-          const rxs = this.#numToStr(rx);
-          const rys = this.#numToStr(ry);
-
-          geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
-          geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
-          geoCache['__width'] !== ws && (desiredAttrs['width'] = ws);
-          geoCache['__height'] !== hs && (desiredAttrs['height'] = hs);
-          geoCache['__rx'] !== rxs && (desiredAttrs['rx'] = rxs);
-          geoCache['__ry'] !== rys && (desiredAttrs['ry'] = rys);
-
-          break;
-        }
-
-        /**
-         * POLYLINE / POLYGON / CURVE
-         * ----------------------------------------------------------------------------
-         * These shapes are defined by a sequence of points stored in a buffer.
-         *
-         * OPTIMIZATION STRATEGY:
-         * - Uses reference equality (buffer pointer) to detect changes
-         * - Rebuilds `points` string ONLY if buffer reference changes
-         *
-         * This avoids costly string rebuilding for unchanged geometry.
-         */
-        case 'polyline':
-        case 'polygon':
-        case 'curve': {
-          const { buffer: matrix } = geoRef as {
-            buffer: Float32Array;
-          };
-
-          const prevMatrixRef = geoCache['__buffer'] as Float32Array;
-
-          if (prevMatrixRef !== matrix) {
-            const len = matrix.length;
-            const parts: string[] = new Array(len);
-
-            for (let i = 0; i < len; i = i + 3) {
-              parts[i] = `${matrix[i]},${matrix[i + 1]}`;
-            }
-
-            desiredAttrs['points'] = parts.join(' ');
-          }
-
-          break;
-        }
-
-        /**
-         * PATH
-         * ----------------------------------------------------------------------------
-         * Represents complex shapes using SVG path syntax.
-         *
-         * Attribute:
-         * - d → path command string
-         *
-         * Only updates when path string changes.
-         */
-        case 'path': {
-          const { d } = geoRef as { d: string };
-
-          if (typeof d === 'string') {
-            if (geoCache['__d'] !== d) {
-              desiredAttrs['d'] = d;
-            }
-          }
-
-          break;
-        }
-
-        /**
-         * TEXT
-         * ----------------------------------------------------------------------------
-         * Represents text rendered at a position.
-         *
-         * Attributes:
-         * - x, y → position
-         *
-         * Content:
-         * - textContent updated directly (not via attributes)
-         *
-         * Geometry diffing applies only to position.
-         */
-        case 'text': {
-          const { x, y, text } = geoRef as {
-            x: number;
-            y: number;
-            text: string;
-          };
-
-          const xs = this.#numToStr(x);
-          const ys = this.#numToStr(y);
-
-          geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
-          geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
-
-          figRef.textContent = text;
-
-          break;
-        }
-
-        /**
-         * IMAGE
-         * ----------------------------------------------------------------------------
-         * Represents an external image embedded in SVG.
-         *
-         * Attributes:
-         * - x, y           → position
-         * - width, height  → dimensions
-         * - href           → image source
-         *
-         * Each attribute is diff-checked independently.
-         */
-        case 'image': {
-          const { x, y, width, height, href } = geoRef as {
-            x: number;
-            y: number;
-            width: number;
-            height: number;
-            href: string;
-          };
-
-          const xs = this.#numToStr(x);
-          const ys = this.#numToStr(y);
-          const ws = this.#numToStr(width);
-          const hs = this.#numToStr(height);
-
-          geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
-          geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
-          geoCache['__width'] !== ws && (desiredAttrs['width'] = ws);
-          geoCache['__height'] !== hs && (desiredAttrs['height'] = hs);
-          geoCache['__href'] !== href && (desiredAttrs['href'] = href);
-
-          break;
-        }
-
-        /**
-         * DEFAULT
-         * ----------------------------------------------------------------------------
-         * No operation for unsupported or unknown shapes.
-         * Renderer safshapey ignores unrecognized shape types.
-         */
-        default:
-          break;
-      }
-
-      /**
-       * ============================================================================
-       * STEP 9: APPLY GEOMETRY ATTRIBUTES (DIFF-BASED DOM WRITE)
-       * ============================================================================
-       *
-       * PURPOSE
-       * ----------------------------------------------------------------------------
-       * This step performs the **actual DOM mutation for geometry attributes**,
-       * but strictly in a **diff-driven manner**.
-       *
-       * Only attributes collected in `desiredAttrs` are considered, which already
-       * represent the minimal set of changes required.
-       *
-       * HOW IT WORKS
-       * ----------------------------------------------------------------------------
-       * - Iterate over `desiredAttrs`
-       * - For each attribute:
-       *     1. Verify it is an own property (safety check)
-       *     2. Compare against cached value (geoCache)
-       *     3. If changed → write to DOM + update cache
-       *
-       * OPTIMIZATION
-       * ----------------------------------------------------------------------------
-       * - Prevents redundant `setAttribute` calls
-       * - Avoids layout/reflow triggers for unchanged values
-       * - Cache acts as a write barrier between computation and DOM
-       *
-       * INVARIANT
-       * ----------------------------------------------------------------------------
-       * After execution:
-       *   geoCache[key] === DOM attribute value
-       */
-
-      for (const key in desiredAttrs) {
-        if (!Object.prototype.hasOwnProperty.call(desiredAttrs, key)) continue;
-
-        const vStr = desiredAttrs[key]!;
-
-        // Write only if value actually changed (extra safety over pre-diff)
-        if (geoCache[key] !== vStr) {
-          figRef.setAttribute(key, vStr);
-
-          geoCache[key] = vStr;
-        }
-      }
-
-      /**
-       * ============================================================================
-       * STEP 10: STYLE HANDLING (DIFF-BASED)
-       * ============================================================================
-       *
-       * PURPOSE
-       * ----------------------------------------------------------------------------
-       * Applies style-rshapeated attributes to the SVG element using the same
-       * diff-based strategy as geometry.
-       *
-       * Styles are treated separatshapey because:
-       * - they come from a different source (styleRef)
-       * - they may change independently of geometry
-       *
-       * HOW IT WORKS
-       * ----------------------------------------------------------------------------
-       * - Iterate through style object
-       * - Convert each value to string (DOM-compatible)
-       * - Compare with styleCache
-       * - Apply only if changed
-       *
-       * OPTIMIZATION
-       * ----------------------------------------------------------------------------
-       * - shapeiminates redundant style writes
-       * - Prevents unnecessary style recalculations in browser
-       * - Uses per-shapeement cache for O(1) comparisons
-       *
-       * LIMITATION (BY DESIGN)
-       * ----------------------------------------------------------------------------
-       * - Does NOT remove stale attributes
-       * - Assumes style object represents current truth
-       *
-       * INVARIANT
-       * ----------------------------------------------------------------------------
-       * After execution:
-       *   styleCache[k] === DOM attribute value
-       */
-
-      // Inserting transform into style if shape id dirty
-
-      if (styleRef && typeof styleRef === 'object') {
-        const styleObj = styleRef as Record<string, string | number>;
-
-        for (const k in styleObj) {
-          if (!Object.prototype.hasOwnProperty.call(styleObj, k)) continue;
-
-          const vStr = String(styleObj[k]);
-
-          if (styleCache[k] !== vStr) {
-            figRef.setAttribute(k, vStr);
-            styleCache[k] = vStr;
+          if (styleCache['transform'] !== transformStr) {
+            figRef.setAttribute('transform', transformStr);
+            styleCache['transform'] = transformStr;
           }
         }
-      }
-
-      /**
-       * Applies the computed world transform to the DOM shapeement.
-       *
-       * - Uses `worldMatrix` as the single source of truth for rendering.
-       * - Updates only when `dirty` or `worldDirty` is true to avoid redundant writes.
-       * - Converts Float32Array matrix into SVG `matrix(a b c d e f)` format.
-       * - Uses `styleCache` to prevent unnecessary DOM mutations.
-       */
-      const world = geoRef.worldMatrix as Float32Array;
-
-      if (geoRef.worldDirty || geoRef.localDirty) {
-        const a = world[0],
-          b = world[1],
-          c = world[3],
-          d = world[4],
-          e = world[6],
-          f = world[7];
-
-        const transformStr = `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
-
-        if (styleCache['transform'] !== transformStr) {
-          figRef.setAttribute('transform', transformStr);
-          styleCache['transform'] = transformStr;
-        }
+      } else if (renderUpdateType === 'LOCAL') {
+        this.#attributeSetter(shape);
       }
 
       /**
@@ -1325,5 +944,491 @@ export class SVGRenderer implements Renderer {
 
       geoRef.localDirty = false;
     }
+  }
+
+  #attributeSetter(shape: GraphicsNodeWithInternalAccessMethods) {
+    // --------------------------------------------------------------------------
+    // STEP 2: Extract geometry reference (internal state)
+    // --------------------------------------------------------------------------
+    const geoRef = shape[GET_INTERNAL_GEOMETRY_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as Partial<{
+      localDirty: boolean; // indicates if re-render is needed
+      buffer: Float32Array; // geometry buffer (used in poly shapes)
+      transformStack: TransformStack; // transformation stack (if applicable)
+      shape: string; // shape type identifier
+      renderUpdateType: RenderUpdateType;
+    }>;
+
+    // Geometry must exist for rendering
+    if (!geoRef) {
+      throw new InvalidInternalStateError(
+        geoRef,
+        'initialized geometry reference',
+        'Shape geometry is missing',
+        'Renderer.render'
+      );
+    }
+
+    // --------------------------------------------------------------------------
+    // STEP 3: Skip non-dirty shapes (performance optimization)
+    // --------------------------------------------------------------------------
+    if (!geoRef.localDirty) return;
+
+    // --------------------------------------------------------------------------
+    // STEP 4: Extract style and DOM references
+    // --------------------------------------------------------------------------
+    const styleRef = shape[GET_INTERNAL_STYLE_METHOD](DEV_INTERNAL_ACCESS_KEY); // style object
+
+    let figRef = shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY); // actual SVG DOM node
+    const shapeType = geoRef?.shape; // shape type
+
+    // --------------------------------------------------------------------------
+    // STEP 6: Initialize per-shapeement caches
+    // --------------------------------------------------------------------------
+    // Geometry cache → avoids redundant geometry updates
+    const geoCache = this.#getOrInitGeoCache(figRef);
+
+    // Style cache → avoids redundant style updates
+    const styleCache = this.#getOrInitStyleCache(figRef);
+
+    // --------------------------------------------------------------------------
+    // STEP 7: Prepare diff container
+    // --------------------------------------------------------------------------
+    // This object will store ONLY changed attributes.
+    // Later applied to DOM in a minimal update pass.
+    const desiredAttrs: Record<string, string> = Object.create(null);
+
+    /**
+     * ============================================================================
+     * STEP 8: SHAPE-SPECIFIC GEOMETRY DIFFING & ATTRIBUTE BUILDING
+     * ============================================================================
+     *
+     * PURPOSE
+     * ----------------------------------------------------------------------------
+     * This block computes **minimal geometry changes per shape type**.
+     *
+     * For each shape:
+     * - Extract required geometry fishapeds
+     * - Convert numeric values → string (DOM-compatible)
+     * - Compare with cached values
+     * - Add ONLY changed attributes into `desiredAttrs`
+     *
+     * KEY STRATEGY
+     * ----------------------------------------------------------------------------
+     * - No direct DOM writes here
+     * - Only diff computation
+     * - Cache-driven comparison to avoid redundant updates
+     *
+     * RESULT
+     * ----------------------------------------------------------------------------
+     * `desiredAttrs` contains only attributes that actually changed.
+     */
+
+    switch (shapeType) {
+      /**
+       * DOT
+       * ----------------------------------------------------------------------------
+       * Represents a point rendered as a small circle.
+       * Radius is clamped to a visual range [1, 5] for consistency.
+       *
+       * Only updates:
+       * - cx (x position)
+       * - cy (y position)
+       * - r  (radius)
+       *
+       * Cache ensures DOM updates only when values change.
+       */
+      case 'dot': {
+        const { cx, cy, r } = geoRef as {
+          cx: number;
+          cy: number;
+          r: number;
+        };
+        const cr = r < 1 ? 1 : r > 5 ? 5 : r;
+
+        const cxStr = this.#numToStr(cx);
+        const cyStr = this.#numToStr(cy);
+        const rStr = this.#numToStr(cr);
+
+        geoCache['__cx'] !== cxStr && (desiredAttrs['cx'] = cxStr);
+        geoCache['__cy'] !== cyStr && (desiredAttrs['cy'] = cyStr);
+        geoCache['__r'] !== rStr && (desiredAttrs['r'] = rStr);
+
+        break;
+      }
+
+      /**
+       * LINE
+       * ----------------------------------------------------------------------------
+       * Represents a straight line between two points.
+       *
+       * Attributes:
+       * - x1, y1 → start point
+       * - x2, y2 → end point
+       *
+       * Each coordinate is diff-checked independently.
+       */
+      case 'line': {
+        const { x1, y1, x2, y2 } = geoRef as {
+          x1: number;
+          y1: number;
+          x2: number;
+          y2: number;
+        };
+
+        const x1s = this.#numToStr(x1);
+        const y1s = this.#numToStr(y1);
+        const x2s = this.#numToStr(x2);
+        const y2s = this.#numToStr(y2);
+
+        geoCache['__x1'] !== x1s && (desiredAttrs['x1'] = x1s);
+        geoCache['__y1'] !== y1s && (desiredAttrs['y1'] = y1s);
+        geoCache['__x2'] !== x2s && (desiredAttrs['x2'] = x2s);
+        geoCache['__y2'] !== y2s && (desiredAttrs['y2'] = y2s);
+
+        break;
+      }
+
+      /**
+       * CIRCLE
+       * ----------------------------------------------------------------------------
+       * Standard SVG circle shapeement.
+       *
+       * Attributes:
+       * - cx, cy → center
+       * - r      → radius
+       *
+       * Uses direct numeric-to-string conversion and cache comparison.
+       */
+      case 'circle': {
+        const { cx, cy, r } = geoRef as {
+          cx: number;
+          cy: number;
+          r: number;
+        };
+
+        const cxs = this.#numToStr(cx);
+        const cys = this.#numToStr(cy);
+        const rs = this.#numToStr(r);
+
+        geoCache['__cx'] !== cxs && (desiredAttrs['cx'] = cxs);
+        geoCache['__cy'] !== cys && (desiredAttrs['cy'] = cys);
+        geoCache['__r'] !== rs && (desiredAttrs['r'] = rs);
+
+        break;
+      }
+
+      /**
+       * shapeLIPSE
+       * ----------------------------------------------------------------------------
+       * Represents an shapelipse with different radii.
+       *
+       * Attributes:
+       * - cx, cy → center
+       * - rx, ry → radii on x and y axes
+       *
+       * Each attribute is independently diff-checked.
+       */
+      case 'ellipse': {
+        const { cx, cy, rx, ry } = geoRef as {
+          cx: number;
+          cy: number;
+          rx: number;
+          ry: number;
+        };
+
+        const cxs = this.#numToStr(cx);
+        const cys = this.#numToStr(cy);
+        const rxs = this.#numToStr(rx);
+        const rys = this.#numToStr(ry);
+
+        geoCache['__cx'] !== cxs && (desiredAttrs['cx'] = cxs);
+        geoCache['__cy'] !== cys && (desiredAttrs['cy'] = cys);
+        geoCache['__rx'] !== rxs && (desiredAttrs['rx'] = rxs);
+        geoCache['__ry'] !== rys && (desiredAttrs['ry'] = rys);
+
+        break;
+      }
+
+      /**
+       * RECT
+       * ----------------------------------------------------------------------------
+       * Represents a rectangle with optional rounded corners.
+       *
+       * Attributes:
+       * - x, y           → position
+       * - width, height  → size
+       * - rx, ry         → corner radius
+       *
+       * Default values ensure stable rendering even if not provided.
+       */
+      case 'rect': {
+        const {
+          x,
+          y,
+          width,
+          height,
+          rx = 0,
+          ry = 0
+        } = geoRef as {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          rx: number;
+          ry: number;
+        };
+
+        const xs = this.#numToStr(x);
+        const ys = this.#numToStr(y);
+        const ws = this.#numToStr(width);
+        const hs = this.#numToStr(height);
+        const rxs = this.#numToStr(rx);
+        const rys = this.#numToStr(ry);
+
+        geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
+        geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
+        geoCache['__width'] !== ws && (desiredAttrs['width'] = ws);
+        geoCache['__height'] !== hs && (desiredAttrs['height'] = hs);
+        geoCache['__rx'] !== rxs && (desiredAttrs['rx'] = rxs);
+        geoCache['__ry'] !== rys && (desiredAttrs['ry'] = rys);
+
+        break;
+      }
+
+      /**
+       * POLYLINE / POLYGON / CURVE
+       * ----------------------------------------------------------------------------
+       * These shapes are defined by a sequence of points stored in a buffer.
+       *
+       * OPTIMIZATION STRATEGY:
+       * - Uses reference equality (buffer pointer) to detect changes
+       * - Rebuilds `points` string ONLY if buffer reference changes
+       *
+       * This avoids costly string rebuilding for unchanged geometry.
+       */
+      case 'polyline':
+      case 'polygon':
+      case 'curve': {
+        const { buffer: matrix } = geoRef as {
+          buffer: Float32Array;
+        };
+
+        const prevMatrixRef = geoCache['__buffer'] as Float32Array;
+
+        if (prevMatrixRef !== matrix) {
+          const len = matrix.length;
+          const parts: string[] = new Array(len);
+
+          for (let i = 0; i < len; i = i + 3) {
+            parts[i] = `${matrix[i]},${matrix[i + 1]}`;
+          }
+
+          desiredAttrs['points'] = parts.join(' ');
+        }
+
+        break;
+      }
+
+      /**
+       * PATH
+       * ----------------------------------------------------------------------------
+       * Represents complex shapes using SVG path syntax.
+       *
+       * Attribute:
+       * - d → path command string
+       *
+       * Only updates when path string changes.
+       */
+      case 'path': {
+        const { d } = geoRef as { d: string };
+
+        if (typeof d === 'string') {
+          if (geoCache['__d'] !== d) {
+            desiredAttrs['d'] = d;
+          }
+        }
+
+        break;
+      }
+
+      /**
+       * TEXT
+       * ----------------------------------------------------------------------------
+       * Represents text rendered at a position.
+       *
+       * Attributes:
+       * - x, y → position
+       *
+       * Content:
+       * - textContent updated directly (not via attributes)
+       *
+       * Geometry diffing applies only to position.
+       */
+      case 'text': {
+        const { x, y, text } = geoRef as {
+          x: number;
+          y: number;
+          text: string;
+        };
+
+        const xs = this.#numToStr(x);
+        const ys = this.#numToStr(y);
+
+        geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
+        geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
+
+        figRef.textContent = text;
+
+        break;
+      }
+
+      /**
+       * IMAGE
+       * ----------------------------------------------------------------------------
+       * Represents an external image embedded in SVG.
+       *
+       * Attributes:
+       * - x, y           → position
+       * - width, height  → dimensions
+       * - href           → image source
+       *
+       * Each attribute is diff-checked independently.
+       */
+      case 'image': {
+        const { x, y, width, height, href } = geoRef as {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          href: string;
+        };
+
+        const xs = this.#numToStr(x);
+        const ys = this.#numToStr(y);
+        const ws = this.#numToStr(width);
+        const hs = this.#numToStr(height);
+
+        geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
+        geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
+        geoCache['__width'] !== ws && (desiredAttrs['width'] = ws);
+        geoCache['__height'] !== hs && (desiredAttrs['height'] = hs);
+        geoCache['__href'] !== href && (desiredAttrs['href'] = href);
+
+        break;
+      }
+
+      /**
+       * DEFAULT
+       * ----------------------------------------------------------------------------
+       * No operation for unsupported or unknown shapes.
+       * Renderer safshapey ignores unrecognized shape types.
+       */
+      default:
+        break;
+    }
+
+    /**
+     * ============================================================================
+     * STEP 9: APPLY GEOMETRY ATTRIBUTES (DIFF-BASED DOM WRITE)
+     * ============================================================================
+     *
+     * PURPOSE
+     * ----------------------------------------------------------------------------
+     * This step performs the **actual DOM mutation for geometry attributes**,
+     * but strictly in a **diff-driven manner**.
+     *
+     * Only attributes collected in `desiredAttrs` are considered, which already
+     * represent the minimal set of changes required.
+     *
+     * HOW IT WORKS
+     * ----------------------------------------------------------------------------
+     * - Iterate over `desiredAttrs`
+     * - For each attribute:
+     *     1. Verify it is an own property (safety check)
+     *     2. Compare against cached value (geoCache)
+     *     3. If changed → write to DOM + update cache
+     *
+     * OPTIMIZATION
+     * ----------------------------------------------------------------------------
+     * - Prevents redundant `setAttribute` calls
+     * - Avoids layout/reflow triggers for unchanged values
+     * - Cache acts as a write barrier between computation and DOM
+     *
+     * INVARIANT
+     * ----------------------------------------------------------------------------
+     * After execution:
+     *   geoCache[key] === DOM attribute value
+     */
+
+    for (const key in desiredAttrs) {
+      if (!Object.prototype.hasOwnProperty.call(desiredAttrs, key)) continue;
+
+      const vStr = desiredAttrs[key]!;
+
+      // Write only if value actually changed (extra safety over pre-diff)
+      if (geoCache[key] !== vStr) {
+        figRef.setAttribute(key, vStr);
+
+        geoCache[key] = vStr;
+      }
+    }
+
+    /**
+     * ============================================================================
+     * STEP 10: STYLE HANDLING (DIFF-BASED)
+     * ============================================================================
+     *
+     * PURPOSE
+     * ----------------------------------------------------------------------------
+     * Applies style-rshapeated attributes to the SVG element using the same
+     * diff-based strategy as geometry.
+     *
+     * Styles are treated separatshapey because:
+     * - they come from a different source (styleRef)
+     * - they may change independently of geometry
+     *
+     * HOW IT WORKS
+     * ----------------------------------------------------------------------------
+     * - Iterate through style object
+     * - Convert each value to string (DOM-compatible)
+     * - Compare with styleCache
+     * - Apply only if changed
+     *
+     * OPTIMIZATION
+     * ----------------------------------------------------------------------------
+     * - shapeiminates redundant style writes
+     * - Prevents unnecessary style recalculations in browser
+     * - Uses per-shapeement cache for O(1) comparisons
+     *
+     * LIMITATION (BY DESIGN)
+     * ----------------------------------------------------------------------------
+     * - Does NOT remove stale attributes
+     * - Assumes style object represents current truth
+     *
+     * INVARIANT
+     * ----------------------------------------------------------------------------
+     * After execution:
+     *   styleCache[k] === DOM attribute value
+     */
+
+    // Inserting transform into style if shape id dirty
+
+    if (styleRef && typeof styleRef === 'object') {
+      const styleObj = styleRef as Record<string, string | number>;
+
+      for (const k in styleObj) {
+        if (!Object.prototype.hasOwnProperty.call(styleObj, k)) continue;
+
+        const vStr = String(styleObj[k]);
+
+        if (styleCache[k] !== vStr) {
+          figRef.setAttribute(k, vStr);
+          styleCache[k] = vStr;
+        }
+      }
+    }
+    geoRef.renderUpdateType = 'TRANSFORM';
   }
 }
