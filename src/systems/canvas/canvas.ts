@@ -13,7 +13,6 @@ import {
 
 import {
   GET_SCENE_ELEMENTS_METHOD,
-  GET_SCENE_REMOVED_ELEMENTS_METHOD,
   GET_SCENE_ELEMENT_ID_MAP_METHOD,
   GET_SCENE_Z_ORDER_RESOLVER_METHOD,
   SYSTEM_INTERNAL_ACCESS_KEY
@@ -29,7 +28,7 @@ import type {
   GraphicsNode,
   IGraphicsContainer
 } from '../../models/interfaces/graphics-container';
-import { Renderer } from '../../models/interfaces/renderer.js';
+import type { IRenderer } from '../../models/interfaces/renderer';
 
 /* -------------------------------------------------------------------------- */
 /*                                Common Types                                 */
@@ -42,7 +41,6 @@ import type {
 
 import type { AttrsMethodReturnTypes } from '../../models/types/common';
 
-import type { GRAPHICS_CONTEXT } from '../../models/types/graphics-model';
 import { Log } from '../../utils/helpers/helpers.js';
 
 /* -------------------------------------------------------------------------- */
@@ -199,7 +197,7 @@ export class Canvas implements IGraphicsContainer, ICanvas {
    * Invariant:
    * - Must be initialized before rendering execution begins.
    */
-  #renderer!: Renderer;
+  #renderer!: IRenderer;
 
   /**
    * Rendering execution engine coordinating:
