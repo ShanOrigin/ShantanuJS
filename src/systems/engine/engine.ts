@@ -1,16 +1,78 @@
-import { DEV_INTERNAL_ACCESS } from '../../utils/provider/accesskeys.js';
-import type { Renderer } from '../graphics/backends/renderers';
-import { GraphicsModel } from '../graphics/graphicsModel/graphicsModel.js';
+import type { IEngine } from '../../models/interfaces/engine';
 
-import type { iShape } from '../../shapes/provider/shapesTypes';
+import type {
+  GraphicsNode,
+  GetInternalGraphicsAccessor,
+  GetParentAccessor,
+  SetParentAccessor,
+  ZOrderResolutionFuncAccessor,
+  ZOrderResolutionCleanUpFuncAccessor,
+  GetSceneElementsAccessor,
+  GetSceneElementIdMapAccessor,
+  GetSceneZOrderResolverAccessor
+} from '../../models/interfaces/graphics-container';
+import type {
+  InternalGeometryAccessor,
+  InternalStyleAccessor,
+  InternalComputedStyleAccessor,
+  ValidGraphicsShapes
+} from '../../models/types/graphics-model';
+import type { IRenderNode } from '../../models/interfaces/render-node';
+import type {
+  InternalUpdateTransformMethodAccessor,
+  InternalRestoreDimensionMethodAccessor
+} from '../../models/types/render-node';
+
+import type { TransformStack } from '../../models/types/common';
+import type { SceneModel } from '../scene/scene-model';
+import type { IRenderer } from '../../models/interfaces/renderer';
+
+import {
+  DEV_INTERNAL_ACCESS_KEY,
+  GET_INTERNAL_GEOMETRY_METHOD,
+  GET_INTERNAL_COMPUTED_STYLE_METHOD,
+  GET_INTERNAL_STYLE_METHOD,
+  GET_PARENT_METHOD
+} from '../../internal/keys/dev-keys.js';
+
+import { GraphicsModel } from '../../core/graphics-model/graphics-model.js';
+
 import {
   InvalidArgumentError,
   InvalidInternalStateError
-} from '../../utils/errors/provider/shantanuJSErrors.js';
-import { Log } from '../../utils/helpers/helpers.js';
-import { IGraphicalElementProperties } from '../../properties/specific/specificProperties.js';
-import { transformStack } from '../../types/index.js';
+} from '../../errors/index.js';
+import { Log, RenderPhase } from '../../utils/helpers/helpers.js';
+import { IGraphicalElementProperties } from '../../property-definitions/specific/specific-properties.js';
 
+import {
+  GET_SCENE_ELEMENTS_METHOD,
+  GET_SCENE_Z_ORDER_RESOLVER_METHOD,
+  SYSTEM_INTERNAL_ACCESS_KEY
+} from '../../internal/keys/system-keys.js';
+
+import {
+  UPDATE_TRANSFORM_METHOD,
+  RESTORE_DIMENSION_METHOD
+} from '../../internal/keys/render-node-keys.js';
+import {
+  affineMatrixMultiply,
+  applyTransformToHomogeneousBuffer
+} from '../../utils/math/matrix/matrix-multiplication.js';
+
+type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
+  InternalGeometryAccessor &
+  InternalStyleAccessor &
+  InternalComputedStyleAccessor &
+  GetInternalGraphicsAccessor &
+  GetParentAccessor &
+  SetParentAccessor &
+  ZOrderResolutionFuncAccessor &
+  ZOrderResolutionCleanUpFuncAccessor &
+  GetSceneElementsAccessor &
+  GetSceneElementIdMapAccessor &
+  GetSceneZOrderResolverAccessor &
+  InternalUpdateTransformMethodAccessor &
+  InternalRestoreDimensionMethodAccessor;
 /**
  * Core engine responsible for orchestrating the rendering lifecycle.
  *
@@ -144,33 +206,8 @@ import { transformStack } from '../../types/index.js';
  *
  * under strict lifecycle and execution control.
  */
-export class Engine {
-  /**
-   * Internal collection of all shapes managed by the engine.
-   *
-   * -------------------------------------------------------------------------
-   * ROLE
-   * -------------------------------------------------------------------------
-   * Stores strong references to every shape instance that is currently
-   * registered with this engine.
-   *
-   * This array represents the authoritative render and update order
-   * for all shapes under engine control.
-   *
-   * -------------------------------------------------------------------------
-   * LIFECYCLE
-   * -------------------------------------------------------------------------
-   * - Initialized as an empty array at engine creation
-   * - Shapes are added when registered with the engine
-   * - Shapes are removed when explicitly detached or destroyed
-   *
-   * -------------------------------------------------------------------------
-   * IMPORTANT NOTE
-   * -------------------------------------------------------------------------
-   * This collection is engine-internal and must never be exposed
-   * directly to userland code.
-   */
-  #shapes: iShape[] = [];
+export class Engine implements IEngine {
+  #scene!: SceneModel;
 
   /**
    * Rendering backend responsible for visual output.
@@ -196,7 +233,7 @@ export class Engine {
    * The renderer is assumed to be valid and fully initialized
    * before the engine enters the running state.
    */
-  #renderer: Renderer;
+  #renderer: IRenderer;
 
   /**
    * Flag indicating whether the engine main loop is currently active.
@@ -243,53 +280,6 @@ export class Engine {
    */
   #rafId: number | null;
 
-  /**
-   * Z-order resolution hook injected by the owning Canvas.
-   *
-   * -------------------------------------------------------------------------
-   * ROLE
-   * -------------------------------------------------------------------------
-   * Provides a deferred mechanism for resolving z-order operations
-   * (e.g., toFront / toBack) without introducing direct dependency
-   * on the Canvas class.
-   *
-   * -------------------------------------------------------------------------
-   * DESIGN PRINCIPLE
-   * -------------------------------------------------------------------------
-   * Implements Inversion of Control (IoC):
-   * - Engine does NOT own z-order state
-   * - Canvas owns and mutates zIndex
-   * - Engine only triggers resolution at the correct lifecycle point
-   *
-   * -------------------------------------------------------------------------
-   * EXECUTION CONTRACT
-   * -------------------------------------------------------------------------
-   * This function MUST:
-   * - Resolve all pending z-order operations
-   * - Mutate shape.style.zIndex deterministically
-   * - Maintain ordering invariants (unique, monotonic values)
-   *
-   * -------------------------------------------------------------------------
-   * TIMING
-   * -------------------------------------------------------------------------
-   * Invoked at the beginning of each frame BEFORE sorting and rendering.
-   *
-   * -------------------------------------------------------------------------
-   * INVARIANT
-   * -------------------------------------------------------------------------
-   * Must be a valid function reference. Engine assumes it is safe to call
-   * without additional guards.
-   */
-  #resolveZOrder!: () => void;
-
-  /**
-   * O(1) lookup map: id → shape
-   *
-   * PURPOSE:
-   * - Resolve parent via `inside`
-   * - Used by engine for hierarchy resolution
-   */
-  #shapeIdMap!: Map<string, GraphicsModel<keyof IGraphicalElementProperties>>;
   /**
    * Constructs a new Engine instance.
    *
@@ -344,13 +334,14 @@ export class Engine {
    * @param shapes   Reference to the array containing all shape instances
    *                 managed by this engine.
    *
-   * @param renderer Active rendering backend responsible for visual output.
    *
    * @param resolveZOrder
    * A function injected from Canvas that resolves pending z-order operations.
    *
    * @param shapeIdMap  Reference to shapeIdMap map for seen graph hierarchy
    * parent detection
+   *
+   * @param renderer Active rendering backend responsible for visual output.
    *
    * This function is:
    * - called once per frame before rendering
@@ -361,27 +352,12 @@ export class Engine {
    * @throws {InvalidArgumentError}
    * If resolveZOrder is not a function (optional strict validation)
    */
-  constructor(
-    shapes: iShape[],
-    renderer: Renderer,
-    resolveZOrder: () => void,
-    shapeIdMap: Map<string, GraphicsModel<keyof IGraphicalElementProperties>>
-  ) {
-    this.#shapes = shapes;
+  constructor(scene: SceneModel, renderer: IRenderer) {
+    this.#scene = scene;
     this.#renderer = renderer;
 
     this.#running = false;
     this.#rafId = null;
-    if (typeof resolveZOrder !== 'function') {
-      throw new InvalidArgumentError(
-        'resolveZOrder',
-        resolveZOrder,
-        'function',
-        'core.engine.constructor'
-      );
-    }
-    this.#resolveZOrder = resolveZOrder;
-    this.#shapeIdMap = shapeIdMap;
   }
 
   /**
@@ -495,24 +471,41 @@ export class Engine {
     // -----------------------------------------------------------
     // STEP 1: Force geometry invalidation
     // -----------------------------------------------------------
+    const shapes =
+      this.#scene.getAllElements() as (IRenderNode<ValidGraphicsShapes> &
+        GraphicsNodeWithInternalAccessMethods)[];
 
-    const len = this.#shapes.length;
+    for (let i = 0; i < shapes.length; i++) {
+      const shape = shapes[i];
 
-    for (let i = 0; i < len; i++) {
-      const shape = this.#shapes[i];
-
-      const geoRef = shape.getIGeo(DEV_INTERNAL_ACCESS) as Partial<{
-        dirty: boolean;
+      const geoRef = shape[GET_INTERNAL_GEOMETRY_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      ) as Partial<{
+        localDirty: boolean;
       }>;
 
       // force re-render
-      geoRef.dirty = true;
+      geoRef.localDirty = true;
     }
 
     // -----------------------------------------------------------
     // STEP 2: Execute a single frame
     // -----------------------------------------------------------
 
+    this.#frame(time);
+  }
+
+  /**
+   * Executes a single engine frame immediately.
+   *
+   * Useful when the engine is not running and pending
+   * dirty state must be synchronized and rendered
+   * without waiting for the next animation frame.
+   *
+   * @param time - Optional high-resolution timestamp.
+   *               Defaults to the current time.
+   */
+  public update(time: number = performance.now()) {
     this.#frame(time);
   }
 
@@ -629,14 +622,49 @@ export class Engine {
    */
 
   #frame(time: number) {
-    // STEP 0: Resolve structural ordering
-    this.#resolveZOrder();
+    // --------------------------------------------------
+    // STEP 0
+    // Resolve structural ordering
+    // --------------------------------------------------
 
-    const len = this.#shapes.length;
+    this.#renderer.render(RenderPhase.PREPARE);
 
-    // STEP 1 + 2: Local transform + animation
-    for (let i = 0; i < len; i++) {
-      const shape = this.#shapes[i];
+    const sceneGeometry = this.#scene[GET_INTERNAL_GEOMETRY_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    );
+    if (sceneGeometry?.localDirty || sceneGeometry?.worldDirty) {
+      //	this.#scene[UPDATE_SCENE](SYSTEM_INTERNAL_ACCESS_KEY);
+      //	this.#scene[UPDATE_SCENE_TRANSFORM](SYSTEM_INTERNAL_ACCESS_KEY);
+      //	this.#scene[UPDATE_SCENE_ANIMATION](SYSTEM_INTERNAL_ACCESS_KEY);
+    }
+
+    this.#scene[GET_SCENE_Z_ORDER_RESOLVER_METHOD](
+      SYSTEM_INTERNAL_ACCESS_KEY
+    )();
+
+    // --------------------------------------------------
+    // STEP 1
+    // Renderer lifecycle synchronization
+    // --------------------------------------------------
+
+    this.#renderer.render(RenderPhase.PREPARE);
+
+    // --------------------------------------------------
+    // STEP 2
+    // Capture active scene
+    // --------------------------------------------------
+
+    const shapes =
+      this.#scene.getAllElements() as (IRenderNode<ValidGraphicsShapes> &
+        GraphicsNodeWithInternalAccessMethods)[];
+
+    // --------------------------------------------------
+    // STEP 3
+    // Local transform + animation resolution
+    // --------------------------------------------------
+
+    for (let i = 0; i < shapes.length; i++) {
+      const shape = shapes[i];
 
       if (!(shape instanceof GraphicsModel)) {
         throw new InvalidInternalStateError(
@@ -647,67 +675,83 @@ export class Engine {
         );
       }
 
-      const geo = shape.getIGeo(DEV_INTERNAL_ACCESS) as {
+      const geo = shape[GET_INTERNAL_GEOMETRY_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      ) as {
+        buffer: Float32Array;
         localMatrix: Float32Array;
-        transformStack: transformStack;
-        dirty: true;
-        worldDirty: true;
+        transformStack: TransformStack;
+        localDirty: boolean;
+        worldDirty: boolean;
       };
 
       // -----------------------------------------------------------
       // BASE TRANSFORM (static)
       // -----------------------------------------------------------
-      if (geo.dirty || geo.worldDirty) {
-        shape.updateTransformation(DEV_INTERNAL_ACCESS);
+      if (geo.localDirty || geo.worldDirty) {
+        shape[UPDATE_TRANSFORM_METHOD](DEV_INTERNAL_ACCESS_KEY);
         if (__DEV__) Log('in update transform');
-      }
 
-      // -----------------------------------------------------------
-      // ANIMATION (delta)
-      // -----------------------------------------------------------
+        // -----------------------------------------------------------
+        // ANIMATION (delta)
+        // -----------------------------------------------------------
 
-      // return current state of animation like activeor not
-      const base = geo.transformStack.stack[0].transformMatrix;
-      if (shape.isAnimationsGoingOn(false)) {
-        const ani = shape.updateAnimation(DEV_INTERNAL_ACCESS, time) as {
-          animationMatrix: Float32Array;
-          [key: string]: string | number | Float32Array;
-        } | null;
+        // return current state of animation like activeor not
+        const base = geo.transformStack.stack[0];
+        /*
+        if (shape.isAnimationsGoingOn(false)) {
+          const ani = shape.updateAnimation(DEV_INTERNAL_ACCESS_KEY, time) as {
+            animationMatrix: Float32Array;
+            [key: string]: string | number | Float32Array;
+          } | null;
 
-        if (ani) {
-          const { animationMatrix, ...style } = ani;
+          if (ani) {
+            const { animationMatrix, ...style } = ani;
 
-          // finalLocal = base × animation
-          const { a, b, c, d, e, f } = this.#fastMatrixMultiplication(
-            animationMatrix,
-            base
-          );
+            // finalLocal = base × animation
 
-          geo.localMatrix[0] = a;
-          geo.localMatrix[1] = b;
-          geo.localMatrix[3] = c;
-          geo.localMatrix[4] = d;
-          geo.localMatrix[6] = e;
-          geo.localMatrix[7] = f;
+            affineMatrixMultiply(base, animationMatrix, localMatrix);
 
-          if (style) shape.attrs(style);
-          if (__DEV__) Log('animation matrix');
+            if (style) shape.attrs(style);
+            if (__DEV__) Log('animation matrix');
+          }
+        } else {
+          geo.localMatrix.set(base);
+          if (__DEV__) Log('set local to base');
         }
-      } else {
+*/
+
+        // delete after adding animation
         geo.localMatrix.set(base);
-        if (__DEV__) Log('set local to base');
+        const tempState = applyTransformToHomogeneousBuffer(base, geo.buffer);
+
+        shape[RESTORE_DIMENSION_METHOD](DEV_INTERNAL_ACCESS_KEY, tempState);
       }
     }
-    // STEP 3: World resolution (hierarchy)
-    this.#resolveWorldMatrices();
 
-    // STEP 4: Sorting (z-index)
-    this.#shapes.sort(
+    // --------------------------------------------------
+    // STEP 4
+    // World transform resolution (hierarchy)
+    // --------------------------------------------------
+
+    this.#resolveWorldMatrices(shapes);
+
+    // --------------------------------------------------
+    // STEP 5
+    // Sorting (z-index) based
+    // --------------------------------------------------
+
+    // STEP 4: Sorting
+    shapes.sort(
       (a, b) => (a?.geometry?.zIndex ?? 0) - (b?.geometry?.zIndex ?? 0)
     );
 
-    // STEP 5: Render
-    this.#renderer.render(this.#shapes);
+    // --------------------------------------------------
+    // STEP 6
+    // Projection
+    // --------------------------------------------------
+
+    this.#renderer.render(RenderPhase.RENDER, ...shapes);
   }
 
   /**
@@ -735,9 +779,9 @@ export class Engine {
    * - Parent is always resolved before child
    */
 
-  #resolveWorldMatrices() {
-    for (let i = 0; i < this.#shapes.length; i++) {
-      this.#resolveWorldRecursive(this.#shapes[i]);
+  #resolveWorldMatrices(shapes: GraphicsNodeWithInternalAccessMethods[]) {
+    for (let i = 0; i < shapes.length; i++) {
+      this.#resolveWorldRecursive(shapes[i]);
     }
   }
 
@@ -779,22 +823,24 @@ export class Engine {
    * ============================================================================
    * @param shape - Target shape to resolve
    */
-  #resolveWorldRecursive(
-    shape: GraphicsModel<keyof IGraphicalElementProperties>
-  ) {
-    const geo = shape.getIGeo(DEV_INTERNAL_ACCESS);
+  #resolveWorldRecursive(shape: GraphicsNodeWithInternalAccessMethods) {
+    const geo = shape[GET_INTERNAL_GEOMETRY_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
     // Skip if already resolved and not dirty
-    if (!geo?.worldDirty && !geo?.dirty) return;
+    if (!geo?.worldDirty) return;
 
-    const inside = shape.style.inside;
+    //    const inside = shape.style.inside;
 
-    let parent: GraphicsModel<keyof IGraphicalElementProperties> | null = null;
-
+    let parent: GraphicsNodeWithInternalAccessMethods | null = null;
+    /*
     if (inside) {
       const parentId = inside.slice(inside.indexOf('-') + 1);
       parent = this.#shapeIdMap.get(parentId) || null;
     }
+*/
+    parent = shape[GET_PARENT_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as GraphicsNodeWithInternalAccessMethods;
 
     // Resolve parent first
     if (parent) {
@@ -839,81 +885,36 @@ export class Engine {
    * @param parent - Parent shape (nullable)
    */
   #computeWorldMatrix(
-    shape: GraphicsModel<keyof IGraphicalElementProperties>,
-    parent: GraphicsModel<keyof IGraphicalElementProperties> | null
+    shape: GraphicsNodeWithInternalAccessMethods,
+    parent: GraphicsNodeWithInternalAccessMethods | null
   ) {
-    const geo = shape.getIGeo(DEV_INTERNAL_ACCESS) as {
+    const childGeometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as {
+      shape: string;
       localMatrix: Float32Array;
       worldMatrix: Float32Array;
     };
 
-    const localMatrix = geo?.localMatrix as Float32Array;
+    const childLocalMatrix = childGeometry?.localMatrix as Float32Array;
 
     if (parent) {
-      const pGeo = parent.getIGeo(DEV_INTERNAL_ACCESS);
-      const worldMatrix = pGeo?.worldMatrix as Float32Array;
+      const parentGeometry = parent[GET_INTERNAL_GEOMETRY_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
+      );
+      const parentWorldMatrix = parentGeometry?.worldMatrix as Float32Array;
+      const childWorldMatrix = childGeometry?.worldMatrix as Float32Array;
 
-      const { a, b, c, d, e, f } = this.#fastMatrixMultiplication(
-        localMatrix,
-        worldMatrix
+      affineMatrixMultiply(
+        parentWorldMatrix,
+        childLocalMatrix,
+        childWorldMatrix
       );
 
-      // Write back to Float32Array
-      const world = geo?.worldMatrix as Float32Array;
-
-      world[0] = a;
-      world[1] = b;
-      world[3] = c;
-      world[4] = d;
-      world[6] = e;
-      world[7] = f;
+      if (childGeometry.shape == 'rect') {
+        Log('worldMatrix', JSON.stringify(childWorldMatrix));
+      }
     }
-  }
-
-  /**
-   * Performs 2D affine matrix multiplication.
-   *
-   * ============================================================================
-   * FORMAT
-   * ============================================================================
-   * Float32Array (column-major logical layout):
-   *
-   * [ a, b, 0,
-   *   c, d, 0,
-   *   e, f, 1 ]
-   *
-   * ============================================================================
-   * OPERATION
-   * ============================================================================
-   * result = A × B
-   *
-   * ============================================================================
-   * NOTE
-   * ============================================================================
-   * Optimized for 2D affine transforms (ignores last row)
-   */
-  #fastMatrixMultiplication(A: Float32Array, B: Float32Array) {
-    const a = A[0],
-      b = A[1],
-      c = A[3],
-      d = A[4],
-      e = A[6],
-      f = A[7];
-    const ba = B[0],
-      bb = B[1],
-      bc = B[3],
-      bd = B[4],
-      be = B[6],
-      bf = B[7];
-
-    return {
-      a: a * ba + c * bb,
-      b: b * ba + d * bb,
-      c: a * bc + c * bd,
-      d: b * bc + d * bd,
-      e: a * be + c * bf + e,
-      f: b * be + d * bf + f
-    };
   }
 
   /**
@@ -957,25 +958,23 @@ export class Engine {
    * @param parent - Parent shape (nullable)
    */
   #computeWorldStyle(
-    shape: GraphicsModel<keyof IGraphicalElementProperties>,
-    parent: GraphicsModel<keyof IGraphicalElementProperties> | null
+    shape: GraphicsNodeWithInternalAccessMethods,
+    parent: GraphicsNodeWithInternalAccessMethods | null
   ) {
-    const computed = shape.getIComputedStyle(DEV_INTERNAL_ACCESS) as Record<
-      string,
-      string | number | boolean
-    >;
+    const computed = shape[GET_INTERNAL_COMPUTED_STYLE_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as Record<string, string | number | boolean>;
 
-    const local = shape.getIStyle(DEV_INTERNAL_ACCESS) as Record<
-      string,
-      string | number | boolean
-    >;
+    const local = shape[GET_INTERNAL_STYLE_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    ) as Record<string, string | number | boolean>;
 
     // -----------------------------------------------------------
     // STEP 1: Inherit from parent (Group only)
     // -----------------------------------------------------------
     if (parent && parent.geometry?.shape === 'g') {
-      const parentComputed = parent.getIComputedStyle(
-        DEV_INTERNAL_ACCESS
+      const parentComputed = parent[GET_INTERNAL_COMPUTED_STYLE_METHOD](
+        DEV_INTERNAL_ACCESS_KEY
       ) as Record<string, any>;
 
       for (const k in parentComputed) {
