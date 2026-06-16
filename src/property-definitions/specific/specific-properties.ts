@@ -16,7 +16,7 @@ export const dimensions = {
   polyline: [Infinity, 3],
   polygon: [Infinity, 3],
   //  path: [4, 3],
-  text: [1, 3],
+  text: [4, 3],
   image: [4, 3],
   g: [4, 3]
 };
