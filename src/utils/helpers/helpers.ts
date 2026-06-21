@@ -1,10 +1,43 @@
 import { InvalidArgumentError } from '../../errors/index.js';
 
+/**
+ * Controls the high-level rendering lifecycle of the engine.
+ *
+ * - `PREPARE`: Perform all computations and state preparation required
+ *   before rendering.
+ * - `RENDER`: Execute the actual rendering process using the prepared state.
+ */
 export enum RenderPhase {
   PREPARE = 'PREPARE',
   RENDER = 'RENDER'
 }
 
+/**
+ * Defines which part of a renderable object is being updated.
+ *
+ * - `GEOMETRY`: Updates both geometric and style properties and triggers
+ *   derived computations such as bounding box and canonical matrix updates.
+ * - `STYLE`: Applies visual style changes only, without geometry
+ *   or transform recalculations.
+ * - `TRANSFORM`: Applies transform changes only using the existing world matrix
+ */
+export enum RenderUpdateType {
+  GEOMETRY = 'GEOMETRY',
+  STYLE = 'STYLE',
+  TRANSFORM = 'TRANSFORM'
+}
+
+/**
+ * Generates a unique identifier for engine objects.
+ *
+ * If a non-empty `userId` is provided, it is returned unchanged.
+ * Otherwise, a 16-character identifier is generated using
+ * `crypto.randomUUID()` when available, with a random string fallback.
+ *
+ * @param userId - Optional user-supplied identifier.
+ * @returns A unique identifier string.
+ * @throws Rethrows any unexpected runtime error encountered during generation.
+ */
 export function generateId(userId?: string): string {
   try {
     if (userId && userId.trim() !== '') return userId;
@@ -12,9 +45,11 @@ export function generateId(userId?: string): string {
     if (typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID().replace(/-/g, '').slice(0, 16);
     }
+
     // Fallback
     const chars =
       'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+
     const fallback = Array.from(
       { length: 16 },
       () => chars[Math.floor(Math.random() * chars.length)]
