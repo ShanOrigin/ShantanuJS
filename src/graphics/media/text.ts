@@ -71,6 +71,15 @@ export class Text extends RenderNode<'text'> {
       'text'
     );
 
+    props['font-size'] ??= 16;
+    props['font-weight'] ??= 'bold';
+    props['font-style'] ??= 'normal';
+    props['letter-spacing'] ??= '0';
+    props['word-spacing'] ??= '0';
+    props['text-anchor'] ??= 'middle';
+    props['alignment-baseline'] ??= 'middle';
+    props['dominant-baseline'] ??= '';
+
     // for initial setup through RenderNode
     (props as ConstructorPropsTypes<'text'> & InitialProps)['initial'] = true;
     this.attrs(props);
@@ -118,14 +127,41 @@ export class Text extends RenderNode<'text'> {
       assertAccess(accessKey);
       const geo = this.#geometry as {
         buffer: Float32Array;
-
+        text: string;
         x: number;
         y: number;
       };
-      if (!geo) return;
 
-      const { x = 0, y = 0 } = geo;
+      const style = this.#style as {
+        'font-size': number;
+        'font-weight': string;
+        'font-style': string;
+        'letter-spacing': string;
+        'word-spacing': string;
+        'text-anchor': string;
+        'alignment-baseline': string;
+        'dominant-baseline': string;
+      };
 
+      if (!geo || !style) return;
+
+      const { text, x = 0, y = 0 } = geo;
+
+      const { minX, minY, maxX, maxY } = this.#calculatePseudoBBox(
+        text,
+        x,
+        y,
+
+        style['font-size'],
+        style['font-weight'],
+
+        style['font-style'],
+        Number(style['letter-spacing']),
+        Number(style['word-spacing']),
+        style['text-anchor'],
+        style['alignment-baseline'],
+        style['dominant-baseline']
+      );
       const [m, n] = dimensions['text']!;
       const totalLength = m * n;
 
@@ -135,7 +171,7 @@ export class Text extends RenderNode<'text'> {
       }
 
       const sb = geo.buffer as Float32Array;
-      sb.set([x, y, 1], 0);
+      sb.set([minX, minY, 1, maxX, minY, 1, maxX, maxY, 1, minX, maxY, 1], 0);
 
       this.restoreDimension(DEV_INTERNAL_ACCESS_KEY, sb);
     } catch (e) {
@@ -159,5 +195,153 @@ export class Text extends RenderNode<'text'> {
     } catch (e) {
       throw e;
     }
+  }
+
+  /**
+   * Computes an approximate bounding box for a text node prior to
+   * renderer realization.
+   *
+   * This method provides a lightweight estimation using:
+   * - text length
+   * - font size
+   * - font style and weight
+   * - character and word spacing
+   * - horizontal anchor alignment
+   * - vertical baseline alignment
+   *
+   * The resulting bounds are intended for logical geometry queries
+   * and layout calculations before exact text metrics become available.
+   *
+   * Accuracy is not guaranteed and the computed bounds may differ
+   * from the renderer-measured bounding box after realization.
+   *
+   * @returns Estimated text bounding box in local coordinates.
+   */
+  #calculatePseudoBBox(
+    text: string,
+    x: number,
+    y: number,
+    fontSize: number,
+    fontWeight: string,
+    fontStyle: string,
+    letterSpacing: number,
+    wordSpacing: number,
+    textAnchor: string,
+    alignmentBaseline: string,
+    dominantBaseline: string
+  ) {
+    // ---------------------------------------------------------
+    // Width approximation
+    // ---------------------------------------------------------
+
+    let widthFactor = 0.55;
+
+    switch (fontWeight) {
+      case 'bold':
+        widthFactor *= 1.05;
+        break;
+
+      case 'bolder':
+        widthFactor *= 1.1;
+        break;
+
+      case 'lighter':
+        widthFactor *= 0.95;
+        break;
+    }
+
+    switch (fontStyle) {
+      case 'italic':
+      case 'oblique':
+        widthFactor *= 1.02;
+        break;
+    }
+
+    const charWidth = text.length * fontSize * widthFactor;
+
+    const letterWidth = Math.max(0, text.length - 1) * letterSpacing;
+
+    const spaceCount = (text.match(/ /g) || []).length;
+
+    const wordWidth = spaceCount * wordSpacing;
+
+    const width = charWidth + letterWidth + wordWidth;
+
+    // ---------------------------------------------------------
+    // Height approximation
+    // ---------------------------------------------------------
+
+    const height = fontSize;
+
+    // ---------------------------------------------------------
+    // Horizontal anchor
+    // ---------------------------------------------------------
+
+    let minX = x;
+    let maxX = x + width;
+
+    switch (textAnchor) {
+      case 'middle':
+        minX = x - width / 2;
+        maxX = x + width / 2;
+        break;
+
+      case 'end':
+        minX = x - width;
+        maxX = x;
+        break;
+
+      case 'start':
+      default:
+        minX = x;
+        maxX = x + width;
+        break;
+    }
+
+    // ---------------------------------------------------------
+    // Vertical baseline
+    // ---------------------------------------------------------
+
+    const baseline = dominantBaseline || alignmentBaseline;
+
+    let minY = y;
+    let maxY = y + height;
+
+    switch (baseline) {
+      case 'middle':
+      case 'central':
+        minY = y - height / 2;
+        maxY = y + height / 2;
+        break;
+
+      case 'hanging':
+        minY = y;
+        maxY = y + height;
+        break;
+
+      case 'text-bottom':
+      case 'bottom':
+        minY = y - height;
+        maxY = y;
+        break;
+
+      case 'baseline':
+      default:
+        // SVG baseline approximation:
+        // ~80% ascent, ~20% descent
+
+        minY = y - height * 0.8;
+        maxY = y + height * 0.2;
+        break;
+    }
+
+    return {
+      minX,
+      minY,
+      maxX,
+      maxY,
+      width,
+      height
+    };
   }
 }
