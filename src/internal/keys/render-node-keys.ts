@@ -17,6 +17,26 @@
 const RESTORE_DIMENSION_METHOD = Symbol('RESTORE_DIMENSION_METHOD');
 
 /* -------------------------------------------------------------------------- */
+/*             Render Node Canonical Matrix and Bounds Generation             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Computed method symbol used to generate or recompute
+ * the render-node Canonical matrix and Bounds.
+ *
+ * Used internally for:
+ * - used by renderer to update Canonical matrix and Bounds which can't calculate by logical way like text , etc.
+ * - to modify buffer and bounds
+ * - spatial calculations
+ * - coordinate mapping
+ *
+ * Access is restricted to renderer and scene systems.
+ */
+const GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD = Symbol(
+  'GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD'
+);
+
+/* -------------------------------------------------------------------------- */
 /*                          Render Node Transform Sync                        */
 /* -------------------------------------------------------------------------- */
 
@@ -59,5 +79,6 @@ export {
   UPDATE_TRANSFORM_METHOD,
   UPDATE_ANIMATION_METHOD,
   HAS_ACTIVE_ANIMATION_METHOD,
-  RESTORE_DIMENSION_METHOD
+  RESTORE_DIMENSION_METHOD,
+  GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD
 };
