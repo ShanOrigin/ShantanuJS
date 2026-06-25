@@ -49,6 +49,7 @@ import {
 } from '../../internal/keys/dev-keys.js';
 
 import {
+  GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD,
   RESTORE_DIMENSION_METHOD,
   UPDATE_TRANSFORM_METHOD
 } from '../../internal/keys/render-node-keys.js';
@@ -308,6 +309,62 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * - This method is part of the rendering pipeline preparation phase
    */
   protected abstract generateMatrix(accessKeys: symbol): void;
+
+  /**
+   * Updates the shape's cached geometry data from a renderer-provided
+   * axis-aligned bounding box (AABB).
+   *
+   * This method is intended to be invoked exclusively by renderer
+   * implementations whenever a geometry update occurs. During the
+   * geometry update phase, the renderer computes the most accurate
+   * bounding box it can for the shape and passes it to this method.
+   *
+   * Renderers that cannot determine a bounding box for a particular
+   * shape should pass `null`, in which case no cached geometry data
+   * is modified.
+   *
+   * Depending on the value of `setCMatrix`, this method may also update
+   * the shape's canonical matrix. This is primarily intended for shapes
+   * whose canonical geometry cannot be reconstructed from their logical
+   * data alone (for example, paths, text, polygons, or lines).
+   *
+   * The caller is responsible for ensuring that canonical matrix updates
+   * are only requested for compatible geometry buffers. Shapes with
+   * incompatible canonical layouts (for example, a point represented by
+   * a single homogeneous coordinate) must not enable this option.
+   *
+   * @param bbox Renderer-computed axis-aligned bounding box, or `null`
+   * if no bounding box can be determined.
+   * @param setCMatrix Whether the canonical matrix should be regenerated
+   * from the supplied bounding box.
+   * @param accessKey Internal access key used to restrict invocation to
+   * trusted engine and renderer components.
+   */
+  [GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD](
+    bbox: DOMRect | null,
+    setCMatrix: boolean,
+    accessKey: symbol
+  ) {
+    assertAccess(accessKey);
+
+    if (!bbox) return;
+
+    const { x: minX, y: minY, width, height } = bbox;
+
+    const maxX = minX + width;
+    const maxY = minY + height;
+
+    if (setCMatrix && this.#geometry!.buffer) {
+      (this.#geometry!.buffer as Float32Array).set(
+        [minX, minY, 1, maxX, minY, 1, maxX, maxY, 1, minX, maxY, 1],
+        0
+      );
+    }
+
+    if (this.#geometry!.bounds) {
+      (this.#geometry!.bounds as Float32Array).set([minX, minY, maxX, maxY], 0);
+    }
+  }
 
   /**
    * Restores geometric dimensions of the shape from a given transformation state.
