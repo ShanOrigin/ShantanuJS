@@ -190,10 +190,7 @@ export class Polyline extends RenderNode<'polyline'> {
 
   // specially for polyline because throught .attrs() , .setSMatrix() user can change acutual shape matrix if he/she gives less or more coordinates than original size
 
-  protected override generateMatrix(
-    accessKey: symbol,
-    setM?: Float32Array
-  ): void {
+  protected override generateMatrix(accessKey: symbol): void {
     try {
       assertAccess(accessKey);
 
@@ -203,19 +200,15 @@ export class Polyline extends RenderNode<'polyline'> {
       };
 
       if (!geo) return;
-      let vmat: Float32Array;
 
-      if (setM && setM instanceof Float32Array) {
-        vmat = setM as Float32Array;
-      } else {
-        const rawPoints = this.attrs('points') as string;
-        vmat = this.#validatePolylineCoordinates(rawPoints);
-        if (!(vmat instanceof Float32Array)) {
-          throw new Error(
-            'Invalid point data: could not generate transformation matrix.'
-          );
-        }
+      const rawPoints = this.attrs('points') as string;
+      const vmat = this.#validatePolylineCoordinates(rawPoints);
+      if (!(vmat instanceof Float32Array)) {
+        throw new Error(
+          'Invalid point data: could not generate transformation matrix.'
+        );
       }
+
       const m = vmat.length / 3;
 
       // Retrieve expected matrix dimensions for a line
@@ -231,9 +224,6 @@ export class Polyline extends RenderNode<'polyline'> {
 
       const sb = geo.buffer as Float32Array;
       sb.set(vmat, 0);
-
-      // only when setM comming throught setSMatrix
-      if (setM) return; // only assing array not rendering
 
       this.restoreDimension(DEV_INTERNAL_ACCESS_KEY, sb);
     } catch (e) {
