@@ -41,6 +41,8 @@ import type {
   GetSceneElementsAccessor
 } from '../../../../models/interfaces/graphics-container';
 
+import type { InternalGenerateCMatrixAndBoundMethodAccessor } from '../../../../models/types/render-node';
+
 import type { IRenderer } from '../../../../models/interfaces/renderer';
 import type { TransformStack } from '../../../../models/types/common';
 /* -------------------------------------------------------------------------- */
@@ -70,6 +72,7 @@ import {
 import { createSVGElement, SVGSOURCE, removeFrom } from '../core/core.js';
 import { SceneModel } from '../../../scene/scene-model.js';
 import { Log, RenderPhase } from '../../../../utils/helpers/helpers.js';
+import { GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD } from '../../../../internal/keys/render-node-keys.js';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -80,7 +83,8 @@ type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   SetParentAccessor &
   ZOrderResolutionFuncAccessor &
   ZOrderResolutionCleanUpFuncAccessor &
-  GetSceneElementsAccessor;
+  GetSceneElementsAccessor &
+  InternalGenerateCMatrixAndBoundMethodAccessor;
 
 /**
  * ============================================================================
@@ -625,9 +629,8 @@ export class SVGRenderer implements IRenderer {
 
     if (!creationElements.length) return;
 
-    const domScene = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
-    );
+    const infrastructure = this.#sceneInfrastructure.get(this.#scene);
+    const sceneRoot = infrastructure!.contentHost as SVGGElement;
 
     // Iterate through all shapes in the render stack
     for (let index = 0; index < creationElements.length; index++) {
@@ -667,8 +670,34 @@ export class SVGRenderer implements IRenderer {
         shape[SET_INTERNAL_GRAPHICS_METHOD](figRef, DEV_INTERNAL_ACCESS_KEY);
 
         this.#attributeSetter(shape);
+
+        if (sceneRoot) {
+          sceneRoot.appendChild(figRef);
+        }
       }
     }
+  }
+
+  /**
+   * Computes the local axis-aligned bounding box (AABB) of an SVG graphics
+   * element using the browser's native SVG geometry API.
+   *
+   * This method is used internally during the renderer's geometry update
+   * phase to obtain the current bounding box of a rendered SVG shape. The
+   * returned bounding box is then used to update the corresponding graphics
+   * model's cached bounds and, when applicable, regenerate its canonical
+   * matrix.
+   *
+   * The measurement is performed in the element's local SVG coordinate
+   * system and does not include transformations applied by ancestor
+   * elements.
+   *
+   * @param shape The SVG graphics element whose bounding box should be
+   * measured.
+   * @returns The element's local axis-aligned bounding box.
+   */
+  #measureSVGBBox(shape: SVGGraphicsElement): DOMRect {
+    return shape.getBBox();
   }
   /* ============================================================================
    * PUBLIC API
@@ -708,20 +737,6 @@ export class SVGRenderer implements IRenderer {
    * - Throws if geometry is missing
    * - Throws if batching mode is active
    */
-
-  /*
-  public render(...shapesStack: GraphicsNode[]): void {
-    if (__DEV__) {
-      Log(' in render');
-    }
-    this.#processPendingDeletions();
-
-    this.#processScene();
-
-    this.#processPendingCreations();
-    this.#processActiveElements(...shapesStack);
-  }
-	*/
 
   public render(phase: RenderPhase, ...shapes: GraphicsNode[]) {
     switch (phase) {
@@ -820,6 +835,7 @@ export class SVGRenderer implements IRenderer {
         localDirty: boolean; // indicates if re-render is needed
         renderUpdateType: RenderUpdateType;
         worldMatrix: Float32Array; // parent -> child composed transformation matrix
+        shape: string;
         worldDirty: boolean;
       }>;
 
@@ -859,6 +875,17 @@ export class SVGRenderer implements IRenderer {
       if (figRef) {
         const sceneRoot = infrastructure.contentHost as SVGGElement;
 
+        // update bounds only when geometry of shape changed
+        // update canonical buffer or matrix when shape is 'text' or some future shapes may be
+        if (geoRef.renderUpdateType === 'GEOMETRY') {
+          let setCMatrix = false;
+          if (geoRef.shape === 'text') setCMatrix = true;
+          shape[GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD](
+            this.#measureSVGBBox(figRef as SVGGraphicsElement),
+            setCMatrix,
+            DEV_INTERNAL_ACCESS_KEY
+          );
+        }
         if (sceneRoot) {
           const domIndex = index;
           const currentNodeAtIndex = sceneRoot.children[domIndex];
@@ -910,7 +937,10 @@ export class SVGRenderer implements IRenderer {
             styleCache['transform'] = transformStr;
           }
         }
-      } else if (renderUpdateType === 'LOCAL') {
+      } else if (
+        renderUpdateType === 'GEOMETRY' ||
+        renderUpdateType == 'STYLE'
+      ) {
         this.#attributeSetter(shape);
       }
 

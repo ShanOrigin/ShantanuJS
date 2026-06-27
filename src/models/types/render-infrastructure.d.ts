@@ -83,4 +83,4 @@ export type RenderInfrastructure<
   contentHost: TContentHost;
 };
 
-export type RenderUpdateType = 'LOCAL' | 'TRANSFORM';
+export type RenderUpdateType = 'GEOMETRY' | 'STYLE' | 'TRANSFORM';

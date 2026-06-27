@@ -130,10 +130,16 @@ export const CommonGeometricProperties = Object.seal({
      * during the next render pass.
      *
      * Semantics:
-     * - LOCAL:
-     *   Geometry or style properties changed.
-     *   Renderer should resolve property updates.
+     * - GEOMETRY:
+     *   Geometry properties changed.
+     *   Renderer should resolve geometry property updates.
+		 *   if shape requires bounds update , bounds updation.
+		 *   if shape requires canonical matrix update , specially shapes like text and etc , matrix updation.
      *
+     * - STYLE:
+     *   Style properties changed.
+     *   Renderer should resolve style property updates.
+
      * - TRANSFORM:
      *   Transform state changed.
      *   Renderer should resolve transform updates.
