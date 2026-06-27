@@ -1,14 +1,9 @@
+import { OptimizationTechnique } from '../../../models/types/animation/control';
 import type {
-  Modes,
-  Anchors,
-  OptimizationTechniques,
-  TransformGeometryWithPivot
-} from '../../../models/types/animation';
-
-import type {
-  TransformTypes,
-  CenterType
-} from '../../../models/types/affine-transformations';
+  TransformAnchors,
+  CenterAnchors
+} from '../../../models/types/geometry/anchors';
+import { PivotTransformations } from '../../../models/types/geometry/transform';
 /**
  * Determines the pivot point coordinates for a shape based on a specified mode or anchor.
  *
@@ -28,7 +23,7 @@ import type {
  * @returns A tuple `[x, y]` representing the coordinates of the chosen pivot point.
  */
 export function pivotSetter(
-  mode: TransformTypes | CenterType | Anchors,
+  mode: TransformAnchors | CenterAnchors,
   OBB: number[][] // Float32Array [ minX , minY , maxX , maxY]
 ): [number, number] {
   const [x1, y1] = OBB[0] as [number, number];
@@ -87,13 +82,7 @@ export function pivotSetter(
  *          [ x, y ].
  */
 export function resolvePivots(
-  mode:
-    | TransformTypes
-    | Uppercase<TransformTypes>
-    | CenterType
-    | Uppercase<CenterType>
-    | Anchors
-    | Uppercase<Anchors>,
+  mode: TransformAnchors | CenterAnchors,
   bounds: Float32Array
 ): [number, number] {
   const minX = bounds[0] as number;
@@ -165,13 +154,13 @@ export function resolvePivots(
  */
 
 export function choosePivotAwareOptimization(
-  params: Pick<TransformGeometryWithPivot, 'Rotate' | 'rotatePivot'>
-): OptimizationTechniques {
-  const { Rotate = 0, rotatePivot = [0, 0] } = params;
+  params: Pick<PivotTransformations, 'rotate'>
+): OptimizationTechnique {
+  const { rotate } = params;
 
   // --- Check if rotation pivot is arbitrary ---
   const rotationArbitrary =
-    Rotate !== 0 && (rotatePivot[0] !== 0 || rotatePivot[1] !== 0);
+    rotate.angle !== 0 && (rotate.px !== 0 || rotate.py !== 0);
 
   if (rotationArbitrary) {
     // --- If rotation with arbitrary pivot exists → must use precompute ---
@@ -182,5 +171,5 @@ export function choosePivotAwareOptimization(
   // if (skewArbitrary) return 'precompute';
 
   // Otherwise, polynomial fit is safe
-  return 'fitPolynomialCofficient';
+  return 'fitPolynomialCoefficient';
 }
