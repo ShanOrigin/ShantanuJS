@@ -17,7 +17,8 @@ export type InternalUpdateTransformMethodAccessor = {
 
 export type InternalGenerateCMatrixAndBoundMethodAccessor = {
   [GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD]: (
-    key: symbol,
-    rendererBBox: DOMRect
+    bbox: DOMRect | null,
+    setCMatrix: boolean,
+    accessKey: symbol
   ) => void;
 };

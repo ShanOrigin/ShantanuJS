@@ -17,7 +17,8 @@ import type {
   InternalStyle,
   PublicStyle
 } from '../types/graphics-model';
-import { IGraphicsModel } from './graphics-model';
+import type { IGraphicsModel } from './graphics-model';
+import type { ValidGraphicsShapes } from '../types/graphics-model';
 
 export interface IRenderNode<T extends ValidGraphicsShapes>
   extends IGraphicsModel<T> {
@@ -107,3 +108,17 @@ export interface IRenderNode<T extends ValidGraphicsShapes>
   };
 	*/
 }
+
+/**
+ * Represents a graphical entity that can participate
+ * within the canvas scene graph system.
+ *
+ * The entity:
+ * - Must implement the graphics model contract
+ * - May represent any valid graphical shape specialization
+ * - Can be attached to structural containers such as canvas/group
+ */
+export interface GraphicsRenderNode<
+  T extends ValidGraphicsShapes = ValidGraphicsShapes
+> extends IGraphicsModel<T>,
+    IRenderNode<T> {}

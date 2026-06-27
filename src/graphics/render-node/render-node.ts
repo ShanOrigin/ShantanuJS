@@ -6,10 +6,10 @@ import type {
   ScaleMethodProps,
   RotateMethodProps,
   SkewMethodProps,
-  FlipMethodProps,
-  BboxProps,
-  BaseTransformMeta
-} from '../../models/types/affine-transformations';
+  BaseTransformationMeta
+} from '../../models/types/geometry/transform';
+
+import type { BboxProps } from '../../models/types/geometry/types';
 
 import type {
   GraphicsNode,
@@ -58,12 +58,8 @@ import {
   OperationInProgressError
 } from '../../errors/index.js';
 
-import {
-  Warn,
-  Log,
-  parameterTypeValidator
-} from '../../utils/helpers/helpers.js';
-import { getTransformationMatrix } from '../../utils/math/matrix/matrix-utils.js';
+import { Warn, Log } from '../../utils/helpers/helpers.js';
+
 import {
   GraphicalElementProperties,
   type IGraphicalElementProperties
@@ -77,8 +73,6 @@ import {
 } from '../../utils/math/matrix/matrix-multiplication.js';
 
 import { Transformation } from '../../components/transformation/transformation.js';
-import { computeAABBPoints } from '../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
-
 export abstract class RenderNode<T extends ValidGraphicsShapes>
   extends GraphicsModel<T>
   implements IRenderNode<T>
@@ -1339,7 +1333,9 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    *
    * - Optimization step to avoid unnecessary pivot computation
    */
-  #preTransformChecks(baseOpt: Partial<BaseTransformMeta> | null = null): void {
+  #preTransformChecks(
+    baseOpt: Partial<BaseTransformationMeta> | null = null
+  ): void {
     // defaults
     if (baseOpt) {
       baseOpt.tType ??= 'r';
