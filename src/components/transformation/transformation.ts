@@ -13,27 +13,17 @@
  */
 
 import type {
-  BboxProps,
-  CreateTransformationMatrixProps,
-  ParsedDaTa,
-  RotateMethodProps,
+  TranslateMethodProps,
   ScaleMethodProps,
   SkewMethodProps,
-  TranslateMethodProps,
-  TransformTypes,
-  CenterType
-} from '../../models/types/affine-transformations';
+  RotateMethodProps,
+  ParsedDaTa
+} from '../../models/types/geometry/transform';
 
-import type {
-  GetInternalGraphicsAccessor,
-  GraphicsNode
-} from '../../models/interfaces/graphics-container';
-import type { TransformStack } from '../../models/types/common';
+import type { GraphicsNode } from '../../models/interfaces/graphics-container';
+
 import type { InternalGeometryAccessor } from '../../models/types/graphics-model';
-import type {
-  ICommonGeometricProperties,
-  IShapeStyleProperties
-} from '../../property-definitions/common/common-properties';
+import type { ICommonGeometricProperties } from '../../property-definitions/common/common-properties';
 
 /**
  * ============================================================================
@@ -52,7 +42,6 @@ import type {
 import {
   InvalidArgumentError,
   InvalidFormatError,
-  InvalidInternalStateError,
   OperationInProgressError
 } from '../../errors/index.js';
 
@@ -70,20 +59,14 @@ import {
 import { resetMatrix } from '../../utils/math/matrix/matrix-utils.js';
 import {
   DEV_INTERNAL_ACCESS_KEY,
-  GET_INTERNAL_GEOMETRY_METHOD,
-  GET_INTERNAL_GRAPHICS_METHOD
+  GET_INTERNAL_GEOMETRY_METHOD
 } from '../../internal/keys/dev-keys.js';
 
-import {
-  affineMatrixMultiplyUsingDOMMatrix,
-  applyTransformToHomogeneousBuffer
-} from '../../utils/math/matrix/matrix-multiplication.js';
-import { composeAffineTransformations } from '../../utils/math/affine/affine-composition.js';
-import { computeAABBPoints } from '../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
+import { affineMatrixMultiplyUsingDOMMatrix } from '../../utils/math/matrix/matrix-multiplication.js';
+
 import {
   parameterTypeValidator,
-  propTypes,
-  typeCheck
+  propTypes
 } from '../../utils/helpers/helpers.js';
 import { translate } from '../../utils/math/affine/transformations/translation.js';
 import { scale } from '../../utils/math/affine/transformations/scale.js';
@@ -633,26 +616,11 @@ export class Transformation implements ITransformation {
        * When translation depends on shape geometry, compute the pivot
        * point using the current bounding box.
        */
-      //       if (
-      //         tType == 'a' ||
-      //         tType == 'absolute' ||
-      //         tType == 'c' ||
-      //         tType == 'center'
-      //       ) {
-      //         const obb = this.getBBox(false) as {
-      //           x: number;
-      //           y: number;
-      //           width: number;
-      //           height: number;
-      //         };
-      //
-      //         (tType == 'a' || tType == 'absolute') && ([px, py] = [obb.x, obb.y]);
-      //
-      //         (tType == 'c' || tType == 'center') &&
-      //           ([px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2]);
-      //       }
-      //
-      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+
+      const TA = tType.toLowerCase();
+
+      if (TA != 'p' && TA != 'pivot')
+        [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
 
       /* ---------------------------------------------------------------------
        * STEP 4: Generate translation matrix
@@ -760,17 +728,10 @@ export class Transformation implements ITransformation {
        * When scaling is absolute, the pivot is derived from the shape’s
        * bounding box center.
        */
-      //       if (tType == 'a' || tType == 'absolute') {
-      //         const obb = this.getBBox(false) as {
-      //           x: number;
-      //           y: number;
-      //           width: number;
-      //           height: number;
-      //         };
-      //
-      //         [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
-      //       }
-      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+      const TA = tType.toLowerCase();
+
+      if (TA != 'p' && TA != 'pivot')
+        [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
       /* ---------------------------------------------------------------------
        * STEP 4: Generate scaling matrix
        * ---------------------------------------------------------------------
@@ -883,17 +844,10 @@ export class Transformation implements ITransformation {
        * When rotation is absolute, the pivot is derived from the shape’s
        * bounding box center.
        */
-      //       if (tType == 'a' || tType == 'absolute') {
-      //         const obb = this.getBBox(false) as {
-      //           x: number;
-      //           y: number;
-      //           width: number;
-      //           height: number;
-      //         };
-      //
-      //         [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
-      //       }
-      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+      const TA = tType.toLowerCase();
+
+      if (TA != 'p' && TA != 'pivot')
+        [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
       /* ---------------------------------------------------------------------
        * STEP 5: Generate rotation matrix
        * ---------------------------------------------------------------------
@@ -1008,17 +962,10 @@ export class Transformation implements ITransformation {
        * When skew is absolute, the pivot is derived from the shape’s
        * bounding box center.
        */
-      //       if (tType == 'a' || tType == 'absolute') {
-      //         const obb = this.getBBox(false) as {
-      //           x: number;
-      //           y: number;
-      //           width: number;
-      //           height: number;
-      //         };
-      //
-      //         [px, py] = [obb.x + obb.width / 2, obb.y + obb.height / 2];
-      //       }
-      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+      const TA = tType.toLowerCase();
+
+      if (TA != 'p' && TA != 'pivot')
+        [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
       /* ---------------------------------------------------------------------
        * STEP 5: Generate skew matrix
        * ---------------------------------------------------------------------
