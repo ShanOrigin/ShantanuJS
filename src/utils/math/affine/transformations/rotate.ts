@@ -1,4 +1,4 @@
-import type { RotateMethodProps } from '../../../../models/types/affine-transformations';
+import type { RotateMethodProps } from '../../../../models/types/geometry/transform';
 /**
  * Applies a 2D rotation transformation to an existing DOMMatrix.
  *

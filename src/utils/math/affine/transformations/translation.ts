@@ -1,4 +1,4 @@
-import type { TranslateMethodProps } from '../../../../models/types/affine-transformations';
+import type { TranslateMethodProps } from '../../../../models/types/geometry/transform';
 
 /**
  * Applies a 2D translation transformation to an existing DOMMatrix.

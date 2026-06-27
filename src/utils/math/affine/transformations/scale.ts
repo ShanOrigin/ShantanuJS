@@ -1,4 +1,4 @@
-import type { ScaleMethodProps } from '../../../../models/types/affine-transformations';
+import type { ScaleMethodProps } from '../../../../models/types/geometry/transform';
 /**
  * Applies a 2D scaling transformation to an existing DOMMatrix.
  *

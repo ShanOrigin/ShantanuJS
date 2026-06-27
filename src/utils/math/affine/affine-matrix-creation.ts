@@ -3,7 +3,7 @@ import { scale } from './transformations/scale.js';
 import { rotate } from './transformations/rotate.js';
 import { skew } from './transformations/skew.js';
 
-import type { CreateTransformationMatrixProps } from '../../../models/types/affine-transformations';
+import type { CreateTransformationMatrixProps } from '../../../models/types/geometry/transform';
 import { resetMatrix } from '../matrix/matrix-utils.js';
 import { affineMatrixMultiply } from '../matrix/matrix-multiplication.js';
 
