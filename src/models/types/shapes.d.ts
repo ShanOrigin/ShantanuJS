@@ -82,11 +82,12 @@ export type AllShapesPropertiesTypes = Omit<
   | 'id'
   | 'localDirty'
   | 'worldDirty'
-  | 'inverseWorldMatrix'
   | 'shape'
   | 'zIndex'
   | 'buffer'
   | 'parentMatrix'
   | 'localMatrix'
   | 'transformStack'
+  | 'bounds'
+  | 'renderUpdateType'
 >;

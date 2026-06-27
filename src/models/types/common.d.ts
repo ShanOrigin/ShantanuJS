@@ -48,13 +48,14 @@ export type InternalKeys =
   | 'id'
   | 'localDirty'
   | 'worldDirty'
-  | 'inverseWorldMatrix'
   | 'shape'
   | 'zIndex'
   | 'buffer'
   | 'parentMatrix'
   | 'localMatrix'
-  | 'transformStack';
+  | 'transformStack'
+  | 'bounds'
+  | 'renderUpdateType';
 
 export type AttrsMethodPropsTypes<T extends ValidGraphicsShapes> = Partial<
   IGraphicalElementProperties[T]
