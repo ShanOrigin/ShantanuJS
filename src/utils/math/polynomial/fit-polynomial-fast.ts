@@ -1,12 +1,11 @@
-import {
-  TransformGeometry,
-  TransformGeometryWithPivot
-} from '../../../models/types/animation';
-
-import { interpolateAlongCurve } from '../interpolation/interpolate-along-curve.js';
-import { CreateTransformationMatrixProps } from '../../../models/types/affine-transformations';
+import type {
+  BaseTransformations,
+  CreateTransformationMatrixProps,
+  PivotTransformations
+} from '../../../models/types/geometry/transform';
 
 import { makeCubic } from './polynomial-utils.js';
+import { createAffineTransformMatrix } from '../affine/affine-matrix-creation.js';
 /**
  * Generates cubic polynomials for each transformation matrix coefficient to enable smooth animation.
  *
@@ -19,21 +18,22 @@ import { makeCubic } from './polynomial-utils.js';
  * - Relies on `composeWithBase` and `makeCubic` functions.
  * - Works with numeric arrays (`Float32Array`) for matrices; no direct dependency on DOM or graphics APIs.
  *
- * @param start - Initial transformation values (scale, rotate, skew, translate) without pivot applied.
- * @param end - Final transformation values including pivot settings.
+ * @param initialState - Initial transformation values (scale, rotate, skew, translate) without pivot applied.
+ * @param finalState - Final transformation values including pivot settings.
  * @param base - Base transformation matrix as a `Float32Array` (column-major).
  *
  * @returns An object with cubic polynomials `{ a, b, c, d, e, f }` representing each matrix coefficient.
  */
 
 export function fitTransformPolynomialsFast(
-  start: TransformGeometry,
-  end: TransformGeometryWithPivot,
-  composeFn: Function,
+  initialState: BaseTransformations,
+  finalState: PivotTransformations,
   base?: Float32Array
 ) {
   // Compose start/end matrices
 
+  const { scale: iS, rotate: iR, skew: iSk } = initialState;
+  const { scale: fS, rotate: fR, skew: fSk } = finalState;
   let a0!: number,
     b0!: number,
     c0!: number,
@@ -41,36 +41,33 @@ export function fitTransformPolynomialsFast(
     e0!: number,
     f0!: number;
 
-  if (composeFn && typeof composeFn == 'function') {
-    [a0 = 1, b0 = 0, , c0 = 0, d0 = 1, , e0 = 0, f0 = 0] = composeFn({
+  [a0 = 1, b0 = 0, , c0 = 0, d0 = 1, , e0 = 0, f0 = 0] =
+    createAffineTransformMatrix({
       transformations: {
         rotate: {
-          angle: start.Rotate,
+          angle: iR?.angle,
           tType: 'p',
-          px: end.rotatePivot?.[0] ?? 0,
-          py: end.rotatePivot?.[1] ?? 0
+          px: fR.px ?? 0,
+          py: fR.py ?? 0
         },
         scale: {
-          sx: start.Scale[0],
-          sy: start.Scale[1],
+          sx: iS?.sx,
+          sy: iS?.sy,
           tType: 'p',
-          px: end.scalePivot?.[0] ?? 0,
-          py: end.scalePivot?.[1] ?? 0
+          px: fS.px ?? 0,
+          py: fS.py ?? 0
         },
         skew: {
-          sx: start.Skew[0],
-          sy: start.Skew[1],
+          sx: iSk?.sx,
+          sy: iSk?.sy,
           tType: 'p',
-          px: end.skewPivot?.[0] ?? 0,
-          py: end.skewPivot?.[1] ?? 0
+          px: fSk.px ?? 0,
+          py: fSk.py ?? 0
         }
       },
       major: 'column',
       arrayType: 'float32'
-      // baseTMatrix: base,
-      // multiplyWithBase: true
     } as CreateTransformationMatrixProps) as Float32Array;
-  }
 
   let a1!: number,
     b1!: number,
@@ -79,36 +76,33 @@ export function fitTransformPolynomialsFast(
     e1!: number,
     f1!: number;
 
-  if (composeFn && typeof composeFn == 'function') {
-    [a1 = 1, b1 = 0, , c1 = 0, d1 = 1, , e1 = 0, f1 = 0] = composeFn({
+  [a1 = 1, b1 = 0, , c1 = 0, d1 = 1, , e1 = 0, f1 = 0] =
+    createAffineTransformMatrix({
       transformations: {
         rotate: {
-          angle: end.Rotate,
+          angle: fR?.angle,
           tType: 'p',
-          px: end.rotatePivot?.[0] ?? 0,
-          py: end.rotatePivot?.[1] ?? 0
+          px: fR.px ?? 0,
+          py: fR.py ?? 0
         },
         scale: {
-          sx: end.Scale[0],
-          sy: end.Scale[1],
+          sx: fS?.sx,
+          sy: fS?.sy,
           tType: 'p',
-          px: end.scalePivot?.[0] ?? 0,
-          py: end.scalePivot?.[1] ?? 0
+          px: fS.px ?? 0,
+          py: fS.py ?? 0
         },
         skew: {
-          sx: end.Skew[0],
-          sy: end.Skew[1],
+          sx: fSk?.sx,
+          sy: fSk?.sy,
           tType: 'p',
-          px: end.skewPivot?.[0] ?? 0,
-          py: end.skewPivot?.[1] ?? 0
+          px: fSk.px ?? 0,
+          py: fSk.py ?? 0
         }
       },
       major: 'column',
       arrayType: 'float32'
-      //  baseTMatrix: base,
-      //  multiplyWithBase: true
     } as CreateTransformationMatrixProps) as Float32Array;
-  }
 
   // Build cubic per coefficient
   return {

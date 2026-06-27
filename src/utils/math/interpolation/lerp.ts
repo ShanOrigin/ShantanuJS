@@ -1,7 +1,8 @@
-import {
-  TransformGeometry,
-  TransformGeometryWithPivot
-} from '../../../models/types/animation';
+import type {
+  BaseTransformations,
+  PivotTransformations
+} from '../../../models/types/geometry/transform';
+import type { Point2D } from '../../../models/types/geometry/types';
 
 /**
  * Performs linear interpolation between two numbers.
@@ -41,17 +42,13 @@ export function lerp(start: number, end: number, t: number) {
  * - Relies on a `lerp` helper function (linear interpolation for single numbers).
  * - Does not depend on any graphics API, DOM, or external system. Pure math only.
  *
- * @param a - The starting point as a tuple `[x, y]`.
- * @param b - The ending point as a tuple `[x, y]`.
+ * @param a - The starting point as a point `{x , y}`.
+ * @param b - The ending point as a point `{x , y}`.
  * @param t - A value between 0 and 1 indicating interpolation progress.
- * @returns A new `[x, y]` tuple representing the interpolated point.
+ * @returns A new `{x, y}` tuple representing the interpolated point.
  */
-export function lerpTuple(
-  a: [number, number],
-  b: [number, number],
-  t: number
-): [number, number] {
-  return [lerp(a[0], b[0], t), lerp(a[1], b[1], t)];
+export function lerpTuple(a: Point2D, b: Point2D, t: number): Point2D {
+  return { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t) };
 }
 
 // ---------- Interpolate between two sets of parameters ----------
@@ -76,22 +73,31 @@ export function lerpTuple(
  * - Does not directly rely on any graphics API, DOM, or external system.
  * - Purely mathematical and reusable in different contexts.
  *
- * @param p1 - The starting transform parameters (translation, scale, skew, rotation).
- * @param p2 - The ending transform parameters, may also include pivot points.
+ * @param initialState - The starting transform parameters (translation, scale, skew, rotation).
+ * @param finalState - The ending transform parameters, may also include pivot points.
  * @param t - A value between 0 and 1 indicating the interpolation progress.
  * @returns A new transformation object blending between `p1` and `p2`.
  */
 
 export function lerpParams(
-  p1: TransformGeometry,
-  p2: TransformGeometryWithPivot,
+  initialState: BaseTransformations,
+  finalState: PivotTransformations,
   t: number
-): TransformGeometryWithPivot {
+): BaseTransformations {
+  const { scale: iS, skew: iSk, rotate: iR } = initialState;
+  const { scale: fS, skew: fSk, rotate: fR } = finalState;
+
+  const fScale = lerpTuple({ x: iS!.sx, y: iS!.sy }, { x: fS.sx, y: fS.sy }, t);
+  const fSkew = lerpTuple(
+    { x: iSk!.sx, y: iSk!.sy },
+    { x: fSk.sx, y: fSk.sy },
+    t
+  );
+  const fRotate = lerp(iR!.angle, fR.angle, t);
+
   return {
-    Translate: lerpTuple(p1.Translate, p2.Translate, t),
-    Scale: lerpTuple(p1.Scale, p2.Scale, t),
-    Skew: lerpTuple(p1.Skew, p2.Skew, t),
-    Rotate: lerp(p1.Rotate, p2.Rotate, t)
-    // Pivot: p2.Pivot || [0, 0] // keep same pivot if provided
+    scale: { sx: fScale.x, sy: fScale.y },
+    skew: { sx: fSkew.x, sy: fSkew.y },
+    rotate: { angle: fRotate }
   };
 }
