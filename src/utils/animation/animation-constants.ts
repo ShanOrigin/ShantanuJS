@@ -1,3 +1,5 @@
+import { OptimizationTechnique } from '../../models/types/animation/control';
+
 /**
  * Defines common style properties that can be animated for all shapes.
  *
@@ -205,4 +207,7 @@ export const DIRECTIONS_MAP = ['normal', 'reverse', 'alternate'] as const;
  * or polynomial fitting strategies. They are intended for fine-tuning
  * performance or numerical behavior rather than core functionality.
  */
-export const OPT_MAP = ['fitPolynomialCofficient', 'preComputeFrames'] as const;
+export const OPT_MAP = [
+  'fitPolynomialCoefficient',
+  'preComputeFrames'
+] as const;

@@ -5,7 +5,17 @@ import {
   OutOfRangeError,
   TypeMismatchError
 } from '../../../errors';
-import { AdvanceProps } from '../../../models/types/animation';
+import {
+  AnimationControls,
+  OptimizationTechnique
+} from '../../../models/types/animation/control';
+import {
+  CurveMotionOptions,
+  PhysicsOptions
+} from '../../../models/types/animation/motion';
+import { AdvancedAnimationOptions } from '../../../models/types/animation/options';
+import { PivotOptions } from '../../../models/types/animation/pivot';
+import { Pivot, PivotAnchors } from '../../../models/types/geometry/anchors';
 import {
   ANCHORS_MAP,
   DIRECTIONS_MAP,
@@ -33,8 +43,8 @@ import { deepMerge } from '../animation-utils.js';
  * @param userOne - User-provided partial advanced configuration
  */
 export function advancePropsValidation(
-  defaultOne: AdvanceProps,
-  userOne: Partial<AdvanceProps> | null
+  defaultOne: AdvancedAnimationOptions,
+  userOne: Partial<AdvancedAnimationOptions> | null
 ): void {
   if (userOne === null) return;
 
@@ -61,10 +71,12 @@ export function advancePropsValidation(
  *
  * @param userOne - User-provided advanced animation configuration
  */
-function validateAdvancePropsObject(userOne: Partial<AdvanceProps>): void {
+function validateAdvancePropsObject(
+  userOne: Partial<AdvancedAnimationOptions>
+): void {
   if (typeof userOne !== 'object') {
     throw new TypeMismatchError(
-      'advanceProps',
+      'AdvanceOption',
       typeof userOne,
       'object',
       'Animation.animate()'
@@ -87,7 +99,7 @@ function validateAdvancePropsObject(userOne: Partial<AdvanceProps>): void {
  *
  * @param userOne - User-provided advanced animation configuration
  */
-function validateCurveProps(userOne: Partial<AdvanceProps>): void {
+function validateCurveProps(userOne: Partial<AdvancedAnimationOptions>): void {
   if (!('curve' in userOne) || userOne.curve === undefined) {
     return;
   }
@@ -98,7 +110,7 @@ function validateCurveProps(userOne: Partial<AdvanceProps>): void {
   validateCurveNotEmpty(curve);
   validateCurvePath(curve);
   validateCurveMotion(curve);
-  validateCurveStepness(curve);
+  validateCurveCurvatureSamples(curve);
 }
 
 /**
@@ -106,7 +118,7 @@ function validateCurveProps(userOne: Partial<AdvanceProps>): void {
  *
  * @param curve - Curve configuration object
  */
-function validateCurveObject(curve: NonNullable<AdvanceProps['curve']>): void {
+function validateCurveObject(curve: NonNullable<CurveMotionOptions>): void {
   if (curve === null || typeof curve !== 'object') {
     throw new TypeMismatchError(
       'curve',
@@ -122,14 +134,12 @@ function validateCurveObject(curve: NonNullable<AdvanceProps['curve']>): void {
  *
  * @param curve - Curve configuration object
  */
-function validateCurveNotEmpty(
-  curve: NonNullable<AdvanceProps['curve']>
-): void {
+function validateCurveNotEmpty(curve: NonNullable<CurveMotionOptions>): void {
   if (Object.keys(curve).length === 0) {
     throw new InvalidOptionError(
       'curve',
       'empty object',
-      ['curvePath', 'curvePathMotion', 'stepness', 'smoothness'],
+      ['path', 'enabled', 'stepness', 'smoothness'],
       'Animation.animate()'
     );
   }
@@ -140,18 +150,18 @@ function validateCurveNotEmpty(
  *
  * @param curve - Curve configuration object
  */
-function validateCurvePath(curve: NonNullable<AdvanceProps['curve']>): void {
-  if (!('curvePath' in curve) || typeof curve.curvePath !== 'string') {
+function validateCurvePath(curve: NonNullable<CurveMotionOptions>): void {
+  if (!('path' in curve) || typeof curve.path !== 'string') {
     throw new MissingRequiredAnimationParameterError(
-      'curve.curvePath',
+      'curve.path',
       'Animation.animate()'
     );
   }
 
-  if (!PATHS_MAP.includes(curve.curvePath)) {
+  if (!PATHS_MAP.includes(curve.path)) {
     throw new InvalidOptionError(
-      'curve.curvePath',
-      curve.curvePath,
+      'curve.path',
+      curve.path,
       PATHS_MAP,
       'Animation.animate()'
     );
@@ -166,14 +176,14 @@ function validateCurvePath(curve: NonNullable<AdvanceProps['curve']>): void {
  *
  * @param curve - Curve configuration object
  */
-function validateCurveMotion(curve: NonNullable<AdvanceProps['curve']>): void {
-  if (curve.curvePath === 'linear') {
+function validateCurveMotion(curve: NonNullable<CurveMotionOptions>): void {
+  if (curve.path === 'linear') {
     return;
   }
 
-  if (curve.curvePathMotion !== true) {
+  if (curve.enabled !== true) {
     throw new MissingRequiredAnimationParameterError(
-      'curve.curvePathMotion',
+      'curve.enabled',
       'Animation.animate()'
     );
   }
@@ -187,17 +197,26 @@ function validateCurveMotion(curve: NonNullable<AdvanceProps['curve']>): void {
  *
  * @param curve - Curve configuration object
  */
-function validateCurveStepness(
-  curve: NonNullable<AdvanceProps['curve']>
+function validateCurveCurvatureSamples(
+  curve: NonNullable<CurveMotionOptions>
 ): void {
-  if (curve.curvePath === 'linear') {
+  if (curve.path === 'linear') {
     return;
   }
 
-  if (typeof curve.stepness !== 'number') {
+  if (typeof curve.curvature !== 'number') {
     throw new TypeMismatchError(
       'curve.stepness',
-      typeof curve.stepness,
+      typeof curve.curvature,
+      'number',
+      'Animation.animate()'
+    );
+  }
+
+  if (typeof curve.samples !== 'number') {
+    throw new TypeMismatchError(
+      'curve.stepness',
+      typeof curve.samples,
       'number',
       'Animation.animate()'
     );
@@ -218,7 +237,9 @@ function validateCurveStepness(
  *
  * @param userOne - User-provided advanced animation configuration
  */
-function validatePhysicsProps(userOne: Partial<AdvanceProps>): void {
+function validatePhysicsProps(
+  userOne: Partial<AdvancedAnimationOptions>
+): void {
   if (!('physics' in userOne) || userOne.physics === undefined) {
     return;
   }
@@ -235,9 +256,7 @@ function validatePhysicsProps(userOne: Partial<AdvanceProps>): void {
  *
  * @param physics - Physics configuration object
  */
-function validatePhysicsObject(
-  physics: NonNullable<AdvanceProps['physics']>
-): void {
+function validatePhysicsObject(physics: NonNullable<PhysicsOptions>): void {
   if (physics === null || typeof physics !== 'object') {
     throw new TypeMismatchError(
       'physics',
@@ -253,9 +272,7 @@ function validatePhysicsObject(
  *
  * @param physics - Physics configuration object
  */
-function validatePhysicsSpeed(
-  physics: NonNullable<AdvanceProps['physics']>
-): void {
+function validatePhysicsSpeed(physics: NonNullable<PhysicsOptions>): void {
   if (!('speed' in physics)) {
     return;
   }
@@ -282,16 +299,14 @@ function validatePhysicsSpeed(
  *
  * @param physics - Physics configuration object
  */
-function validatePhysicsMotion(
-  physics: NonNullable<AdvanceProps['physics']>
-): void {
+function validatePhysicsMotion(physics: NonNullable<PhysicsOptions>): void {
   if (!physics.speed) {
     return;
   }
 
-  if (physics.physicsMotion !== true) {
+  if (physics.enabled !== true) {
     throw new MissingRequiredAnimationParameterError(
-      'physics.physicsMotion',
+      'physics.enabled',
       'Animation.animate()'
     );
   }
@@ -312,16 +327,16 @@ function validatePhysicsMotion(
  *
  * @param userOne - User-provided advanced animation configuration
  */
-function validatePivotProps(userOne: Partial<AdvanceProps>): void {
-  if (!('pivot' in userOne) || userOne.pivot === undefined) {
+function validatePivotProps(userOne: Partial<AdvancedAnimationOptions>): void {
+  if (!('pivots' in userOne) || userOne.pivots === undefined) {
     return;
   }
 
-  const pivot = userOne.pivot;
+  const pivots = userOne.pivots as PivotOptions;
 
-  validatePivotObject(pivot);
+  validatePivotObject(pivots);
 
-  for (const [key, value] of Object.entries(pivot)) {
+  for (const [key, value] of Object.entries(pivots)) {
     validatePivotEntry(key, value);
   }
 }
@@ -331,7 +346,7 @@ function validatePivotProps(userOne: Partial<AdvanceProps>): void {
  *
  * @param pivot - Pivot configuration object
  */
-function validatePivotObject(pivot: NonNullable<AdvanceProps['pivot']>): void {
+function validatePivotObject(pivot: NonNullable<PivotOptions>): void {
   if (pivot === null || typeof pivot !== 'object') {
     throw new TypeMismatchError(
       'pivot',
@@ -348,18 +363,21 @@ function validatePivotObject(pivot: NonNullable<AdvanceProps['pivot']>): void {
  * @param key - Pivot property name
  * @param value - Pivot property value
  */
-function validatePivotEntry(key: string, value: unknown): void {
+function validatePivotEntry(
+  key: string,
+  value: string | Pivot | PivotAnchors
+): void {
   if (key === 'mode') {
-    validatePivotMode(value);
+    validatePivotMode(value as string);
     return;
   }
 
-  if (Array.isArray(value)) {
-    validatePivotCoordinateTuple(value);
+  if (typeof value == 'object') {
+    validatePivotCoordinate(value as Pivot);
     return;
   }
 
-  validatePivotAnchor(key, value);
+  validatePivotAnchor(key, value as PivotAnchors);
 }
 
 /**
@@ -367,7 +385,7 @@ function validatePivotEntry(key: string, value: unknown): void {
  *
  * @param value - Pivot mode value
  */
-function validatePivotMode(value: unknown): void {
+function validatePivotMode(value: string): void {
   if (typeof value !== 'string' || !MODES_MAP.includes(value)) {
     throw new InvalidOptionError(
       'pivot.mode',
@@ -383,15 +401,18 @@ function validatePivotMode(value: unknown): void {
  *
  * @param value - Coordinate tuple
  */
-function validatePivotCoordinateTuple(value: unknown[]): void {
+function validatePivotCoordinate(pivot: Pivot): void {
   if (
-    value.length !== 2 ||
-    typeof value[0] !== 'number' ||
-    typeof value[1] !== 'number'
+    'px' in pivot &&
+    'py' in pivot &&
+    typeof pivot.px === 'number' &&
+    typeof pivot.py === 'number'
   ) {
+    return;
+  } else {
     throw new InvalidFormatError(
-      value,
-      '[px: number, py: number]',
+      pivot,
+      '{ px: number, py: number }',
       'Animation.animate()'
     );
   }
@@ -403,12 +424,12 @@ function validatePivotCoordinateTuple(value: unknown[]): void {
  * @param key - Pivot property name
  * @param value - Pivot property value
  */
-function validatePivotAnchor(key: string, value: unknown): void {
+function validatePivotAnchor(key: string, value: PivotAnchors): void {
   if (typeof value !== 'string') {
     throw new TypeMismatchError(
       `pivot.${key}`,
       typeof value,
-      'string | [number, number]',
+      ' string | { px : number, py : number }',
       'Animation.animate()'
     );
   }
@@ -438,12 +459,14 @@ function validatePivotAnchor(key: string, value: unknown): void {
  *
  * @param userOne - User-provided advanced animation configuration
  */
-function validateControlsProps(userOne: Partial<AdvanceProps>): void {
+function validateControlsProps(
+  userOne: Partial<AdvancedAnimationOptions>
+): void {
   if (!('controls' in userOne) || userOne.controls === undefined) {
     return;
   }
 
-  const controls = userOne.controls;
+  const controls = userOne.controls as AnimationControls;
 
   validateControlsObject(controls);
   validateControlsLoop(controls);
@@ -457,7 +480,7 @@ function validateControlsProps(userOne: Partial<AdvanceProps>): void {
  * @param controls - Controls configuration object
  */
 function validateControlsObject(
-  controls: NonNullable<AdvanceProps['controls']>
+  controls: NonNullable<AnimationControls>
 ): void {
   if (controls === null || typeof controls !== 'object') {
     throw new TypeMismatchError(
@@ -474,9 +497,7 @@ function validateControlsObject(
  *
  * @param controls - Controls configuration object
  */
-function validateControlsLoop(
-  controls: NonNullable<AdvanceProps['controls']>
-): void {
+function validateControlsLoop(controls: NonNullable<AnimationControls>): void {
   if ('loop' in controls && typeof controls.loop !== 'boolean') {
     throw new TypeMismatchError(
       'controls.loop',
@@ -493,7 +514,7 @@ function validateControlsLoop(
  * @param controls - Controls configuration object
  */
 function validateControlsDirection(
-  controls: NonNullable<AdvanceProps['controls']>
+  controls: NonNullable<AnimationControls>
 ): void {
   if (
     'direction' in controls &&
@@ -515,12 +536,11 @@ function validateControlsDirection(
  * @param controls - Controls configuration object
  */
 function validateControlsOptimization(
-  controls: NonNullable<AdvanceProps['controls']>
+  controls: NonNullable<AnimationControls>
 ): void {
   if (
     'optimizationTechnique' in controls &&
-    (typeof controls.optimizationTechnique !== 'string' ||
-      !OPT_MAP.includes(controls.optimizationTechnique))
+    OPT_MAP.includes(controls.optimizationTechnique as OptimizationTechnique)
   ) {
     throw new InvalidOptionError(
       'controls.optimizationTechnique',

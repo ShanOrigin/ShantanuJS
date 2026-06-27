@@ -11,7 +11,7 @@ import { TypeMismatchError } from '../../../errors/index.js';
  * @param onComplete - User-provided completion callback
  * @returns A function safe to call on animation completion
  */
-export function OnCompleteFuncValidation(onComplete: unknown): Function {
+export function onCompleteFuncValidation(onComplete: unknown): Function {
   // Allow undefined or null (no-op)
   if (onComplete === undefined || onComplete === null) {
     return () => {};

@@ -1,11 +1,11 @@
 import { lerpParams } from '../../../math/interpolation/lerp.js';
 
 import type {
-  TransformGeometry,
-  TransformGeometryWithPivot
-} from '../../../../models/types/animation';
-
-import type { CreateTransformationMatrixProps } from '../../../../models/types/affine-transformations.js';
+  BaseTransformations,
+  CreateTransformationMatrixProps,
+  PivotTransformations
+} from '../../../../models/types/geometry/transform';
+import { createAffineTransformMatrix } from '../../../math/affine/affine-matrix-creation.js';
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -33,60 +33,55 @@ import type { CreateTransformationMatrixProps } from '../../../../models/types/a
  * - Produces raw mathematical data (Float32Array), which can be used in
  *   any rendering pipeline.
  *
- * @param start - The initial transformation parameters.
- * @param end - The final transformation parameters (may include pivot points).
+ * @param intialState - The initial transformation parameters.
+ * @param finalState - The final transformation parameters (may include pivot points).
  * @param base - A base transformation matrix in column-major Float32Array format.
  * @param steps - Number of interpolation steps (default = 100). Higher values mean smoother transitions.
  * @returns A `Float32Array` containing all transformation frames (6 values per frame).
  */
 
 export function precomputeFramesRaw(
-  start: TransformGeometry,
-  end: TransformGeometryWithPivot,
-  steps: number = 100,
-  composeFn?: Function,
-  base?: Float32Array
+  intialState: BaseTransformations,
+  finalState: PivotTransformations,
+  steps: number = 100
 ): Float32Array {
   const frames = new Float32Array((steps + 1) * 6);
 
-  const { rotatePivot, scalePivot, skewPivot }: TransformGeometryWithPivot =
-    end;
+  const { scale, rotate, skew } = finalState;
 
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
-    const params = lerpParams(start, end, t);
+    const params = lerpParams(intialState, finalState, t);
 
     let a!: number, b!: number, c!: number, d!: number, e!: number, f!: number;
-    if (composeFn && typeof composeFn == 'function') {
-      [a = 1, b = 0, , c = 0, d = 1, , e = 0, f = 0] = composeFn({
+
+    [a = 1, b = 0, , c = 0, d = 1, , e = 0, f = 0] =
+      createAffineTransformMatrix({
         transformations: {
           rotate: {
-            angle: params.Rotate,
+            angle: params.rotate?.angle,
             tType: 'p',
-            px: rotatePivot?.[0] ?? 0,
-            py: rotatePivot?.[1] ?? 0
+            px: rotate?.px ?? 0,
+            py: rotate?.py ?? 0
           },
           scale: {
-            sx: params.Scale[0],
-            sy: params.Scale[1],
+            sx: params.scale?.sx,
+            sy: params.scale?.sy,
             tType: 'p',
-            px: scalePivot?.[0] ?? 0,
-            py: scalePivot?.[1] ?? 0
+            px: scale?.px ?? 0,
+            py: scale?.py ?? 0
           },
           skew: {
-            sx: params.Skew[0],
-            sy: params.Skew[1],
+            sx: params.skew?.sx,
+            sy: params.skew?.sy,
             tType: 'p',
-            px: skewPivot?.[0] ?? 0,
-            py: skewPivot?.[1] ?? 0
+            px: skew?.px ?? 0,
+            py: skew?.py ?? 0
           }
         },
         major: 'column',
         arrayType: 'float32'
-        //  baseTMatrix: base,
-        //   multiplyWithBase: true
       } as CreateTransformationMatrixProps) as Float32Array;
-    }
 
     const offset = i * 6;
     frames[offset] = a;
