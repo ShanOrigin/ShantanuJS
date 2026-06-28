@@ -21,14 +21,11 @@ import type {
   AttrsMethodReturnTypes
 } from '../../../models/types/common';
 
-import {
-  Log,
-  parameterTypeValidator,
-  validProps
-} from '../../../utils/helpers/helpers.js';
+import { validProps } from '../../../utils/helpers/helpers.js';
 
 import { generateCurvePoints } from '../../../utils/geometry/curves/curve-generator/generate-curve-points.js';
-import type { CurveType, Point } from '../../../models/types/animation';
+import { Point2D } from '../../../models/types/geometry/types.js';
+import { CurveType } from '../../../models/types/geometry/curve.js';
 
 export class Curve extends RenderNode<'curve'> {
   #copies: number = 0;
@@ -155,7 +152,7 @@ export class Curve extends RenderNode<'curve'> {
             pointsOnly: true,
             continuous: continuous as boolean,
             continuousCount: continuousCount as number
-          }) as Point[];
+          }) as Point2D[];
 
           let pointsAttr = '';
           if (
