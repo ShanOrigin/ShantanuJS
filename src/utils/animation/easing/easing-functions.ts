@@ -1,4 +1,7 @@
-import { EasingFunction, EasingType } from '../../../models/types/animation';
+import type {
+  EasingFunction,
+  EasingType
+} from '../../../models/types/animation/easing';
 
 /**
  * Computes linear easing.

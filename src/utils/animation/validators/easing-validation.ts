@@ -2,7 +2,7 @@ import {
   InvalidOptionError,
   TypeMismatchError
 } from '../../../errors/index.js';
-import type { EasingType } from '../../../models/types/animation';
+import type { EasingType } from '../../../models/types/animation/easing';
 import { easing } from '../easing/easing.js';
 import { EASING_MAP } from '../easing/easing-constants.js';
 

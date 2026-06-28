@@ -1,7 +1,7 @@
 import type {
   EasingFunction,
   EasingType
-} from '../../../models/types/animation';
+} from '../../../models/types/animation/easing';
 import {
   EASING_FUNCTION_MAP,
   computeLinearEasing
