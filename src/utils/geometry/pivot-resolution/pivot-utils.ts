@@ -1,60 +1,50 @@
 import { OptimizationTechnique } from '../../../models/types/animation/control';
 import type {
   TransformAnchors,
-  CenterAnchors
+  CenterAnchors,
+  Pivot,
+  PivotAnchors
 } from '../../../models/types/geometry/anchors';
 import { PivotTransformations } from '../../../models/types/geometry/transform';
+
 /**
- * Determines the pivot point coordinates for a shape based on a specified mode or anchor.
+ * List of supported anchor point identifiers.
  *
- * Purpose:
- * - Calculates the (x, y) position of the pivot for transformations, rotations, or scaling.
- * - Supports various pivot Modes such as corners (TL, TR, BR, BL), edges (TM, RM, BM, LM), and center.
- * - Defaults to the top-left corner (`TL`) if no mode is provided.
+ * Anchors define reference points used for alignment, transformation,
+ * or positioning operations. Each value represents a specific relative
+ * location within a bounding region.
  *
- * Dependency:
- * - Depends on a Float32Array representing the oriented bounding box (OBB) of the shape.
- * - Does not rely on any graphics API or DOM API; purely a mathematical calculation.
- *
- * @param mode - A string or enum representing the desired pivot mode or anchor.
- *               Examples: `'TL'`, `'TR'`, `'BR'`, `'BL'`, `'C'`, `'center'`, `'TM'`, `'RM'`, `'BM'`, `'LM'`.
- * @param OBB - A `Float32Array` representing the four corners of the shape's bounding box in order.
- *
- * @returns A tuple `[x, y]` representing the coordinates of the chosen pivot point.
+ * The identifiers follow a concise directional naming convention.
  */
-export function pivotSetter(
-  mode: TransformAnchors | CenterAnchors,
-  OBB: number[][] // Float32Array [ minX , minY , maxX , maxY]
-): [number, number] {
-  const [x1, y1] = OBB[0] as [number, number];
-  const [x2, y2] = OBB[1] as [number, number];
-  const [x3, y3] = OBB[2] as [number, number];
-  const [x4, y4] = OBB[3] as [number, number];
+export const ANCHORS_MAP: readonly string[] = [
+  'TL',
+  'TM',
+  'TR',
+  'RM',
+  'BR',
+  'BM',
+  'BL',
+  'LM',
+  'C'
+] as const;
 
-  // Precompute sums used multiple times
-  const sumX = [x1 + x2, x2 + x3, x3 + x4, x1 + x4];
-  const sumY = [y1 + y2, y2 + y3, y3 + y4, y1 + y4];
-  const centerX = (x1 + x2 + x3 + x4) / 4;
-  const centerY = (y1 + y2 + y3 + y4) / 4;
-
-  const lookup: Record<string, [number, number]> = {
-    r: [x1, y1],
-    relative: [x1, y1],
-    TL: [x1, y1],
-    c: [centerX, centerY],
-    center: [centerX, centerY],
-    C: [centerX, centerY],
-    TM: [sumX[0]! / 2, sumY[0]! / 2],
-    TR: [x2, y2],
-    RM: [sumX[1]! / 2, sumY[1]! / 2],
-    BR: [x3, y3],
-    BM: [sumX[2]! / 2, sumY[2]! / 2],
-    BL: [x4, y4],
-    LM: [sumX[3]! / 2, sumY[3]! / 2]
-  };
-
-  return lookup[mode ?? 'TL'] ?? [x1, y1];
-}
+/**
+ * List of supported transformation mode identifiers.
+ *
+ * These values control how transformations are interpreted or applied,
+ * such as relative positioning, pivot-based transformations, or
+ * center-based alignment.
+ *
+ * Both shorthand and descriptive aliases are supported.
+ */
+export const MODES_MAP: readonly string[] = [
+  'r',
+  'c',
+  'p',
+  'relative',
+  'pivot',
+  'center'
+] as const;
 
 /**
  * Resolves a pivot point from an axis-aligned bounding box (AABB).
@@ -82,9 +72,9 @@ export function pivotSetter(
  *          [ x, y ].
  */
 export function resolvePivots(
-  mode: TransformAnchors | CenterAnchors,
+  mode: TransformAnchors | CenterAnchors | PivotAnchors,
   bounds: Float32Array
-): [number, number] {
+): Required<Pivot> {
   const minX = bounds[0] as number;
   const minY = bounds[1] as number;
   const maxX = bounds[2] as number;
@@ -98,28 +88,28 @@ export function resolvePivots(
   switch (normalizedMode) {
     case 'c':
     case 'center':
-      return [centerX, centerY];
+      return { px: centerX, py: centerY };
 
     case 'tm':
-      return [centerX, minY];
+      return { px: centerX, py: minY };
 
     case 'tr':
-      return [maxX, minY];
+      return { px: maxX, py: minY };
 
     case 'rm':
-      return [maxX, centerY];
+      return { px: maxX, py: centerY };
 
     case 'br':
-      return [maxX, maxY];
+      return { px: maxX, py: maxY };
 
     case 'bm':
-      return [centerX, maxY];
+      return { px: centerX, py: maxY };
 
     case 'bl':
-      return [minX, maxY];
+      return { px: minX, py: maxY };
 
     case 'lm':
-      return [minX, centerY];
+      return { px: minX, py: centerY };
 
     case 'r':
     case 'relative':
@@ -127,7 +117,7 @@ export function resolvePivots(
     case 'absolute':
     case 'tl':
     default:
-      return [minX, minY];
+      return { px: minX, py: minY };
   }
 }
 
