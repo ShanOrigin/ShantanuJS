@@ -2,14 +2,14 @@
 // Function to Calculate control points on curve
 //+++++++++++++++++++++++++++
 
-import type {
-  Point,
-  CurveType,
-  CurveInfo
-} from '../../../models/types/animation';
 import { lerp } from '../interpolation/lerp.js';
 import { getSemiCirclePoint } from '../../geometry/curves/curve-paths/arc-curve.js';
 import { getEllipsePoint } from '../../geometry/curves/curve-paths/ellipse-arc-curve.js';
+import type {
+  CurveInfo,
+  CurveType
+} from '../../../models/types/geometry/curve';
+import type { Point2D } from '../../../models/types/geometry/types';
 
 /**
  * Computes the interpolated point at a given progress along a specified curve.
@@ -42,7 +42,7 @@ export function interpolatePointOnCurve(
   t: number,
   curveName: CurveType,
   curveInfo: CurveInfo
-): Point {
+): Point2D {
   switch (curveName) {
     case 'linear':
       return {
@@ -51,7 +51,8 @@ export function interpolatePointOnCurve(
       };
 
     case 'quadratic': {
-      const { qcx: cx, qcy: cy } = curveInfo as { qcx: number; qcy: number };
+      const { quadraticControlX: cx = 0, quadraticControlY: cy = 0 } =
+        curveInfo;
       const oneMinusT = 1 - t;
       return {
         x: oneMinusT * oneMinusT * x1 + 2 * oneMinusT * t * cx + t * t * x2,
@@ -60,7 +61,7 @@ export function interpolatePointOnCurve(
     }
 
     case 'cubic': {
-      const { c1, c2 } = curveInfo as { c1: Point; c2: Point };
+      const { cubicControlPoint1: c1, cubicControlPoint2: c2 } = curveInfo;
 
       const oneMinusT = 1 - t;
       return {

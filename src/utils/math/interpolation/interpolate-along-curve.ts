@@ -1,5 +1,5 @@
-import type { Point, ArcTableEntry } from '../../../models/types/animation';
-
+import type { ArcLengthTableEntry } from '../../../models/types/geometry/curve';
+import type { Point2D } from '../../../models/types/geometry/types';
 import { lerp } from '../interpolation/lerp.js';
 
 /**
@@ -20,7 +20,7 @@ import { lerp } from '../interpolation/lerp.js';
  * @returns A `Point` object `{ x, y }` representing the interpolated position along the curve.
  */
 
-export function interpolateAlongCurve(points: Point[], t: number): Point {
+export function interpolateAlongCurve(points: Point2D[], t: number): Point2D {
   if (points.length === 0) throw new Error('No points to interpolate.');
   if (points.length === 1) return points[0]!;
 
@@ -30,9 +30,9 @@ export function interpolateAlongCurve(points: Point[], t: number): Point {
   const segmentIndex = Math.floor(segmentFloat);
   const segmentT = segmentFloat - segmentIndex;
 
-  const p1 = points[segmentIndex] as Point;
+  const p1 = points[segmentIndex] as Point2D;
 
-  const p2 = points[Math.min(segmentIndex + 1, points.length - 1)] as Point;
+  const p2 = points[Math.min(segmentIndex + 1, points.length - 1)] as Point2D;
 
   return {
     x: lerp(p1.x, p2.x, segmentT),
@@ -59,11 +59,11 @@ export function interpolateAlongCurve(points: Point[], t: number): Point {
 
 export function getTForDistance(
   distance: number,
-  arcTable: ArcTableEntry[]
+  arcTable: ArcLengthTableEntry[]
 ): number {
   for (let i = 1; i < arcTable.length; i++) {
-    const prev = arcTable[i - 1] as ArcTableEntry;
-    const next = arcTable[i] as ArcTableEntry;
+    const prev = arcTable[i - 1] as ArcLengthTableEntry;
+    const next = arcTable[i] as ArcLengthTableEntry;
     if (distance <= next.distance) {
       const segment = next.distance - prev.distance;
       const ratio = segment === 0 ? 0 : (distance - prev.distance) / segment;
