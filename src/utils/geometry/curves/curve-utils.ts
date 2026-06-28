@@ -1,4 +1,4 @@
-import type { CurveType } from '../../../models/types/animation';
+import type { CurveType } from '../../../models/types/geometry/curve';
 
 /**
  * List of supported path interpolation types.
@@ -8,7 +8,13 @@ import type { CurveType } from '../../../models/types/animation';
  *
  * This list is used to validate path-related configuration.
  */
-const pathsMap: string[] = ['linear', 'quadratic', 'cubic', 'earc', 'arc'];
+export const PATHS_MAP: readonly string[] = [
+  'linear',
+  'quadratic',
+  'cubic',
+  'earc',
+  'arc'
+] as const;
 
 /**
  * Calculates an adaptive smoothness (number of samples) for a curve segment
@@ -53,19 +59,19 @@ export function getCurveAdaptiveSmoothness(
 
   // 3. Curve type adjustment
   switch (curveType) {
-    case pathsMap[0]: // 'linear'
+    case PATHS_MAP[0]: // 'linear'
       adjustedMax = Math.min(maxSamples, 20); // linear requires fewer points
       break;
-    case pathsMap[1]: // 'quadratic'
+    case PATHS_MAP[1]: // 'quadratic'
       adjustedMin = Math.max(minSamples, 6);
       adjustedMax = Math.min(maxSamples, 60);
       break;
-    case pathsMap[2]: // 'cubic'
+    case PATHS_MAP[2]: // 'cubic'
       adjustedMin = Math.max(minSamples, 10);
       adjustedMax = Math.min(maxSamples, 100);
       break;
-    case pathsMap[3]: // 'arc'
-    case pathsMap[4]: // 'earc'
+    case PATHS_MAP[3]: // 'arc'
+    case PATHS_MAP[4]: // 'earc'
       adjustedMin = Math.max(minSamples, 8);
       adjustedMax = Math.min(maxSamples, 80);
       break;

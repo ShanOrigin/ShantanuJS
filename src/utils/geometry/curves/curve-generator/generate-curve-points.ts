@@ -2,16 +2,13 @@ import { interpolatePointOnCurve } from '../../../math/interpolation/interpolate
 import { getCubicCurveControlPoints } from '../curve-paths/cubic-curve.js';
 import { getQuadraticCurveControlPoint } from '../curve-paths/quadratic-curve.js';
 import { getArcCurveControlInfo } from '../curve-paths/arc-curve.js';
-
-import type {
-  Point,
-  CurveType,
-  CurveInfo,
-  ArcTableEntry
-} from '../../../../models/types/animation';
 import { getCurveAdaptiveSmoothness } from '../curve-utils.js';
-//import type { IGraphicalElementProperties as IG } from '../../../../properties/provider/shapeProperties';
-//import type { GraphicalElementComposer as GEC } from '../../../../core/graphics/graphics/graphicalElementComposer';
+import { Point2D } from '../../../../models/types/geometry/types.js';
+import {
+  ArcLengthTableEntry,
+  CurveInfo,
+  CurveType
+} from '../../../../models/types/geometry/curve.js';
 
 //+++++++++++++++++++++++++++
 // Function  to generate control points and store and Calculate arc length parameterizati       on  on curve
@@ -52,17 +49,17 @@ export function generateCurvePoints({
   continuous = false,
   continuousCount = 1
 }: {
-  P1: Point;
-  P2: Point;
+  P1: Point2D;
+  P2: Point2D;
   bend?: number;
   smoothness?: number;
   curveName?: CurveType;
   pointsOnly: boolean;
   continuous?: boolean;
   continuousCount?: number;
-}): [Point[], ArcTableEntry[], number] | Point[] {
-  const table: ArcTableEntry[] = [{ t: 0, distance: 0 }];
-  const points: Point[] = [];
+}): [Point2D[], ArcLengthTableEntry[], number] | Point2D[] {
+  const table: ArcLengthTableEntry[] = [{ t: 0, distance: 0 }];
+  const points: Point2D[] = [];
   let curveInfo: CurveInfo = {};
   let totalLength = 0;
 
@@ -106,7 +103,7 @@ export function generateCurvePoints({
         curveInfo = getArcCurveControlInfo(bend);
         break;
       case 'earc':
-        curveInfo['arcCurveSign'] = bend;
+        curveInfo['arcDirection'] = bend;
         break;
       case 'linear':
         break;
@@ -129,8 +126,8 @@ export function generateCurvePoints({
       points.push({ x: absolute.x, y: absolute.y });
 
       if (points.length > 1 && !pointsOnly) {
-        const prev = points[points.length - 2] as Point;
-        const curr = points[points.length - 1] as Point;
+        const prev = points[points.length - 2] as Point2D;
+        const curr = points[points.length - 1] as Point2D;
         const segmentLength = Math.hypot(curr.x - prev.x, curr.y - prev.y);
         totalLength += segmentLength;
         const arct = (lastT * smoothness + i) / (smoothness * continuousCount);

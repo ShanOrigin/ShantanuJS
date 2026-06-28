@@ -1,4 +1,4 @@
-import type { CurveInfo } from '../../../../models/types/animation';
+import type { CurveInfo } from '../../../../models/types/geometry/curve';
 /**
  * Computes the coordinates of a point along an elliptical arc between two points.
  *
@@ -38,7 +38,7 @@ export function getEllipsePoint(
   if (dist === 0) return { x: x1, y: y1 };
 
   const rx = dist / 2;
-  const bend = info?.arcCurveSign ?? 1; // bend factor
+  const bend = info?.arcDirection ?? 1; // bend factor
 
   const ry = rx * Math.abs(bend); // vertical radius (height)
   const sign = Math.sign(bend) || 1; // direction of bend (+up, -down)

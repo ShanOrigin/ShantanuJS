@@ -29,7 +29,7 @@ export function getQuadraticCurveControlPoint(
   x2: number,
   y2: number,
   bend: number
-): { qcx: number; qcy: number } {
+): { quadraticControlX: number; quadraticControlY: number } {
   const mx = (x1 + x2) / 2;
   const my = (y1 + y2) / 2;
   const dx = x2 - x1;
@@ -37,8 +37,11 @@ export function getQuadraticCurveControlPoint(
   const dist = Math.hypot(dx, dy);
   const perp = { x: -dy / dist, y: dx / dist };
   const curveHeight = dist * bend;
-  const qcx = mx + perp.x * curveHeight;
-  const qcy = my + perp.y * curveHeight;
+  const quadraticControlX = mx + perp.x * curveHeight;
+  const quadraticControlY = my + perp.y * curveHeight;
 
-  return { qcx, qcy };
+  return {
+    quadraticControlX,
+    quadraticControlY
+  };
 }
