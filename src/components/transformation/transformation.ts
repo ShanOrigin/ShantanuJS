@@ -620,7 +620,10 @@ export class Transformation implements ITransformation {
       const TA = tType.toLowerCase();
 
       if (TA != 'p' && TA != 'pivot')
-        [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+        ({ px, py } = resolvePivots(
+          tType,
+          this.#geometry?.bounds as Float32Array
+        ));
 
       /* ---------------------------------------------------------------------
        * STEP 4: Generate translation matrix
@@ -731,7 +734,10 @@ export class Transformation implements ITransformation {
       const TA = tType.toLowerCase();
 
       if (TA != 'p' && TA != 'pivot')
-        [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+        ({ px, py } = resolvePivots(
+          tType,
+          this.#geometry?.bounds as Float32Array
+        ));
       /* ---------------------------------------------------------------------
        * STEP 4: Generate scaling matrix
        * ---------------------------------------------------------------------
@@ -837,7 +843,7 @@ export class Transformation implements ITransformation {
        * to avoid unbounded accumulation.
        */
       angle = angle % 360;
-      [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+
       /* ---------------------------------------------------------------------
        * STEP 4: Resolve pivot coordinates for absolute rotation
        * ---------------------------------------------------------------------
@@ -847,7 +853,10 @@ export class Transformation implements ITransformation {
       const TA = tType.toLowerCase();
 
       if (TA != 'p' && TA != 'pivot')
-        [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+        ({ px, py } = resolvePivots(
+          tType,
+          this.#geometry?.bounds as Float32Array
+        ));
       /* ---------------------------------------------------------------------
        * STEP 5: Generate rotation matrix
        * ---------------------------------------------------------------------
@@ -965,7 +974,10 @@ export class Transformation implements ITransformation {
       const TA = tType.toLowerCase();
 
       if (TA != 'p' && TA != 'pivot')
-        [px, py] = resolvePivots(tType, this.#geometry?.bounds as Float32Array);
+        ({ px, py } = resolvePivots(
+          tType,
+          this.#geometry?.bounds as Float32Array
+        ));
       /* ---------------------------------------------------------------------
        * STEP 5: Generate skew matrix
        * ---------------------------------------------------------------------
