@@ -1,5 +1,8 @@
 import type { ValidGraphicsShapes } from '../../models/types/graphics-model';
-import type { IRenderNode } from '../../models/interfaces/render-node';
+import type {
+  GraphicsRenderNode,
+  IRenderNode
+} from '../../models/interfaces/render-node';
 
 import type {
   TranslateMethodProps,
@@ -36,6 +39,11 @@ type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   GetInternalGraphicsAccessor &
   GetParentAccessor;
 
+type GraphicsRenderNodeWithInternals = GraphicsRenderNode &
+  InternalGeometryAccessor &
+  InternalStyleAccessor &
+  GetInternalGraphicsAccessor;
+
 import { GraphicsModel } from '../../core/graphics-model/graphics-model.js';
 
 import {
@@ -43,7 +51,6 @@ import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_COMPUTED_STYLE_METHOD,
   GET_INTERNAL_GEOMETRY_METHOD,
-  GET_INTERNAL_GRAPHICS_METHOD,
   GET_INTERNAL_STYLE_METHOD,
   GET_PARENT_METHOD
 } from '../../internal/keys/dev-keys.js';
@@ -51,6 +58,7 @@ import {
 import {
   GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD,
   RESTORE_DIMENSION_METHOD,
+  UPDATE_ANIMATION_METHOD,
   UPDATE_TRANSFORM_METHOD
 } from '../../internal/keys/render-node-keys.js';
 import {
@@ -73,28 +81,13 @@ import {
 } from '../../utils/math/matrix/matrix-multiplication.js';
 
 import { Transformation } from '../../components/transformation/transformation.js';
+import { IAnimationOptions } from '../../models/types/animation/options';
+import { IAnimation } from '../../models/interfaces/animation';
+import { Animation } from '../../components/animation/animation';
 export abstract class RenderNode<T extends ValidGraphicsShapes>
   extends GraphicsModel<T>
   implements IRenderNode<T>
 {
-  /**
-   * Internal reference to the rendering primitive (`#fig`) from base class.
-   *
-   * Source:
-   * - Retrieved via privileged access (`getIFig`)
-   *
-   * Purpose:
-   * - Direct access to rendering object (e.g., SVGElement)
-   * - Used for advanced operations (transform, animation, DOM interaction)
-   *
-   * Invariant:
-   * - Must always remain consistent with base class `#fig`
-   *
-   * Access:
-   * - Private (controlled via access key system)
-   */
-  #fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
-
   /**
    * Internal reference to the geometry state from base class.
    *
@@ -200,19 +193,6 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
      * Initialize base graphical model and event system.
      */
     super(shape, id);
-
-    /**
-     * Initialize transformation module with current entity context.
-     */
-    //  this.#transformComponent = new Transformation(this);
-
-    /**
-     * Refresh internal reference to rendering primitive.
-     *
-     * Note:
-     * - Ensures latest reference after base class initialization
-     */
-    this.#fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
   }
 
   /**
@@ -1377,6 +1357,14 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
         this.#components[component] = new Transformation(
           this as GraphicsNodeWithInternalAccessMethods
         );
+      } else if (component === 'animation') {
+        this.#components[component] = new Animation(
+          this as GraphicsRenderNodeWithInternals,
+          this.#parentAnimationStatus.bind(this),
+          () => {
+            this.#isAnimation = false;
+          }
+        );
       }
     }
   }
@@ -1747,5 +1735,55 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     this.#preTransformChecks();
     this.#components.transformation.transform(dsl);
     return this;
+  }
+
+  //++++++++++++++++++++++++++++++++++++++++++++
+  // Animation Section
+  //++++++++++++++++++++++++++++++++++++++++++++
+
+  #parentAnimationStatus(changeAnimationStatus: boolean = false): boolean {
+    if (changeAnimationStatus) this.#isAnimation = !this.#isAnimation;
+    return this.#isAnimation;
+  }
+
+  public animate(animatableProps: IAnimationOptions<T>) {
+    if (this.#isAnimation) {
+      Warn(
+        'Animation is already going on this shape , please wait untill animation finish or cancel the animation.'
+      );
+
+      return;
+    }
+    this.#initOrGetComponent('animation');
+
+    animatableProps.start = true;
+    this.#components.animation.animate(animatableProps);
+  }
+
+  public animation(
+    animatableProps: IAnimationOptions<T>
+  ): Omit<IAnimation, 'animate' | 'update'> {
+    if (this.#isAnimation) {
+      Warn(
+        'Animation is already going on this shape , please wait untill animation finish or cancel the animation.'
+      );
+
+      return this.#components.animation;
+    }
+    this.#initOrGetComponent('animation');
+
+    animatableProps.start = true;
+    this.#components.animation.animate(animatableProps);
+
+    return this.#components.animation;
+  }
+
+  /**
+   * updateAnimation
+   */
+  [UPDATE_ANIMATION_METHOD](time: number, accessKey: symbol) {
+    assertAccess(accessKey);
+
+    this.#isAnimation && this.#components.animation.update(time);
   }
 }
