@@ -1447,7 +1447,8 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
          * Mark geometry as dirty to signal downstream systems
          * (e.g., renderer, layout engine) for update/recalculation.
          */
-        this.#geometry.localDirty = true;
+
+        this.#geometry.renderUpdateType = 'GEOMETRY';
       } else if (typeof this.#style == 'object' && this.#isStyleProp(key)) {
         /**
          * Route to style domain if property qualifies.
@@ -1455,6 +1456,8 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
          * Validator may throw if property is restricted.
          */
         (this.#style as Record<string, string | number>)[key] = value;
+
+        this.#geometry.renderUpdateType = 'STYLE';
       } else {
         throw new InvalidOptionError(
           key,
@@ -1463,6 +1466,8 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
           'core.graphicsModel.#setAttrs()'
         );
       }
+
+      this.#geometry.localDirty = true;
     } catch (e) {
       /**
        * Transparent error propagation.
