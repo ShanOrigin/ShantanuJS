@@ -76,21 +76,22 @@ import {
 import { GraphicsRenderNode } from '../../models/interfaces/render-node';
 import {
   AnimatableStyle,
-  AnimatableTransform
+  AnimatableTransform,
+  GeometricalAnimatableProperties
 } from '../../models/types/animation/animatable';
 import {
   AnimationControls,
   OptimizationTechnique
 } from '../../models/types/animation/control';
-import {
-  EasingFunction,
-  EasingType
-} from '../../models/types/animation/easing';
+import { EasingFunction } from '../../models/types/animation/easing';
 import {
   CurveMotionOptions,
   PhysicsOptions
 } from '../../models/types/animation/motion';
-import { AdvancedAnimationOptions } from '../../models/types/animation/options';
+import {
+  AdvancedAnimationOptions,
+  IAnimationOptions
+} from '../../models/types/animation/options';
 import { TransformStack } from '../../models/types/common';
 import {
   ArcLengthTableEntry,
@@ -119,6 +120,7 @@ import type {
 
 import {
   COMMON_STYLE_ANIMATABLE_PROPERTIES,
+  DEFAULT_ADVANCE_OPTIONS,
   PROPERTY_TRANSFORMATION_MAP,
   SX_PROPERTIES,
   SY_PROPERTIES,
@@ -151,6 +153,8 @@ import { transformUsingPolynomialFast } from '../../utils/math/interpolation/int
 
 import Colors from '../../utils/colors/colors.js';
 import { generateCurvePoints } from '../../utils/geometry/curves/curve-generator/generate-curve-points';
+import { DEFAULT_TRANSFORMATIONS } from '../../utils/math/affine/affine-utils';
+import type { IAnimation } from '../../models/interfaces/animation';
 
 type GraphicsRenderNodeWithInternals = GraphicsRenderNode &
   InternalGeometryAccessor &
@@ -185,14 +189,9 @@ type transformUsingPolynomialFastType = (
   e?: number // optional extra parameter
 ) => Float32Array;
 
-// Defines all animatable properties accepted by the animation engine.
-// Includes geometry-related properties and supported style properties.
-// All properties are optional and resolved internally by the engine.
-export type animatableProps = Partial<AnimatableTransform & AnimatableStyle>;
-
 // Alias representing all supported graphics shape tags.
 // Used to constrain the Animation class to valid shape types.
-
+// temporary svg source for animation trajectory path visualization
 const GraphicsSource = 'http://www.w3.org/2000/svg';
 
 /**
@@ -359,7 +358,7 @@ const GraphicsSource = 'http://www.w3.org/2000/svg';
  * into a single, coherent, and deterministic animation engine.
  */
 
-export class Animation {
+export class Animation implements IAnimation {
   /**
    * Reference to the graphics shape instance being animated.
    *
@@ -383,27 +382,6 @@ export class Animation {
    * - Remains constant for the lifetime of the animation
    */
   #el!: GraphicsRenderNodeWithInternals; // GEC<keyof IG, keyof IG>;
-
-  /**
-   * Reference to the underlying graphics figure or DOM element.
-   *
-   * -------------------------------------------------------------------------
-   * ROLE
-   * -------------------------------------------------------------------------
-   * Holds the low-level SVG element associated with the shape.
-   *
-   * This reference is used for:
-   * - direct DOM-based operations
-   * - debug and experimental features
-   * - curve visualization
-   *
-   * -------------------------------------------------------------------------
-   * LIFECYCLE
-   * -------------------------------------------------------------------------
-   * - Retrieved during construction
-   * - Not modified during animation execution
-   */
-  #elFig!: SVGElement;
 
   /**
    * Arc-length lookup table for curve parameterization.
@@ -684,12 +662,7 @@ export class Animation {
    * - Values represent normalized affine transform components
    * - Defaults correspond to identity transformation
    */
-  #initialGeometry: BaseTransformations = {
-    translate: { x: 0, y: 0 }, // No translation
-    scale: { sx: 1, sy: 1 }, // Identity scale
-    rotate: { angle: 0 }, // No rotation
-    skew: { sx: 0, sy: 0 } // No skew
-  };
+  #initialGeometry!: BaseTransformations;
 
   /**
    * Stores the initial style state of the animation target.
@@ -745,12 +718,7 @@ export class Animation {
    * - Scale defaults to zero and is normalized later
    * - All values are expected to be in local coordinate space
    */
-  #finalGeometry: PivotTransformations = {
-    translate: { x: 0, y: 0 },
-    scale: { sx: 0, sy: 0 },
-    rotate: { angle: 0 },
-    skew: { sx: 0, sy: 0 }
-  };
+  #finalGeometry!: PivotTransformations;
 
   /**
    * Stores the resolved final style state of the animation target.
@@ -817,161 +785,7 @@ export class Animation {
    * - Advanced features are opt-in, not mandatory
    * - Engine invariants are always preserved
    */
-  #advanceOptions: AdvancedAnimationOptions = {
-    /**
-     * -------------------------------------------------------
-     * PHYSICS CONFIGURATION
-     * -------------------------------------------------------
-     * Controls how animation progress is computed:
-     * - time-based (default)
-     * - distance-based (physics motion)
-     */
-    physics: {
-      /**
-       * Enables distance-based motion instead of time-based motion.
-       *
-       * When enabled, animation progress is derived from:
-       *   distance = speed × time
-       *
-       * This is primarily used for curve-based translation
-       * with arc-length reparameterization.
-       */
-      enabled: false,
-
-      /**
-       * Controls animation speed when physicsMotion is enabled.
-       *
-       * Interpreted as:
-       *   speed = distance / time
-       *
-       * Higher values result in faster traversal along the path.
-       */
-      speed: 0.5
-    },
-
-    /**
-     * -------------------------------------------------------
-     * CURVE / PATH CONFIGURATION
-     * -------------------------------------------------------
-     * Controls whether translation follows a curve
-     * and how that curve is generated.
-     */
-    curve: {
-      /**
-       * Enables motion along a computed curve path.
-       *
-       * If false, translation is linear.
-       * If true, translation follows the selected curve type.
-       */
-      enabled: false,
-
-      /**
-       * Specifies the curve type used for path-based motion.
-       *
-       * Examples:
-       * - 'linear'
-       * - 'cubic'
-       * - 'quadratic'
-       * - 'arc'
-       * - 'earc'
-       */
-      path: 'linear',
-
-      /**
-       * Controls curve bending (curvature).
-       *
-       * - Positive values bend the curve above the baseline
-       * - Negative values bend the curve below the baseline
-       * - Zero results in a straight line
-       */
-      curvature: 0,
-
-      /**
-       * Controls smoothness of curve formation.
-       *
-       * Affects how stepness is distributed and
-       * how smooth the resulting motion feels.
-       */
-      samples: 0
-    },
-
-    /**
-     * -------------------------------------------------------
-     * PIVOT CONFIGURATION
-     * -------------------------------------------------------
-     * Controls how transformations are applied relative
-     * to reference points on the shape.
-     */
-    pivots: {
-      /**
-       * Controls the transformation mode.
-       *
-       * Possible meanings:
-       * - 'relative' : relative to top-left corner
-       * - 'center'   : geometric center (translate only)
-       * - 'pivot'    : explicit pivot-based transformation
-       *
-       * The engine may override this value when required
-       * to preserve correct animation behavior.
-       */
-      mode: 'relative',
-
-      /**
-       * Pivot used for rotation transformations.
-       *
-       * Defaults to geometric center ('C').
-       */
-      rotatePivot: 'C',
-
-      /**
-       * Pivot used for scale transformations.
-       *
-       * Defaults to geometric center ('C').
-       */
-      scalePivot: 'C',
-
-      /**
-       * Pivot used for skew transformations.
-       *
-       * Defaults to geometric center ('C').
-       */
-      skewPivot: 'C'
-    },
-
-    /**
-     * -------------------------------------------------------
-     * CONTROL & EXECUTION CONFIGURATION
-     * -------------------------------------------------------
-     * Controls animation lifecycle behavior
-     * and execution strategy.
-     */
-    controls: {
-      /**
-       * Enables continuous looping of the animation.
-       */
-      loop: false,
-
-      /**
-       * Controls animation playback direction.
-       *
-       * Examples:
-       * - 'normal'
-       * - 'reverse'
-       * - 'alternate'
-       */
-      direction: 'normal',
-
-      /**
-       * Specifies which optimization technique
-       * the engine should use for interpolation.
-       *
-       * The engine may override this choice
-       * if a better strategy is detected.
-       */
-      optimizationTechnique: 'fitPolynomialCoefficient'
-    }
-  };
-
+  #advanceOptions!: AdvancedAnimationOptions;
   /**
    * Easing function used to map linear progress into eased progress.
    *
@@ -1102,19 +916,8 @@ export class Animation {
   constructor(
     shape: GraphicsRenderNodeWithInternals,
     isAnimation: (t: boolean) => boolean,
-    /*    createTransformMatrix: (
-      param: createTransformationMatrixProps
-    ) => Float32Array | number[][],
-    getBBox: (param: boolean) => bboxProps,
-		*/
     cleanUp: Function
   ) {
-    /**
-     * Capture the internal figure representation of the element.
-     * This is used for low-level transformation application.
-     */
-    this.#elFig = shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
-
     /**
      * Retrieve the element's internal style object.
      * This represents the current visual state before animation.
@@ -1219,16 +1022,24 @@ export class Animation {
    * -------------------------------------------------------------
    * INPUT PARAMETERS
    * -------------------------------------------------------------
-   * @param el              - SVG element associated with the animation
    * @param curvePoints     - Array of curve points generated by the engine
    * @param normalizePoints - Offset used to convert local curve space
    *                          into SVG coordinate space
    */
+
+  // temporary svg source for animation trajectory path visualization
+  // this method or logic will be deleted or moved to renderer after animation component will work properly.
   #curveFormation(
-    el: SVGElement,
     curvePoints: { x: number; y: number }[],
     normalizePoints: Pivot
   ) {
+    /**
+     * Capture the internal figure representation of the element.
+     * This is used for low-level transformation application.
+     */
+    const elFig = this.#el[GET_INTERNAL_GRAPHICS_METHOD](
+      DEV_INTERNAL_ACCESS_KEY
+    );
     /**
      * Guard clause to ensure valid curve data.
      * If curvePoints is not an array, there is nothing to render.
@@ -1283,7 +1094,7 @@ export class Animation {
      * Append the curve visualization to the same SVG root
      * as the animated element.
      */
-    el.ownerSVGElement?.appendChild(curve);
+    elFig.ownerSVGElement?.appendChild(curve);
   }
 
   /**
@@ -1529,45 +1340,26 @@ export class Animation {
    * to user-facing APIs.
    */
   #resetAllStates() {
-    /**
-     * Explicitly list all internal fields that must be cleared.
-     * Each key corresponds to a private field on the instance.
-     */
-    /**
-     * Forcefully nullify each field.
-     *
-     * This bypasses normal access restrictions intentionally
-     * as part of controlled internal cleanup.
-     */
-    for (const k of [
-      '#el',
-      '#elFig',
-      '#arcTable',
-      '#totalLength',
-      '#curvePoints',
-      '#initialGeometry',
-      '#initialStyle',
-      '#progress',
-      '#reverseCycle',
-      '#startTime',
-      '#elapsedTime',
-      '#totalTime',
-      '#lastTime',
-      '#travelledDistance',
-      '#rawProgress',
-      '#animationState',
-      '#isAnimation',
-      '#finalGeometry',
-      '#finalStyle',
-      '#advInfo',
-      '#easingFunction',
-      '#onComplete',
-      '#cleanUp',
-      '#isTranslation',
-      '#interpolateFunction',
-      '#preComputeFranesOrPolynomial'
-    ])
-      (this as any)[k] = null;
+    this.#totalLength = 0;
+    this.#progress = 0;
+    this.#rawProgress = 0;
+    this.#startTime = 0;
+    this.#elapsedTime = 0;
+    this.#lastTime = 0;
+    this.#totalTime = 0;
+
+    this.#travelledDistance = 0;
+    this.#reverseCycle = false;
+    this.#animationState = false;
+    this.#isTranslation = false;
+    this.#initialGeometry = structuredClone(DEFAULT_TRANSFORMATIONS);
+    this.#finalGeometry = structuredClone(
+      DEFAULT_TRANSFORMATIONS
+    ) as PivotTransformations;
+    this.#initialStyle = {};
+    this.#finalStyle = {};
+
+    this.#advanceOptions = structuredClone(DEFAULT_ADVANCE_OPTIONS);
   }
 
   /**
@@ -2300,14 +2092,16 @@ export class Animation {
    *
    * @returns void or a Promise that resolves when animation completes
    */
-  public animate(
-    attrs: animatableProps,
-    advProp: AdvancedAnimationOptions | null,
-    duration: number,
-    ease: EasingType | Function | null = 'linear',
-    onComplete: Function | null = null,
-    start: boolean = true
-  ): void {
+  public animate({
+    attrs,
+    advanceOptions,
+    duration,
+    ease = 'linear',
+    onComplete,
+    start = true
+  }: IAnimationOptions): void {
+    this.#resetAllStates();
+
     // ------------------------------------------------------------------
     // STEP 1: Handle and normalize basic animation parameters
     // ------------------------------------------------------------------
@@ -2323,7 +2117,7 @@ export class Animation {
     this.#onComplete = onCompleteFuncValidation(onComplete) as Function;
 
     // Merge user-provided advanced properties into internal defaults
-    advancePropsValidation(this.#advanceOptions, advProp);
+    advancePropsValidation(this.#advanceOptions, advanceOptions ?? {});
 
     // ------------------------------------------------------------------
     // STEP 2: Decompose user attributes into style and geometry properties
@@ -3042,7 +2836,7 @@ export class Animation {
      * The resulting curve data is now fully ready
      * for time-based interpolation during animation.
      */
-    this.#curveFormation(this.#elFig, this.#curvePoints, pivot);
+    this.#curveFormation(this.#curvePoints, pivot);
   }
 
   /**
@@ -3250,7 +3044,7 @@ export class Animation {
    *
    * This function mutates `finalGeometry` as part of animation setup.
    */
-  #associate(gProps: ICommonGeometricProperties | BaseTransformations) {
+  #associate(gProps: BaseTransformations | GeometricalAnimatableProperties) {
     /**
      * Direct transform association.
      * If the user explicitly provided transform blocks,
