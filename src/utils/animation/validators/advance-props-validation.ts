@@ -5,24 +5,26 @@ import {
   OutOfRangeError,
   TypeMismatchError
 } from '../../../errors';
-import {
+import type {
   AnimationControls,
   OptimizationTechnique
 } from '../../../models/types/animation/control';
-import {
+import type {
   CurveMotionOptions,
   PhysicsOptions
 } from '../../../models/types/animation/motion';
-import { AdvancedAnimationOptions } from '../../../models/types/animation/options';
-import { PivotOptions } from '../../../models/types/animation/pivot';
-import { Pivot, PivotAnchors } from '../../../models/types/geometry/anchors';
+import type { AdvancedAnimationOptions } from '../../../models/types/animation/options';
+import type { PivotOptions } from '../../../models/types/animation/pivot';
+import type {
+  Pivot,
+  PivotAnchors
+} from '../../../models/types/geometry/anchors';
+import { PATHS_MAP } from '../../geometry/curves/curve-utils.js';
 import {
   ANCHORS_MAP,
-  DIRECTIONS_MAP,
-  MODES_MAP,
-  OPT_MAP,
-  PATHS_MAP
-} from '../animation-constants.js';
+  MODES_MAP
+} from '../../geometry/pivot-resolution/pivot-utils.js';
+import { DIRECTIONS_MAP, OPT_MAP } from '../animation-constants.js';
 
 import { deepMerge } from '../animation-utils.js';
 /**

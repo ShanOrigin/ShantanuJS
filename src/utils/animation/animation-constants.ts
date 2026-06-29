@@ -1,4 +1,5 @@
 import { OptimizationTechnique } from '../../models/types/animation/control';
+import { AdvancedAnimationOptions } from '../../models/types/animation/options';
 
 /**
  * Defines common style properties that can be animated for all shapes.
@@ -138,61 +139,6 @@ export const PROPERTY_TRANSFORMATION_MAP = {
 } as const;
 
 /**
- * List of supported path interpolation types.
- *
- * These values describe the geometric path along which an animation
- * or transformation progresses, independent of easing behavior.
- *
- * This list is used to validate path-related configuration.
- */
-export const PATHS_MAP: readonly string[] = [
-  'linear',
-  'quadratic',
-  'cubic',
-  'earc',
-  'arc'
-] as const;
-
-/**
- * List of supported anchor point identifiers.
- *
- * Anchors define reference points used for alignment, transformation,
- * or positioning operations. Each value represents a specific relative
- * location within a bounding region.
- *
- * The identifiers follow a concise directional naming convention.
- */
-export const ANCHORS_MAP: readonly string[] = [
-  'TL',
-  'TM',
-  'TR',
-  'RM',
-  'BR',
-  'BM',
-  'BL',
-  'LM',
-  'C'
-] as const;
-
-/**
- * List of supported transformation mode identifiers.
- *
- * These values control how transformations are interpreted or applied,
- * such as relative positioning, pivot-based transformations, or
- * center-based alignment.
- *
- * Both shorthand and descriptive aliases are supported.
- */
-export const MODES_MAP: readonly string[] = [
-  'r',
-  'c',
-  'p',
-  'relative',
-  'pivot',
-  'center'
-] as const;
-
-/**
  * List of supported animation direction modes.
  *
  * Direction modes define how an animation sequence progresses over time,
@@ -211,3 +157,196 @@ export const OPT_MAP = [
   'fitPolynomialCoefficient',
   'preComputeFrames'
 ] as const;
+
+/**
+ * Stores all advanced animation configuration used internally by the engine.
+ *
+ * -------------------------------------------------------------------------
+ * ROLE IN THE ANIMATION SYSTEM
+ * -------------------------------------------------------------------------
+ * This object represents the complete set of advanced animation controls,
+ * combining both:
+ *
+ * - user-provided advanced options (via `animate`)
+ * - engine-defined default values
+ *
+ * It acts as the single source of truth for all non-basic animation behavior
+ * such as physics motion, curve following, pivot handling, looping, direction,
+ * and optimization strategies.
+ *
+ * This object is mutated internally during animation setup and execution.
+ *
+ * -------------------------------------------------------------------------
+ * IMPORTANT VERSIONING NOTE
+ * -------------------------------------------------------------------------
+ * ⚠️ THIS STRUCTURE IS NOT FIXED.
+ *
+ * New properties MAY be added, existing properties MAY evolve,
+ * and internal behavior MAY change across library versions.
+ *
+ * This object is PRIVATE and NOT part of the public API contract.
+ * Users should never rely on its internal structure directly.
+ *
+ * -------------------------------------------------------------------------
+ * DESIGN PRINCIPLES
+ * -------------------------------------------------------------------------
+ * - All defaults are safe and deterministic
+ * - Missing user options are resolved automatically
+ * - Advanced features are opt-in, not mandatory
+ * - Engine invariants are always preserved
+ */
+
+export const DEFAULT_ADVANCE_OPTIONS: AdvancedAnimationOptions = {
+  /**
+   * -------------------------------------------------------
+   * PHYSICS CONFIGURATION
+   * -------------------------------------------------------
+   * Controls how animation progress is computed:
+   * - time-based (default)
+   * - distance-based (physics motion)
+   */
+  physics: {
+    /**
+     * Enables distance-based motion instead of time-based motion.
+     *
+     * When enabled, animation progress is derived from:
+     *   distance = speed × time
+     *
+     * This is primarily used for curve-based translation
+     * with arc-length reparameterization.
+     */
+    enabled: false,
+
+    /**
+     * Controls animation speed when physicsMotion is enabled.
+     *
+     * Interpreted as:
+     *   speed = distance / time
+     *
+     * Higher values result in faster traversal along the path.
+     */
+    speed: 0.5
+  },
+
+  /**
+   * -------------------------------------------------------
+   * CURVE / PATH CONFIGURATION
+   * -------------------------------------------------------
+   * Controls whether translation follows a curve
+   * and how that curve is generated.
+   */
+  curve: {
+    /**
+     * Enables motion along a computed curve path.
+     *
+     * If false, translation is linear.
+     * If true, translation follows the selected curve type.
+     */
+    enabled: false,
+
+    /**
+     * Specifies the curve type used for path-based motion.
+     *
+     * Examples:
+     * - 'linear'
+     * - 'cubic'
+     * - 'quadratic'
+     * - 'arc'
+     * - 'earc'
+     */
+    path: 'linear',
+
+    /**
+     * Controls curve bending (curvature).
+     *
+     * - Positive values bend the curve above the baseline
+     * - Negative values bend the curve below the baseline
+     * - Zero results in a straight line
+     */
+    curvature: 0,
+
+    /**
+     * Controls smoothness of curve formation.
+     *
+     * Affects how stepness is distributed and
+     * how smooth the resulting motion feels.
+     */
+    samples: 0
+  },
+
+  /**
+   * -------------------------------------------------------
+   * PIVOT CONFIGURATION
+   * -------------------------------------------------------
+   * Controls how transformations are applied relative
+   * to reference points on the shape.
+   */
+  pivots: {
+    /**
+     * Controls the transformation mode.
+     *
+     * Possible meanings:
+     * - 'relative' : relative to top-left corner
+     * - 'center'   : geometric center (translate only)
+     * - 'pivot'    : explicit pivot-based transformation
+     *
+     * The engine may override this value when required
+     * to preserve correct animation behavior.
+     */
+    mode: 'relative',
+
+    /**
+     * Pivot used for rotation transformations.
+     *
+     * Defaults to geometric center ('C').
+     */
+    rotatePivot: 'C',
+
+    /**
+     * Pivot used for scale transformations.
+     *
+     * Defaults to geometric center ('C').
+     */
+    scalePivot: 'C',
+
+    /**
+     * Pivot used for skew transformations.
+     *
+     * Defaults to geometric center ('C').
+     */
+    skewPivot: 'C'
+  },
+
+  /**
+   * -------------------------------------------------------
+   * CONTROL & EXECUTION CONFIGURATION
+   * -------------------------------------------------------
+   * Controls animation lifecycle behavior
+   * and execution strategy.
+   */
+  controls: {
+    /**
+     * Enables continuous looping of the animation.
+     */
+    loop: false,
+
+    /**
+     * Controls animation playback direction.
+     *
+     * Examples:
+     * - 'normal'
+     * - 'reverse'
+     * - 'alternate'
+     */
+    direction: 'normal',
+
+    /**
+     * Specifies which optimization technique
+     * the engine should use for interpolation.
+     *
+     * The engine may override this choice
+     * if a better strategy is detected.
+     */
+    optimizationTechnique: 'fitPolynomialCoefficient'
+  }
+};
