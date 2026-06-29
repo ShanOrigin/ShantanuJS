@@ -1,27 +1,5 @@
-import { EasingFunction, EasingType } from '../types/animation';
-
-/**
- * Configuration for starting an animation.
- */
-export interface IAnimationOptions {
-  /** Target properties to animate. */
-  attrs: AnimatableProps;
-
-  /** Optional advanced animation configuration. */
-  advanceProps?: AdvanceProps;
-
-  /** Animation duration in milliseconds. */
-  duration: number;
-
-  /** Easing function or predefined easing type. */
-  ease?: EasingType | EasingFunction;
-
-  /** Invoked when the animation completes. */
-  onComplete?: () => void;
-
-  /** Starts the animation immediately if true. */
-  start?: boolean;
-}
+import type { EasingFunction, EasingType } from '../types/animation/easing';
+import type { IAnimationOptions } from '../types/animation/options';
 
 /**
  * Common animation controller interface.
