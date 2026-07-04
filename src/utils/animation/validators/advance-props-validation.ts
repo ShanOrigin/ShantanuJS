@@ -4,7 +4,7 @@ import {
   MissingRequiredAnimationParameterError,
   OutOfRangeError,
   TypeMismatchError
-} from '../../../errors';
+} from '../../../errors/index.js';
 import type {
   AnimationControls,
   OptimizationTechnique
