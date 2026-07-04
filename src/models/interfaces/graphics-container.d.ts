@@ -13,7 +13,7 @@ import {
   GET_SCENE_ELEMENTS_METHOD,
   GET_SCENE_ELEMENT_ID_MAP_METHOD,
   GET_SCENE_Z_ORDER_RESOLVER_METHOD
-} from '../../internal/keys/system-keys.js';
+} from '../../internal/keys/system-keys';
 
 import type { ValidGraphicsShapes } from '../types/graphics-model';
 

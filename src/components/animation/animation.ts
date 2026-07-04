@@ -71,52 +71,55 @@ import {
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_GRAPHICS_METHOD,
   GET_INTERNAL_STYLE_METHOD
-} from '../../internal/keys/dev-keys';
+} from '../../internal/keys/dev-keys.js';
 
-import { GraphicsRenderNode } from '../../models/interfaces/render-node';
-import {
+import type { GraphicsRenderNode } from '../../models/interfaces/render-node';
+import type {
   AnimatableStyle,
-  AnimatableTransform,
   GeometricalAnimatableProperties
 } from '../../models/types/animation/animatable';
-import {
+import type {
   AnimationControls,
   OptimizationTechnique
 } from '../../models/types/animation/control';
-import { EasingFunction } from '../../models/types/animation/easing';
-import {
+import type { EasingFunction } from '../../models/types/animation/easing';
+import type {
   CurveMotionOptions,
   PhysicsOptions
 } from '../../models/types/animation/motion';
-import {
+import type {
   AdvancedAnimationOptions,
   IAnimationOptions
 } from '../../models/types/animation/options';
-import { TransformStack } from '../../models/types/common';
-import {
+import type { TransformStack } from '../../models/types/common';
+import type {
   ArcLengthTableEntry,
   CurveType
 } from '../../models/types/geometry/curve';
-import {
+import type {
   BaseTransformations,
   PivotTransformations
 } from '../../models/types/geometry/transform';
-import { NumericPair, Point2D } from '../../models/types/geometry/types';
-import { Pivot, PivotAnchors } from '../../models/types/geometry/anchors';
+import type { NumericPair, Point2D } from '../../models/types/geometry/types';
+import type { Pivot, PivotAnchors } from '../../models/types/geometry/anchors';
 
-import { PivotMode, PivotOptions } from '../../models/types/animation/pivot';
+import type {
+  PivotMode,
+  PivotOptions
+} from '../../models/types/animation/pivot';
 
-import {
+import type {
   InternalGeometryAccessor,
   InternalStyleAccessor
 } from '../../models/types/graphics-model';
 
-import { GetInternalGraphicsAccessor } from '../../models/interfaces/graphics-container';
-
 import type {
-  ICommonGeometricProperties,
-  IAllStyleProperties as IS
-} from '../../property-definitions/common/common-properties';
+  GetInternalGraphicsAccessor,
+  GraphicsNode
+} from '../../models/interfaces/graphics-container';
+
+import type { IAllStyleProperties as IS } from '../../property-definitions/common/common-properties';
+import type { IAnimation } from '../../models/interfaces/animation';
 
 import {
   COMMON_STYLE_ANIMATABLE_PROPERTIES,
@@ -126,7 +129,7 @@ import {
   SY_PROPERTIES,
   TX_PROPERTIES,
   TY_PROPERTIES
-} from '../../utils/animation/animation-constants';
+} from '../../utils/animation/animation-constants.js';
 import { separateProperties } from '../../utils/animation/animation-utils.js';
 import { handleEasing } from '../../utils/animation/validators/easing-validation.js';
 import { ShapeType } from '../../utils/animation/validators/user-props-validation.js';
@@ -152,11 +155,10 @@ import { setPreComputedFrame } from '../../utils/math/interpolation/interpolate-
 import { transformUsingPolynomialFast } from '../../utils/math/interpolation/interpolate-fit-polynomial-fast.js';
 
 import Colors from '../../utils/colors/colors.js';
-import { generateCurvePoints } from '../../utils/geometry/curves/curve-generator/generate-curve-points';
-import { DEFAULT_TRANSFORMATIONS } from '../../utils/math/affine/affine-utils';
-import type { IAnimation } from '../../models/interfaces/animation';
+import { generateCurvePoints } from '../../utils/geometry/curves/curve-generator/generate-curve-points.js';
+import { DEFAULT_TRANSFORMATIONS } from '../../utils/math/affine/affine-utils.js';
 
-type GraphicsRenderNodeWithInternals = GraphicsRenderNode &
+type GraphicsRenderNodeWithInternals = GraphicsNode &
   InternalGeometryAccessor &
   InternalStyleAccessor &
   GetInternalGraphicsAccessor;
@@ -947,6 +949,7 @@ export class Animation implements IAnimation {
      *
      * This snapshot is later used as the interpolation baseline.
      */
+
     for (const key in style) {
       key in COMMON_STYLE_ANIMATABLE_PROPERTIES &&
         ((this.#initialStyle as Record<string, unknown>)[key as keyof IS] = (
@@ -1967,7 +1970,7 @@ export class Animation implements IAnimation {
      * Shape instance reference.
      * Used to apply transformation commands.
      */
-    const s = this.#el as GraphicsRenderNode;
+    const s = this.#el as GraphicsRenderNodeWithInternals & GraphicsRenderNode;
 
     /**
      * -----------------------------------------------------------
