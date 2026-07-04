@@ -1,5 +1,8 @@
-import type { IGraphicalElementProperties } from '../../properties/specific/specificProperties';
-import type { GraphicsModel } from '../provider/graphics';
+import type { GraphicsNode } from '../../models/interfaces/graphics-container';
+import {
+  ISyntheticEvent,
+  NormalizedPointer
+} from '../../models/interfaces/synthetic-event';
 
 /**
  * ============================================================================
@@ -17,26 +20,6 @@ export const enum EventPhase {
   TARGET = 2,
   BUBBLE = 3
 }
-
-/**
- * ============================================================================
- * NORMALIZED POINTER DATA
- * ============================================================================
- *
- * Backend-agnostic pointer representation extracted from native event.
- * Ensures consistent behavior across Canvas, SVG, etc.
- */
-export type NormalizedPointer = Readonly<{
-  x: number;
-  y: number;
-  pointerId: number;
-  pointerType: string;
-  pressure: number;
-  tiltX: number;
-  tiltY: number;
-  button: number;
-  buttons: number;
-}>;
 
 /**
  * ============================================================================
@@ -78,7 +61,7 @@ export type NormalizedPointer = Readonly<{
  *
  * ============================================================================
  */
-export class SyntheticEvent {
+export class SyntheticEvent implements ISyntheticEvent {
   // ========================================================================
   // INTERNAL STATE (STRICTLY CONTROLLED)
   // ========================================================================
@@ -103,7 +86,7 @@ export class SyntheticEvent {
   /**
    * Engine-resolved target (via hit testing)
    */
-  readonly target: GraphicsModel<keyof IGraphicalElementProperties>;
+  readonly target: GraphicsNode;
 
   /**
    * Timestamp at event creation (high-resolution)
@@ -123,7 +106,7 @@ export class SyntheticEvent {
    * Current node being processed during propagation.
    * Set ONLY by dispatcher.
    */
-  currentTarget: GraphicsModel<keyof IGraphicalElementProperties> | null = null;
+  currentTarget: GraphicsNode | null = null;
 
   /**
    * Current propagation phase.
@@ -142,11 +125,7 @@ export class SyntheticEvent {
    * @param target       Target resolved via hit testing
    * @param nativeEvent  Native pointer event
    */
-  constructor(
-    type: string,
-    target: GraphicsModel<keyof IGraphicalElementProperties>,
-    nativeEvent: PointerEvent
-  ) {
+  constructor(type: string, target: GraphicsNode, nativeEvent: PointerEvent) {
     this.type = type;
     this.target = target;
     this.nativeEvent = nativeEvent;
