@@ -1,17 +1,8 @@
-import type { IGraphicalElementProperties } from '../../properties/specific/specificProperties';
-import { GraphicsModel } from '../provider/graphics.js';
-import { SyntheticEvent } from './syntheticEvent.js';
-
-export type SupportedEvents =
-  | 'click'
-  | 'dblclick'
-  | 'pointerdown'
-  | 'pointermove'
-  | 'pointerup'
-  | 'pointerenter'
-  | 'pointerleave';
-
-export type Handler = (e: SyntheticEvent) => void;
+import type {
+  Handler,
+  IEvent,
+  SupportedEvents
+} from '../../models/interfaces/event';
 
 /**
  * ============================================================================
@@ -65,9 +56,7 @@ export type Handler = (e: SyntheticEvent) => void;
  *
  * ============================================================================
  */
-export abstract class EventTarget<
-  T extends keyof IGraphicalElementProperties
-> extends GraphicsModel<T> {
+export class EventTargets implements IEvent {
   /**
    * Internal handler storage.
    *
@@ -158,7 +147,7 @@ export abstract class EventTarget<
    * @param type Event type
    * @returns Handler or undefined
    */
-  public getHandler(type: SupportedEvents): Handler | undefined {
+  public getEventHandler(type: SupportedEvents): Handler | undefined {
     return this.#handlers.get(type);
   }
 
@@ -167,7 +156,7 @@ export abstract class EventTarget<
    *
    * Useful for fast path skipping in dispatcher.
    */
-  public hasHandler(type: SupportedEvents): boolean {
+  public hasEventHandler(type: SupportedEvents): boolean {
     return this.#handlers.has(type);
   }
 }
