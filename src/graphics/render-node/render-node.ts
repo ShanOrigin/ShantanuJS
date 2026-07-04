@@ -31,6 +31,9 @@ import type {
 } from '../../models/types/common';
 
 import type { ComponentsRegistry } from '../../models/types/components';
+import type { IAnimationOptions } from '../../models/types/animation/options';
+import type { IAnimation } from '../../models/interfaces/animation';
+import type { Handler, SupportedEvents } from '../../models/interfaces/event';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -81,9 +84,9 @@ import {
 } from '../../utils/math/matrix/matrix-multiplication.js';
 
 import { Transformation } from '../../components/transformation/transformation.js';
-import { IAnimationOptions } from '../../models/types/animation/options';
-import { IAnimation } from '../../models/interfaces/animation';
-import { Animation } from '../../components/animation/animation';
+import { Animation } from '../../components/animation/animation.js';
+import { EventTargets } from '../../components/event/event-target.js';
+
 export abstract class RenderNode<T extends ValidGraphicsShapes>
   extends GraphicsModel<T>
   implements IRenderNode<T>
@@ -1353,18 +1356,29 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     component: 'transformation' | 'animation' | 'event' | 'filter'
   ) {
     if (!this.#components?.[component]) {
-      if (component === 'transformation') {
-        this.#components[component] = new Transformation(
-          this as GraphicsNodeWithInternalAccessMethods
-        );
-      } else if (component === 'animation') {
-        this.#components[component] = new Animation(
-          this as GraphicsRenderNodeWithInternals,
-          this.#parentAnimationStatus.bind(this),
-          () => {
-            this.#isAnimation = false;
-          }
-        );
+      switch (component) {
+        case 'transformation': {
+          this.#components[component] = new Transformation(
+            this as GraphicsNodeWithInternalAccessMethods
+          );
+          break;
+        }
+        case 'animation': {
+          this.#components[component] = new Animation(
+            this as GraphicsNodeWithInternalAccessMethods,
+            this.#parentAnimationStatus.bind(this),
+            () => {
+              this.#isAnimation = false;
+            }
+          );
+
+          break;
+        }
+        case 'event': {
+          this.#components[component] = new EventTargets();
+
+          break;
+        }
       }
     }
   }
@@ -1785,5 +1799,75 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     assertAccess(accessKey);
 
     this.#isAnimation && this.#components.animation.update(time);
+  }
+
+  /**
+   * Registers an event handler.
+   *
+   * Multiple handlers may be registered for the same event.
+   *
+   * @param event The event to subscribe to.
+   * @param callback The handler to invoke when the event is dispatched.
+   */
+  public on(event: SupportedEvents, callback: Handler) {
+    this.#initOrGetComponent('event');
+    this.#components.event.on(event, callback);
+  }
+
+  /**
+   * Removes event handlers associated with an event.
+   *
+   * If `callback` is provided, only that handler is removed.
+   * Otherwise, all handlers registered for the event are removed.
+   *
+   * @param event The event to unsubscribe from.
+   * @param callback Optional handler to remove.
+   */
+  public off(event: SupportedEvents) {
+    this.#initOrGetComponent('event');
+    this.#components.event.off(event);
+  }
+
+  /**
+   * Registers an event handler that is invoked at most once.
+   *
+   * After the first invocation, the handler is automatically removed.
+   *
+   * @param event The event to subscribe to.
+   * @param callback The handler to invoke once.
+   */
+  public once(event: SupportedEvents, callback: Handler) {
+    this.#initOrGetComponent('event');
+    this.#components.event.once(event, callback);
+  }
+
+  /**
+   * Returns handler for given event type.
+   *
+   * IMPORTANT:
+   * - Intended ONLY for EventSystem usage
+   * - Not part of public contract
+   *
+   * @param type Event type
+   * @returns Handler or undefined
+   *
+   */
+
+  public getEventHandler(type: SupportedEvents): Handler | void {
+    this.#initOrGetComponent('event');
+    const handler = this.#components.event.getEventHandler(type);
+
+    if (handler) return handler;
+    return;
+  }
+
+  /**
+   * Checks whether a handler exists for given event type.
+   *
+   * Useful for fast path skipping in dispatcher.
+   */
+  public hasEventHandler(type: SupportedEvents): boolean {
+    this.#initOrGetComponent('event');
+    return this.#components.event.hasEventHandler(type);
   }
 }
