@@ -28,6 +28,7 @@ import type {
   GraphicsNode,
   IGraphicsContainer
 } from '../../models/interfaces/graphics-container';
+import type { GraphicsRenderNode } from '../../models/interfaces/render-node';
 import type { IRenderer } from '../../models/interfaces/renderer';
 
 /* -------------------------------------------------------------------------- */
@@ -286,10 +287,6 @@ export class Canvas implements IGraphicsContainer, ICanvas {
       SYSTEM_INTERNAL_ACCESS_KEY
     );
 
-    const resolveZOrder = this.#sceneModel[GET_SCENE_Z_ORDER_RESOLVER_METHOD](
-      SYSTEM_INTERNAL_ACCESS_KEY
-    );
-
     const elementIdMap = this.#sceneModel[GET_SCENE_ELEMENT_ID_MAP_METHOD](
       SYSTEM_INTERNAL_ACCESS_KEY
     );
@@ -308,7 +305,10 @@ export class Canvas implements IGraphicsContainer, ICanvas {
     // Initialize Event System
     // =========================================================
 
-    this.#eventSystem = new EventSystem(canvasElements, elementIdMap);
+    this.#eventSystem = new EventSystem(
+      canvasElements as GraphicsRenderNode[],
+      elementIdMap as Map<string, GraphicsRenderNode>
+    );
 
     // =========================================================
     // Bind DOM Interaction Events
@@ -341,7 +341,10 @@ export class Canvas implements IGraphicsContainer, ICanvas {
     // =========================================================
 
     const host = document.getElementById(id);
-    console.log('canvas id ', id, host);
+
+    if (__DEV__) {
+      Log('canvas id ', id, host);
+    }
     if (!host) {
       throw new CanvasParentNotFoundError(id, 'Canvas.#mountToDOM()');
     }
