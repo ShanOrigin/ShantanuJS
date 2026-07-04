@@ -1,14 +1,8 @@
-import { SyntheticEvent, EventPhase } from './syntheticEvent.js';
+import { SyntheticEvent, EventPhase } from './synthetic-event.js';
 
-import type { IGraphicalElementProperties } from '../../properties/specific/specificProperties';
-import type { GraphicsEntity } from '../../shapes/graphicsEntity/graphicsEntity';
-import type { GraphicsModel } from '../provider/graphics';
-import type { SupportedEvents } from './eventTarget';
-import { Log, Warn } from '../../utils/helpers/helpers.js';
-import { hitTestShape } from './hitTestShape.js';
-
-type SupportedShapes = GraphicsModel<keyof IGraphicalElementProperties>;
-type Shape = GraphicsEntity<keyof IGraphicalElementProperties>;
+import type { GraphicsRenderNode } from '../../models/interfaces/render-node';
+import type { SupportedEvents } from '../../models/interfaces/event';
+//import { hitTestShape } from './hitTestShape.js';
 
 /**
  * ============================================================================
@@ -37,12 +31,12 @@ type Shape = GraphicsEntity<keyof IGraphicalElementProperties>;
  * ============================================================================
  */
 export class EventSystem {
-  #shapes!: SupportedShapes[];
-  #elementsIdMap!: Map<string, SupportedShapes>;
+  #shapes!: GraphicsRenderNode[];
+  #elementsIdMap!: Map<string, GraphicsRenderNode>;
 
   constructor(
-    shapes: SupportedShapes[],
-    elementsIdMap: Map<string, SupportedShapes>
+    shapes: GraphicsRenderNode[],
+    elementsIdMap: Map<string, GraphicsRenderNode>
   ) {
     this.#shapes = shapes;
     this.#elementsIdMap = elementsIdMap;
@@ -210,28 +204,26 @@ export class EventSystem {
    * - Precise hit testing guarantees correctness
    */
   #hitTest(
-    elements: SupportedShapes[],
+    elements: GraphicsRenderNode[],
     x: number,
     y: number
-  ): SupportedShapes | null {
-    let best: SupportedShapes | null = null;
+  ): GraphicsRenderNode | null {
+    let best: GraphicsRenderNode | null = null;
     let bestZ = -Infinity;
 
     for (let i = 0, len = elements.length; i < len; i++) {
-      const el = elements[i] as Shape;
+      const el = elements[i] as GraphicsRenderNode;
 
       // ------------------------------------------------------------
       // STEP 1: Broad-phase → AABB rejection
       // ------------------------------------------------------------
-      const box = el.getBBox(true);
-      if (!box) continue;
 
-      if (!this.#aabbContains(x, y, box)) continue;
+      if (!this.#aabbContains(x, y, el.geometry.bounds)) continue;
 
       // ------------------------------------------------------------
       // STEP 2: Narrow-phase → precise geometry hit test
       // ------------------------------------------------------------
-      if (!hitTestShape(el, x, y)) continue;
+      //  if (!hitTestShape(el, x, y)) continue;
 
       // ------------------------------------------------------------
       // STEP 3: Depth resolution → z-index
@@ -256,19 +248,14 @@ export class EventSystem {
    *
    * @param x Pointer X (canvas-local)
    * @param y Pointer Y (canvas-local)
-   * @param box Axis-aligned bounding box
+   * @param bounds Bounds of Shape
    */
   #aabbContains(
     x: number,
     y: number,
-    box: { x: number; y: number; width: number; height: number }
+    bounds: Float32Array // [minX , minY , maxX , maxY]
   ): boolean {
-    return (
-      x >= box.x &&
-      x <= box.x + box.width &&
-      y >= box.y &&
-      y <= box.y + box.height
-    );
+    return x >= bounds[0] && x <= bounds[2] && y >= bounds[1] && y <= bounds[3];
   }
 
   // ========================================================================
@@ -288,12 +275,12 @@ export class EventSystem {
    * - Uses single map for O(1) lookup
    * - Avoids repeated scans
    */
-  #buildPath(target: SupportedShapes): SupportedShapes[] {
+  #buildPath(target: GraphicsRenderNode): GraphicsRenderNode[] {
     const map = this.#elementsIdMap;
 
-    const path: SupportedShapes[] = [];
+    const path: GraphicsRenderNode[] = [];
 
-    let current: SupportedShapes | null = target;
+    let current: GraphicsRenderNode | null = target;
 
     while (current) {
       path.push(current);
@@ -324,8 +311,10 @@ export class EventSystem {
    * true  → stop propagation
    * false → continue
    */
-  #invoke(node: SupportedShapes, event: SyntheticEvent): boolean {
-    const handler = (node as Shape).getHandler(event.type as SupportedEvents);
+  #invoke(node: GraphicsRenderNode, event: SyntheticEvent): boolean {
+    const handler = (node as GraphicsRenderNode).getEventHandler(
+      event.type as SupportedEvents
+    );
     if (!handler) return false;
 
     handler(event);
