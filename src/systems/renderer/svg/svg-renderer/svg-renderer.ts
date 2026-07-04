@@ -7,23 +7,18 @@ import {
   GET_INTERNAL_GRAPHICS_METHOD,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  CLEAR_Z_ORDER_OPERATION_METHOD,
-  GET_Z_ORDER_OPERATION_METHOD,
-  SET_PARENT_METHOD,
-  GET_PARENT_METHOD,
   SET_INTERNAL_GRAPHICS_METHOD
 } from '../../../../internal/keys/dev-keys.js';
 
 import {
-  assertSystemAccess,
   GET_PENDING_CREATION_ELEMENTS_METHOD,
   COMMIT_PENDING_CREATION_METHOD,
   GET_PENDING_DELETION_ELEMENTS_METHOD,
   COMMIT_PENDING_DELETION_METHOD,
-  GET_SCENE_ELEMENTS_METHOD,
-  GET_SCENE_Z_ORDER_RESOLVER_METHOD,
   SYSTEM_INTERNAL_ACCESS_KEY
 } from '../../../../internal/keys/system-keys.js';
+
+import { GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD } from '../../../../internal/keys/render-node-keys.js';
 
 /* -------------------------------------------------------------------------- */
 /*                             Interface Contracts                             */
@@ -31,7 +26,6 @@ import {
 
 import type {
   GraphicsNode,
-  IGraphicsContainer,
   GetInternalGraphicsAccessor,
   SetInternalGraphicsAccessor,
   GetParentAccessor,
@@ -71,8 +65,7 @@ import {
 
 import { createSVGElement, SVGSOURCE, removeFrom } from '../core/core.js';
 import { SceneModel } from '../../../scene/scene-model.js';
-import { Log, RenderPhase } from '../../../../utils/helpers/helpers.js';
-import { GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD } from '../../../../internal/keys/render-node-keys.js';
+import { RenderPhase } from '../../../../utils/helpers/helpers.js';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
