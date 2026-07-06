@@ -89,7 +89,8 @@ import type {
 } from '../../models/types/animation/motion';
 import type {
   AdvancedAnimationOptions,
-  IAnimationOptions
+  IAnimationOptions,
+  UpdateAnimationReturnType
 } from '../../models/types/animation/options';
 import type { TransformStack } from '../../models/types/common';
 import type {
@@ -1656,12 +1657,12 @@ export class Animation implements IAnimation {
 
    */
 
-  public update = (currentTime: number) => {
+  public update = (currentTime: number): UpdateAnimationReturnType => {
     /**
      * Abort update if animation is not currently active.
      * This prevents unnecessary computation.
      */
-    if (!this.#animationState) return;
+    if (!this.#animationState) return null;
 
     /**
      * ---------------------------------------------------------
@@ -1673,7 +1674,7 @@ export class Animation implements IAnimation {
      */
     if (this.#lastTime === null) {
       this.#lastTime = currentTime;
-      return;
+      return null;
     }
 
     /**
