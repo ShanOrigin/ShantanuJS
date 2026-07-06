@@ -42,3 +42,8 @@ export interface IAnimationOptions<
   /** Starts the animation immediately if true. */
   start?: boolean;
 }
+
+export type UpdateAnimationReturnType = Record<
+  string,
+  string | number | Float32Array
+> | null;

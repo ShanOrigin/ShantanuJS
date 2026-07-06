@@ -1,5 +1,8 @@
 import type { EasingFunction, EasingType } from '../types/animation/easing';
-import type { IAnimationOptions } from '../types/animation/options';
+import type {
+  IAnimationOptions,
+  UpdateAnimationReturnType
+} from '../types/animation/options';
 
 /**
  * Common animation controller interface.
@@ -28,7 +31,7 @@ export interface IAnimation {
    *
    * @param currentTime Current timestamp in milliseconds.
    */
-  update(currentTime: number): void;
+  update(currentTime: number): UpdateAnimationReturnType;
 
   /**
    * Configures and optionally starts an animation.
