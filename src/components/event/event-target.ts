@@ -155,8 +155,14 @@ export class EventTargets implements IEvent {
    * Checks whether a handler exists for given event type.
    *
    * Useful for fast path skipping in dispatcher.
+   * IMPORTANT:
+   *  - if event type it returns that specific event available or not
+   *  - if event type not given it returns any event available or not
+   *
+   * @param type : optional ,  Event type
+   * @returns Handler
    */
-  public hasEventHandler(type: SupportedEvents): boolean {
-    return this.#handlers.has(type);
+  public hasEventHandler(type?: SupportedEvents): boolean {
+    return !type ? this.#handlers.size > 0 : this.#handlers.has(type);
   }
 }
