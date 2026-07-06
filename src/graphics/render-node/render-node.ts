@@ -31,7 +31,10 @@ import type {
 } from '../../models/types/common';
 
 import type { ComponentsRegistry } from '../../models/types/components';
-import type { IAnimationOptions } from '../../models/types/animation/options';
+import type {
+  IAnimationOptions,
+  UpdateAnimationReturnType
+} from '../../models/types/animation/options';
 import type { IAnimation } from '../../models/interfaces/animation';
 import type { Handler, SupportedEvents } from '../../models/interfaces/event';
 
@@ -1263,10 +1266,6 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
         childLocalMatrix,
         childWorldMatrix
       );
-
-      if (childGeometry.shape == 'rect') {
-        Log('worldMatrix', JSON.stringify(childWorldMatrix));
-      }
     }
   }
 
@@ -1755,6 +1754,10 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
   // Animation Section
   //++++++++++++++++++++++++++++++++++++++++++++
 
+  public isAnimation(): boolean {
+    return this.#isAnimation;
+  }
+
   #parentAnimationStatus(changeAnimationStatus: boolean = false): boolean {
     if (changeAnimationStatus) this.#isAnimation = !this.#isAnimation;
     return this.#isAnimation;
@@ -1795,11 +1798,18 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
   /**
    * updateAnimation
    */
-  [UPDATE_ANIMATION_METHOD](time: number, accessKey: symbol) {
+  [UPDATE_ANIMATION_METHOD](
+    time: number,
+    accessKey: symbol
+  ): UpdateAnimationReturnType {
     assertAccess(accessKey);
 
-    this.#isAnimation && this.#components.animation.update(time);
+    return this.#components.animation.update(time) as UpdateAnimationReturnType;
   }
+
+  //++++++++++++++++++++++++++++++++++++++++++++
+  // Event Section
+  //++++++++++++++++++++++++++++++++++++++++++++
 
   /**
    * Registers an event handler.
@@ -1866,7 +1876,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    *
    * Useful for fast path skipping in dispatcher.
    */
-  public hasEventHandler(type: SupportedEvents): boolean {
+  public hasEventHandler(type?: SupportedEvents): boolean {
     this.#initOrGetComponent('event');
     return this.#components.event.hasEventHandler(type);
   }
