@@ -102,6 +102,15 @@ export class EventSystem {
   dispatch(el: HTMLElement, nativeEvent: PointerEvent): void {
     const elements = this.#shapes;
 
+    let hasAnyEvent = false;
+    for (let i = 0; i < elements.length; i++) {
+      const shape = elements[i];
+      if (shape.hasEventHandler()) {
+        hasAnyEvent = true;
+        break;
+      }
+    }
+    if (!hasAnyEvent) return;
     // ----------------------------------------------------------------------
     // STEP 1: Normalize pointer coordinates (viewport → canvas space)
     // ----------------------------------------------------------------------
