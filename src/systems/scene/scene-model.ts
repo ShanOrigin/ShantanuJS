@@ -590,9 +590,7 @@ export class SceneModel
       }
     }
 
-    Log(' scene elements = ', this.#sceneElements);
     this.#pendingCreationElements.length = 0;
-    Log(this.#pendingCreationElements);
   }
 
   public add(...rest: GraphicsNode[]): this {
