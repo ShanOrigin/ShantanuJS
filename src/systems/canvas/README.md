@@ -1,371 +1,542 @@
+# Canvas
 
+## Overview
 
-# 🚀 Canvas — Core Rendering Container
+`Canvas` is the root orchestration container of the rendering system.
 
----
+It acts as the central coordination layer responsible for:
 
-## 🔥 Overview
+- Scene graph ownership
+- Rendering backend initialization
+- Rendering engine lifecycle coordination
+- Event dispatch integration
+- Graphical entity management
+- Structural scene synchronization
 
-**Canvas** is the **root scene container** and **execution controller** of the rendering system.
-
-It is responsible for:
-
-- Managing all shapes (`iShape`)
-- Maintaining **O(1)** structural operations
-- Synchronizing **data → DOM → rendering**
-- Driving the **rendering engine lifecycle**
-- Enforcing strict **state invariants**
-
-> ⚠️ This is **NOT** a simple wrapper.  
-> It is a **low-level rendering core** designed for performance and control.
+The class does **not directly manage rendering logic internally**.  
+Instead, it coordinates specialized subsystems responsible for isolated domains.
 
 ---
 
-## 🧠 Architecture
+# Architectural Role
 
-Canvas operates on **three layers of truth**:
+`Canvas` sits at the top of the runtime rendering pipeline.
 
-### 1. 🧱 Structural Layer (**Authoritative**)
-- `#canvasElements: iShape[]`
-- `#elementIndexMap: Map<iShape, number>`
 
-> This is the **ONLY trusted source of truth**
+Canvas
+ ├── SceneModel
+ ├── Renderer
+ ├── Engine
+ └── EventSystem
 
----
-
-### 2. 🧩 Semantic Layer (**Derived**)
-- `shape.style`
-- `shape.geometry`
 
 ---
 
-### 3. 🎨 Rendering Layer (**Projection**)
-- DOM / SVG nodes
-- `#fig` (root element)
+Core Responsibilities
+
+1. Scene Management
+
+The canvas owns the root scene graph structure through SceneModel.
+
+Responsibilities include:
+
+Adding graphical entities
+
+Removing graphical entities
+
+Structural membership management
+
+Element lookup coordination
+
+Z-order synchronization
+
+
 
 ---
 
-### 🔁 Flow
+2. Rendering Coordination
 
-Mutation → Structure → Semantic Sync → DOM Projection → Engine Render
+The canvas initializes and coordinates the rendering backend.
 
----
+Supported rendering targets may include:
 
-## ⚡ Performance Model
+SVG
 
-| Operation | Complexity |
-|----------|-----------|
-| `addTo()` | O(1) |
-| `remove()` | O(1) |
-| `contain()` | O(1) |
-| `clear()` | O(n) |
+Canvas2D
 
-> ⚠️ **Trade-off:**  
-> Removal uses **swap-pop** → **order is NOT preserved**
+Future rendering backends
+
+
+The rendering backend itself is abstracted behind the Renderer layer.
+
 
 ---
 
-## 🏗️ Core Features
+3. Engine Lifecycle Integration
 
-- ⚡ **O(1) insertion & removal**
-- 🧠 **Index map-based lookup**
-- 🔄 **Automatic DOM synchronization**
-- 🎯 **Strict invariant enforcement**
-- 🧩 **Renderer abstraction**
-- ⚙️ **Engine-driven execution**
+Canvas initializes and manages the rendering execution engine.
+
+The engine is responsible for:
+
+Render scheduling
+
+Frame lifecycle management
+
+Dirty state propagation
+
+Render synchronization
+
+
 
 ---
 
-## 🧪 Initialization
+4. Event Dispatch Integration
 
-```ts
-const canvas = new Canvas(
-  'container-id', // DOM element id
-  800,            // width
-  600             // height
+Canvas acts as the only DOM interaction boundary in the system.
+
+Responsibilities include:
+
+Native DOM event binding
+
+Pointer event forwarding
+
+Synthetic event dispatch delegation
+
+
+Graphical entities themselves remain completely DOM-independent.
+
+
+---
+
+Internal Architecture
+
+SceneModel
+
+Responsible for:
+
+Structural scene state
+
+Element collections
+
+Element lookup maps
+
+Scene membership management
+
+Z-order state
+
+
+The SceneModel intentionally does not own:
+
+Renderer
+
+Engine
+
+EventSystem
+
+
+This separation preserves architectural isolation between:
+
+Structural state
+
+Runtime execution
+
+Rendering logic
+
+Interaction systems
+
+
+
+---
+
+Renderer
+
+Responsible for converting logical graphical entities into backend-specific drawable primitives.
+
+Examples:
+
+SVG elements
+
+Canvas draw operations
+
+Future GPU primitives
+
+
+
+---
+
+Engine
+
+Responsible for runtime rendering execution.
+
+Responsibilities:
+
+Render scheduling
+
+Update propagation
+
+Rendering lifecycle coordination
+
+Render synchronization
+
+
+
+---
+
+EventSystem
+
+Responsible for synthetic interaction dispatching.
+
+Responsibilities:
+
+Hit testing
+
+Event target resolution
+
+Propagation path construction
+
+Capture/bubble execution
+
+
+
+---
+
+Internal Access Model
+
+The canvas communicates with SceneModel through:
+
+Symbol-keyed computed methods
+
+Capability-token validation
+
+
+Example:
+
+sceneModel[GET_CANVAS_ELEMENTS_METHOD](
+  SYSTEM_INTERNAL_ACCESS_KEY
 );
 
+This architecture provides:
 
----
+Strong encapsulation boundaries
 
-📦 Core Methods
+Controlled privileged access
 
+Internal subsystem isolation
 
----
-
-➕ addTo(...shapes: iShape[]): this
-
-Adds shapes to the canvas.
-
-✔ Behavior:
-
-Validates shape is not already attached
-
-Creates DOM node (SVG)
-
-Updates structure (array + map)
-
-Assigns ownership + context
-
-
-⚠️ Notes:
-
-Skips invalid or duplicate shapes
-
-O(1) insertion
+Reduced accidental state corruption
 
 
 
 ---
 
-➖ remove(...shapes: iShape[]): this
+Initialization Flow
 
-Removes shapes using swap-pop strategy
+Canvas
+   ↓
+SceneModel creation
+   ↓
+Renderer initialization
+   ↓
+Engine creation
+   ↓
+EventSystem creation
+   ↓
+DOM event binding
+   ↓
+Engine startup
 
-✔ Behavior:
 
-Removes DOM node
+---
 
-Updates structure in O(1)
+Constructor
 
-Cleans ownership and context
+Signature
+
+constructor(props: {
+  id: string;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
+  context: GRAPHICS_CONTEXT;
+})
 
 
-⚠️ Notes:
+---
 
-Order is NOT preserved
+Constructor Responsibilities
 
-Safe against duplicate removals
+The constructor performs:
 
-Handles group recursion
+Structural Initialization
+
+Creates internal SceneModel
+
+
+Rendering Initialization
+
+Resolves rendering backend
+
+Initializes renderer instance
+
+
+Engine Initialization
+
+Creates runtime rendering engine
+
+Connects scene collections and resolver systems
+
+
+Event System Initialization
+
+Creates centralized event dispatcher
+
+
+DOM Integration
+
+Binds native pointer/mouse events
+
+
+Runtime Startup
+
+Starts rendering engine lifecycle
 
 
 
 ---
 
-🧹 clear(): this
+Public API
 
-Removes all shapes efficiently
 
-✔ Behavior:
+---
 
-Bulk DOM cleanup
+add(...shapes)
 
-Clears array + map in O(1)
+Adds one or more graphical entities into the canvas scene graph.
 
-Avoids repeated remove() overhead
+Responsibilities
+
+Registers entities
+
+Enables rendering participation
+
+Establishes scene ownership
+
+
+Returns
+
+this
+
+
+---
+
+remove(...targets)
+
+Removes one or more graphical entities from the scene graph.
+
+Responsibilities
+
+Removes scene membership
+
+Removes rendering participation
+
+Clears ownership links
+
+
+Returns
+
+this
+
+
+---
+
+contains(shape)
+
+Checks whether a graphical entity exists within the canvas scene graph.
+
+Return Semantics
+
+Value	Meaning
+
+0	Entity does not exist
+1	Entity exists
+
+
+Design Note
+
+This method intentionally uses lightweight numeric containment semantics.
+
+
+---
+
+clear()
+
+Removes all graphical entities from the scene graph.
+
+Responsibilities
+
+Clears scene membership
+
+Clears rendering participation
+
+Resets scene structure
+
+
+Returns
+
+this
+
+
+---
+
+getAllElements()
+
+Returns all registered graphical entities.
+
+Returns
+
+GraphicsNode[]
+
+
+---
+
+attrs(props)
+
+Unified attribute getter/setter interface delegated to SceneModel.
+
+Supports:
+
+Getter access
+
+Setter access
+
+Multi-property retrieval
 
 
 
 ---
 
-🔍 contain(shape: iShape): number
+Event Flow
 
-Checks if shape exists in canvas.
+DOM Event
+   ↓
+Canvas
+   ↓
+EventSystem
+   ↓
+Synthetic Event Dispatch
+   ↓
+Graphical Entity Handlers
 
-✔ Returns:
 
-index + 1 → if present
+---
 
-0 → if not present
+Design Characteristics
+
+Declarative Scene Interaction
+
+Graphical entities interact through declarative APIs rather than direct renderer manipulation.
 
 
-⚡ Complexity:
+---
 
-O(1)
+Strict Layer Separation
+
+The architecture separates:
+
+Layer	Responsibility
+
+Canvas	Orchestration
+SceneModel	Structural State
+Renderer	Rendering Backend
+Engine	Runtime Execution
+EventSystem	Interaction Dispatch
 
 
 
 ---
 
-📄 getAllElements(): iShape[]
+Controlled Internal Access
 
-Returns a safe snapshot of all shapes.
+Internal mutable state is protected through:
 
-✔ Behavior:
+Capability-token validation
 
-Returns a shallow copy
+Symbol-keyed access methods
 
-Prevents external mutation
-
-
-
----
-
-🎛️ attrs(props)
-
-Sets or retrieves canvas attributes.
-
-✔ Supports:
-
-Object → set attributes
-
-String → get attributes
-
-
-✔ Updates:
-
-Geometry (width, height, x, y)
-
-Style (stroke, fill, etc.)
-
-DOM synchronization
+Encapsulation boundaries
 
 
 
 ---
 
-▶️ start()
+DOM Independence
 
-Starts the rendering engine.
+Graphical entities remain independent from DOM APIs.
 
-
----
-
-⏹️ stop()
-
-Stops the rendering engine.
+Only Canvas interacts directly with native browser events.
 
 
 ---
 
-⚡ flush()
+Limitations
 
-Forces immediate rendering cycle.
+Runtime Coupling
 
+Canvas still coordinates multiple subsystems directly.
 
----
+Future architectures may introduce:
 
-🎨 Rendering Context
+Dependency injection
 
-Currently supported:
+Centralized runtime containers
 
-✅ SVG
-
-
-Planned:
-
-⏳ HTML Canvas
-
-
-
-> ⚠️ Context is immutable after initialization
-
+Modular subsystem registration
 
 
 
 ---
 
-🧬 Internal Invariants
+Proxy/Access Overhead
 
-Canvas enforces strict guarantees:
+Internal capability-based access introduces:
 
-✅ Structural Integrity
+Additional indirection
 
-elements[index] === shape
-indexMap.get(shape) === index
+Symbol-key resolution overhead
 
-
----
-
-✅ Single Ownership
-
-A shape belongs to only ONE container
+Runtime access validation
 
 
 
 ---
 
-✅ No Partial Mutation
+Single Root Ownership
 
-All operations are atomic
+Current architecture assumes:
 
+One root scene container
 
-
----
-
-✅ DOM Sync
-
-No orphan DOM nodes
-
-No detached shapes with active DOM
+One engine ownership chain per canvas
 
 
 
 ---
 
-🧪 DEV Mode (__DEV__)
+Final Characterization
 
-Canvas uses:
+Canvas represents:
 
-if (__DEV__) { ... }
-
-✔ Purpose:
-
-Invariant validation
-
-Debug warnings
-
-
-⚠️ Requirements:
-
-Must be initialized via env.global.ts
-
-
----
-
-🧠 Design Philosophy
-
-Canvas is built for:
-
-Performance first
-
-Deterministic behavior
-
-Explicit control
-
-Minimal abstraction overhead
+> A root orchestration container coordinating scene state, rendering systems, runtime execution, and synthetic interaction flow.
 
 
 
----
+It acts as the primary integration point between:
 
-⚖️ Trade-offs
+Structural scene management
 
-Gain	Cost
+Rendering execution
 
-O(1) operations	No stable order
-High performance	Less safety abstraction
-Direct control	More responsibility
+Runtime coordination
 
-
-
----
-
-🧪 Example Usage
-
-const canvas = new Canvas('root', 800, 600);
-
-canvas.addTo(shape1, shape2);
-
-canvas.remove(shape1);
-
-canvas.start();
-canvas.flush();
-canvas.stop();
-
-canvas.clear();
-
-
----
-
-🚀 Final Thought
-
-If you misuse Canvas as a simple container,
-you lose its power.
-
-If you respect its invariants,
-you get a rendering engine-level system.
-
-
----
+Interaction dispatch systems
