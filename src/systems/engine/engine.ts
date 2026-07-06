@@ -20,7 +20,8 @@ import type {
 import type { IRenderNode } from '../../models/interfaces/render-node';
 import type {
   InternalUpdateTransformMethodAccessor,
-  InternalRestoreDimensionMethodAccessor
+  InternalRestoreDimensionMethodAccessor,
+  InternalUpdateAnimationMethodAccessor
 } from '../../models/types/render-node';
 
 import type { TransformStack } from '../../models/types/common';
@@ -52,7 +53,8 @@ import {
 
 import {
   UPDATE_TRANSFORM_METHOD,
-  RESTORE_DIMENSION_METHOD
+  RESTORE_DIMENSION_METHOD,
+  UPDATE_ANIMATION_METHOD
 } from '../../internal/keys/render-node-keys.js';
 import {
   affineMatrixMultiply,
@@ -72,7 +74,8 @@ type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   GetSceneElementIdMapAccessor &
   GetSceneZOrderResolverAccessor &
   InternalUpdateTransformMethodAccessor &
-  InternalRestoreDimensionMethodAccessor;
+  InternalRestoreDimensionMethodAccessor &
+  InternalUpdateAnimationMethodAccessor;
 /**
  * Core engine responsible for orchestrating the rendering lifecycle.
  *
@@ -622,6 +625,7 @@ export class Engine implements IEngine {
    */
 
   #frame(time: number) {
+    if (__DEV__) Log(' running engine ... ');
     // --------------------------------------------------
     // STEP 0
     // Resolve structural ordering
@@ -698,31 +702,32 @@ export class Engine implements IEngine {
 
         // return current state of animation like activeor not
         const base = geo.transformStack.stack[0];
-        /*
-        if (shape.isAnimationsGoingOn(false)) {
-          const ani = shape.updateAnimation(DEV_INTERNAL_ACCESS_KEY, time) as {
+
+        if (shape.isAnimation()) {
+          const animationFrameData = shape[UPDATE_ANIMATION_METHOD](
+            time,
+            DEV_INTERNAL_ACCESS_KEY
+          ) as {
             animationMatrix: Float32Array;
             [key: string]: string | number | Float32Array;
           } | null;
 
-          if (ani) {
-            const { animationMatrix, ...style } = ani;
+          if (animationFrameData) {
+            const { animationMatrix, ...style } = animationFrameData;
 
             // finalLocal = base × animation
 
-            affineMatrixMultiply(base, animationMatrix, localMatrix);
+            affineMatrixMultiply(base, animationMatrix, geo.localMatrix);
 
             if (style) shape.attrs(style);
-            if (__DEV__) Log('animation matrix');
+            if (__DEV__) Log(' setting animation matrix');
           }
         } else {
           geo.localMatrix.set(base);
-          if (__DEV__) Log('set local to base');
         }
-*/
 
         // delete after adding animation
-        geo.localMatrix.set(base);
+        //geo.localMatrix.set(base);
         const tempState = applyTransformToHomogeneousBuffer(base, geo.buffer);
 
         shape[RESTORE_DIMENSION_METHOD](DEV_INTERNAL_ACCESS_KEY, tempState);
