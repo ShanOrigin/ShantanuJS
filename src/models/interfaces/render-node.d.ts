@@ -19,13 +19,15 @@ import type {
 } from '../types/graphics-model';
 import type { IGraphicsModel } from './graphics-model';
 import type { ValidGraphicsShapes } from '../types/graphics-model';
-import { IAnimationOptions } from '../types/animation/options';
-import { IAnimation } from './animation';
+import type { IAnimationOptions } from '../types/animation/options';
+import type { IAnimation } from './animation';
+import type { BboxProps } from '../types/geometry/types';
 
 export interface IRenderNode<T extends ValidGraphicsShapes>
   extends IGraphicsModel<T> {
   attrs(props: AttrsMethodPropsTypes<T> | string): AttrsMethodReturnTypes;
 
+  getBBox(includeStroke?: boolean): BboxProps;
   /*
    * --------------------------------------------------------------------------
    * TRANSFORMATION CONVENIENCE API
@@ -51,6 +53,7 @@ export interface IRenderNode<T extends ValidGraphicsShapes>
    * --------------------------------------------------------------------------
    */
 
+  isAnimation(): boolean;
   animate(props: IAnimationOptions<T>): void;
   animation(
     props: IAnimationOptions<T>
@@ -112,7 +115,7 @@ export interface IRenderNode<T extends ValidGraphicsShapes>
    *
    * Useful for fast path skipping in dispatcher.
    */
-  hasEventHandler(type: SupportedEvents): boolean;
+  hasEventHandler(type?: SupportedEvents): boolean;
 
   /*
    * --------------------------------------------------------------------------
@@ -132,13 +135,7 @@ export interface IRenderNode<T extends ValidGraphicsShapes>
     radialGradient(...args: any[]): any;
   };
 
-  event: {
-    on(...args: any[]): any;
 
-    off(...args: any[]): any;
-
-    once(...args: any[]): any;
-  };
 	*/
 }
 
