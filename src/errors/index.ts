@@ -30,6 +30,8 @@ import { InvalidRenderingContextError } from './domains/backend/invalid-renderin
 import { ReadOnlyPropertyError } from './domains/common/read-only-property-error.js';
 import { InvalidRenderableShapeError } from './domains/engine/invalid-renderable-shape-error.js';
 import { UnauthorizedInternalAccessError } from './domains/security/unauthorized-internal-access-error.js';
+import { InvalidGroupMethodAccessError } from './domains/group/invalid-group-access-error.js';
+import { ShapeNotAttachedToGroupError } from './domains/group/shape-not-attached-to-group-error.js';
 //import {  } from "./domains/";
 
 export {
@@ -56,5 +58,7 @@ export {
   InvalidRenderingContextError,
   ReadOnlyPropertyError,
   InvalidRenderableShapeError,
-  UnauthorizedInternalAccessError
+  UnauthorizedInternalAccessError,
+  InvalidGroupMethodAccessError,
+  ShapeNotAttachedToGroupError
 };
