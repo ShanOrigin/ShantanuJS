@@ -75,5 +75,5 @@ export interface IEvent {
    *
    * Useful for fast path skipping in dispatcher.
    */
-  hasEventHandler(type: SupportedEvents): boolean;
+  hasEventHandler(type?: SupportedEvents): boolean;
 }
