@@ -32,6 +32,7 @@ import { InvalidRenderableShapeError } from './domains/engine/invalid-renderable
 import { UnauthorizedInternalAccessError } from './domains/security/unauthorized-internal-access-error.js';
 import { InvalidGroupMethodAccessError } from './domains/group/invalid-group-access-error.js';
 import { ShapeNotAttachedToGroupError } from './domains/group/shape-not-attached-to-group-error.js';
+import { DuplicateFilterError } from './domains/filter/duplicate-filter-error.js';
 //import {  } from "./domains/";
 
 export {
@@ -60,5 +61,6 @@ export {
   InvalidRenderableShapeError,
   UnauthorizedInternalAccessError,
   InvalidGroupMethodAccessError,
-  ShapeNotAttachedToGroupError
+  ShapeNotAttachedToGroupError,
+  DuplicateFilterError
 };
