@@ -1,239 +1,237 @@
-import {
-  boxShadowProps,
-  linearGradientProps,
-  radialGradientProps
-} from '../../../types/filters';
+import type {
+  IFilter,
+  FilterRecord,
+  IBrightnessFilter,
+  IGlowFilter,
+  IShadowFilter,
+  ILinearGradientFilter,
+  IRadialGradientFilter
+} from '../../models/interfaces/filters';
 
-import { svgBoxShadow } from './svg/boxShadow.js';
-
-import { svgBlur } from './svg/blur.js';
-import { svgGlow } from './svg/glow.js';
-
-import { svgLinearGradient } from './svg/linearGradient.js';
-import { svgRadialGradient } from './svg/radialGradient.js';
-
-import { Warn } from '../../helpers/helpers.js';
-import { addTo, SVG_CONTEXT } from '../../../core/provider/svgSpecific.js';
-import { type GraphicsModel } from '../../../core/provider/graphics.js';
-import { type IGraphicalElementProperties } from '../../../properties/provider/shapeProperties.js';
-import { DEV_INTERNAL_ACCESS } from '../../internals/accessKeys.js';
-
-interface svgFilterType {
-  id: string;
-  filter: SVGElement;
-}
-
-type ResourceRecord = {
-  type: 'filter' | 'gradient';
-  prev?: {
-    filter?: string | null;
-    fill?: string | null;
-    stroke?: string | null;
-  };
-};
+import { DuplicateFilterError } from '../../errors/index.js';
 
 /**
- * Context-aware filter manager responsible for creating, attaching,
- * and removing visual effects tied to a GraphicsModel instance.
+ * Manages the collection of graphical filters applied to a renderable object.
  *
- * Maintains an internal registry to track:
- * - resource type (filter / gradient)
- * - previous rendering state for safe restoration
+ * Each filter is uniquely identified by a user-provided identifier, allowing it
+ * to be added, replaced, queried, or removed independently without affecting
+ * other filters.
  *
- * Ensures deterministic creation, application, and deletion
- * without leaking renderer responsibilities.
+ * Filter definitions are stored internally in insertion order using a
+ * {@link Map}. This preserves the order in which filters were added, which may
+ * be significant for rendering backends where filter evaluation is sequential.
+ *
+ * Every filter method automatically merges user-provided values with its
+ * corresponding default values before storing the final configuration.
+ *
+ * This class is backend-independent and only represents filter definitions.
+ * Individual rendering systems (SVG, Canvas, WebGL, etc.) are responsible for
+ * translating these definitions into backend-specific implementations.
+ *
+ * @implements {IFilter}
  */
-export class Filter {
-  #shape!: GraphicsModel<keyof IGraphicalElementProperties>;
-
-  // Central registry
-  #registry = new Map<string, ResourceRecord>();
-
-  constructor(shape: GraphicsModel<keyof IGraphicalElementProperties>) {
-    this.#shape = shape;
-  }
-
+export class Filters implements IFilter {
   /**
-   * Appends definition into SVG <defs>.
-   */
-  #addFilterToDefs(filter: SVGElement) {
-    if (this.#shape.geometry?.context === SVG_CONTEXT) {
-      const pt = this.#shape.getIFig(DEV_INTERNAL_ACCESS)
-        .ownerSVGElement as SVGSVGElement | null;
-
-      if (!pt) return;
-
-      const defs = pt.querySelector('defs') as SVGDefsElement | null;
-      if (!defs) {
-        Warn('No <defs> element found in SVG — cannot append filter.');
-        return;
-      }
-
-      addTo(defs, filter);
-    }
-  }
-
-  /**
-   * Capture previous state before applying new effect.
-   */
-  #captureState(): {
-    filter?: string | null;
-    fill?: string | null;
-    stroke?: string | null;
-  } {
-    const el = this.#shape;
-
-    return {
-      filter: el.style?.filter,
-      fill: el.style?.fill,
-      stroke: el.style?.stroke
-    };
-  }
-
-  /**
-   * Applies Gaussian blur filter.
-   */
-  public blur(blurStrength: number): string {
-    let id = '';
-
-    if (this.#shape.geometry?.context === SVG_CONTEXT) {
-      const prev = this.#captureState();
-
-      const result = svgBlur(blurStrength) as svgFilterType;
-      id = result.id;
-
-      this.#addFilterToDefs(result.filter);
-
-      this.#registry.set(id, {
-        type: 'filter',
-        prev
-      });
-    }
-
-    return id;
-  }
-
-  /**
-   * Applies glow effect.
-   */
-  public glow(bright: number): string {
-    let id = '';
-
-    if (this.#shape.geometry?.context === SVG_CONTEXT) {
-      const prev = this.#captureState();
-
-      const result = svgGlow(bright) as svgFilterType;
-      id = result.id;
-
-      this.#addFilterToDefs(result.filter);
-
-      this.#registry.set(id, {
-        type: 'filter',
-        prev
-      });
-    }
-
-    return id;
-  }
-
-  /**
-   * Applies box shadow.
-   */
-  public boxShadow(props: boxShadowProps): string {
-    let id = '';
-
-    if (this.#shape.geometry?.context === SVG_CONTEXT) {
-      const prev = this.#captureState();
-
-      const result = svgBoxShadow(props) as svgFilterType;
-      id = result.id;
-
-      this.#addFilterToDefs(result.filter);
-
-      this.#registry.set(id, {
-        type: 'filter',
-        prev
-      });
-    }
-
-    return id;
-  }
-
-  /**
-   * Creates linear gradient.
-   */
-  public linearGradient(
-    props: linearGradientProps = { direction: 'LR', stops: [] }
-  ): string {
-    let id = '';
-
-    if (this.#shape.geometry?.context === SVG_CONTEXT) {
-      const prev = this.#captureState();
-
-      const result = svgLinearGradient(props) as svgFilterType;
-      id = result.id;
-
-      this.#addFilterToDefs(result.filter);
-
-      this.#registry.set(id, {
-        type: 'gradient',
-        prev
-      });
-    }
-
-    return id;
-  }
-
-  /**
-   * Creates radial gradient.
-   */
-  public radialGradient(
-    props: radialGradientProps = { direction: 'CENTER', stops: [] }
-  ): string {
-    let id = '';
-
-    if (this.#shape.geometry?.context === SVG_CONTEXT) {
-      const prev = this.#captureState();
-
-      const result = svgRadialGradient(props) as svgFilterType;
-      id = result.id;
-
-      this.#addFilterToDefs(result.filter);
-
-      this.#registry.set(id, {
-        type: 'gradient',
-        prev
-      });
-    }
-
-    return id;
-  }
-
-  /**
-   * Deletes filter/gradient and restores previous state.
+   * Internal collection of filter definitions.
    *
-   * @param id - Resource id.
-   * @returns Restored properties.
+   * The map key represents the unique filter identifier supplied by the user,
+   * while the value contains the complete filter configuration.
+   *
+   * Insertion order is preserved.
    */
-  public deleteFilter(id: string): ResourceRecord['prev'] {
-    const record = this.#registry.get(id);
-    if (!record) return {};
+  #filters = new Map<string, FilterRecord>();
 
-    const result = record.prev;
-
-    if (this.#shape.geometry?.context === SVG_CONTEXT) {
-      const el = this.#shape.getIFig(DEV_INTERNAL_ACCESS);
-      const svg = el.ownerSVGElement as SVGSVGElement | null;
-
-      if (svg) {
-        const defs = svg.querySelector('defs');
-        const target = defs?.querySelector(`#${id}`);
-        target && defs!.removeChild(target);
-      }
+  #preChecks(id: string, src: string) {
+    if (this.hasFilter(id)) {
+      throw new DuplicateFilterError(
+        id,
+        String(this.#filters.get(id)?.type),
+        src
+      );
     }
+  }
+  /**
+   * Creates or replaces a brightness filter.
+   *
+   * If a filter with the same identifier already exists, it is replaced by
+   * the newly supplied configuration.
+   *
+   * Default values:
+   * - amount = 1
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Brightness filter configuration.
+   */
+  brightness(id: string, props: IBrightnessFilter = {}): void {
+    this.#preChecks(id, 'brightness');
 
-    this.#registry.delete(id);
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'brightness',
+      props: {
+        amount: 1,
+        ...props
+      }
+    });
+  }
 
-    return result;
+  /**
+   * Creates or replaces a glow filter.
+   *
+   * Default values:
+   * - color = "#000000"
+   * - blur = 8
+   * - strength = 1
+   * - opacity = 1
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Glow filter configuration.
+   */
+  glow(id: string, props: IGlowFilter = {}): void {
+    this.#preChecks(id, 'glow');
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'glow',
+      props: {
+        color: '#000000',
+        blur: 8,
+        strength: 1,
+        opacity: 1,
+        ...props
+      }
+    });
+  }
+
+  /**
+   * Creates or replaces a shadow filter.
+   *
+   * Default values:
+   * - offsetX = 0
+   * - offsetY = 4
+   * - blur = 6
+   * - color = "#000000"
+   * - opacity = 0.5
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Shadow filter configuration.
+   */
+  shadow(id: string, props: IShadowFilter = {}): void {
+    this.#preChecks(id, ' shadow');
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'shadow',
+      props: {
+        offsetX: 0,
+        offsetY: 4,
+        blur: 6,
+        color: '#000000',
+        opacity: 0.5,
+        ...props
+      }
+    });
+  }
+  /**
+   * Creates or replaces a linear gradient definition.
+   *
+   * Default values:
+   * - x1 = 0
+   * - y1 = 0
+   * - x2 = 1
+   * - y2 = 0
+   *
+   * Gradient stops must be supplied by the caller.
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Linear gradient configuration.
+   */
+  linearGradient(id: string, props: ILinearGradientFilter): void {
+    this.#preChecks(id, 'linearGradient');
+
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'linearGradient',
+      props: {
+        x1: 0,
+        y1: 0,
+        x2: 1,
+        y2: 0,
+        ...props
+      }
+    });
+  }
+  /**
+   * Creates or replaces a radial gradient definition.
+   *
+   * Default values:
+   * - cx = 0.5
+   * - cy = 0.5
+   * - r = 0.5
+   * - fx = cx
+   * - fy = cy
+   *
+   * Gradient stops must be supplied by the caller.
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Radial gradient configuration.
+   */
+  radialGradient(id: string, props: IRadialGradientFilter): void {
+    this.#preChecks(id, 'radialGradient');
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'radialGradient',
+      props: {
+        cx: 0.5,
+        cy: 0.5,
+        r: 0.5,
+        fx: props.fx ?? props.cx ?? 0.5,
+        fy: props.fy ?? props.cy ?? 0.5,
+        ...props
+      }
+    });
+  }
+
+  /**
+   * Removes a filter from the collection.
+   *
+   * If no filter exists with the supplied identifier, this method performs
+   * no operation.
+   *
+   * @param id Identifier of the filter to remove.
+   */
+  public removeFilter(id: string): void {
+    if (!this.hasFilter(id)) return;
+
+    this.#filters.delete(id);
+  }
+
+  /**
+   * Removes every registered filter.
+   *
+   * After calling this method, the collection becomes empty.
+   */
+  public clearFilters(): void {
+    this.#filters.clear();
+  }
+
+  /**
+   * Determines whether a filter exists.
+   *
+   * @param id Identifier of the filter.
+   *
+   * @returns `true` if a filter with the supplied identifier exists;
+   * otherwise `false`.
+   */
+  public hasFilter(id: string): boolean {
+    return this.#filters.has(id);
+  }
+  /**
+   * Returns the complete collection of registered filters.
+   *
+   * The returned map preserves insertion order.
+   *
+   * @returns A read-only view of all registered filters.
+   */
+  public getAllFilters(): ReadonlyMap<string, FilterRecord> {
+    return this.#filters;
   }
 }
