@@ -11,3 +11,9 @@ export type ComponentsRegistry = {
   filter: IFilter;
   event: IEvent;
 };
+
+export type InitOrGetComponentsReturnType =
+  | IAnimation
+  | IEvent
+  | IFilter
+  | ITransformation;
