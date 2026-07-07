@@ -30,12 +30,16 @@ import type {
   AttrsMethodReturnTypes
 } from '../../models/types/common';
 
-import type { ComponentsRegistry } from '../../models/types/components';
+import type { IAnimation } from '../../models/interfaces/animation';
+import type {
+  ComponentsRegistry,
+  InitOrGetComponentsReturnType
+} from '../../models/types/components';
 import type {
   IAnimationOptions,
   UpdateAnimationReturnType
 } from '../../models/types/animation/options';
-import type { IAnimation } from '../../models/interfaces/animation';
+
 import type { Handler, SupportedEvents } from '../../models/interfaces/event';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
@@ -89,6 +93,15 @@ import {
 import { Transformation } from '../../components/transformation/transformation.js';
 import { Animation } from '../../components/animation/animation.js';
 import { EventTargets } from '../../components/event/event-target.js';
+import { Filters } from '../../components/filter/filters';
+import {
+  FilterRecord,
+  IBrightnessFilter,
+  IGlowFilter,
+  ILinearGradientFilter,
+  IRadialGradientFilter,
+  IShadowFilter
+} from '../../models/interfaces/filters';
 
 export abstract class RenderNode<T extends ValidGraphicsShapes>
   extends GraphicsModel<T>
@@ -1353,13 +1366,14 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
 
   #initOrGetComponent(
     component: 'transformation' | 'animation' | 'event' | 'filter'
-  ) {
+  ): InitOrGetComponentsReturnType {
     if (!this.#components?.[component]) {
       switch (component) {
         case 'transformation': {
           this.#components[component] = new Transformation(
             this as GraphicsNodeWithInternalAccessMethods
           );
+
           break;
         }
         case 'animation': {
@@ -1378,8 +1392,13 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
 
           break;
         }
+
+        case 'filter': {
+          this.#components[component] = new Filters();
+        }
       }
     }
+    return this.#components[component];
   }
 
   // start batching of the transformations and accumulate all mattresses internally
@@ -1879,5 +1898,145 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
   public hasEventHandler(type?: SupportedEvents): boolean {
     this.#initOrGetComponent('event');
     return this.#components.event.hasEventHandler(type);
+  }
+
+  //++++++++++++++++++++++++++++++++++++++++++++
+  // Event Section
+  //++++++++++++++++++++++++++++++++++++++++++++
+
+  /**
+   * Creates or replaces a brightness filter.
+   *
+   * If a filter with the same identifier already exists, it is replaced by
+   * the newly supplied configuration.
+   *
+   * Default values:
+   * - amount = 1
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Brightness filter configuration.
+   */
+  brightness(id: string, props: IBrightnessFilter = {}): void {
+    this.#initOrGetComponent('filter');
+    this.#components.filter.brightness(id, props);
+  }
+
+  /**
+   * Creates or replaces a glow filter.
+   *
+   * Default values:
+   * - color = "#000000"
+   * - blur = 8
+   * - strength = 1
+   * - opacity = 1
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Glow filter configuration.
+   */
+  glow(id: string, props: IGlowFilter = {}): void {
+    this.#initOrGetComponent('filter');
+    this.#components.filter.glow(id, props);
+  }
+
+  /**
+   * Creates or replaces a shadow filter.
+   *
+   * Default values:
+   * - offsetX = 0
+   * - offsetY = 4
+   * - blur = 6
+   * - color = "#000000"
+   * - opacity = 0.5
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Shadow filter configuration.
+   */
+  shadow(id: string, props: IShadowFilter = {}): void {
+    this.#initOrGetComponent('filter');
+    this.#components.filter.shadow(id, props);
+  }
+  /**
+   * Creates or replaces a linear gradient definition.
+   *
+   * Default values:
+   * - x1 = 0
+   * - y1 = 0
+   * - x2 = 1
+   * - y2 = 0
+   *
+   * Gradient stops must be supplied by the caller.
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Linear gradient configuration.
+   */
+  linearGradient(id: string, props: ILinearGradientFilter): void {
+    this.#initOrGetComponent('filter');
+    this.#components.filter.linearGradient(id, props);
+  }
+  /**
+   * Creates or replaces a radial gradient definition.
+   *
+   * Default values:
+   * - cx = 0.5
+   * - cy = 0.5
+   * - r = 0.5
+   * - fx = cx
+   * - fy = cy
+   *
+   * Gradient stops must be supplied by the caller.
+   *
+   * @param id Unique identifier for the filter.
+   * @param props Radial gradient configuration.
+   */
+  radialGradient(id: string, props: IRadialGradientFilter): void {
+    this.#initOrGetComponent('filter');
+    this.#components.filter.radialGradient(id, props);
+  }
+
+  /**
+   * Removes a filter from the collection.
+   *
+   * If no filter exists with the supplied identifier, this method performs
+   * no operation.
+   *
+   * @param id Identifier of the filter to remove.
+   */
+  public removeFilter(id: string): void {
+    this.#initOrGetComponent('filter');
+    this.#components.filter.removeFilter(id);
+  }
+
+  /**
+   * Removes every registered filter.
+   *
+   * After calling this method, the collection becomes empty.
+   */
+  public clearFilters(): void {
+    this.#initOrGetComponent('filter');
+    this.#components.filter.clearFilters();
+  }
+
+  /**
+   * Determines whether a filter exists.
+   *
+   * @param id Identifier of the filter.
+   *
+   * @returns `true` if a filter with the supplied identifier exists;
+   * otherwise `false`.
+   */
+  public hasFilter(id: string): boolean {
+    this.#initOrGetComponent('filter');
+    return this.#components.filter.hasFilter(id);
+  }
+  /**
+   * Returns the complete collection of registered filters.
+   *
+   * The returned map preserves insertion order.
+   *
+   * @returns A read-only view of all registered filters.
+   */
+  public getAllFilters(): ReadonlyMap<string, FilterRecord> {
+    this.#initOrGetComponent('filter');
+    return this.#components.filter.getAllFilters();
   }
 }
