@@ -66,6 +66,12 @@ import {
 import { createSVGElement, SVGSOURCE, removeFrom } from '../core/core.js';
 import { SceneModel } from '../../../scene/scene-model.js';
 import { RenderPhase } from '../../../../utils/helpers/helpers.js';
+import {
+  FilterRecord,
+  IGlowFilter
+} from '../../../../models/interfaces/filters.js';
+import { SVGFilters } from '../filters/svg-filters.js';
+import { GraphicsRenderNode } from '../../../../models/interfaces/render-node.js';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -808,6 +814,8 @@ export class SVGRenderer implements IRenderer {
     const infrastructure = this.#sceneInfrastructure.get(this.#scene);
 
     if (!infrastructure) return;
+
+    const resourceHost = infrastructure.resourceHost as SVGDefsElement;
     // Iterate through all shapes in the render stack
 
     for (let index = 0; index < shapesStack.length; index++) {
@@ -902,6 +910,10 @@ export class SVGRenderer implements IRenderer {
       }
 			*/
 
+      const rShape = shape as unknown as GraphicsRenderNode;
+      if (rShape.filters.hasFilter()) {
+        this.#processFilters(rShape, resourceHost);
+      }
       const renderUpdateType = geoRef.renderUpdateType;
       if (renderUpdateType === 'TRANSFORM') {
         const styleCache = this.#getOrInitStyleCache(figRef);
@@ -1453,5 +1465,147 @@ export class SVGRenderer implements IRenderer {
       }
     }
     geoRef.renderUpdateType = 'TRANSFORM';
+  }
+
+  //===================================
+  // Filters Section
+  //===================================
+
+  /**
+   * Cache of initialized SVG filter definitions.
+   *
+   * Each entry maps a unique filter identifier to its corresponding SVG
+   * `<filter>` element. Once created, filter definitions are reused instead
+   * of being recreated on every render pass.
+   *
+   * A cached filter should only be removed when it is no longer referenced
+   * by any graphical object.
+   */
+  #filtersCache = new Map<string, SVGFilterElement>();
+
+  /**
+   * Tracks the set of filter identifiers currently associated with each
+   * graphical object during the previous render pass.
+   *
+   * This cache allows the renderer to efficiently determine:
+   * - Newly added filters.
+   * - Removed filters.
+   * - Unchanged filters.
+   *
+   * A {@link WeakMap} is used so that entries are automatically eligible
+   * for garbage collection when their corresponding graphical objects are
+   * destroyed.
+   */
+  #shapeFiltersCache = new WeakMap<GraphicsRenderNode, Set<string>>();
+
+  #initializeFilter(
+    filterId: string,
+    filterData: FilterRecord
+  ): SVGFilterElement {
+    let filter!: SVGFilterElement;
+    const fType = filterData.type;
+
+    switch (fType) {
+      case 'blur': {
+        filter = SVGFilters.blur(filterId, filterData.props.radius);
+        break;
+      }
+      case 'contrast': {
+        filter = SVGFilters.contrast(filterId, filterData.props.amount);
+        break;
+      }
+
+      case 'saturate': {
+        filter = SVGFilters.saturate(filterId, filterData.props.amount);
+        break;
+      }
+      case 'grayscale': {
+        filter = SVGFilters.grayscale(filterId, filterData.props.amount);
+        break;
+      }
+
+      case 'hueRotate': {
+        filter = SVGFilters.hueRotate(filterId, filterData.props.angle);
+        break;
+      }
+
+      case 'glow': {
+        filter = SVGFilters.glow(filterId, filterData.props);
+        break;
+      }
+
+      case 'shadow': {
+        filter = SVGFilters.shadow(filterId, filterData.props);
+        break;
+      }
+    }
+
+    return filter;
+  }
+
+  /**
+   * Synchronizes the filter definitions associated with the specified
+   * graphical object.
+   *
+   * This method compares the filters currently registered on the graphical
+   * object with those processed during the previous render pass.
+   *
+   * During synchronization it will:
+   *
+   * - Remove SVG filter definitions that are no longer present.
+   * - Create SVG filter definitions for newly added filters.
+   * - Reuse previously initialized filter definitions whenever possible.
+   * - Update the renderer's internal filter caches.
+   *
+   * @param node Graphical object whose filters should be synchronized.
+   */
+  #processFilters(node: GraphicsRenderNode, resourceHost: SVGDefsElement) {
+    const currentFilters = node.filters.getAllFilters();
+
+    /**
+     * Filter identifiers currently registered on the graphical object.
+     */
+    const currentIds = new Set(currentFilters.keys());
+
+    /**
+     * Filter identifiers processed during the previous render pass.
+     */
+    const previousIds = this.#shapeFiltersCache.get(node) ?? new Set<string>();
+
+    // ---------------------------------------------------------------------
+    // Remove deleted filters.
+    // ---------------------------------------------------------------------
+
+    for (const filterId of previousIds) {
+      if (currentIds.has(filterId)) continue;
+
+      const filterElement = this.#filtersCache.get(filterId);
+
+      if (filterElement) {
+        filterElement.remove();
+
+        this.#filtersCache.delete(filterId);
+      }
+    }
+
+    // ---------------------------------------------------------------------
+    // Create newly added filters.
+    // ---------------------------------------------------------------------
+
+    for (const [filterId, filterData] of currentFilters) {
+      if (this.#filtersCache.has(filterId)) continue;
+
+      const filterElement = this.#initializeFilter(filterId, filterData);
+
+      resourceHost.appendChild(filterElement);
+
+      this.#filtersCache.set(filterId, filterElement);
+    }
+
+    // ---------------------------------------------------------------------
+    // Store the current filter state for the next render pass.
+    // ---------------------------------------------------------------------
+
+    this.#shapeFiltersCache.set(node, currentIds);
   }
 }
