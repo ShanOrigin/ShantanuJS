@@ -1,4 +1,3 @@
-import type { ValidGraphicsShapes } from '../../models/types/graphics-model';
 import type {
   GraphicsRenderNode,
   IRenderNode
@@ -22,7 +21,8 @@ import type {
 import type {
   InternalGeometryAccessor,
   InternalStyleAccessor,
-  InternalComputedStyleAccessor
+  InternalComputedStyleAccessor,
+  ValidGraphicsShapes
 } from '../../models/types/graphics-model';
 import type {
   TransformStack,
@@ -40,7 +40,11 @@ import type {
   UpdateAnimationReturnType
 } from '../../models/types/animation/options';
 
-import type { Handler, SupportedEvents } from '../../models/interfaces/event';
+import type {
+  Handler,
+  IEvent,
+  SupportedEvents
+} from '../../models/interfaces/event';
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -97,6 +101,7 @@ import { Filters } from '../../components/filter/filters';
 import {
   FilterRecord,
   IBrightnessFilter,
+  IFilter,
   IGlowFilter,
   ILinearGradientFilter,
   IRadialGradientFilter,
@@ -187,7 +192,17 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     hasCanvasSelectable: false
   };
 
+  /**
+   * Runtime component registry.
+   *
+   * Stores lazily initialized components associated with this graphical object.
+   * Components are created on demand and cached for the lifetime of the object.
+   *
+   * This registry is intended for internal engine use and should never be
+   * accessed directly by consumers of the public API.
+   */
   #components = {} as ComponentsRegistry;
+
   /**
    * Constructs a new GraphicsEntity instance.
    *
@@ -1053,6 +1068,25 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     return { x, y, width, height, matrix };
   }
 
+  /**
+   * Synchronizes all transformation-dependent geometry before a query.
+   *
+   * This method lazily resolves any pending transformation updates to
+   * ensure that subsequent geometry queries operate on the latest state.
+   *
+   * The synchronization process performs the following steps:
+   * - Resolves the local transformation matrix.
+   * - Propagates and resolves world transformations through the scene graph.
+   * - Marks the pending render update as a transform update.
+   * - Applies the resolved world transformation to the shape's canonical
+   *   geometry buffer.
+   * - Restores the shape's geometric dimensions from the transformed
+   *   temporary state.
+   *
+   * This method is intended for internal use and is invoked only when a
+   * geometry query requires an up-to-date transformed representation of
+   * the shape.
+   */
   #lazyQuerySynchronization() {
     this.#resolveLocalMatrix();
     this.#resolveWorldRecursive(this as GraphicsNodeWithInternalAccessMethods);
@@ -1062,9 +1096,10 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     const worldMatrix = this.#geometry!.worldMatrix as Float32Array;
     const tempState = applyTransformToHomogeneousBuffer(worldMatrix, buffer);
 
-    // restore dimension of shape
+    // Restore the shape's dimensions from the transformed geometry.
     this.restoreDimension(DEV_INTERNAL_ACCESS_KEY, tempState);
   }
+
   /**
    * Recursively resolves world state (transform + inherited style) for a shape.
    *
@@ -1215,13 +1250,27 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     }
   }
 
+  /**
+   * Resolves the graphics object's local transformation matrix.
+   *
+   * This method composes all transformations currently stored in the
+   * transformation stack into a single affine matrix and stores the
+   * result as the object's local transformation matrix.
+   *
+   * The computed matrix represents only the object's local
+   * transformations and does not include any transformations inherited
+   * from ancestor objects. World transformation resolution is performed
+   * separately.
+   *
+   * This method is intended for internal engine use during the
+   * transformation update phase.
+   */
   #resolveLocalMatrix() {
     const geo = this.#geometry as {
       transformStack: TransformStack;
     };
 
-    // compose ONLY local transforms
-
+    // Compose only local transformations.
     const affineComposedMatrix = composeAffineTransformations(
       geo.transformStack,
       true
@@ -1231,6 +1280,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
 
     localMatrix.set(affineComposedMatrix, 0);
   }
+
   /**
    * Computes world matrix for a shape.
    *
@@ -1364,6 +1414,22 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     this.#initOrGetComponent('transformation');
   }
 
+  /**
+   * Lazily initializes and returns a graphics component.
+   *
+   * Components are created only on first access and subsequently reused
+   * for the lifetime of the graphics object.
+   *
+   * Supported components include:
+   * - `transformation` – Transformation operations and batching.
+   * - `animation` – Animation controller.
+   * - `event` – Event registration and management.
+   * - `filter` – Filter management.
+   *
+   * @param component Component identifier.
+   * @returns The requested component instance.
+   */
+
   #initOrGetComponent(
     component: 'transformation' | 'animation' | 'event' | 'filter'
   ): InitOrGetComponentsReturnType {
@@ -1401,14 +1467,35 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     return this.#components[component];
   }
 
-  // start batching of the transformations and accumulate all mattresses internally
+  /**
+   * Begins a transformation batch.
+   *
+   * While batching is active, transformation operations are accumulated
+   * internally instead of being applied immediately. The combined
+   * transformation is applied when {@link endT} is invoked.
+   *
+   * Batching is useful when multiple transformations need to be composed
+   * into a single matrix to avoid intermediate updates.
+   *
+   * @returns The current graphics object for method chaining.
+   */
+
   public beginT(): this {
     this.#preTransformChecks();
     this.#components.transformation.beginT();
     return this;
   }
 
-  // stop the batching of the transformations and apply that combined a matrix to the shape
+  /**
+   * Ends the current transformation batch and applies the accumulated
+   * transformation matrix.
+   *
+   * All transformations recorded since {@link beginT} are combined into a
+   * single matrix and applied to the graphics object. If no batch is
+   * active, the behavior is determined by the transformation component.
+   *
+   * @returns The current graphics object for method chaining.
+   */
   public endT(): this {
     this.#preTransformChecks();
     this.#components.transformation.endT();
@@ -1769,18 +1856,75 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     return this;
   }
 
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Animation Section
-  //++++++++++++++++++++++++++++++++++++++++++++
+  // * ============================================================================
+  // * ANIMATION SECTION
+  // * ============================================================================
 
+  /**
+   * Indicates whether this graphics object currently has an active
+   * animation associated with it.
+   *
+   * This state is maintained internally by the animation component and
+   * is primarily used by the engine to determine whether the object
+   * should participate in animation updates.
+   *
+   * @returns `true` if the object is currently animated; otherwise `false`.
+   */
   public isAnimation(): boolean {
     return this.#isAnimation;
   }
 
+  /**
+   * Returns the current animation state and optionally toggles it.
+   *
+   * This method serves as an internal communication bridge between the
+   * graphics object and its animation component. When requested, it
+   * updates the animation state before returning the latest value.
+   *
+   * @param changeAnimationStatus When `true`, toggles the current
+   * animation state before returning it.
+   * @returns The current animation state.
+   */
   #parentAnimationStatus(changeAnimationStatus: boolean = false): boolean {
     if (changeAnimationStatus) this.#isAnimation = !this.#isAnimation;
     return this.#isAnimation;
   }
+
+  /**
+   * Starts an animation on this graphics object.
+   *
+   * This is the simplest way to animate a shape. The animation is
+   * configured using the supplied options and starts immediately.
+   * Once started, control is managed internally and no animation
+   * controller is returned.
+   *
+   * If an animation is already active on this object, the request is
+   * ignored and a warning is emitted.
+   *
+   * The animation configuration object may include:
+   * - Animatable geometry properties.
+   * - Animatable style properties.
+   * - Animation duration.
+   * - Easing function or easing name.
+   * - Advanced animation options.
+   * - Completion callback.
+   * - Any other supported animation configuration.
+   *
+   * The `start` option is managed internally and is always enabled by
+   * this method.
+   *
+   * @param animatableProps Animation configuration.
+   *
+   * Supported options include:
+   * - `attrs`
+   * - `duration`
+   * - `ease`
+   * - `advanceOptions`
+   * - `onComplete`
+   *
+   * See {@link IAnimationOptions} for the complete configuration.
+   *
+   */
 
   public animate(animatableProps: IAnimationOptions<T>) {
     if (this.#isAnimation) {
@@ -1795,6 +1939,44 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     animatableProps.start = true;
     this.#components.animation.animate(animatableProps);
   }
+
+  /**
+   * Starts an animation and returns its controller.
+   *
+   * Unlike {@link animate}, this method exposes the underlying animation
+   * controller, allowing the caller to interact with the running
+   * animation after it has been created.
+   *
+   * If an animation is already active on this object, no new animation
+   * is started. Instead, the existing animation controller is returned
+   * and a warning is emitted.
+   *
+   * The animation configuration object may include:
+   * - Animatable geometry properties.
+   * - Animatable style properties.
+   * - Animation duration.
+   * - Easing function or easing name.
+   * - Advanced animation options.
+   * - Completion callback.
+   * - Any other supported animation configuration.
+   *
+   * The `start` option is managed internally and is always enabled by
+   * this method.
+   *
+   * @param animatableProps Animation configuration.
+   *
+   * Supported options include:
+   * - `attrs`
+   * - `duration`
+   * - `ease`
+   * - `advanceOptions`
+   * - `onComplete`
+   *
+   * See {@link IAnimationOptions} for the complete configuration.
+   *
+   * @returns The animation controller associated with this graphics
+   * object.
+   */
 
   public animation(
     animatableProps: IAnimationOptions<T>
@@ -1826,217 +2008,41 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     return this.#components.animation.update(time) as UpdateAnimationReturnType;
   }
 
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Event Section
-  //++++++++++++++++++++++++++++++++++++++++++++
+  // * ============================================================================
+  // * EVENTS SECTION
+  // * ============================================================================
 
   /**
-   * Registers an event handler.
+   * Provides access to the event management component.
    *
-   * Multiple handlers may be registered for the same event.
+   * The component is created automatically on first access if it has not
+   * already been initialized. Subsequent accesses return the same instance.
    *
-   * @param event The event to subscribe to.
-   * @param callback The handler to invoke when the event is dispatched.
+   * This property exposes the public event API used to register, remove,
+   * and manage event listeners for this graphical object.
+   *
+   * @returns The event component associated with this object.
    */
-  public on(event: SupportedEvents, callback: Handler) {
-    this.#initOrGetComponent('event');
-    this.#components.event.on(event, callback);
+  public get events(): IEvent {
+    return this.#initOrGetComponent('event') as IEvent;
   }
 
-  /**
-   * Removes event handlers associated with an event.
-   *
-   * If `callback` is provided, only that handler is removed.
-   * Otherwise, all handlers registered for the event are removed.
-   *
-   * @param event The event to unsubscribe from.
-   * @param callback Optional handler to remove.
-   */
-  public off(event: SupportedEvents) {
-    this.#initOrGetComponent('event');
-    this.#components.event.off(event);
-  }
+  // * ============================================================================
+  // * FILTERS SECTION
+  // * ============================================================================
 
   /**
-   * Registers an event handler that is invoked at most once.
+   * Provides access to the filter management component.
    *
-   * After the first invocation, the handler is automatically removed.
+   * The component is created automatically on first access if it has not
+   * already been initialized. Subsequent accesses return the same instance.
    *
-   * @param event The event to subscribe to.
-   * @param callback The handler to invoke once.
+   * This property exposes the public filter API used to create, update,
+   * query, and remove graphical filters associated with this object.
+   *
+   * @returns The filter component associated with this object.
    */
-  public once(event: SupportedEvents, callback: Handler) {
-    this.#initOrGetComponent('event');
-    this.#components.event.once(event, callback);
-  }
-
-  /**
-   * Returns handler for given event type.
-   *
-   * IMPORTANT:
-   * - Intended ONLY for EventSystem usage
-   * - Not part of public contract
-   *
-   * @param type Event type
-   * @returns Handler or undefined
-   *
-   */
-
-  public getEventHandler(type: SupportedEvents): Handler | void {
-    this.#initOrGetComponent('event');
-    const handler = this.#components.event.getEventHandler(type);
-
-    if (handler) return handler;
-    return;
-  }
-
-  /**
-   * Checks whether a handler exists for given event type.
-   *
-   * Useful for fast path skipping in dispatcher.
-   */
-  public hasEventHandler(type?: SupportedEvents): boolean {
-    this.#initOrGetComponent('event');
-    return this.#components.event.hasEventHandler(type);
-  }
-
-  //++++++++++++++++++++++++++++++++++++++++++++
-  // Event Section
-  //++++++++++++++++++++++++++++++++++++++++++++
-
-  /**
-   * Creates or replaces a brightness filter.
-   *
-   * If a filter with the same identifier already exists, it is replaced by
-   * the newly supplied configuration.
-   *
-   * Default values:
-   * - amount = 1
-   *
-   * @param id Unique identifier for the filter.
-   * @param props Brightness filter configuration.
-   */
-  brightness(id: string, props: IBrightnessFilter = {}): void {
-    this.#initOrGetComponent('filter');
-    this.#components.filter.brightness(id, props);
-  }
-
-  /**
-   * Creates or replaces a glow filter.
-   *
-   * Default values:
-   * - color = "#000000"
-   * - blur = 8
-   * - strength = 1
-   * - opacity = 1
-   *
-   * @param id Unique identifier for the filter.
-   * @param props Glow filter configuration.
-   */
-  glow(id: string, props: IGlowFilter = {}): void {
-    this.#initOrGetComponent('filter');
-    this.#components.filter.glow(id, props);
-  }
-
-  /**
-   * Creates or replaces a shadow filter.
-   *
-   * Default values:
-   * - offsetX = 0
-   * - offsetY = 4
-   * - blur = 6
-   * - color = "#000000"
-   * - opacity = 0.5
-   *
-   * @param id Unique identifier for the filter.
-   * @param props Shadow filter configuration.
-   */
-  shadow(id: string, props: IShadowFilter = {}): void {
-    this.#initOrGetComponent('filter');
-    this.#components.filter.shadow(id, props);
-  }
-  /**
-   * Creates or replaces a linear gradient definition.
-   *
-   * Default values:
-   * - x1 = 0
-   * - y1 = 0
-   * - x2 = 1
-   * - y2 = 0
-   *
-   * Gradient stops must be supplied by the caller.
-   *
-   * @param id Unique identifier for the filter.
-   * @param props Linear gradient configuration.
-   */
-  linearGradient(id: string, props: ILinearGradientFilter): void {
-    this.#initOrGetComponent('filter');
-    this.#components.filter.linearGradient(id, props);
-  }
-  /**
-   * Creates or replaces a radial gradient definition.
-   *
-   * Default values:
-   * - cx = 0.5
-   * - cy = 0.5
-   * - r = 0.5
-   * - fx = cx
-   * - fy = cy
-   *
-   * Gradient stops must be supplied by the caller.
-   *
-   * @param id Unique identifier for the filter.
-   * @param props Radial gradient configuration.
-   */
-  radialGradient(id: string, props: IRadialGradientFilter): void {
-    this.#initOrGetComponent('filter');
-    this.#components.filter.radialGradient(id, props);
-  }
-
-  /**
-   * Removes a filter from the collection.
-   *
-   * If no filter exists with the supplied identifier, this method performs
-   * no operation.
-   *
-   * @param id Identifier of the filter to remove.
-   */
-  public removeFilter(id: string): void {
-    this.#initOrGetComponent('filter');
-    this.#components.filter.removeFilter(id);
-  }
-
-  /**
-   * Removes every registered filter.
-   *
-   * After calling this method, the collection becomes empty.
-   */
-  public clearFilters(): void {
-    this.#initOrGetComponent('filter');
-    this.#components.filter.clearFilters();
-  }
-
-  /**
-   * Determines whether a filter exists.
-   *
-   * @param id Identifier of the filter.
-   *
-   * @returns `true` if a filter with the supplied identifier exists;
-   * otherwise `false`.
-   */
-  public hasFilter(id: string): boolean {
-    this.#initOrGetComponent('filter');
-    return this.#components.filter.hasFilter(id);
-  }
-  /**
-   * Returns the complete collection of registered filters.
-   *
-   * The returned map preserves insertion order.
-   *
-   * @returns A read-only view of all registered filters.
-   */
-  public getAllFilters(): ReadonlyMap<string, FilterRecord> {
-    this.#initOrGetComponent('filter');
-    return this.#components.filter.getAllFilters();
+  public get filters(): IFilter {
+    return this.#initOrGetComponent('filter') as IFilter;
   }
 }
