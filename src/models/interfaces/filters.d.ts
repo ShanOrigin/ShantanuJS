@@ -10,7 +10,7 @@ export interface IBrightnessFilter {
    *
    * @default 1
    */
-  amount?: number;
+  amount: number;
 }
 
 /**
@@ -21,26 +21,26 @@ export interface IGlowFilter {
    * Glow color.
    * @default "#000000"
    */
-  color?: string;
+  color: string;
 
   /**
    * Blur radius.
    * @default 8
    */
-  blur?: number;
+  blur: number;
 
   /**
    * Glow strength.
    * @default 1
    */
-  strength?: number;
+  strength: number;
 
   /**
    * Opacity.
    * Range: 0–1
    * @default 1
    */
-  opacity?: number;
+  opacity: number;
 }
 
 /**
@@ -51,33 +51,109 @@ export interface IShadowFilter {
    * Horizontal offset.
    * @default 0
    */
-  offsetX?: number;
+  offsetX: number;
 
   /**
    * Vertical offset.
    * @default 4
    */
-  offsetY?: number;
+  offsetY: number;
 
   /**
    * Blur radius.
    * @default 6
    */
-  blur?: number;
+  blur: number;
 
   /**
    * Shadow color.
    * @default "#000000"
    */
-  color?: string;
+  color: string;
 
   /**
    * Opacity.
    * Range: 0–1
    * @default 0.5
    */
-  opacity?: number;
+  opacity: number;
 }
+
+export interface IBlurFilter {
+  radius: number;
+}
+
+export interface IContrastFilter {
+  amount: number;
+}
+
+export interface ISaturateFilter {
+  amount: number;
+}
+
+export interface IGrayscale {
+  amount: number;
+}
+
+export interface IHueRotate {
+  angle: number;
+}
+
+export interface IFilter {
+  blur(id: string, props: IBlurFilter): void;
+  contrast(id: string, props: IContrastFilter): void;
+  saturate(id: string, props: ISaturateFilter): void;
+  grayscale(id: string, props: IGrayscale): void;
+  hueRotate(id: string, props: IHueRotate): void;
+
+  glow(id: string, props: IGlowFilter): void;
+
+  shadow(id: string, props: IShadowFilter): void;
+
+  removeFilter(id: string): void;
+  clearFilters(): void;
+  hasFilter(id?: string): boolean;
+  getAllFilters(): ReadonlyMap<string, FilterRecord>;
+}
+
+type Status = 'pending' | 'update' | 'normal';
+
+export type FilterRecord =
+  | {
+      status: Status;
+      type: 'blur';
+      props: Required<IBlurFilter>;
+    }
+  | {
+      status: Status;
+      type: 'contrast';
+      props: Required<IContrastFilter>;
+    }
+  | {
+      status: Status;
+      type: 'saturate';
+      props: Required<ISaturateFilter>;
+    }
+  | {
+      status: Status;
+      type: 'grayscale';
+      props: Required<IGrayscale>;
+    }
+  | {
+      status: Status;
+      type: 'hueRotate';
+      props: Required<IHueRotate>;
+    }
+  | {
+      status: Status;
+      type: 'shadow';
+      props: Required<IShadowFilter>;
+    }
+  | {
+      status: Status;
+      type: 'glow';
+      props: Required<IGlowFilter>;
+    };
 
 /**
  * Linear gradient definition.
@@ -161,42 +237,19 @@ export interface IRadialGradientFilter {
   }[];
 }
 
-export interface IFilter {
-  brightness(id: string, props: IBrightnessFilter): void;
+/*
+ 
 
-  glow(id: string, props: IGlowFilter): void;
 
-  shadow(id: string, props: IShadowFilter): void;
-
-  linearGradient(id: string, props: ILinearGradientFilter): void;
-
-  radialGradient(id: string, props: IRadialGradientFilter): void;
-
-  removeFilter(id: string): void;
-  clearFilters(): void;
-  hasFilter(id: string): boolean;
-  getAllFilters(): ReadonlyMap<string, FilterRecord>;
+export interface ISepia {
+  amount: number;
 }
 
-type Status = 'pending' | 'update' | 'normal';
+export interface IInvert {
+  amount: number;
+}
 
-export type FilterRecord =
-  | {
-      status: Status;
-      type: 'brightness';
-      props: Required<IBrightnessFilter>;
-    }
-  | {
-      status: Status;
-      type: 'glow';
-      props: Required<IGlowFilter>;
-    }
-  | {
-      status: Status;
-      type: 'shadow';
-      props: Required<IShadowFilter>;
-    }
-  | {
+		{
       status: Status;
       type: 'linearGradient';
       props: Required<Omit<ILinearGradientFilter, 'stops'>> &
@@ -208,3 +261,5 @@ export type FilterRecord =
       props: Required<Omit<IRadialGradientFilter, 'stops'>> &
         Pick<IRadialGradientFilter, 'stops'>;
     };
+
+		*/
