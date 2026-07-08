@@ -105,7 +105,7 @@ export class EventSystem {
     let hasAnyEvent = false;
     for (let i = 0; i < elements.length; i++) {
       const shape = elements[i];
-      if (shape.hasEventHandler()) {
+      if (shape.events.hasEventHandler()) {
         hasAnyEvent = true;
         break;
       }
@@ -321,7 +321,7 @@ export class EventSystem {
    * false → continue
    */
   #invoke(node: GraphicsRenderNode, event: SyntheticEvent): boolean {
-    const handler = (node as GraphicsRenderNode).getEventHandler(
+    const handler = (node as GraphicsRenderNode).events.getEventHandler(
       event.type as SupportedEvents
     );
     if (!handler) return false;
