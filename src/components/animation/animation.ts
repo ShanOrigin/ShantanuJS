@@ -2088,13 +2088,12 @@ export class Animation implements IAnimation {
    * optimization strategies, and finally starts the animation loop.
    *
    * @param attrs      - User-provided animatable properties (style + geometry)
-   * @param advProp    - Optional advanced animation configuration
+   * @param advanceOptions    - Optional advanced animation configuration
    * @param duration   - Total animation duration (milliseconds)
    * @param ease       - Easing function or easing name (default: 'linear')
    * @param onComplate - Optional callback invoked when animation completes
    * @param start      - Whether to auto-start the animation immediately
    *
-   * @returns void or a Promise that resolves when animation completes
    */
   public animate({
     attrs,
@@ -2226,7 +2225,7 @@ export class Animation implements IAnimation {
     // ------------------------------------------------------------------
 
     if (start && !this.#animationState) {
-      return this.start();
+      this.start();
     }
   }
 
