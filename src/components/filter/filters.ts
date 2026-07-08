@@ -1,11 +1,13 @@
 import type {
   IFilter,
   FilterRecord,
-  IBrightnessFilter,
   IGlowFilter,
   IShadowFilter,
-  ILinearGradientFilter,
-  IRadialGradientFilter
+  IBlurFilter,
+  IContrastFilter,
+  ISaturateFilter,
+  IGrayscale,
+  IHueRotate
 } from '../../models/interfaces/filters';
 
 import { DuplicateFilterError } from '../../errors/index.js';
@@ -50,28 +52,49 @@ export class Filters implements IFilter {
       );
     }
   }
-  /**
-   * Creates or replaces a brightness filter.
-   *
-   * If a filter with the same identifier already exists, it is replaced by
-   * the newly supplied configuration.
-   *
-   * Default values:
-   * - amount = 1
-   *
-   * @param id Unique identifier for the filter.
-   * @param props Brightness filter configuration.
-   */
-  brightness(id: string, props: IBrightnessFilter = {}): void {
-    this.#preChecks(id, 'brightness');
 
+  blur(id: string, props: IBlurFilter): void {
+    this.#preChecks(id, 'blur');
     this.#filters.set(id, {
       status: 'pending',
-      type: 'brightness',
-      props: {
-        amount: 1,
-        ...props
-      }
+      type: 'blur',
+      props
+    });
+  }
+
+  contrast(id: string, props: IContrastFilter): void {
+    this.#preChecks(id, 'contrast');
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'contrast',
+      props
+    });
+  }
+
+  saturate(id: string, props: ISaturateFilter): void {
+    this.#preChecks(id, 'saturate');
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'saturate',
+      props
+    });
+  }
+
+  grayscale(id: string, props: IGrayscale): void {
+    this.#preChecks(id, 'grayscale');
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'grayscale',
+      props
+    });
+  }
+
+  hueRotate(id: string, props: IHueRotate): void {
+    this.#preChecks(id, 'hueRotate');
+    this.#filters.set(id, {
+      status: 'pending',
+      type: 'hueRotate',
+      props
     });
   }
 
@@ -87,18 +110,12 @@ export class Filters implements IFilter {
    * @param id Unique identifier for the filter.
    * @param props Glow filter configuration.
    */
-  glow(id: string, props: IGlowFilter = {}): void {
+  glow(id: string, props: IGlowFilter): void {
     this.#preChecks(id, 'glow');
     this.#filters.set(id, {
       status: 'pending',
       type: 'glow',
-      props: {
-        color: '#000000',
-        blur: 8,
-        strength: 1,
-        opacity: 1,
-        ...props
-      }
+      props
     });
   }
 
@@ -115,78 +132,12 @@ export class Filters implements IFilter {
    * @param id Unique identifier for the filter.
    * @param props Shadow filter configuration.
    */
-  shadow(id: string, props: IShadowFilter = {}): void {
+  shadow(id: string, props: IShadowFilter): void {
     this.#preChecks(id, ' shadow');
     this.#filters.set(id, {
       status: 'pending',
       type: 'shadow',
-      props: {
-        offsetX: 0,
-        offsetY: 4,
-        blur: 6,
-        color: '#000000',
-        opacity: 0.5,
-        ...props
-      }
-    });
-  }
-  /**
-   * Creates or replaces a linear gradient definition.
-   *
-   * Default values:
-   * - x1 = 0
-   * - y1 = 0
-   * - x2 = 1
-   * - y2 = 0
-   *
-   * Gradient stops must be supplied by the caller.
-   *
-   * @param id Unique identifier for the filter.
-   * @param props Linear gradient configuration.
-   */
-  linearGradient(id: string, props: ILinearGradientFilter): void {
-    this.#preChecks(id, 'linearGradient');
-
-    this.#filters.set(id, {
-      status: 'pending',
-      type: 'linearGradient',
-      props: {
-        x1: 0,
-        y1: 0,
-        x2: 1,
-        y2: 0,
-        ...props
-      }
-    });
-  }
-  /**
-   * Creates or replaces a radial gradient definition.
-   *
-   * Default values:
-   * - cx = 0.5
-   * - cy = 0.5
-   * - r = 0.5
-   * - fx = cx
-   * - fy = cy
-   *
-   * Gradient stops must be supplied by the caller.
-   *
-   * @param id Unique identifier for the filter.
-   * @param props Radial gradient configuration.
-   */
-  radialGradient(id: string, props: IRadialGradientFilter): void {
-    this.#preChecks(id, 'radialGradient');
-    this.#filters.set(id, {
-      status: 'pending',
-      type: 'radialGradient',
-      props: {
-        cx: 0.5,
-        cy: 0.5,
-        r: 0.5,
-        fx: props.fx ?? props.cx ?? 0.5,
-        fy: props.fy ?? props.cy ?? 0.5,
-        ...props
-      }
+      props
     });
   }
 
@@ -221,8 +172,8 @@ export class Filters implements IFilter {
    * @returns `true` if a filter with the supplied identifier exists;
    * otherwise `false`.
    */
-  public hasFilter(id: string): boolean {
-    return this.#filters.has(id);
+  public hasFilter(id?: string): boolean {
+    return !id ? this.#filters.size > 0 : this.#filters.has(id);
   }
   /**
    * Returns the complete collection of registered filters.
