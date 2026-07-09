@@ -800,7 +800,6 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
            * - Transform stack reset (if flattening occurred)
            * - Style applied
            */
-          this.#geometry!.renderUpdateType = 'LOCAL';
         }
       } else if (typeof props === 'string' || Array.isArray(props)) {
         /**
