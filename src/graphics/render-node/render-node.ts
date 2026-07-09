@@ -97,7 +97,7 @@ import {
 import { Transformation } from '../../components/transformation/transformation.js';
 import { Animation } from '../../components/animation/animation.js';
 import { EventTargets } from '../../components/event/event-target.js';
-import { Filters } from '../../components/filter/filters';
+import { Filters } from '../../components/filter/filters.js';
 import {
   FilterRecord,
   IBrightnessFilter,
