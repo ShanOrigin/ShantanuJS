@@ -1,15 +1,15 @@
-import { ShantanuJS } from './index.js';
+import { ShantanuJS } from "./index.js";
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     //
     const canvas = new ShantanuJS.Canvas({
       width: 250,
       height: 400,
-      id: 'testing',
-      fill: 'white',
-      stroke: 'green',
-      'stroke-width': 2
+      id: "testing",
+      fill: "white",
+      stroke: "green",
+      "stroke-width": 2,
     });
 
     canvas.engine.stop();
@@ -20,23 +20,23 @@ document.addEventListener('DOMContentLoaded', () => {
       y1: 40,
       x2: 100,
       y2: 50,
-      stroke: 'green',
-      'stroke-width': 2
+      stroke: "green",
+      "stroke-width": 2,
     });
 
     const point = new ShantanuJS.Shapes.Point({
       cx: 100,
       cy: 100,
       r: 3,
-      fill: 'blue',
-      stroke: 'purple'
+      fill: "blue",
+      stroke: "purple",
     });
 
     const circle = new ShantanuJS.Shapes.Circle({
       cx: 170,
       cy: 60,
       r: 30,
-      fill: 'brown'
+      fill: "brown",
     });
 
     const ellipse = new ShantanuJS.Shapes.Ellipse({
@@ -44,7 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cy: 110,
       rx: 30,
       ry: 20,
-      fill: 'yellow'
+      fill: "yellow",
     });
 
     const rect = new ShantanuJS.Shapes.Rect({
@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
       width: 50,
       height: 60,
       rx: 5,
-      fill: 'lightblue'
+      fill: "lightblue",
     });
 
     const rect1 = new ShantanuJS.Shapes.Rect({
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
       width: 50,
       height: 60,
       rx: 5,
-      fill: 'purple'
+      fill: "purple",
     });
 
     const arcCurve = new ShantanuJS.Shapes.ArcCurve({
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
       y2: 170,
       smoothness: 40,
       curvature: -0.7,
-      stroke: 'red'
+      stroke: "red",
     });
 
     const cubicCurve = new ShantanuJS.Shapes.CubicCurve({
@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
       y2: 170,
       smoothness: 70,
       curvature: -0.7,
-      stroke: 'green'
+      stroke: "green",
     });
 
     const quadraticCurve = new ShantanuJS.Shapes.QuadraticCurve({
@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
       y2: 170,
       smoothness: 40,
       curvature: -0.7,
-      stroke: 'blue'
+      stroke: "blue",
     });
 
     const earcCurve = new ShantanuJS.Shapes.EarcCurve({
@@ -102,17 +102,17 @@ document.addEventListener('DOMContentLoaded', () => {
       y2: 170,
       smoothness: 40,
       curvature: -0.7,
-      stroke: 'purple'
+      stroke: "purple",
     });
 
-    const text = new ShantanuJS.Media.Text({ x: 50, y: 100, text: 'Queen' });
+    const text = new ShantanuJS.Media.Text({ x: 50, y: 100, text: "Queen" });
 
     const img = new ShantanuJS.Media.Image({
       x: 10,
       y: 250,
       width: 200,
       height: 150,
-      href: '../../deps.png'
+      href: "../../deps.png",
     });
 
     canvas.add(
@@ -127,10 +127,10 @@ document.addEventListener('DOMContentLoaded', () => {
       quadraticCurve,
       earcCurve,
       text,
-      img
+      img,
     );
 
-    const gr = new ShantanuJS.Group('g1');
+    const gr = new ShantanuJS.Group("g1");
     canvas.add(gr);
     gr.add(line, circle, ellipse);
 
