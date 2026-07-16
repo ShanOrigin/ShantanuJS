@@ -1,8 +1,8 @@
-import http from 'http';
-import fs from 'fs';
-import path from 'path';
+import http from "http";
+import fs from "fs";
+import path from "path";
+import type { MetaData, SaveFileData, Tests } from "./types";
 
-import type { metaData, saveFileData, tests } from './types';
 const PORT = 4000;
 
 /**
@@ -37,21 +37,21 @@ function resolveFile(fileUrl: string) {
   const pathname = url.pathname;
 
   // Enforce strict contract: only dist files are allowed
-  if (!pathname.startsWith('/dist/')) {
-    throw new Error('Invalid dist path');
+  if (!pathname.startsWith("/dist/")) {
+    throw new Error("Invalid dist path");
   }
 
   // Remove `/dist` prefix
-  const relative = pathname.replace(/^\/dist/, '');
+  const relative = pathname.replace(/^\/dist/, "");
 
   // Strip `.js` extension
-  let withoutExt = relative.replace(/\.js$/, '');
+  let withoutExt = relative.replace(/\.js$/, "");
 
   // Remove hash suffix (e.g., `.abc123`) if present
-  withoutExt = withoutExt.replace(/\.[a-f0-9]+$/, '');
+  withoutExt = withoutExt.replace(/\.[a-f0-9]+$/, "");
 
   // Map to source directory
-  const srcBase = path.join(process.cwd(), 'src', withoutExt);
+  const srcBase = path.join(process.cwd(), "src", withoutExt);
 
   const dirPath = path.dirname(srcBase);
   const fileName = path.basename(srcBase);
@@ -88,7 +88,7 @@ function ensureFile(fullPath: string) {
     fs.writeFileSync(
       fullPath,
       JSON.stringify({ meta: {}, tests: {} }, null, 2),
-      { flag: 'wx' } // Write only if file does not exist (fail otherwise)
+      { flag: "wx" }, // Write only if file does not exist (fail otherwise)
     );
   }
 }
@@ -129,7 +129,7 @@ function ensureFile(fullPath: string) {
  * - No deep comparison → nested objects beyond defined fields are ignored
  * - Assumes schema stability → any schema evolution will silently break logic
  */
-function checkConsistency(fileMeta: metaData, testMeta: metaData) {
+function checkConsistency(fileMeta: MetaData, testMeta: MetaData) {
   const { info: fi, environment: fe } = fileMeta;
   const { info: ti, environment: te } = testMeta;
 
@@ -261,60 +261,60 @@ function checkConsistency(fileMeta: metaData, testMeta: metaData) {
 
 const server = http.createServer((req, res) => {
   // ---- CORS ----
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     res.writeHead(200);
     res.end();
     return;
   }
 
   // ---- SAVE ----
-  if (req.method === 'POST' && req.url === '/save') {
-    let body = '';
+  if (req.method === "POST" && req.url === "/save") {
+    let body = "";
 
-    req.on('data', (chunk) => {
+    req.on("data", (chunk) => {
       body += chunk;
 
       // basic protection against large payloads
       if (body.length > 1e6) {
-        console.error('Payload too large');
+        console.error("Payload too large");
         req.socket.destroy();
       }
     });
 
-    req.on('end', () => {
+    req.on("end", () => {
       try {
         // ---------------- PARSE ----------------
         let parsed;
         try {
           parsed = JSON.parse(body);
         } catch (e) {
-          throw new Error('Invalid JSON payload');
+          throw new Error("Invalid JSON payload");
         }
 
-        const { fileUrl, meta, tests, save } = parsed as saveFileData;
+        const { fileUrl, meta, tests, save } = parsed as SaveFileData;
 
-        console.log('\n\n================ INCOMING REQUEST ================\n');
+        console.log("\n\n================ INCOMING REQUEST ================\n");
 
-        console.log('fileUrl:', fileUrl);
-        console.log('meta:', meta);
-        console.log('tests:', tests);
-        console.log('\n==================================================\n\n');
+        console.log("fileUrl:", fileUrl);
+        console.log("meta:", meta);
+        console.log("tests:", tests);
+        console.log("\n==================================================\n\n");
 
         // ---------------- VALIDATION ----------------
-        if (!fileUrl || typeof fileUrl !== 'string') {
-          throw new Error('Invalid or missing fileUrl');
+        if (!fileUrl || typeof fileUrl !== "string") {
+          throw new Error("Invalid or missing fileUrl");
         }
 
-        if (!meta || typeof meta !== 'object') {
-          throw new Error('Invalid or missing meta');
+        if (!meta || typeof meta !== "object") {
+          throw new Error("Invalid or missing meta");
         }
 
-        if (!tests || typeof tests !== 'object') {
-          throw new Error('Invalid or missing tests object');
+        if (!tests || typeof tests !== "object") {
+          throw new Error("Invalid or missing tests object");
         }
 
         let fullPath!: string, fileData;
@@ -322,7 +322,7 @@ const server = http.createServer((req, res) => {
           // ---------------- RESOLVE FILE ----------------
           fullPath = resolveFile(fileUrl) as string;
 
-          console.log('fullPath : ', fullPath);
+          console.log("fullPath : ", fullPath);
           // ---------------- ENSURE FILE ----------------
           try {
             ensureFile(fullPath);
@@ -334,15 +334,15 @@ const server = http.createServer((req, res) => {
           // ---------------- READ FILE ----------------
 
           try {
-            const raw = fs.readFileSync(fullPath, 'utf-8');
+            const raw = fs.readFileSync(fullPath, "utf-8");
             fileData = JSON.parse(raw);
           } catch (e) {
-            throw new Error('Failed to read or parse existing file');
+            throw new Error("Failed to read or parse existing file");
           }
 
           // ---------------- VALIDATE STRUCTURE ----------------
-          if (!fileData || typeof fileData !== 'object') {
-            throw new Error('Corrupted file structure');
+          if (!fileData || typeof fileData !== "object") {
+            throw new Error("Corrupted file structure");
           }
 
           if (!fileData.tests) {
@@ -351,22 +351,22 @@ const server = http.createServer((req, res) => {
 
           // ---------------- META INIT ----------------
           if (!fileData.meta || Object.keys(fileData.meta).length === 0) {
-            console.log('Initializing metadata...');
+            console.log("Initializing metadata...");
             fileData.meta = meta;
           }
 
           // ---------------- META CONSISTENCY ----------------
           if (!checkConsistency(fileData.meta, meta)) {
-            console.error('Existing meta:', fileData.meta);
-            console.error('Incoming meta:', meta);
-            throw new Error('File metadata mismatch');
+            console.error("Existing meta:", fileData.meta);
+            console.error("Incoming meta:", meta);
+            throw new Error("File metadata mismatch");
           }
 
           // ---------------- SAVE TESTS ----------------
 
           for (const [id, t] of Object.entries(tests)) {
             if (!id) {
-              console.warn('Skipping invalid test with empty id');
+              console.warn("Skipping invalid test with empty id");
               continue;
             }
 
@@ -390,7 +390,7 @@ const server = http.createServer((req, res) => {
           save &&
             fs.writeFileSync(
               fullPath as string,
-              JSON.stringify(fileData, null, 2)
+              JSON.stringify(fileData, null, 2),
             );
         } catch (e) {
           if (e instanceof Error)
@@ -398,34 +398,34 @@ const server = http.createServer((req, res) => {
         }
 
         if (save) {
-          console.log('\n\t================ SAVE FILE PATH ================\n');
+          console.log("\n\t================ SAVE FILE PATH ================\n");
 
           const relativePath = path.relative(process.cwd(), fullPath);
 
           console.log(`\t PATH : ${relativePath}`);
 
           console.log(
-            '\n\t===============================================\n\n'
+            "\n\t===============================================\n\n",
           );
-          console.log('\t ✔ File Saved successfully\n');
+          console.log("\t ✔ File Saved successfully\n");
         }
 
         // ---------------- RESPONSE ----------------
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ status: 'saved' }));
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ status: "saved" }));
       } catch (err: unknown) {
         // ---------------- ERROR ----------------
         //
         if (err instanceof Error) {
-          console.error('❌ SERVER ERROR:', err.message);
+          console.error("❌ SERVER ERROR:", err.message);
           console.error(err.stack);
 
-          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.writeHead(500, { "Content-Type": "application/json" });
           res.end(
             JSON.stringify({
-              status: 'error',
-              message: err.message
-            })
+              status: "error",
+              message: err.message,
+            }),
           );
         }
       }
@@ -460,25 +460,25 @@ server.listen(PORT, () => {
  * displayAnalysis(fileData);
  */
 
-function displayAnalysis(fileData: { meta: metaData; tests: tests }) {
+function displayAnalysis(fileData: { meta: MetaData; tests: Tests }) {
   const { meta, tests } = fileData;
 
   const info = meta?.info || {};
   const env = meta?.environment || {};
 
-  console.log('\n\t================ TEST ANALYSIS ================\n');
+  console.log("\n\t================ TEST ANALYSIS ================\n");
 
   console.log(`\tModule      : ${info.module}`);
   console.log(`\tTest Type   : ${info.testType}`);
   console.log(`\tCanvas ID   : ${info.canvasId}`);
   console.log(`\tLibrary Ver : ${env.libraryVersion}`);
-  console.log('\n\t===============================================\n\n');
+  console.log("\n\t===============================================\n\n");
 
   let total = 0;
   let passed = 0;
   let failed = 0;
 
-  console.log('\n\t================ ALL TEST CASES ===============\n');
+  console.log("\n\t================ ALL TEST CASES ===============\n");
 
   for (const [id, test] of Object.entries(tests)) {
     total++;
@@ -488,7 +488,7 @@ function displayAnalysis(fileData: { meta: metaData; tests: tests }) {
     const failedIndices: number[] = [];
 
     assertions.forEach((a: any, index: number) => {
-      if (a.status !== 'pass') {
+      if (a.status !== "pass") {
         failedIndices.push(index);
       }
     });
@@ -504,15 +504,15 @@ function displayAnalysis(fileData: { meta: metaData; tests: tests }) {
       console.log(`\t${total} - ${id}\t\t ✖`);
 
       // ---- print failed assertion indices ----
-      console.log(`\tFailed Assertions: [${failedIndices.join(', ')}]`);
+      console.log(`\tFailed Assertions: [${failedIndices.join(", ")}]`);
     }
   }
 
-  console.log('\n\t===============================================\n\n');
+  console.log("\n\t===============================================\n\n");
 
-  console.log('\n\t------------------- SUMMARY -------------------');
+  console.log("\n\t------------------- SUMMARY -------------------");
   console.log(`\tTotal Tests : ${total}`);
   console.log(`\tPassed      : ${passed} ✔`);
   console.log(`\tFailed      : ${failed} ✖`);
-  console.log('\n\t===============================================\n\n');
+  console.log("\n\t===============================================\n\n");
 }
