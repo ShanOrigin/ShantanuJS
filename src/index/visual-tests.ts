@@ -1,3 +1,138 @@
+// Import testing tool demo
+import shantanuJSTest from "../tests/testingTool/shantanuJS-test.js";
+
+// Entry function (user-defined)
+export function runTests() {
+  // Create test environment (MANDATORY: pass import.meta.url)
+  const testEnv = new shantanuJSTest(import.meta.url);
+
+  // Start environment
+  testEnv.env({
+    // --------------------------------------------------
+    // INITIALIZE PHASE
+    // --------------------------------------------------
+    initialize(api, ctx) {
+      // Create canvas
+      const canvas = new api.Canvas({ id: "testing", width: 200, height: 400 });
+
+      // Apply base styles
+      canvas.attrs({
+        fill: "green",
+        stroke: "red",
+        "stroke-width": 0,
+      });
+
+      // Store in context (shared across phases)
+      ctx.canvas = canvas;
+    },
+
+    // --------------------------------------------------
+    // RUN PHASE (Test Execution Entry)
+    // --------------------------------------------------
+    run(ctx) {
+      testEnv.shTest({
+        // --------------------------------------------------
+        // TEST METADATA (REQUIRED)
+        // --------------------------------------------------
+        testInfo: {
+          description: "Update stroke color of a line",
+          module: "shapes",
+          testType: "unit",
+          element: "line",
+        },
+
+        // --------------------------------------------------
+        // SETUP PHASE (Arrange)
+        // --------------------------------------------------
+        setup(api, ctx) {
+          const rectangle = new api.Shapes.Rect({
+            x: 20,
+            y: 40,
+            width: 50,
+            height: 40,
+          });
+          ctx.canvas.add(rectangle);
+
+          rectangle.attrs({
+            stroke: "purple",
+            "stroke-width": 2,
+          });
+
+          const line = new api.Shapes.Line({ x1: 20, y1: 40, x2: 50, y2: 40 });
+          ctx.canvas.add(line);
+
+          line.attrs({
+            stroke: "red",
+            "stroke-width": 2,
+          });
+
+          // Store shapes in context
+          ctx.shapes = {};
+          ctx.shapes.line = line;
+        },
+
+        // --------------------------------------------------
+        // ACTIONS PHASE (Act)
+        // --------------------------------------------------
+        actions(api, ctx) {
+          // Modify shape
+          ctx.shapes.line.attrs({
+            stroke: "blue",
+          });
+
+          console.log(ctx.shapes.line);
+        },
+
+        // --------------------------------------------------
+        // EXPECT PHASE (Assert)
+        // --------------------------------------------------
+        expect: {
+          constraints: { save: true, oracle: { browser: false } },
+          // Target shapes (by key from ctx.shapes)
+          testSubject: "line",
+
+          // -------- STYLE VALIDATION --------
+          style: {
+            attrs: {
+              stroke: {
+                value: "blue",
+                expectedStatus: "pass",
+              },
+              "stroke-width": {
+                value: 3,
+                expectedStatus: "pass",
+              },
+            },
+            notEqualTo: {
+              stroke: {
+                value: "red",
+                expectedStatus: "pass",
+              },
+              "stroke-width": {
+                value: 2,
+                expectedStatus: "fail",
+              },
+            },
+          },
+
+          // -------- GEOMETRY VALIDATION --------
+          // geometry: {
+          //   equalTo: {},
+          //   greaterThan: {},
+          // },
+
+          // -------- ERROR VALIDATION (optional) --------
+          // error: {
+          //   expected: new Error('Expected error')
+          // }
+        },
+      });
+    },
+  });
+}
+
+setTimeout(runTests, 5000);
+
 /*
 
 import { LineUnitTests } from '../tests/shapes/basicShapes/line/visualTest/visualUnitTest.js';

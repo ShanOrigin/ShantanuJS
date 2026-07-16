@@ -1,5 +1,5 @@
 // Import testing tool demo
-import shantanuJSTest from './shantanuJS-test.js';
+import shantanuJSTest from "./shantanuJS-test.js";
 
 // Entry function (user-defined)
 export function runTests() {
@@ -13,13 +13,13 @@ export function runTests() {
     // --------------------------------------------------
     initialize(api, ctx) {
       // Create canvas
-      const canvas = new api.Canvas({ id: 'testing', width: 200, height: 400 });
+      const canvas = new api.Canvas({ id: "testing", width: 200, height: 400 });
 
       // Apply base styles
       canvas.attrs({
-        fill: 'green',
-        stroke: 'red',
-        'stroke-width': 0
+        fill: "green",
+        stroke: "red",
+        "stroke-width": 0,
       });
 
       // Store in context (shared across phases)
@@ -30,15 +30,15 @@ export function runTests() {
     // RUN PHASE (Test Execution Entry)
     // --------------------------------------------------
     run(ctx) {
-      testEnv.visualTest({
+      testEnv.shTest({
         // --------------------------------------------------
         // TEST METADATA (REQUIRED)
         // --------------------------------------------------
         testInfo: {
-          description: 'Update stroke color of a line',
-          module: 'shapes',
-          testType: 'unit',
-          element: 'line'
+          description: "Update stroke color of a line",
+          module: "shapes",
+          testType: "unit",
+          element: "line",
         },
 
         // --------------------------------------------------
@@ -49,21 +49,21 @@ export function runTests() {
             x: 20,
             y: 40,
             width: 50,
-            height: 40
+            height: 40,
           });
           ctx.canvas.add(rectangle);
 
           rectangle.attrs({
-            stroke: 'purple',
-            'stroke-width': 2
+            stroke: "purple",
+            "stroke-width": 2,
           });
 
           const line = new api.Shapes.Line({ x1: 20, y1: 40, x2: 50, y2: 40 });
           ctx.canvas.add(line);
 
           line.attrs({
-            stroke: 'red',
-            'stroke-width': 2
+            stroke: "red",
+            "stroke-width": 2,
           });
 
           // Store shapes in context
@@ -77,7 +77,7 @@ export function runTests() {
         actions(api, ctx) {
           // Modify shape
           ctx.shapes.line.attrs({
-            stroke: 'blue'
+            stroke: "blue",
           });
         },
 
@@ -87,29 +87,26 @@ export function runTests() {
         expect: {
           constraints: { save: false },
           // Target shapes (by key from ctx.shapes)
-          shapes: ['line'],
+          testSubject: "line",
 
           // -------- STYLE VALIDATION --------
           style: {
-            strokeColor: 'blue'
+            attrs: {},
+            notEqualTo: {},
           },
 
           // -------- GEOMETRY VALIDATION --------
           geometry: {
-            equalTo: {
-              x1: 23
-            },
-            greaterThan: {
-              x2: 50
-            }
-          }
+            equalTo: {},
+            greaterThan: {},
+          },
 
           // -------- ERROR VALIDATION (optional) --------
           // error: {
           //   expected: new Error('Expected error')
           // }
-        }
+        },
       });
-    }
+    },
   });
 }
