@@ -1,130 +1,239 @@
-// ++++++ General export types +++++++
+// ============================================================================
+// Common Types
+// ============================================================================
 
-export type CompareMode = 'eq' | 'gt' | 'lt' | 'gte' | 'lte';
-export type testInfo = {
+/**
+ * Supported comparison operators.
+ */
+export type CompareMode = "eq" | "neq" | "gt" | "lt" | "gte" | "lte" | "attr";
+
+/**
+ * Primitive values supported by the testing framework.
+ */
+export type Primitive = string | number | boolean;
+
+/**
+ * Assertion execution status.
+ */
+export type AssertionStatus = "pass" | "fail";
+
+export type DataState = {
+  style?: Record<string, unknown>;
+  geometry?: Record<string, unknown>;
+};
+
+export type StatesData = {
+  before?: DataState;
+  after?: DataState;
+};
+// ============================================================================
+// Expected Input Types
+// ============================================================================
+
+/**
+ * Expected value for a single style property.
+ */
+export type StylePropertyData = {
+  value: Primitive;
+  expectedStatus: AssertionStatus;
+};
+
+/**
+ * Collection of style properties.
+ */
+export type StyleData = Record<string, StylePropertyData>;
+
+/**
+ * Expected value for a single geometry property.
+ */
+export type GeometryPropertyData = StylePropertyData & {
+  tolerance?: number;
+};
+
+/**
+ * Collection of geometry properties.
+ */
+export type GeometryData = Record<string, GeometryPropertyData>;
+
+// ============================================================================
+// Constraint Types
+// ============================================================================
+
+/**
+ * Controls the behavior of the test execution pipeline.
+ */
+export type ConstraintsParams = {
+  /**
+   * Persists the test result to the output file.
+   *
+   * @default true
+   */
+  save?: boolean;
+
+  /**
+   * Enables one or more validation oracles.
+   */
+  oracle?: {
+    /**
+     * Cross-check results using the browser-computed values.
+     *
+     * @default true
+     */
+    browser?: boolean;
+
+    /**
+     * Cross-check results using the library's internal state.
+     *
+     * @default true
+     */
+    library?: boolean;
+  };
+};
+
+/**
+ * Expected validation configuration.
+ */
+export type ExpectedBlock = {
+  testSubject: string;
+
+  constraints?: ConstraintsParams;
+
+  style?: {
+    attrs?: StyleData;
+    notEqualTo?: StyleData;
+  };
+
+  geometry?: {
+    equalTo?: GeometryData;
+    notEqualTo?: GeometryData;
+    greaterThan?: GeometryData;
+    lessThan?: GeometryData;
+    greaterThanOrEqual?: GeometryData;
+    lessThanOrEqual?: GeometryData;
+
+    bbox?: {
+      check: boolean;
+      tolerance?: number;
+      expectedStatus?: AssertionStatus;
+    };
+  };
+
+  error?: {
+    expected: Error;
+    expectedStatus: AssertionStatus;
+  };
+};
+
+// ============================================================================
+// Style Verification Types
+// ============================================================================
+
+/**
+ * Result of a style comparison.
+ */
+export type OracleResult = {
+  actualStatus: AssertionStatus;
+  actual: Primitive;
+  expected: Primitive;
+};
+
+// ============================================================================
+// Geometry Verification Types
+// ============================================================================
+
+/**
+ * Result of a geometry comparison.
+ */
+export type GeometryCheckResult = {
+  actualStatus: AssertionStatus;
+  actual: number | string | number[];
+  expected: number | string | number[];
+  delta?: number;
+  tolerance?: number;
+  reason?: string;
+};
+
+// ============================================================================
+// Error Types
+// ============================================================================
+
+/**
+ * Errors captured during different execution phases.
+ */
+export type TestErrors = {
+  setupErrors: Error[];
+  actionErrors: Error[];
+  verifyErrors: Error[];
+};
+
+// ============================================================================
+// Output Types
+// ============================================================================
+
+/**
+ * Test metadata.
+ */
+export type TestInfo = {
   module?: string;
   element?: string;
   testType?: string;
   description?: string;
 };
 
-export type Primitive = string | number | boolean;
-
-export type AttrMap = Record<string, Primitive>;
-
-export type geoAttrMap = AttrMap & { tolerance?: number };
-export type NumMap = Record<string, number>;
-
-export type constraintsParams = {
-  save?: boolean;
-  oracle?: {
-    browser?: boolean;
-    library?: boolean;
-  };
+/**
+ * Overall assertion summary.
+ */
+export type TestStatus = {
+  result: AssertionStatus;
+  totalPassedAssertions: number;
+  totalFailedAssertions: number;
 };
-
-export type verifyParams = {
-  shapes: string[];
-  constraints?: constraintsParams;
-  style?: {
-    fill?: string;
-    strokeColor?: string;
-    strokeWidth?: number;
-    attrs?: AttrMap;
-  };
-  geometry?: {
-    attr?: geoAttrMap;
-    equalTo?: geoAttrMap;
-    greaterThan?: geoAttrMap;
-    lessThan?: geoAttrMap;
-    greaterThanOrEqual?: geoAttrMap;
-    lessThanOrEqual?: geoAttrMap;
-    bbox?: { check: boolean; tolerance?: number };
-  };
-
-  error?: {
-    expected: Error;
-  };
-};
-
-// +++++++++ Style export types +++++++++
-
-export type OracleResult = {
-  status: 'pass' | 'fail';
-  actual: Primitive;
-  expected: Primitive;
-};
-
-// ++++++++ Geometry export types +++++++++
-
-export type GeometryCheckResult = {
-  status: 'pass' | 'fail';
-  actual: number | string | number[];
-  expected: number | string | number[];
-  delta?: number;
-  reason?: string;
-  tolerance?: number;
-};
-
-// +++++++ Error export types +++++++++
-
-export type Terrors = {
-  setupErrors: Error[];
-  actionErrors: Error[];
-  verifyErrors: Error[];
-};
-
-// +++++++ Output Types ++++++++
-
-export type outputParam = {
-  information: testInfo & { id: string };
-
-  state?: {
-    before?: Record<string, any>;
-    after?: Record<string, any>;
-  };
-
-  assertions: {
-    crossCheck?: 'library' | 'browser' | 'system';
-    domain: 'style' | 'geometry' | 'error';
-    property: string;
-    status: 'pass' | 'fail';
-    expected: any;
-    actual: any;
-    delta?: number;
-    reason?: string;
-    tolerance?: number;
-  }[];
-};
-
-export type env = {
-  browser: {
-    name: string;
-    version: string;
-  };
-  platform: string;
-};
-export type metaData = {
-  info: {
-    module: string;
-    testType: string;
-    canvasId: string;
-  };
-  environment: env & { libraryVersion: string };
-};
-
-export type tests = Record<string, outputParam>;
-export type saveFileData = {
-  save?: boolean;
-  fileUrl: string;
-  meta?: metaData;
-  tests: tests;
-};
-
-export type RGBA = [number, number, number, number];
 
 /**
- * Represents parsed browser information.
+ * Single assertion result.
+ */
+export type AssertionResult = {
+  crossCheck?: "library" | "browser" | "system";
+
+  domain: "style" | "geometry" | "error";
+  checkType?: CompareMode;
+  property: string;
+
+  actualStatus: AssertionStatus;
+  expectedStatus: AssertionStatus;
+
+  actual: unknown;
+  expected: unknown;
+
+  delta?: number;
+  tolerance?: number;
+  reason?: string;
+};
+
+/**
+ * Complete output of a single test case.
+ */
+export type OutputParam = {
+  information: TestInfo & {
+    id: string;
+  };
+
+  status?: TestStatus;
+
+  states?: {
+    before?: Record<string, unknown>;
+    after?: Record<string, unknown>;
+  };
+
+  assertions: AssertionResult[];
+};
+
+// ============================================================================
+// Environment Types
+// ============================================================================
+
+/**
+ * Browser information.
  */
 export interface BrowserInfo {
   name: string;
@@ -132,7 +241,54 @@ export interface BrowserInfo {
 }
 
 /**
- * Represents the complete legacy browser detection result.
+ * Execution environment.
+ */
+export type Environment = {
+  browser: BrowserInfo;
+  platform: string;
+};
+
+/**
+ * Metadata written into the output file.
+ */
+export type MetaData = {
+  info: {
+    module: string;
+    testType: string;
+    canvasId: string;
+  };
+
+  environment: Environment & {
+    libraryVersion: string;
+  };
+};
+
+/**
+ * Collection of executed tests.
+ */
+export type Tests = Record<string, OutputParam>;
+
+/**
+ * Serialized output file.
+ */
+export type SaveFileData = {
+  save?: boolean;
+  fileUrl: string;
+  meta?: MetaData;
+  tests: Tests;
+};
+
+// ============================================================================
+// Utility Types
+// ============================================================================
+
+/**
+ * RGBA color representation.
+ */
+export type RGBA = [number, number, number, number];
+
+/**
+ * Legacy browser detection result.
  */
 export interface LegacyBrowserInfo {
   browser: BrowserInfo;
