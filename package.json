@@ -30,7 +30,7 @@
     "live": "live-server --watch=dist  --ignore=node_modules --no-browser --port=3000",
     "dev": "npm-run-all --parallel tsc:watch live",
     "dev:sync": "npm run gitsmartsync && npm run dev",
-    "test-server": "npx ts-node src/tests/testingTool/fileServer.ts",
+    "test-server": "node src/tests/testingTool/file-server.ts",
     "testing": "npm-run-all --parallel dev test-server"
   },
   "keywords": [
