@@ -1,50 +1,54 @@
-import { ShantanuJS } from '../../index/index.js';
+import { ShantanuJS } from "../../index/index.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
-  GET_INTERNAL_GRAPHICS_METHOD
-} from '../../internal/keys/dev-keys.js';
+  GET_INTERNAL_GRAPHICS_METHOD,
+} from "../../internal/keys/dev-keys.js";
 import {
   GetInternalGraphicsAccessor,
-  GraphicsNode
-} from '../../models/interfaces/graphics-container';
-import { GraphicsRenderNode } from '../../models/interfaces/render-node.js';
+  GraphicsNode,
+} from "../../models/interfaces/graphics-container";
+import { GraphicsRenderNode } from "../../models/interfaces/render-node";
 
 type ShantanuJSTypes = typeof ShantanuJS;
 
 type GraphicsRenderNodeWithInternals = GraphicsRenderNode &
   GetInternalGraphicsAccessor;
 
-import { getBrowserInfoLegacy } from './browser-info.js';
+import { getBrowserInfoLegacy } from "./browser-info.js";
 
 import type {
-  verifyParams,
-  testInfo,
-  constraintsParams,
-  Terrors,
-  env,
-  metaData,
   GeometryCheckResult,
   Primitive,
   OracleResult,
-  outputParam,
+  TestInfo,
+  ExpectedBlock,
+  SaveFileData,
+  OutputParam,
+  TestStatus,
+  DataState,
+  TestErrors,
+  ConstraintsParams,
+  StatesData,
+  MetaData,
+  StyleData,
+  GeometryData,
+  CompareMode,
   RGBA,
-  saveFileData,
-  geoAttrMap,
-  CompareMode
-} from './types';
+  Environment,
+} from "./types";
 
-export type ctxParam = {
+export type Context = {
   shapes: Record<string, GraphicsNode>;
   canvas: ShantanuJS.Canvas;
 };
 
-export type fn = (api: ShantanuJSTypes, ctx: ctxParam) => void;
+export type fn = (api: ShantanuJSTypes, ctx: Context) => void;
 
-export type visualTestParams = {
-  testInfo: testInfo;
+export type shTestParams = {
+  testInfo: TestInfo;
   setup: fn;
   actions: fn;
-  expect: verifyParams;
+  expect: ExpectedBlock;
 };
 
 export default class ShantanuJSTestTool {
@@ -96,13 +100,13 @@ export default class ShantanuJSTestTool {
    * - actions → to mutate entities
    * - verification → to inspect final state
    *
-   * @type ctxParam
+   * @type Context
    *
    * @risk
    * - No isolation between tests → shared mutable state
    * - Requires manual discipline to avoid state leakage
    */
-  #ctx = { shapes: {} } as ctxParam;
+  #context = { shapes: {} } as Context;
 
   /**
    * Aggregated error storage across all execution phases.
@@ -122,10 +126,10 @@ export default class ShantanuJSTestTool {
    * - Each field is always an array
    * - Errors are appended, never overwritten
    */
-  #errors: Terrors = {
+  #errors: TestErrors = {
     setupErrors: [],
     actionErrors: [],
-    verifyErrors: []
+    verifyErrors: [],
   };
 
   /**
@@ -150,9 +154,9 @@ export default class ShantanuJSTestTool {
    * @risk
    * - meta is optional → requires consistency enforcement externally
    */
-  #results: saveFileData = {
-    fileUrl: '',
-    tests: {}
+  #results: SaveFileData = {
+    fileUrl: "",
+    tests: {},
   };
 
   /**
@@ -187,9 +191,9 @@ export default class ShantanuJSTestTool {
    * @risk
    * - No validation on values → invalid configs can silently degrade accuracy
    */
-  #constraints: constraintsParams = {
+  #constraints: ConstraintsParams = {
     save: false,
-    oracle: { browser: true, library: true }
+    oracle: { browser: true, library: true },
   };
 
   /**
@@ -215,7 +219,7 @@ export default class ShantanuJSTestTool {
    * - No validation on input → malformed URLs propagate downstream
    */
   constructor(path: string = import.meta.url) {
-    this.#results['fileUrl'] = path;
+    this.#results["fileUrl"] = path;
   }
 
   /**
@@ -242,140 +246,216 @@ export default class ShantanuJSTestTool {
    */
   public env({
     initialize,
-    run
+    run,
   }: {
-    initialize: (api: ShantanuJSTypes, ctx: ctxParam) => void;
-    run: (ctx: ctxParam) => void;
+    initialize: (api: ShantanuJSTypes, ctx: Context) => void;
+    run: (ctx: Context) => void;
   }) {
     try {
-      initialize(this.#api, this.#ctx);
+      initialize(this.#api, this.#context);
     } catch (e) {
-      console.error('Error in env initialize callback');
+      console.error("Error in env initialize callback");
       console.error(e);
       return;
     }
 
-    run(this.#ctx);
+    run(this.#context);
   }
 
   /**
-   * Executes a complete visual test lifecycle: setup → actions → verify → persist.
+   * Executes a complete ShantanuJS test lifecycle.
    *
-   * Flow:
-   * - Validates test definition
-   * - Runs setup and actions with canvas flush between phases
-   * - Executes verification to produce assertions
-   * - Generates unique test ID and metadata
-   * - Enforces meta consistency across executions
-   * - Stores result and triggers persistence
+   * Execution pipeline:
+   * 1. Validate test definition.
+   * 2. Execute setup phase.
+   * 3. Capture initial state.
+   * 4. Execute action phase.
+   * 5. Capture final state.
+   * 6. Verify expected results.
+   * 7. Generate assertion summary.
+   * 8. Persist test report (optional).
    *
-   * Error Handling:
-   * - Each phase (setup/action/verify) is isolated
-   * - Errors are collected and short-circuit execution per phase
+   * Each phase is isolated. If a phase throws, execution stops immediately
+   * and the corresponding errors are delegated to the error handler.
    *
-   * @param testDef - Visual test definition (setup, actions, expect, metadata)
+   * @param testDef - Complete test definition.
+   *
+   * @remarks
+   * State snapshots are captured immediately before and after the action phase.
    *
    * @sideEffects
-   * - Mutates shared ctx and internal results
-   * - Writes test output via #saveTest
-   *
-   * @risk
-   * - Shared ctx → state leakage between tests
-   * - Hard meta enforcement → breaks cross-context reuse
-   * - No rollback → partial state persists on failure
+   * - Mutates the shared testing context.
+   * - Stores test results internally.
+   * - Persists the generated report when enabled.
    */
-  public visualTest(testDef: visualTestParams) {
+  public shTest(testDef: shTestParams): void {
     this.#validateTest(testDef);
 
+    this.#constraints = {
+      ...this.#constraints,
+      ...(testDef.expect.constraints ?? {}),
+      oracle: {
+        ...this.#constraints.oracle,
+        ...(testDef.expect.constraints?.oracle ?? {}),
+      },
+    };
+
+    const states = {} as StatesData;
     const { setupErrors, actionErrors, verifyErrors } = this.#errors;
 
-    // ---------------- SETUP ----------------
-    try {
-      testDef.setup(this.#api, this.#ctx);
-      this.#ctx.canvas.engine.flush();
-    } catch (e) {
-      setupErrors.push(e as Error);
-    }
-
-    if (setupErrors.length) return this.#handleErrors('setup', setupErrors);
-
-    // ---------------- ACTION ----------------
-    try {
-      testDef.actions(this.#api, this.#ctx);
-      this.#ctx.canvas.engine.flush();
-    } catch (e) {
-      actionErrors.push(e as Error);
-    }
-
-    if (actionErrors.length) return this.#handleErrors('action', actionErrors);
-
-    // ---------------- VERIFY ----------------
-    let assertions: outputParam['assertions'] = [];
+    // ---------------------------------------------------------------------------
+    // Setup
+    // ---------------------------------------------------------------------------
 
     try {
-      assertions = this.#runVerify(testDef.expect, this.#ctx);
-    } catch (e) {
-      verifyErrors.push(e as Error);
+      testDef.setup(this.#api, this.#context);
+      this.#context.canvas.engine.flush();
+    } catch (error) {
+      setupErrors.push(error as Error);
     }
 
-    if (verifyErrors.length) return this.#handleErrors('verify', verifyErrors);
+    if (setupErrors.length) {
+      return this.#handleErrors("setup", setupErrors);
+    }
 
-    // ---------------- OUTPUT ----------------
-    const { testType, element, module } = testDef.testInfo;
+    // ---------------------------------------------------------------------------
+    // Capture Initial State
+    // ---------------------------------------------------------------------------
+
+    states.before = this.#captureState(testDef.expect);
+
+    // ---------------------------------------------------------------------------
+    // Actions
+    // ---------------------------------------------------------------------------
+
+    try {
+      testDef.actions(this.#api, this.#context);
+      this.#context.canvas.engine.flush();
+    } catch (error) {
+      actionErrors.push(error as Error);
+    }
+
+    if (actionErrors.length) {
+      return this.#handleErrors("action", actionErrors);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Capture Final State
+    // ---------------------------------------------------------------------------
+
+    states.after = this.#captureState(testDef.expect);
+
+    // ---------------------------------------------------------------------------
+    // Verify
+    // ---------------------------------------------------------------------------
+
+    let assertions: OutputParam["assertions"] = [];
+
+    try {
+      assertions = this.#runVerify(testDef.expect, this.#context);
+    } catch (error) {
+      verifyErrors.push(error as Error);
+    }
+
+    if (verifyErrors.length) {
+      return this.#handleErrors("verify", verifyErrors);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Assertion Summary
+    // ---------------------------------------------------------------------------
+
+    const status: TestStatus = {
+      result: "fail",
+      totalPassedAssertions: 0,
+      totalFailedAssertions: 0,
+    };
+
+    for (const assertion of assertions) {
+      if (assertion.actualStatus === assertion.expectedStatus) {
+        status.totalPassedAssertions++;
+      } else {
+        status.totalFailedAssertions++;
+      }
+    }
+
+    status.result = status.totalFailedAssertions === 0 ? "pass" : "fail";
+
+    console.log("States : ", states);
+    console.log("Assertions : ", assertions);
+    console.log(" Status : ", status);
+
+    if (!this.#constraints.save) {
+      return;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Metadata
+    // ---------------------------------------------------------------------------
+
+    const { module, testType, element } = testDef.testInfo;
+
     const id = `${testType}-${module}-${element}-${this.#idNumber++}`;
 
-    const canvasId = this.#ctx.canvas.attrs('id') as string;
-    const browserInfo = getBrowserInfoLegacy() as env;
-
-    const meta: metaData = {
+    const meta: MetaData = {
       info: {
         module: module!,
         testType: testType!,
-        canvasId
+        canvasId: this.#context.canvas.attrs("id") as string,
       },
       environment: {
-        libraryVersion: '0.0.0',
-        ...browserInfo
-      }
+        libraryVersion: "0.0.0",
+        ...(getBrowserInfoLegacy() as Environment),
+      },
     };
 
-    const output: outputParam = {
-      information: { ...testDef.testInfo, id },
-      assertions
+    // ---------------------------------------------------------------------------
+    // Output
+    // ---------------------------------------------------------------------------
+
+    const output: OutputParam = {
+      information: {
+        ...testDef.testInfo,
+        id,
+      },
+      states,
+      status,
+      assertions,
     };
 
-    if ('meta' in this.#results) {
-      const gMeta = this.#results.meta;
+    // ---------------------------------------------------------------------------
+    // Initialize Report
+    // ---------------------------------------------------------------------------
 
-      if (gMeta) {
-        if (gMeta.info.module !== meta.info.module) {
-          throw new Error(
-            `Meta mismatch [module]: expected "${gMeta.info.module}", received "${meta.info.module}"`
-          );
-        }
+    this.#results.meta ??= meta;
+    this.#results.tests ??= {};
 
-        if (gMeta.info.testType !== meta.info.testType) {
-          throw new Error(
-            `Meta mismatch [testType]: expected "${gMeta.info.testType}", received "${meta.info.testType}"`
-          );
-        }
+    const globalMeta = this.#results.meta;
 
-        if (gMeta.info.canvasId !== meta.info.canvasId) {
-          throw new Error(
-            `Meta mismatch [canvasId]: expected "${gMeta.info.canvasId}", received "${meta.info.canvasId}"`
-          );
-        }
-      } else {
-        this.#results.meta = meta;
-      }
-    } else {
-      this.#results['meta'] = meta;
-      this.#results['tests'] = {};
+    if (globalMeta.info.module !== meta.info.module) {
+      throw new Error(
+        `Meta mismatch [module]: expected "${globalMeta.info.module}", received "${meta.info.module}".`,
+      );
     }
 
-    this.#results['tests'][id] = output;
+    if (globalMeta.info.testType !== meta.info.testType) {
+      throw new Error(
+        `Meta mismatch [testType]: expected "${globalMeta.info.testType}", received "${meta.info.testType}".`,
+      );
+    }
 
-    console.log(this.#results);
+    if (globalMeta.info.canvasId !== meta.info.canvasId) {
+      throw new Error(
+        `Meta mismatch [canvasId]: expected "${globalMeta.info.canvasId}", received "${meta.info.canvasId}".`,
+      );
+    }
+
+    // ---------------------------------------------------------------------------
+    // Persist
+    // ---------------------------------------------------------------------------
+
+    this.#results.tests[id] = output;
+
     this.#saveTest(this.#results);
   }
 
@@ -399,19 +479,98 @@ export default class ShantanuJSTestTool {
    * - No response validation → assumes success blindly
    * - Hardcoded endpoint → no environment flexibility
    */
-  async #saveTest({ fileUrl, meta, tests }: saveFileData) {
-    await fetch('http://localhost:4000/save', {
-      method: 'POST',
+  async #saveTest({ fileUrl, meta, tests }: SaveFileData) {
+    await fetch("http://localhost:4000/save", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         save: this.#constraints.save,
         fileUrl,
         meta,
-        tests
-      })
+        tests,
+      }),
     });
+  }
+
+  /**
+   * Captures the current state of all style and geometry properties referenced
+   * by the expected verification configuration.
+   *
+   * Only properties explicitly requested by the test are captured. Duplicate
+   * properties across multiple comparison groups are automatically ignored.
+   *
+   * This method performs no validation or comparison. It simply snapshots the
+   * current internal state of the target shape for later verification.
+   *
+   * @param expected - Expected verification configuration.
+   *
+   * @returns Snapshot containing the requested style and geometry values.
+   */
+  #captureState(expected: shTestParams["expect"]): DataState {
+    const shape = (
+      this.#context.shapes as Record<string, GraphicsRenderNodeWithInternals>
+    )[expected.testSubject];
+
+    const styleProps = new Set<string>();
+    const geometryProps = new Set<string>();
+
+    /**
+     * Adds all property names from the provided object into the target set while
+     * ignoring metadata keys.
+     */
+    const collectProps = (
+      target: Set<string>,
+      source?: Record<string, unknown>,
+    ) => {
+      if (!source) return;
+
+      for (const key of Object.keys(source)) {
+        if (key === "expectedStatus" || key === "tolerance") continue;
+        target.add(key);
+      }
+    };
+
+    // --------------------------------------------------------------------------
+    // Collect requested style properties
+    // --------------------------------------------------------------------------
+
+    collectProps(styleProps, expected.style?.attrs);
+    collectProps(styleProps, expected.style?.notEqualTo);
+
+    // --------------------------------------------------------------------------
+    // Collect requested geometry properties
+    // --------------------------------------------------------------------------
+
+    collectProps(geometryProps, expected.geometry?.equalTo);
+    collectProps(geometryProps, expected.geometry?.notEqualTo);
+    collectProps(geometryProps, expected.geometry?.greaterThan);
+    collectProps(geometryProps, expected.geometry?.lessThan);
+    collectProps(geometryProps, expected.geometry?.greaterThanOrEqual);
+    collectProps(geometryProps, expected.geometry?.lessThanOrEqual);
+
+    // --------------------------------------------------------------------------
+    // Capture current state
+    // --------------------------------------------------------------------------
+
+    const snapshot = {
+      style: {},
+      geometry: {},
+    } as DataState;
+
+    const style = shape.style as Record<string, unknown>;
+    const geometry = shape.geometry as Record<string, unknown>;
+
+    for (const property of styleProps) {
+      snapshot.style![property] = style[property];
+    }
+
+    for (const property of geometryProps) {
+      snapshot.geometry![property] = geometry[property];
+    }
+
+    return snapshot;
   }
 
   // ================= PRIVATE =================
@@ -431,16 +590,18 @@ export default class ShantanuJSTestTool {
    * - Must be called manually → no automatic isolation guarantee
    */
   public resetState() {
-    this.#ctx = { shapes: {} } as ctxParam;
+    this.#context = { shapes: {} } as Context;
     this.#errors = {
       setupErrors: [],
       actionErrors: [],
-      verifyErrors: []
+      verifyErrors: [],
     };
+
+    this.#results.tests = {};
   }
 
   /**
-   * Validates structural integrity of a visual test definition.
+   * Validates structural integrity of a sh test definition.
    *
    * Ensures presence of mandatory components:
    * - testInfo
@@ -456,11 +617,11 @@ export default class ShantanuJSTestTool {
    * - No type validation → only existence is checked
    * - Does not validate internal structure of fields
    */
-  #validateTest(testDef: visualTestParams) {
-    if (!testDef.testInfo) throw new Error('Missing test info');
-    if (!testDef.setup) throw new Error('Missing setup()');
-    if (!testDef.actions) throw new Error('Missing actions()');
-    if (!testDef.expect) throw new Error('Missing verify()');
+  #validateTest(testDef: shTestParams) {
+    if (!testDef.testInfo) throw new Error("Missing test info");
+    if (!testDef.setup) throw new Error("Missing setup()");
+    if (!testDef.actions) throw new Error("Missing actions()");
+    if (!testDef.expect) throw new Error("Missing verify()");
   }
 
   /**
@@ -509,237 +670,235 @@ export default class ShantanuJSTestTool {
    * - Uses live ctx instead of snapshot for shape access → inconsistency risk
    * - No validation for missing shapes → undefined access possible
    */
-  #runVerify(verifyBlock: verifyParams, ctx: ctxParam) {
-    const assertions: outputParam['assertions'] = [];
+  #runVerify(verifyBlock: ExpectedBlock, ctx: Context) {
+    const assertions: OutputParam["assertions"] = [];
 
-    const { shapes, constraints, style, geometry, error } = verifyBlock;
-
-    this.#constraints = { ...this.#constraints, ...constraints };
+    const { testSubject, style, geometry, error } = verifyBlock;
 
     if (!style && !geometry && !error) {
-      throw new Error('No testing parameter provided');
+      throw new Error("No testing parameter provided");
     }
 
-    for (const i of shapes) {
-      const shape = ctx.shapes[i] as GraphicsRenderNodeWithInternals;
+    const shape = ctx.shapes[testSubject] as GraphicsRenderNodeWithInternals;
 
-      if (style) {
-        this.#verifyStyle(shape, style, assertions);
-      }
+    if (style) {
+      this.#verifyStyle(shape, style, assertions);
+    }
 
-      if (geometry) {
-        this.#verifyGeometry(shape, geometry, assertions);
-      }
+    if (geometry) {
+      this.#verifyGeometry(shape, geometry, assertions);
+    }
 
-      if (error) {
-        this.#verifyError(error, assertions);
-      }
+    if (error) {
+      this.#verifyError(error, assertions);
     }
 
     return assertions;
   }
 
   /**
-   * Verifies style properties of a shape against expected values.
+   * Verifies the style state of a shape against the expected specification.
    *
-   * Flow:
-   * - Resolves both library-level and browser-computed styles
-   * - Normalizes property aliases (e.g., strokeColor → stroke)
-   * - Compares actual vs expected using appropriate comparator
-   * - Records assertions for each enabled oracle (library/browser)
+   * For each requested style property, assertions are generated using the
+   * enabled oracle(s):
+   * - Library oracle: compares against the library's internal style state.
+   * - Browser oracle: compares against the browser's computed style.
    *
-   * @param shape - Target shape instance
-   * @param style - Expected style properties (key-value pairs)
-   * @param assertions - Accumulator for assertion results
+   * Supported comparison modes:
+   * - Equality (`attrs`)
+   * - Inequality (`notEqualTo`)
    *
-   * @sideEffects
-   * - Pushes assertion objects into provided array
+   * @param shape - Target shape under verification.
+   * @param style - Expected style verification specification.
+   * @param assertions - Assertion accumulator.
    *
-   * @risk
-   * - Skips nested style objects silently
-   * - Relies on DOM + computed styles → environment dependent
-   * - No guard if shape or element is invalid
+   * @remarks
+   * This method performs verification only. It does not mutate the shape or the
+   * testing context.
    */
   #verifyStyle(
     shape: GraphicsRenderNodeWithInternals,
-    style: verifyParams['style'],
-    assertions: outputParam['assertions']
-  ) {
-    const oracle = this.#getOracleFlags();
-    const el = shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
-    const computed = window.getComputedStyle(el);
-
+    style: ExpectedBlock["style"],
+    assertions: OutputParam["assertions"],
+  ): void {
     if (!style) return;
 
-    for (let [prop, expected] of Object.entries(style)) {
-      prop == 'strokeColor' && (prop = 'stroke');
-      prop == 'strokeWidth' && (prop = 'stroke-width');
+    const oracle = this.#getOracleFlags();
 
-      // Ignore complex/nested style definitions
-      if (typeof expected === 'object') continue;
+    const element = shape[GET_INTERNAL_GRAPHICS_METHOD](
+      DEV_INTERNAL_ACCESS_KEY,
+    );
+    const computedStyle = window.getComputedStyle(element);
+    const libraryStyle = shape.style as Record<string, Primitive>;
 
-      if (oracle.library) {
-        const actual = shape.attrs(prop) as Primitive;
+    const verifyGroup = (
+      properties: StyleData | undefined,
+      mode: "eq" | "neq",
+    ) => {
+      if (!properties) return;
 
-        const result = ['stroke', 'fill'].includes(prop)
-          ? this.#compareColor(actual as string, expected as string)
-          : this.#compare(actual, expected as Primitive);
+      for (const [property, data] of Object.entries(properties)) {
+        const { value: expected, expectedStatus } = data;
 
-        assertions.push({
-          crossCheck: 'library',
-          domain: 'style',
-          property: prop,
-          ...result
-        });
-      }
-
-      if (oracle.browser) {
-        const actual = (computed as any)[prop] as Primitive;
-
-        const result = ['stroke', 'fill'].includes(prop)
-          ? this.#compareColor(actual as string, expected as string)
-          : this.#compare(actual, expected as Primitive);
-
-        assertions.push({
-          crossCheck: 'browser',
-          domain: 'style',
-          property: prop,
-          ...result
-        });
-      }
-    }
-  }
-
-  /**
-   * Verifies geometric properties of a shape using tolerance-based comparison.
-   *
-   * Flow:
-   * - Resolves tolerance from constraints (default fallback applied)
-   * - Processes geometry rules (attr/equalTo/greaterThan/lessThan)
-   * - Compares values via library attributes and/or browser BBox matrices
-   * - Pushes assertion results per oracle (library/browser)
-   *
-   * @param shape - Target shape instance
-   * @param geometry - Geometry rules with comparison modes
-   * @param assertions - Accumulator for assertion results
-   *
-   * @sideEffects
-   * - Appends geometry assertions into provided array
-   *
-   * @risk
-   * - Browser check ignores per-property mapping (BBox-level only)
-   * - No guard for missing attributes → undefined comparisons
-   * - Recomputes BBox inside loop → inefficient for large inputs
-   */
-  #verifyGeometry(
-    shape: GraphicsRenderNodeWithInternals,
-    geometry: verifyParams['geometry'],
-    assertions: outputParam['assertions']
-  ) {
-    const tolerance = 0;
-
-    const process = (attrs: geoAttrMap, mode: CompareMode) => {
-      const localTolerance =
-        'tolerance' in attrs ? attrs.tolerance ?? 0 : tolerance;
-
-      for (const [k, expected] of Object.entries(attrs)) {
-        if (k === 'tolerance') continue;
-        const oracle = this.#getOracleFlags();
+        const compare = (actual: Primitive) =>
+          ["fill", "stroke"].includes(property)
+            ? this.#compareColor(actual as string, expected as string, mode)
+            : this.#compare(actual, expected, mode);
 
         if (oracle.library) {
-          const actualLib = shape.attrs(k) as number;
-          const resultLib = this.#compareNumber(
-            actualLib,
-            expected as number,
-            localTolerance,
-            mode
-          );
+          const result = compare(libraryStyle[property]);
 
           assertions.push({
-            crossCheck: 'library',
-            domain: 'geometry',
-            property: k,
-            ...resultLib
+            crossCheck: "library",
+            domain: "style",
+            property,
+            expectedStatus,
+            checkType: mode,
+            ...result,
+          });
+        }
+
+        if (oracle.browser) {
+          const result = compare(computedStyle[property as any] as Primitive);
+
+          assertions.push({
+            crossCheck: "browser",
+            domain: "style",
+            property,
+            expectedStatus,
+            checkType: mode,
+            ...result,
           });
         }
       }
     };
 
+    verifyGroup(style.attrs, "eq");
+    verifyGroup(style.notEqualTo, "neq");
+  }
+
+  /**
+   * Verifies the geometry state of a shape against the expected specification.
+   *
+   * Supported comparison modes:
+   * - Equality
+   * - Inequality
+   * - Greater than
+   * - Less than
+   * - Greater than or equal
+   * - Less than or equal
+   *
+   * Geometry assertions are performed against the library's internal geometry
+   * state. Bounding box assertions additionally compare the library-generated
+   * bounding box with the browser-computed bounding box.
+   *
+   * @param shape - Target shape under verification.
+   * @param geometry - Expected geometry verification specification.
+   * @param assertions - Assertion accumulator.
+   *
+   * @remarks
+   * This method performs verification only and does not mutate the testing
+   * context or the target shape.
+   */
+  #verifyGeometry(
+    shape: GraphicsRenderNodeWithInternals,
+    geometry: ExpectedBlock["geometry"],
+    assertions: OutputParam["assertions"],
+  ): void {
     if (!geometry) return;
 
-    geometry.attr && process(geometry.attr, 'eq');
-    geometry.equalTo && process(geometry.equalTo, 'eq');
-    geometry.greaterThan && process(geometry.greaterThan, 'gt');
-    geometry.lessThan && process(geometry.lessThan, 'lt');
+    const oracle = this.#getOracleFlags();
+    const actualGeometry = shape.geometry as Record<string, number>;
 
-    // NEW (recommended)
-    geometry.greaterThanOrEqual && process(geometry.greaterThanOrEqual, 'gte');
-    geometry.lessThanOrEqual && process(geometry.lessThanOrEqual, 'lte');
+    const verifyGroup = (
+      properties: GeometryData | undefined,
+      mode: CompareMode,
+    ) => {
+      if (!properties || !oracle.library) return;
 
-    if (geometry.bbox) {
-      const oracle = this.#getOracleFlags();
+      for (const [property, data] of Object.entries(properties)) {
+        const { value: expected, expectedStatus, tolerance = 0 } = data;
 
-      if (oracle.browser && geometry && geometry.bbox.check) {
-        const libBBox = this.#getLibraryBBoxPoints(shape);
-        const browserBBox = this.#getBrowserBBoxPoints(
-          this.#ctx['canvas'],
-          shape
-        );
-
-        const resultBrowser = this.#compareBBoxMatrices(
-          libBBox,
-          browserBBox,
-          geometry?.bbox?.tolerance ?? 0.25
+        const result = this.#compareNumber(
+          actualGeometry[property],
+          expected as number,
+          tolerance,
+          mode,
         );
 
         assertions.push({
-          crossCheck: 'browser',
-          domain: 'geometry',
-          property: 'bbox',
-          ...resultBrowser
+          crossCheck: "library",
+          domain: "geometry",
+          property,
+          expectedStatus,
+          checkType: mode,
+          ...result,
         });
       }
+    };
+
+    verifyGroup(geometry.equalTo, "eq");
+    verifyGroup(geometry.notEqualTo, "neq");
+    verifyGroup(geometry.greaterThan, "gt");
+    verifyGroup(geometry.lessThan, "lt");
+    verifyGroup(geometry.greaterThanOrEqual, "gte");
+    verifyGroup(geometry.lessThanOrEqual, "lte");
+
+    if (oracle.browser && geometry.bbox?.check) {
+      const result = this.#compareBBoxMatrices(
+        this.#getLibraryBBoxPoints(shape),
+        this.#getBrowserBBoxPoints(this.#context.canvas, shape),
+        geometry.bbox.tolerance ?? 0.25,
+      );
+
+      assertions.push({
+        crossCheck: "browser",
+        domain: "geometry",
+        property: "bbox",
+        checkType: "eq",
+        expectedStatus: geometry.bbox.expectedStatus ?? result.actualStatus,
+        ...result,
+      });
     }
   }
 
   /**
-   * Verifies that an expected error condition is triggered.
+   * Verifies an expected error assertion.
    *
-   * Behavior:
-   * - Simulates throwing the expected error
-   * - Captures the thrown instance
-   * - Records assertion comparing expected vs actual error
+   * This method records whether an expected error is thrown and generates a
+   * corresponding assertion result. It does not execute the actual failure path;
+   * instead, it validates the supplied error object as part of the testing
+   * pipeline.
    *
-   * @param errorBlock - Object containing expected Error instance
-   * @param assertions - Accumulator for assertion results
+   * @param error - Expected error specification.
+   * @param assertions - Assertion accumulator.
    *
-   * @sideEffects
-   * - Appends error assertion into provided array
-   *
-   * @risk
-   * - Does not execute real failure path → only validates presence of error object
-   * - No deep comparison (message/type/stack not validated)
+   * @remarks
+   * Only the existence of the thrown error is verified. Detailed comparisons
+   * such as error type, message, cause, or stack trace are intentionally left
+   * to higher-level validation.
    */
   #verifyError(
-    errorBlock: { expected: Error },
-    assertions: outputParam['assertions']
-  ) {
-    const expected = errorBlock.expected;
+    error: ExpectedBlock["error"],
+    assertions: OutputParam["assertions"],
+  ): void {
+    if (!error) return;
 
-    let thrown: Error | null = null;
+    let actual: Error | null = null;
 
     try {
-      throw expected;
-    } catch (e) {
-      thrown = e as Error;
+      throw error.expected;
+    } catch (thrown) {
+      actual = thrown as Error;
     }
 
     assertions.push({
-      domain: 'error',
-      property: 'throws',
-      status: thrown ? 'pass' : 'fail',
-      expected,
-      actual: thrown
+      domain: "error",
+      property: "throws",
+      actualStatus: actual ? "pass" : "fail",
+      expectedStatus: error.expectedStatus,
+      expected: error.expected,
+      actual,
     });
   }
 
@@ -767,37 +926,42 @@ export default class ShantanuJSTestTool {
     actual: number,
     expected: number,
     tolerance: number,
-    mode: CompareMode
+    mode: CompareMode,
   ): GeometryCheckResult {
     const delta = Math.abs(actual - expected);
 
     let pass = false;
-    let reason = '';
+    let reason = "";
 
     switch (mode) {
-      case 'eq':
+      case "eq":
         pass = delta <= tolerance;
-        reason = 'equal (within tolerance)';
+        reason = "equal (within tolerance)";
         break;
 
-      case 'gt':
+      case "neq":
+        pass = delta > tolerance;
+        reason = "not equal (outside tolerance)";
+        break;
+
+      case "gt":
         pass = actual > expected;
-        reason = 'greater than';
+        reason = "greater than";
         break;
 
-      case 'lt':
+      case "lt":
         pass = actual < expected;
-        reason = 'less than';
+        reason = "less than";
         break;
 
-      case 'gte':
+      case "gte":
         pass = actual > expected || delta <= tolerance;
-        reason = 'greater than or equal (with tolerance)';
+        reason = "greater than or equal (with tolerance)";
         break;
 
-      case 'lte':
+      case "lte":
         pass = actual < expected || delta <= tolerance;
-        reason = 'less than or equal (with tolerance)';
+        reason = "less than or equal (with tolerance)";
         break;
     }
 
@@ -806,8 +970,8 @@ export default class ShantanuJSTestTool {
       expected,
       delta,
       tolerance,
-      status: pass ? 'pass' : 'fail',
-      reason
+      actualStatus: pass ? "pass" : "fail",
+      reason,
     };
   }
 
@@ -826,11 +990,18 @@ export default class ShantanuJSTestTool {
    * @risk
    * - Fails for semantically equal but structurally different values (e.g., "1" vs 1)
    */
-  #compare(actual: Primitive, expected: Primitive): OracleResult {
+
+  #compare(
+    actual: Primitive,
+    expected: Primitive,
+    check: "eq" | "neq" = "eq",
+  ): OracleResult {
+    const pass = check === "eq" ? actual === expected : actual !== expected;
+
     return {
       actual,
       expected,
-      status: actual === expected ? 'pass' : 'fail'
+      actualStatus: pass ? "pass" : "fail",
     };
   }
 
@@ -873,7 +1044,7 @@ export default class ShantanuJSTestTool {
       [x, y],
       [x + w, y],
       [x + w, y + h],
-      [x, y + h]
+      [x, y + h],
     ] as [number, number][];
   }
 
@@ -919,23 +1090,23 @@ export default class ShantanuJSTestTool {
    */
   #getBrowserBBoxPoints(canvas: any, shape: GraphicsRenderNodeWithInternals) {
     const canvasEl = canvas[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     );
     const canvasRect = canvasEl.getBoundingClientRect();
 
     const styles = window.getComputedStyle(canvasEl);
 
-    const borderLeft = parseFloat(styles.borderLeftWidth || '0');
-    const borderTop = parseFloat(styles.borderTopWidth || '0');
+    const borderLeft = parseFloat(styles.borderLeftWidth || "0");
+    const borderTop = parseFloat(styles.borderTopWidth || "0");
 
-    const paddingLeft = parseFloat(styles.paddingLeft || '0');
-    const paddingTop = parseFloat(styles.paddingTop || '0');
+    const paddingLeft = parseFloat(styles.paddingLeft || "0");
+    const paddingTop = parseFloat(styles.paddingTop || "0");
 
     const offsetX = canvasRect.x + borderLeft + paddingLeft;
     const offsetY = canvasRect.y + borderTop + paddingTop;
 
     const shapeFig = shape[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     );
     const rect = shapeFig.getBoundingClientRect();
 
@@ -945,7 +1116,7 @@ export default class ShantanuJSTestTool {
 
     const cor = corners.map(([px, py]) => [px - offsetX, py - offsetY]) as [
       number,
-      number
+      number,
     ][];
 
     return cor;
@@ -975,15 +1146,15 @@ export default class ShantanuJSTestTool {
   #compareBBoxMatrices(
     actual: [number, number][],
     expected: [number, number][],
-    epsilon = 0.5
+    epsilon = 0.5,
   ): {
     actual: [number, number][];
     expected: [number, number][];
     delta: number;
-    status: 'pass' | 'fail';
+    actualStatus: "pass" | "fail";
   } {
     if (actual.length !== 4 || expected.length !== 4)
-      throw new Error('BBox must have 4 corners.');
+      throw new Error("BBox must have 4 corners.");
 
     let pass = true;
 
@@ -1004,7 +1175,7 @@ export default class ShantanuJSTestTool {
       actual,
       expected,
       delta: epsilon,
-      status: pass ? 'pass' : 'fail'
+      actualStatus: pass ? "pass" : "fail",
     };
   }
 
@@ -1027,7 +1198,7 @@ export default class ShantanuJSTestTool {
    * - Implicit normalization depends on browser engine
    */
   #toRGBA(input: string): RGBA {
-    const el = document.createElement('div');
+    const el = document.createElement("div");
     el.style.color = input;
 
     document.body.appendChild(el);
@@ -1037,9 +1208,9 @@ export default class ShantanuJSTestTool {
     document.body.removeChild(el);
 
     const match = computed.match(/rgba?\(([^)]+)\)/);
-    if (!match) throw new Error('Invalid color');
+    if (!match) throw new Error("Invalid color");
 
-    const parts = match[1].split(',').map((v) => parseFloat(v.trim()));
+    const parts = match[1].split(",").map((v) => parseFloat(v.trim()));
 
     const [r, g, b, a = 1] = parts;
     return [r, g, b, a];
@@ -1061,16 +1232,20 @@ export default class ShantanuJSTestTool {
    * - Relies on #toRGBA → inherits DOM dependency
    * - No error handling → invalid colors will throw upstream
    */
-  #compareColor(actual: string, expected: string): OracleResult {
+  #compareColor(
+    actual: string,
+    expected: string,
+    check: "eq" | "neq" = "eq",
+  ): OracleResult {
     const a = this.#toRGBA(actual);
     const e = this.#toRGBA(expected);
 
-    const pass = this.#compareRGBA(a, e);
+    const pass = this.#compareRGBA(a, e, 0.025, check);
 
     return {
       actual,
       expected,
-      status: pass ? 'pass' : 'fail'
+      actualStatus: pass ? "pass" : "fail",
     };
   }
 
@@ -1091,12 +1266,22 @@ export default class ShantanuJSTestTool {
    * - Uniform epsilon for all channels → not perceptually accurate
    * - No clamping/validation of RGBA ranges
    */
-  #compareRGBA(a: RGBA, b: RGBA, epsilon = 0.025) {
+
+  #compareRGBA(
+    a: RGBA,
+    b: RGBA,
+    epsilon = 0.025,
+    check: "eq" | "neq" = "eq",
+  ): boolean {
+    let equal = true;
+
     for (let i = 0; i < 4; i++) {
       if (Math.abs(a[i] - b[i]) > epsilon) {
-        return false;
+        equal = false;
+        break;
       }
     }
-    return true;
+
+    return check === "eq" ? equal : !equal;
   }
 }
