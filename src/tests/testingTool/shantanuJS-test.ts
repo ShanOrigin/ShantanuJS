@@ -46,7 +46,7 @@ export type fn = (api: ShantanuJSTypes, ctx: Context) => void;
 
 export type shTestParams = {
   testInfo: TestInfo;
-  setup: fn;
+  setup?: fn;
   actions: fn;
   expect: ExpectedBlock;
 };
@@ -307,15 +307,17 @@ export default class ShantanuJSTestTool {
     // Setup
     // ---------------------------------------------------------------------------
 
-    try {
-      testDef.setup(this.#api, this.#context);
-      this.#context.canvas.engine.flush();
-    } catch (error) {
-      setupErrors.push(error as Error);
-    }
+    if (testDef.setup) {
+      try {
+        testDef.setup(this.#api, this.#context);
+        this.#context.canvas.engine.flush();
+      } catch (error) {
+        setupErrors.push(error as Error);
+      }
 
-    if (setupErrors.length) {
-      return this.#handleErrors("setup", setupErrors);
+      if (setupErrors.length) {
+        return this.#handleErrors("setup", setupErrors);
+      }
     }
 
     // ---------------------------------------------------------------------------
@@ -619,7 +621,6 @@ export default class ShantanuJSTestTool {
    */
   #validateTest(testDef: shTestParams) {
     if (!testDef.testInfo) throw new Error("Missing test info");
-    if (!testDef.setup) throw new Error("Missing setup()");
     if (!testDef.actions) throw new Error("Missing actions()");
     if (!testDef.expect) throw new Error("Missing verify()");
   }
