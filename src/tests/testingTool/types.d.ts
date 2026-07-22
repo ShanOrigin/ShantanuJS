@@ -5,7 +5,8 @@
 /**
  * Supported comparison operators.
  */
-export type CompareMode = "eq" | "neq" | "gt" | "lt" | "gte" | "lte" | "attr";
+export type CompareMode =
+  "eq" | "neq" | "gt" | "lt" | "gte" | "lte" | "attr" | "custom";
 
 /**
  * Primitive values supported by the testing framework.
@@ -20,6 +21,7 @@ export type AssertionStatus = "pass" | "fail";
 export type DataState = {
   style?: Record<string, unknown>;
   geometry?: Record<string, unknown>;
+  "user-defined"?: any;
 };
 
 export type StatesData = {
@@ -91,6 +93,55 @@ export type ConstraintsParams = {
 };
 
 /**
+ * Represents a single custom validation rule.
+ *
+ * Use validators when the built-in `style`, `geometry`, or `error`
+ * assertions are insufficient. A validator receives the test subject
+ * and the expected value, and returns whether the validation passed
+ * or failed.
+ *
+ * This allows testing any custom logic, such as:
+ * - Bounding box validation with custom algorithms.
+ * - Clone or deep-copy verification.
+ * - Complex geometry calculations.
+ * - Internal state validation.
+ * - Multiple property checks.
+ * - Any user-defined assertion.
+ */
+export type Validator = {
+  /**
+   * Expected value passed to the validation function.
+   */
+  value: unknown;
+
+  /**
+   * Expected outcome of the validation.
+   */
+  expectedStatus: AssertionStatus;
+  tolerance?: number;
+  /**
+   * Performs custom validation.
+   *
+   * @param shape The test subject.
+   * @param expected The expected value supplied above.
+   *
+   * @returns "pass" if the validation succeeds, otherwise "fail".
+   */
+  validate: (
+    shape: GraphicsRenderNodeWithInternals,
+    expected: { value: unknown; tolerance?: number },
+  ) => AssertionStatus;
+};
+
+/**
+ * Collection of custom validators.
+ *
+ * The key is an arbitrary validator name used only for reporting
+ * and identification.
+ */
+export type Validators = Record<string, Validator>;
+
+/**
  * Expected validation configuration.
  */
 export type ExpectedBlock = {
@@ -110,13 +161,12 @@ export type ExpectedBlock = {
     lessThan?: GeometryData;
     greaterThanOrEqual?: GeometryData;
     lessThanOrEqual?: GeometryData;
-
-    bbox?: {
-      check: boolean;
-      tolerance?: number;
-      expectedStatus?: AssertionStatus;
-    };
   };
+
+  /**
+   * Custom user-defined validation rules.
+   */
+  validators?: Validators;
 
   error?: {
     expected: Error;
@@ -195,15 +245,15 @@ export type TestStatus = {
 export type AssertionResult = {
   crossCheck?: "library" | "browser" | "system";
 
-  domain: "style" | "geometry" | "error";
+  domain: "style" | "geometry" | "error" | "user-defined";
   checkType?: CompareMode;
   property: string;
 
   actualStatus: AssertionStatus;
   expectedStatus: AssertionStatus;
 
-  actual: unknown;
-  expected: unknown;
+  actual?: unknown;
+  expected?: unknown;
 
   delta?: number;
   tolerance?: number;
