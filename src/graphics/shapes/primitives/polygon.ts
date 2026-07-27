@@ -26,6 +26,11 @@ import {
 } from "../../../utils/helpers/helpers.js";
 import { computeAABBPoints } from "../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js";
 
+type PolygonBaseProps = ConstructorPropsTypes<"polygon">;
+type PolygonConstructorProps = Omit<PolygonBaseProps, "points"> & {
+  points: string | number[][];
+};
+
 export class Polygon extends RenderNode<"polygon"> {
   #copies: number = 0;
   /**
@@ -61,9 +66,7 @@ export class Polygon extends RenderNode<"polygon"> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(
-    props: ConstructorPropsTypes<"polygon"> & { points: number[][] },
-  ) {
+  constructor(props: PolygonConstructorProps) {
     super("polygon", props?.id ?? "");
 
     "id" in props && delete props.id;
@@ -102,7 +105,7 @@ export class Polygon extends RenderNode<"polygon"> {
       throw new Error("Given Path is Not Closed please close path with 'Z'");
     }
     parameterTypeValidator(
-      props,
+      props as PolygonBaseProps,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
@@ -112,7 +115,7 @@ export class Polygon extends RenderNode<"polygon"> {
     // for initial setup through RenderNode
     (props as ConstructorPropsTypes<"polygon"> & InitialProps)["initial"] =
       true;
-    this.attrs(props);
+    this.attrs(props as PolygonBaseProps);
   }
 
   static validProps() {
