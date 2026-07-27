@@ -483,29 +483,61 @@ function displayAnalysis(fileData: { meta: MetaData; tests: Tests }) {
   for (const [id, test] of Object.entries(tests)) {
     total++;
 
-    const assertions = test.assertions || [];
+    const status = test.status;
 
-    const failedIndices: number[] = [];
-
-    assertions.forEach((a: any, index: number) => {
-      if (a.status !== "pass") {
-        failedIndices.push(index);
-      }
-    });
-
-    const isPass = failedIndices.length === 0;
-
-    if (isPass) {
+    if (!status || status.totalFailedAssertions === 0) {
       passed++;
+
       console.log(`\t${total} - ${id}\t\t ✔`);
-    } else {
-      failed++;
-
-      console.log(`\t${total} - ${id}\t\t ✖`);
-
-      // ---- print failed assertion indices ----
-      console.log(`\tFailed Assertions: [${failedIndices.join(", ")}]`);
+      continue;
     }
+
+    failed++;
+
+    console.log(`\t${total} - ${id}\t\t ✖`);
+
+    console.log(
+      `\tFailed Assertions : ${status.totalFailedAssertions}/${status.totalPassedAssertions + status.totalFailedAssertions}`,
+    );
+
+    for (const assertion of test.assertions) {
+      if (assertion.actualStatus === assertion.expectedStatus) {
+        continue;
+      }
+
+      console.log(`\n\t  • Domain    : ${assertion.domain}`);
+      console.log(`\t    Property  : ${assertion.property}`);
+
+      if (assertion.checkType) {
+        console.log(`\t    Check     : ${assertion.checkType}`);
+      }
+
+      console.log(`\t    Expected  : ${assertion.expectedStatus}`);
+
+      console.log(`\t    Actual    : ${assertion.actualStatus}`);
+
+      if (assertion.reason) {
+        console.log(`\t    Reason    : ${assertion.reason}`);
+      }
+
+      if (assertion.actual !== undefined) {
+        console.log(`\t    Actual Value   : ${assertion.actual}`);
+      }
+
+      if (assertion.expected !== undefined) {
+        console.log(`\t    Expected Value : ${assertion.expected}`);
+      }
+
+      if (assertion.delta !== undefined) {
+        console.log(`\t    Delta          : ${assertion.delta}`);
+      }
+
+      if (assertion.tolerance !== undefined) {
+        console.log(`\t    Tolerance      : ${assertion.tolerance}`);
+      }
+    }
+
+    console.log();
   }
 
   console.log("\n\t===============================================\n\n");
