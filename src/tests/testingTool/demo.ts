@@ -24,6 +24,31 @@ export function runTests() {
 
       // Store in context (shared across phases)
       ctx.canvas = canvas;
+
+      const rectangle = new api.Shapes.Rect({
+        x: 20,
+        y: 40,
+        width: 50,
+        height: 40,
+      });
+      ctx.canvas.add(rectangle);
+
+      rectangle.attrs({
+        stroke: "purple",
+        "stroke-width": 2,
+      });
+
+      const line = new api.Shapes.Line({ x1: 20, y1: 40, x2: 50, y2: 40 });
+      canvas.add(line);
+
+      line.attrs({
+        stroke: "red",
+        "stroke-width": 2,
+      });
+
+      // Store shapes in context
+      ctx.shapes = {};
+      ctx.shapes.line = line;
     },
 
     // --------------------------------------------------
@@ -44,33 +69,6 @@ export function runTests() {
         // --------------------------------------------------
         // SETUP PHASE (Arrange)
         // --------------------------------------------------
-        setup(api, ctx) {
-          const rectangle = new api.Shapes.Rect({
-            x: 20,
-            y: 40,
-            width: 50,
-            height: 40,
-          });
-          ctx.canvas.add(rectangle);
-
-          rectangle.attrs({
-            stroke: "purple",
-            "stroke-width": 2,
-          });
-
-          const line = new api.Shapes.Line({ x1: 20, y1: 40, x2: 50, y2: 40 });
-          ctx.canvas.add(line);
-
-          line.attrs({
-            stroke: "red",
-            "stroke-width": 2,
-          });
-
-          // Store shapes in context
-          ctx.shapes = {};
-          ctx.shapes.line = line;
-        },
-
         // --------------------------------------------------
         // ACTIONS PHASE (Act)
         // --------------------------------------------------
@@ -79,20 +77,64 @@ export function runTests() {
           ctx.shapes.line.attrs({
             stroke: "blue",
           });
+
+          console.log(ctx.shapes.line);
         },
 
         // --------------------------------------------------
         // EXPECT PHASE (Assert)
         // --------------------------------------------------
         expect: {
-          constraints: { save: false },
+          constraints: { save: true, oracle: { browser: false } },
           // Target shapes (by key from ctx.shapes)
           testSubject: "line",
 
           // -------- STYLE VALIDATION --------
           style: {
-            attrs: {},
-            notEqualTo: {},
+            attrs: {
+              stroke: {
+                value: "blue",
+                expectedStatus: "pass",
+              },
+              "stroke-width": {
+                value: 3,
+                expectedStatus: "pass",
+              },
+            },
+            notEqualTo: {
+              stroke: {
+                value: "red",
+                expectedStatus: "pass",
+              },
+              "stroke-width": {
+                value: 2,
+                expectedStatus: "fail",
+              },
+            },
+          },
+
+          validators: {
+            buffer: {
+              tolerance: 0.5,
+              value: [20, 40, 50, 40],
+              expectedStatus: "pass",
+              validate(shape, expected) {
+                const [x1, y1, , x2, y2] = shape.geometry.buffer; // Correctly destructuring the needed indices
+                const actual = [x1, y1, x2, y2];
+                const { value, tolerance = 0 } = expected as {
+                  value: number[];
+                  tolerance: number;
+                };
+
+                // Use .some() instead of .any(), fix type warnings, and use valid ternary syntax
+                const hasMismatch = value.some(
+                  (element: number, i: number) =>
+                    Math.abs(element - actual[i]) > tolerance,
+                );
+
+                return hasMismatch ? "fail" : "pass";
+              },
+            },
           },
 
           // -------- GEOMETRY VALIDATION --------
@@ -102,9 +144,10 @@ export function runTests() {
           },
 
           // -------- ERROR VALIDATION (optional) --------
-          // error: {
-          //   expected: new Error('Expected error')
-          // }
+          error: {
+            expected: new Error("Expected error"),
+            expectedStatus: "pass",
+          },
         },
       });
     },
