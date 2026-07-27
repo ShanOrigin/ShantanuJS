@@ -1,4 +1,4 @@
-import { BrowserInfo, LegacyBrowserInfo } from './types';
+import { BrowserInfo, LegacyBrowserInfo } from "./types";
 /**
  * Parses browser name and version from a given User-Agent string.
  *
@@ -19,25 +19,25 @@ function parseBrowserFromUA(ua: string): BrowserInfo {
 
   match = ua.match(/Firefox\/([\d.]+)/);
   if (match) {
-    return { name: 'Firefox', version: match[1] };
+    return { name: "Firefox", version: match[1] };
   }
 
   match = ua.match(/Edg\/([\d.]+)/);
   if (match) {
-    return { name: 'Edge', version: match[1] };
+    return { name: "Edge", version: match[1] };
   }
 
   match = ua.match(/Chrome\/([\d.]+)/);
   if (match) {
-    return { name: 'Chrome', version: match[1] };
+    return { name: "Chrome", version: match[1] };
   }
 
   match = ua.match(/Version\/([\d.]+).*Safari/);
   if (match) {
-    return { name: 'Safari', version: match[1] };
+    return { name: "Safari", version: match[1] };
   }
 
-  return { name: 'Unknown', version: 'Unknown' };
+  return { name: "Unknown", version: "Unknown" };
 }
 
 /**
@@ -52,13 +52,13 @@ function parseBrowserFromUA(ua: string): BrowserInfo {
 function getPlatformInfo(): string {
   const ua: string = navigator.userAgent;
 
-  if (/Android/.test(ua)) return 'Android';
-  if (/iPhone|iPad|iPod/.test(ua)) return 'iOS';
-  if (/Win/.test(ua)) return 'Windows';
-  if (/Mac/.test(ua)) return 'macOS';
-  if (/Linux/.test(ua)) return 'Linux';
+  if (/Android/.test(ua)) return "Android";
+  if (/iPhone|iPad|iPod/.test(ua)) return "iOS";
+  if (/Win/.test(ua)) return "Windows";
+  if (/Mac/.test(ua)) return "macOS";
+  if (/Linux/.test(ua)) return "Linux";
 
-  return 'Unknown';
+  return "Unknown";
 }
 
 /**
@@ -78,6 +78,6 @@ export function getBrowserInfoLegacy(): LegacyBrowserInfo {
 
   return {
     browser: parseBrowserFromUA(ua),
-    platform: getPlatformInfo()
+    platform: getPlatformInfo(),
   };
 }

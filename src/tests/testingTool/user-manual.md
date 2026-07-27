@@ -6,9 +6,9 @@
 
 This testing framework allows you to:
 
-- Define visual test cases for your graphics engine  
-- Validate style, geometry, and error behavior  
-- Execute tests in a controlled environment lifecycle  
+- Define visual test cases for your graphics engine
+- Validate style, geometry, and error behavior
+- Execute tests in a controlled environment lifecycle
 
 ---
 
@@ -20,8 +20,6 @@ Create Test Instance ↓ Initialize Environment ↓ Run Tests ↓ Execute: setup
 
 ## 🚀 **Basic Usage Example**
 
-
-
 # **you can use demo.ts as starter code and can modify.**
 
 javascript
@@ -30,109 +28,108 @@ import shantanuJSTest from './shantanuJSTest.js';
 
 // Entry function (user-defined)
 export function runTests() {
-  // Create test environment (MANDATORY: pass import.meta.url)
-  const testEnv = new shantanuJSTest(import.meta.url);
+// Create test environment (MANDATORY: pass import.meta.url)
+const testEnv = new shantanuJSTest(import.meta.url);
 
-  // Start environment
-  testEnv.env({
-    // --------------------------------------------------
-    // INITIALIZE PHASE
-    // --------------------------------------------------
-    initialize(api, ctx) {
-      // Create canvas
-      const canvas = new api.Canvas('testing', 250, 400, 'svg');
+// Start environment
+testEnv.env({
+// --------------------------------------------------
+// INITIALIZE PHASE
+// --------------------------------------------------
+initialize(api, ctx) {
+// Create canvas
+const canvas = new api.Canvas('testing', 250, 400, 'svg');
 
-      // Apply base styles        
-      canvas.attrs({        
-        fill: 'green',        
-        stroke: 'red',        
-        'stroke-width': 0        
-      });        
-        
-      // Store in context (shared across phases)        
-      ctx.canvas = canvas;        
-    },        
-        
-    // --------------------------------------------------        
-    // RUN PHASE (Test Execution Entry)        
-    // --------------------------------------------------        
-    run(ctx) {        
-      testEnv.visualTest({        
-        // --------------------------------------------------        
-        // TEST METADATA (REQUIRED)        
-        // --------------------------------------------------        
-        testInfo: {        
-          description: 'Update stroke color of a line',        
-          module: 'shapes',        
-          testType: 'unit',        
-          element: 'line'        
-        },        
-        
-        // --------------------------------------------------        
-        // SETUP PHASE (Arrange)        
-        // --------------------------------------------------        
-        setup(api, ctx) {        
-          const rectangle = new api.Rect(20, 40, 50, 80);        
-          ctx.canvas.addTo(rectangle);        
-        
-          rectangle.attrs({        
-            stroke: 'purple',        
-            'stroke-width': 2        
-          });        
-        
-          const line = new api.Line(20, 40, 50, 40);        
-          ctx.canvas.addTo(line);        
-        
-          line.attrs({        
-            stroke: 'red',        
-            'stroke-width': 2        
-          });        
-        
-          // Store shapes in context        
-          ctx.shapes = {};        
-          ctx.shapes.line = line;        
-        },        
-        
-        // --------------------------------------------------        
-        // ACTIONS PHASE (Act)        
-        // --------------------------------------------------        
-        actions(api, ctx) {        
-          // Modify shape        
-          ctx.shapes.line.attrs({        
-            stroke: 'blue'        
-          });        
-        },        
-        
-        // --------------------------------------------------        
-        // EXPECT PHASE (Assert)        
-        // --------------------------------------------------        
-        expect: {        
-          // Target shapes (by key from ctx.shapes)        
-          shapes: ['line'],        
-        
-          // -------- STYLE VALIDATION --------        
-          style: {        
-            strokeColor: 'blue'        
-          },        
-        
-          // -------- GEOMETRY VALIDATION --------        
-          geometry: {        
-            equalTo: {        
-              x1: 20        
-            }        
-          }        
-        
-          // -------- ERROR VALIDATION (optional) --------        
-          // error: {        
-          //   expected: new Error('Expected error')        
-          // }        
-        }        
-      });        
+      // Apply base styles
+      canvas.attrs({
+        fill: 'green',
+        stroke: 'red',
+        'stroke-width': 0
+      });
+
+      // Store in context (shared across phases)
+      ctx.canvas = canvas;
+    },
+
+    // --------------------------------------------------
+    // RUN PHASE (Test Execution Entry)
+    // --------------------------------------------------
+    run(ctx) {
+      testEnv.visualTest({
+        // --------------------------------------------------
+        // TEST METADATA (REQUIRED)
+        // --------------------------------------------------
+        testInfo: {
+          description: 'Update stroke color of a line',
+          module: 'shapes',
+          testType: 'unit',
+          element: 'line'
+        },
+
+        // --------------------------------------------------
+        // SETUP PHASE (Arrange)
+        // --------------------------------------------------
+        setup(api, ctx) {
+          const rectangle = new api.Rect(20, 40, 50, 80);
+          ctx.canvas.addTo(rectangle);
+
+          rectangle.attrs({
+            stroke: 'purple',
+            'stroke-width': 2
+          });
+
+          const line = new api.Line(20, 40, 50, 40);
+          ctx.canvas.addTo(line);
+
+          line.attrs({
+            stroke: 'red',
+            'stroke-width': 2
+          });
+
+          // Store shapes in context
+          ctx.shapes = {};
+          ctx.shapes.line = line;
+        },
+
+        // --------------------------------------------------
+        // ACTIONS PHASE (Act)
+        // --------------------------------------------------
+        actions(api, ctx) {
+          // Modify shape
+          ctx.shapes.line.attrs({
+            stroke: 'blue'
+          });
+        },
+
+        // --------------------------------------------------
+        // EXPECT PHASE (Assert)
+        // --------------------------------------------------
+        expect: {
+          // Target shapes (by key from ctx.shapes)
+          shapes: ['line'],
+
+          // -------- STYLE VALIDATION --------
+          style: {
+            strokeColor: 'blue'
+          },
+
+          // -------- GEOMETRY VALIDATION --------
+          geometry: {
+            equalTo: {
+              x1: 20
+            }
+          }
+
+          // -------- ERROR VALIDATION (optional) --------
+          // error: {
+          //   expected: new Error('Expected error')
+          // }
+        }
+      });
     }
 
-  });
+});
 }
-
 
 ---
 
@@ -141,22 +138,20 @@ export function runTests() {
 Shared across all phases:
 
 ctx = {
-  canvas: CanvasInstance,
-  shapes: Record<string, Shape>
+canvas: CanvasInstance,
+shapes: Record<string, Shape>
 }
-
 
 ---
 
 ## 🧪 **"visualTest()" Structure**
 
 visualTest({
-  testInfo,
-  setup,
-  actions,
-  expect
+testInfo,
+setup,
+actions,
+expect
 })
-
 
 ---
 
@@ -165,10 +160,10 @@ visualTest({
 Defines identity of test.
 
 testInfo: {
-  description: string,
-  module: string,
-  testType: string,
-  element: string
+description: string,
+module: string,
+testType: string,
+element: string
 }
 
 Used for:
@@ -178,8 +173,6 @@ logging
 file persistence
 
 grouping
-
-
 
 ---
 
@@ -193,14 +186,11 @@ Add to canvas
 
 Initialize state
 
-
 Rules:
 
 No assertions
 
 Pure setup only
-
-
 
 ---
 
@@ -212,7 +202,6 @@ Apply transformations
 
 Modify state
 
-
 Examples:
 
 change attributes
@@ -221,61 +210,56 @@ apply transforms
 
 trigger behavior
 
-
-
 ---
 
 ##🔹 **4. "expect" (ASSERTION BLOCK)**
 
 This is the core validation layer.
 
-
 ---
 
 ## 🎯 **EXPECT BLOCK — FULL STRUCTURE**
 
 expect: {
-  shapes: string[],
+shapes: string[],
 
-  constraints?: {
-    save?: boolean,
-    oracle?: {
-      browser?: boolean,
-      library?: boolean
-    },
-    tolerance?: {
-      geometry: number
-    }
-  },
-
-  style?: { ... },
-
-  geometry?: { ... },
-
-  error?: {
-    expected: Error
-  }
+constraints?: {
+save?: boolean,
+oracle?: {
+browser?: boolean,
+library?: boolean
+},
+tolerance?: {
+geometry: number
 }
+},
 
+style?: { ... },
+
+geometry?: { ... },
+
+error?: {
+expected: Error
+}
+}
 
 ---
 
 ## 🎨 **STYLE VALIDATION**
 
 style: {
-  fill?: string,
-  strokeColor?: string,
-  strokeWidth?: number,
+fill?: string,
+strokeColor?: string,
+strokeWidth?: number,
 
-  attrs?: {
-    [key: string]: string | number | boolean
-  }
+attrs?: {
+[key: string]: string | number | boolean
+}
 }
 
 What it does:
 
 Compares style properties
-
 
 Uses:
 
@@ -283,22 +267,20 @@ library values
 
 browser computed values (optional)
 
-
-
 ---
 
 ## 📐 **GEOMETRY VALIDATION**
 
 geometry: {
-  attr?: { [key: string]: number },
+attr?: { [key: string]: number },
 
-  equalTo?: { [key: string]: number },
+equalTo?: { [key: string]: number },
 
-  greaterThan?: { [key: string]: number },
+greaterThan?: { [key: string]: number },
 
-  lessThan?: { [key: string]: number },
+lessThan?: { [key: string]: number },
 
-  bbox?: boolean
+bbox?: boolean
 }
 
 What it does:
@@ -307,14 +289,12 @@ Validates spatial properties
 
 Uses tolerance for floating comparisons
 
-
-
 ---
 
 ## ⚠️ **ERROR VALIDATION**
 
 error: {
-  expected: Error
+expected: Error
 }
 
 What it does:
@@ -323,40 +303,35 @@ Checks if expected error is thrown
 
 Validates error type/structure
 
-
-
 ---
 
 ## ⚙️ **CONSTRAINTS**
 
 constraints: {
-  save?: boolean,
+save?: boolean,
 
-  oracle?: {
-    browser?: boolean,
-    library?: boolean
-  },
+oracle?: {
+browser?: boolean,
+library?: boolean
+},
 
-  tolerance?: {
-    geometry: number
-  }
+tolerance?: {
+geometry: number
+}
 }
 
 Purpose:
 
-Field	Meaning
+Field Meaning
 
-save	persist result
-oracle.browser	compare against browser
-oracle.library	compare against library
-tolerance.geometry	allowed numeric deviation
-
-
+save persist result
+oracle.browser compare against browser
+oracle.library compare against library
+tolerance.geometry allowed numeric deviation
 
 ---
 
 ## 🧠 **Important Concepts**
-
 
 ---
 
@@ -368,19 +343,17 @@ Maps to:
 
 ctx.shapes.line
 
-
 ---
 
 2. Dual Oracle System
 
 Framework can compare:
 
-Library Values   vs   Browser Values
+Library Values vs Browser Values
 
 Controlled via:
 
 constraints.oracle
-
 
 ---
 
@@ -389,11 +362,10 @@ constraints.oracle
 Used in geometry:
 
 tolerance: {
-  geometry: 0.05
+geometry: 0.05
 }
 
 Prevents false failures due to floating precision.
-
 
 ---
 
@@ -408,8 +380,6 @@ Always register shapes in "ctx.shapes"
 Do NOT mutate context inside "expect"
 
 Do NOT rely on string equality for colors
-
-
 
 ---
 
@@ -427,7 +397,3 @@ dual validation (library + browser)
 extensible assertions
 
 file persistence support
-
-
-
-
