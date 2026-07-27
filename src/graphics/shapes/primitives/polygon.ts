@@ -104,6 +104,9 @@ export class Polygon extends RenderNode<"polygon"> {
     if (pointsAttr[pointsAttr.length - 1]!.toLowerCase() !== "z") {
       throw new Error("Given Path is Not Closed please close path with 'Z'");
     }
+
+    props.points = pointsAttr as string;
+
     parameterTypeValidator(
       props as PolygonBaseProps,
       GraphicalElementProperties,
