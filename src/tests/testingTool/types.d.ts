@@ -277,6 +277,20 @@ export type OutputParam = {
 
   assertions: AssertionResult[];
 };
+/**
+ * Collection of executed tests.
+ */
+export type Tests = Record<string, OutputParam>;
+
+/**
+ * Serialized output file.
+ */
+export type SaveFileData = {
+  save?: boolean;
+  fileUrl: string;
+  meta?: MetaData;
+  tests: Tests;
+};
 
 // ============================================================================
 // Environment Types
@@ -311,21 +325,6 @@ export type MetaData = {
   environment: Environment & {
     libraryVersion: string;
   };
-};
-
-/**
- * Collection of executed tests.
- */
-export type Tests = Record<string, OutputParam>;
-
-/**
- * Serialized output file.
- */
-export type SaveFileData = {
-  save?: boolean;
-  fileUrl: string;
-  meta?: MetaData;
-  tests: Tests;
 };
 
 // ============================================================================
