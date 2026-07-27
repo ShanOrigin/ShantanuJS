@@ -35,6 +35,9 @@ import type {
   CompareMode,
   RGBA,
   Environment,
+  Validator,
+  Validators,
+  Tests,
 } from "./types";
 
 export type Context = {
@@ -383,14 +386,6 @@ export default class ShantanuJSTestTool {
 
     status.result = status.totalFailedAssertions === 0 ? "pass" : "fail";
 
-    console.log("States : ", states);
-    console.log("Assertions : ", assertions);
-    console.log(" Status : ", status);
-
-    if (!this.#constraints.save) {
-      return;
-    }
-
     // ---------------------------------------------------------------------------
     // Metadata
     // ---------------------------------------------------------------------------
@@ -452,12 +447,19 @@ export default class ShantanuJSTestTool {
       );
     }
 
+    this.#results.tests[id] = output;
+
+    if (!this.#constraints.save) {
+      console.clear();
+
+      this.#displayAnalysis(this.#results as any);
+      return;
+    }
     // ---------------------------------------------------------------------------
     // Persist
     // ---------------------------------------------------------------------------
-
-    this.#results.tests[id] = output;
-
+    console.clear();
+    this.#displayAnalysis(this.#results as any);
     this.#saveTest(this.#results);
   }
 
@@ -482,18 +484,127 @@ export default class ShantanuJSTestTool {
    * - Hardcoded endpoint → no environment flexibility
    */
   async #saveTest({ fileUrl, meta, tests }: SaveFileData) {
-    await fetch("http://localhost:4000/save", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        save: this.#constraints.save,
-        fileUrl,
-        meta,
-        tests,
-      }),
-    });
+    try {
+      await fetch("http://localhost:4000/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          save: this.#constraints.save,
+          fileUrl,
+          meta,
+          tests,
+        }),
+      });
+    } catch (e) {}
+  }
+
+  /**
+   * Displays a structured analysis of test results in the terminal.
+   *
+   * This function summarizes:
+   * - Meta information (module, test type, canvas ID, library version)
+   * - Individual test outcomes (pass/fail per test case)
+   * - Aggregate statistics (total, passed, failed)
+   *
+   * A test is considered **PASS** only if all its assertions have status `'pass'`.
+   *
+   * @param fileData - The complete test file data object containing:
+   * - meta: Metadata about the test suite execution environment
+   * - tests: A record of test cases keyed by unique test IDs
+   *
+   * @example
+   * displayAnalysis(fileData);
+   */
+
+  #displayAnalysis(fileData: { meta: MetaData; tests: Tests }) {
+    const { meta, tests } = fileData;
+    if (!meta || !tests) return;
+    const info = meta?.info || {};
+    const env = meta?.environment || {};
+
+    console.log("\n\t================ TEST ANALYSIS ================\n");
+
+    console.log(`\tModule      : ${info.module}`);
+    console.log(`\tTest Type   : ${info.testType}`);
+    console.log(`\tCanvas ID   : ${info.canvasId}`);
+    console.log(`\tLibrary Ver : ${env.libraryVersion}`);
+    console.log("\n\t===============================================\n\n");
+
+    let total = 0;
+    let passed = 0;
+    let failed = 0;
+
+    console.log("\n\t================ ALL TEST CASES ===============\n");
+
+    for (const [id, test] of Object.entries(tests)) {
+      total++;
+
+      const status = (test as any).status;
+
+      if (!status || status.totalFailedAssertions === 0) {
+        passed++;
+
+        console.log(`\t${total} - ${id}\t\t ✔`);
+        continue;
+      }
+
+      failed++;
+
+      console.log(`\t${total} - ${id}\t\t ✖`);
+
+      console.log(
+        `\tFailed Assertions : ${status.totalFailedAssertions}/${status.totalPassedAssertions + status.totalFailedAssertions}`,
+      );
+
+      for (const assertion of (test as any).assertions) {
+        if (assertion.actualStatus === assertion.expectedStatus) {
+          continue;
+        }
+
+        console.log(`\n\t  • Domain    : ${assertion.domain}`);
+        console.log(`\t    Property  : ${assertion.property}`);
+
+        if (assertion.checkType) {
+          console.log(`\t    Check     : ${assertion.checkType}`);
+        }
+
+        console.log(`\t    Expected  : ${assertion.expectedStatus}`);
+
+        console.log(`\t    Actual    : ${assertion.actualStatus}`);
+
+        if (assertion.reason) {
+          console.log(`\t    Reason    : ${assertion.reason}`);
+        }
+
+        if (assertion.actual !== undefined) {
+          console.log(`\t    Actual Value   : ${assertion.actual}`);
+        }
+
+        if (assertion.expected !== undefined) {
+          console.log(`\t    Expected Value : ${assertion.expected}`);
+        }
+
+        if (assertion.delta !== undefined) {
+          console.log(`\t    Delta          : ${assertion.delta}`);
+        }
+
+        if (assertion.tolerance !== undefined) {
+          console.log(`\t    Tolerance      : ${assertion.tolerance}`);
+        }
+      }
+
+      console.log();
+    }
+
+    console.log("\n\t===============================================\n\n");
+
+    console.log("\n\t------------------- SUMMARY -------------------");
+    console.log(`\tTotal Tests : ${total}`);
+    console.log(`\tPassed      : ${passed} ✔`);
+    console.log(`\tFailed      : ${failed} ✖`);
+    console.log("\n\t===============================================\n\n");
   }
 
   /**
@@ -517,7 +628,10 @@ export default class ShantanuJSTestTool {
 
     const styleProps = new Set<string>();
     const geometryProps = new Set<string>();
+    const validatorProps = new Set<string>();
 
+    const style = shape.style as Record<string, unknown>;
+    const geometry = shape.geometry as Record<string, unknown>;
     /**
      * Adds all property names from the provided object into the target set while
      * ignoring metadata keys.
@@ -532,6 +646,36 @@ export default class ShantanuJSTestTool {
         if (key === "expectedStatus" || key === "tolerance") continue;
         target.add(key);
       }
+    };
+
+    const getCopy = (property: string): any => {
+      const copy = (value: any): any => {
+        if (value === null || typeof value !== "object") {
+          return value;
+        }
+
+        if (Array.isArray(value)) {
+          return value.map(copy);
+        }
+
+        const result: Record<string, any> = {};
+
+        for (const key in value) {
+          result[key] = copy(value[key]);
+        }
+
+        return result;
+      };
+
+      if (property in style) {
+        return copy(style[property]);
+      }
+
+      if (property in geometry) {
+        return copy(geometry[property]);
+      }
+
+      return undefined;
     };
 
     // --------------------------------------------------------------------------
@@ -552,24 +696,22 @@ export default class ShantanuJSTestTool {
     collectProps(geometryProps, expected.geometry?.greaterThanOrEqual);
     collectProps(geometryProps, expected.geometry?.lessThanOrEqual);
 
+    collectProps(validatorProps, expected?.validators);
     // --------------------------------------------------------------------------
     // Capture current state
     // --------------------------------------------------------------------------
+    let snapshot = {} as DataState;
 
-    const snapshot = {
-      style: {},
-      geometry: {},
-    } as DataState;
-
-    const style = shape.style as Record<string, unknown>;
-    const geometry = shape.geometry as Record<string, unknown>;
+    for (const property of validatorProps) {
+      (snapshot["user-defined"] ??= {})[property] = getCopy(property);
+    }
 
     for (const property of styleProps) {
-      snapshot.style![property] = style[property];
+      (snapshot["style"] ??= {})[property] = style[property];
     }
 
     for (const property of geometryProps) {
-      snapshot.geometry![property] = geometry[property];
+      (snapshot["geometry"] ??= {})[property] = geometry[property];
     }
 
     return snapshot;
@@ -674,9 +816,12 @@ export default class ShantanuJSTestTool {
   #runVerify(verifyBlock: ExpectedBlock, ctx: Context) {
     const assertions: OutputParam["assertions"] = [];
 
-    const { testSubject, style, geometry, error } = verifyBlock;
+    const { testSubject, style, geometry, error, validators } = verifyBlock;
 
-    if (!style && !geometry && !error) {
+    if (!testSubject) throw new Error("test subject is not provided");
+    if (!(testSubject in ctx.shapes))
+      throw new Error("test subject is not available in context");
+    if (!style && !geometry && !error && !validators) {
       throw new Error("No testing parameter provided");
     }
 
@@ -688,6 +833,10 @@ export default class ShantanuJSTestTool {
 
     if (geometry) {
       this.#verifyGeometry(shape, geometry, assertions);
+    }
+    if (validators) {
+      console.log(validators);
+      this.#verifyValidators(shape, assertions, validators);
     }
 
     if (error) {
@@ -844,21 +993,61 @@ export default class ShantanuJSTestTool {
     verifyGroup(geometry.lessThan, "lt");
     verifyGroup(geometry.greaterThanOrEqual, "gte");
     verifyGroup(geometry.lessThanOrEqual, "lte");
+  }
 
-    if (oracle.browser && geometry.bbox?.check) {
-      const result = this.#compareBBoxMatrices(
-        this.#getLibraryBBoxPoints(shape),
-        this.#getBrowserBBoxPoints(this.#context.canvas, shape),
-        geometry.bbox.tolerance ?? 0.25,
-      );
+  /**
+   * Executes all custom validators defined in the expected block.
+   *
+   * Unlike built-in style and geometry assertions, validators allow users
+   * to implement arbitrary validation logic by providing their own callback.
+   *
+   * Each validator receives the current test subject and its corresponding
+   * expected value, and returns an assertion status (`"pass"` or `"fail"`).
+   * The returned status is then compared against the expected status to
+   * determine whether the assertion itself passed.
+   *
+   * This mechanism is intended for advanced scenarios that cannot be
+   * expressed using the built-in assertions, such as:
+   *
+   * - Custom bounding box validation.
+   * - Clone or deep-copy verification.
+   * - Matrix or transformation validation.
+   * - Multiple property validation.
+   * - Internal state verification.
+   * - Any user-defined assertion logic.
+   *
+   * @param shape The test subject.
+   * @param validators Collection of custom validators to execute.
+   *
+   * @returns The total number of passed and failed assertions.
+   */
+  #verifyValidators(
+    shape: GraphicsRenderNodeWithInternals,
+    assertions: OutputParam["assertions"],
+    validators?: Validators,
+  ) {
+    if (!validators) {
+      return;
+    }
+
+    console.log("validators");
+    for (const [property, validator] of Object.entries(validators)) {
+      const {
+        validate,
+        expectedStatus,
+        value,
+        tolerance = 0,
+      } = validator as Validator;
+      const actualStatus = validate(shape, { value, tolerance });
 
       assertions.push({
-        crossCheck: "browser",
-        domain: "geometry",
-        property: "bbox",
-        checkType: "eq",
-        expectedStatus: geometry.bbox.expectedStatus ?? result.actualStatus,
-        ...result,
+        crossCheck: "library",
+        domain: "user-defined",
+        expected: value,
+        property,
+        expectedStatus,
+        checkType: "custom",
+        actualStatus,
       });
     }
   }
