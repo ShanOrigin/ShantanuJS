@@ -26,6 +26,11 @@ import {
 } from "../../../utils/helpers/helpers.js";
 import { computeAABBPoints } from "../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js";
 
+type PolylineBaseProps = ConstructorPropsTypes<"polyline">;
+type PolylineConstructorProps = Omit<PolylineBaseProps, "points"> & {
+  points: string | number[][];
+};
+
 export class Polyline extends RenderNode<"polyline"> {
   #copies: number = 0;
   /**
@@ -61,9 +66,7 @@ export class Polyline extends RenderNode<"polyline"> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(
-    props: ConstructorPropsTypes<"polyline"> & { points: number[][] },
-  ) {
+  constructor(props: PolylineConstructorProps) {
     super("polyline", props?.id ?? "");
 
     "id" in props && delete props.id;
@@ -77,7 +80,7 @@ export class Polyline extends RenderNode<"polyline"> {
       // Form: [[x1, y1], [x2, y2], ...]
       if (
         (points && !Array.isArray(points)) ||
-        !points.every(
+        !(points as number[][]).every(
           (row: number[]) =>
             Array.isArray(row) &&
             row.length === 2 &&
@@ -96,10 +99,11 @@ export class Polyline extends RenderNode<"polyline"> {
           pointsAttr += " ";
         }
       }
+      props.points = pointsAttr as string;
     }
 
     parameterTypeValidator(
-      props,
+      props as PolylineBaseProps,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
@@ -108,7 +112,7 @@ export class Polyline extends RenderNode<"polyline"> {
     // for initial setup through RenderNode
     (props as ConstructorPropsTypes<"polyline"> & InitialProps)["initial"] =
       true;
-    this.attrs(props);
+    this.attrs(props as PolylineBaseProps);
   }
 
   static validProps() {
