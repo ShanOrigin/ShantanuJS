@@ -1,5 +1,5 @@
-import { ConfigurationError } from '../../core/errors/configuration-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { ConfigurationError } from "../../core/errors/configuration-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a canvas cannot be attached to the specified parent element.
@@ -19,9 +19,9 @@ export class CanvasParentNotFoundError extends ConfigurationError {
    */
   constructor(parentId: string, source: string) {
     super(
-      'CANVAS_PARENT_NOT_FOUND',
-      'Canvas parent element was not found in the DOM.',
-      new ErrorContext(parentId, 'existing DOM element id', source)
+      "CANVAS_PARENT_NOT_FOUND",
+      "Canvas parent element was not found in the DOM.",
+      new ErrorContext(parentId, "existing DOM element id", source),
     );
   }
 }

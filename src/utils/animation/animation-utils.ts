@@ -2,8 +2,8 @@ import {
   SHAPE_SPECIFIC_ANIMATABLE_PROPERTIES,
   COMMON_STYLE_ANIMATABLE_PROPERTIES,
   COMMON_GEOMETRY_ANIMATABLE_PROPERTIES,
-  PROPERTY_TRANSFORMATION_MAP
-} from './animation-constants.js';
+  PROPERTY_TRANSFORMATION_MAP,
+} from "./animation-constants.js";
 
 /**
  * Separates input properties of a shape into `style` and `geometry` categories.
@@ -59,17 +59,17 @@ export function separateProperties(shape: string, input: Record<string, any>) {
   }
 
   // Important For Rect Class dont delete it accidentaly
-  const isShapeRect = shape == 'rect';
+  const isShapeRect = shape == "rect";
   isShapeRect &&
-    'rx' in geometryProps &&
-    ((styleProps['rx'] = geometryProps['rx']), delete geometryProps['rx']);
+    "rx" in geometryProps &&
+    ((styleProps["rx"] = geometryProps["rx"]), delete geometryProps["rx"]);
   isShapeRect &&
-    'ry' in geometryProps &&
-    ((styleProps['ry'] = geometryProps['ry']), delete geometryProps['ry']);
+    "ry" in geometryProps &&
+    ((styleProps["ry"] = geometryProps["ry"]), delete geometryProps["ry"]);
 
   return {
     styleProps,
-    geometryProps
+    geometryProps,
   };
 }
 
@@ -93,7 +93,7 @@ export function separateProperties(shape: string, input: Record<string, any>) {
 
 export function deepMerge<T extends object, S extends Partial<T>>(
   target: T,
-  source: S
+  source: S,
 ): void {
   if (!target || !source) return;
 
@@ -105,10 +105,10 @@ export function deepMerge<T extends object, S extends Partial<T>>(
     const targetValue = target[typedKey as keyof T];
 
     if (
-      typeof sourceValue === 'object' &&
+      typeof sourceValue === "object" &&
       sourceValue !== null &&
       !Array.isArray(sourceValue) &&
-      typeof targetValue === 'object' &&
+      typeof targetValue === "object" &&
       targetValue !== null &&
       !Array.isArray(targetValue)
     ) {

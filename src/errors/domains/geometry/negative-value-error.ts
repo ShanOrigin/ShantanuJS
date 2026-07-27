@@ -1,5 +1,5 @@
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
-import { UsageError } from '../../core/errors/usage-error.js';
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
+import { UsageError } from "../../core/errors/usage-error.js";
 
 /**
  * Error thrown when a numeric value is expected to be non-negative,
@@ -17,9 +17,9 @@ export class NegativeValueError extends UsageError {
    */
   constructor(value: number, source: string) {
     super(
-      'NEGATIVE_VALUE',
-      'Value must not be negative.',
-      new ErrorContext(value, '>= 0', source)
+      "NEGATIVE_VALUE",
+      "Value must not be negative.",
+      new ErrorContext(value, ">= 0", source),
     );
   }
 }

@@ -70,57 +70,57 @@ import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_GRAPHICS_METHOD,
-  GET_INTERNAL_STYLE_METHOD
-} from '../../internal/keys/dev-keys.js';
+  GET_INTERNAL_STYLE_METHOD,
+} from "../../internal/keys/dev-keys.js";
 
-import type { GraphicsRenderNode } from '../../models/interfaces/render-node';
+import type { GraphicsRenderNode } from "../../models/interfaces/render-node";
 import type {
   AnimatableStyle,
-  GeometricalAnimatableProperties
-} from '../../models/types/animation/animatable';
+  GeometricalAnimatableProperties,
+} from "../../models/types/animation/animatable";
 import type {
   AnimationControls,
-  OptimizationTechnique
-} from '../../models/types/animation/control';
-import type { EasingFunction } from '../../models/types/animation/easing';
+  OptimizationTechnique,
+} from "../../models/types/animation/control";
+import type { EasingFunction } from "../../models/types/animation/easing";
 import type {
   CurveMotionOptions,
-  PhysicsOptions
-} from '../../models/types/animation/motion';
+  PhysicsOptions,
+} from "../../models/types/animation/motion";
 import type {
   AdvancedAnimationOptions,
   IAnimationOptions,
-  UpdateAnimationReturnType
-} from '../../models/types/animation/options';
-import type { TransformStack } from '../../models/types/common';
+  UpdateAnimationReturnType,
+} from "../../models/types/animation/options";
+import type { TransformStack } from "../../models/types/common";
 import type {
   ArcLengthTableEntry,
-  CurveType
-} from '../../models/types/geometry/curve';
+  CurveType,
+} from "../../models/types/geometry/curve";
 import type {
   BaseTransformations,
-  PivotTransformations
-} from '../../models/types/geometry/transform';
-import type { NumericPair, Point2D } from '../../models/types/geometry/types';
-import type { Pivot, PivotAnchors } from '../../models/types/geometry/anchors';
+  PivotTransformations,
+} from "../../models/types/geometry/transform";
+import type { NumericPair, Point2D } from "../../models/types/geometry/types";
+import type { Pivot, PivotAnchors } from "../../models/types/geometry/anchors";
 
 import type {
   PivotMode,
-  PivotOptions
-} from '../../models/types/animation/pivot';
+  PivotOptions,
+} from "../../models/types/animation/pivot";
 
 import type {
   InternalGeometryAccessor,
-  InternalStyleAccessor
-} from '../../models/types/graphics-model';
+  InternalStyleAccessor,
+} from "../../models/types/graphics-model";
 
 import type {
   GetInternalGraphicsAccessor,
-  GraphicsNode
-} from '../../models/interfaces/graphics-container';
+  GraphicsNode,
+} from "../../models/interfaces/graphics-container";
 
-import type { IAllStyleProperties as IS } from '../../property-definitions/common/common-properties';
-import type { IAnimation } from '../../models/interfaces/animation';
+import type { IAllStyleProperties as IS } from "../../property-definitions/common/common-properties";
+import type { IAnimation } from "../../models/interfaces/animation";
 
 import {
   COMMON_STYLE_ANIMATABLE_PROPERTIES,
@@ -129,35 +129,35 @@ import {
   SX_PROPERTIES,
   SY_PROPERTIES,
   TX_PROPERTIES,
-  TY_PROPERTIES
-} from '../../utils/animation/animation-constants.js';
-import { separateProperties } from '../../utils/animation/animation-utils.js';
-import { handleEasing } from '../../utils/animation/validators/easing-validation.js';
-import { ShapeType } from '../../utils/animation/validators/user-props-validation.js';
+  TY_PROPERTIES,
+} from "../../utils/animation/animation-constants.js";
+import { separateProperties } from "../../utils/animation/animation-utils.js";
+import { handleEasing } from "../../utils/animation/validators/easing-validation.js";
+import { ShapeType } from "../../utils/animation/validators/user-props-validation.js";
 import {
   getTForDistance,
-  interpolateAlongCurve
-} from '../../utils/math/interpolation/interpolate-along-curve.js';
-import { advancePropsValidation } from '../../utils/animation/validators/advance-props-validation.js';
-import { onCompleteFuncValidation } from '../../utils/animation/validators/on-complete-func-validation.js';
-import { userPropsValidation } from '../../utils/animation/validators/user-props-validation.js';
-import { timeValidation } from '../../utils/animation/validators/time-validation.js';
+  interpolateAlongCurve,
+} from "../../utils/math/interpolation/interpolate-along-curve.js";
+import { advancePropsValidation } from "../../utils/animation/validators/advance-props-validation.js";
+import { onCompleteFuncValidation } from "../../utils/animation/validators/on-complete-func-validation.js";
+import { userPropsValidation } from "../../utils/animation/validators/user-props-validation.js";
+import { timeValidation } from "../../utils/animation/validators/time-validation.js";
 
-import { lerp } from '../../utils/math/interpolation/lerp.js';
+import { lerp } from "../../utils/math/interpolation/lerp.js";
 
-import { fitTransformPolynomialsFast } from '../../utils/math/polynomial/fit-polynomial-fast.js';
+import { fitTransformPolynomialsFast } from "../../utils/math/polynomial/fit-polynomial-fast.js";
 
 import {
   choosePivotAwareOptimization,
-  resolvePivots
-} from '../../utils/geometry/pivot-resolution/pivot-utils.js';
-import { precomputeFramesRaw } from '../../utils/animation/frame-sampling/pre-computation/pre-compute-frames.js';
-import { setPreComputedFrame } from '../../utils/math/interpolation/interpolate-pre-compute-frames.js';
-import { transformUsingPolynomialFast } from '../../utils/math/interpolation/interpolate-fit-polynomial-fast.js';
+  resolvePivots,
+} from "../../utils/geometry/pivot-resolution/pivot-utils.js";
+import { precomputeFramesRaw } from "../../utils/animation/frame-sampling/pre-computation/pre-compute-frames.js";
+import { setPreComputedFrame } from "../../utils/math/interpolation/interpolate-pre-compute-frames.js";
+import { transformUsingPolynomialFast } from "../../utils/math/interpolation/interpolate-fit-polynomial-fast.js";
 
-import Colors from '../../utils/colors/colors.js';
-import { generateCurvePoints } from '../../utils/geometry/curves/curve-generator/generate-curve-points.js';
-import { DEFAULT_TRANSFORMATIONS } from '../../utils/math/affine/affine-utils.js';
+import Colors from "../../utils/colors/colors.js";
+import { generateCurvePoints } from "../../utils/geometry/curves/curve-generator/generate-curve-points.js";
+import { DEFAULT_TRANSFORMATIONS } from "../../utils/math/affine/affine-utils.js";
 
 type GraphicsRenderNodeWithInternals = GraphicsNode &
   InternalGeometryAccessor &
@@ -178,7 +178,7 @@ type precomputeFramesRawType = (
   b: Point2D[], // curve sampling points
   c: number, // normalized progress (0–1)
   d: boolean, // translation availability flag
-  e?: number // optional extra parameter (engine-specific)
+  e?: number, // optional extra parameter (engine-specific)
 ) => Float32Array;
 
 // Function signature for polynomial-based interpolation.
@@ -189,13 +189,13 @@ type transformUsingPolynomialFastType = (
   b: Point2D[], // curve sampling points
   c: number, // normalized progress (0–1)
   d: boolean, // translation availability flag
-  e?: number // optional extra parameter
+  e?: number, // optional extra parameter
 ) => Float32Array;
 
 // Alias representing all supported graphics shape tags.
 // Used to constrain the Animation class to valid shape types.
 // temporary svg source for animation trajectory path visualization
-const GraphicsSource = 'http://www.w3.org/2000/svg';
+const GraphicsSource = "http://www.w3.org/2000/svg";
 
 /**
  * Core animation engine responsible for driving time-based and
@@ -844,8 +844,7 @@ export class Animation implements IAnimation {
    * was selected during setup.
    */
   #interpolateFunction!:
-    | precomputeFramesRawType
-    | transformUsingPolynomialFastType;
+    precomputeFramesRawType | transformUsingPolynomialFastType;
 
   /**
    * Precomputed interpolation data produced during animation setup.
@@ -858,8 +857,7 @@ export class Animation implements IAnimation {
    * during animation execution.
    */
   #preComputeFranesOrPolynomial!:
-    | Float32Array
-    | ReturnType<typeof fitTransformPolynomialsFast>;
+    Float32Array | ReturnType<typeof fitTransformPolynomialsFast>;
 
   /**
    * Constructs a new Animation instance bound to a specific graphics element.
@@ -919,7 +917,7 @@ export class Animation implements IAnimation {
   constructor(
     shape: GraphicsRenderNodeWithInternals,
     isAnimation: (t: boolean) => boolean,
-    cleanUp: Function
+    cleanUp: Function,
   ) {
     /**
      * Retrieve the element's internal style object.
@@ -1035,14 +1033,14 @@ export class Animation implements IAnimation {
   // this method or logic will be deleted or moved to renderer after animation component will work properly.
   #curveFormation(
     curvePoints: { x: number; y: number }[],
-    normalizePoints: Pivot
+    normalizePoints: Pivot,
   ) {
     /**
      * Capture the internal figure representation of the element.
      * This is used for low-level transformation application.
      */
     const elFig = this.#el[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     );
     /**
      * Guard clause to ensure valid curve data.
@@ -1053,13 +1051,13 @@ export class Animation implements IAnimation {
     /**
      * Create an SVG polyline element to represent the curve path.
      */
-    const curve = document.createElementNS(GraphicsSource, 'polyline');
+    const curve = document.createElementNS(GraphicsSource, "polyline");
 
     /**
      * String buffer for collecting polyline point coordinates.
      * SVG polyline points are expressed as "x,y x,y x,y".
      */
-    let path = '';
+    let path = "";
 
     /**
      * Iterate over each curve point and transform it
@@ -1084,15 +1082,15 @@ export class Animation implements IAnimation {
     /**
      * Assign the computed point list to the polyline.
      */
-    curve.setAttribute('points', path);
+    curve.setAttribute("points", path);
 
     /**
      * Styling attributes for debug visualization.
      * These values are intentionally simple and explicit.
      */
-    curve.setAttribute('stroke-width', '1');
-    curve.setAttribute('stroke', 'black');
-    curve.setAttribute('fill', 'none');
+    curve.setAttribute("stroke-width", "1");
+    curve.setAttribute("stroke", "black");
+    curve.setAttribute("fill", "none");
 
     /**
      * Append the curve visualization to the same SVG root
@@ -1159,13 +1157,13 @@ export class Animation implements IAnimation {
       this.#preComputeFranesOrPolynomial as optFuncType,
       this.#curvePoints,
       this.#progress,
-      this.#isTranslation
+      this.#isTranslation,
     );
 
     /**
      * Store the transform matrix as a style-compatible value.
      */
-    fP['animationMatrix'] = tMatrix;
+    fP["animationMatrix"] = tMatrix;
 
     // -----------------------------------------------------------
     // STEP 2: Prepare style state for interpolation
@@ -1188,8 +1186,8 @@ export class Animation implements IAnimation {
        */
       if (
         k in COMMON_STYLE_ANIMATABLE_PROPERTIES &&
-        k !== 'fill' &&
-        k !== 'stroke'
+        k !== "fill" &&
+        k !== "stroke"
       ) {
         const iv = (iS[k] as number | undefined) ?? 0;
         const fv = fS[k] as number;
@@ -1200,7 +1198,7 @@ export class Animation implements IAnimation {
          * Color properties (fill / stroke).
          * These are interpolated component-wise in RGBA space.
          */
-      } else if (k === 'fill' || k === 'stroke') {
+      } else if (k === "fill" || k === "stroke") {
         const i = (iS[k] as number[] | undefined) ?? [0, 0, 0, 0];
         const f = fS[k] as number[];
 
@@ -1358,7 +1356,7 @@ export class Animation implements IAnimation {
     this.#isTranslation = false;
     this.#initialGeometry = structuredClone(DEFAULT_TRANSFORMATIONS);
     this.#finalGeometry = structuredClone(
-      DEFAULT_TRANSFORMATIONS
+      DEFAULT_TRANSFORMATIONS,
     ) as PivotTransformations;
     this.#initialStyle = {};
     this.#finalStyle = {};
@@ -1755,7 +1753,7 @@ export class Animation implements IAnimation {
 
       this.#travelledDistance = Math.min(
         this.#travelledDistance,
-        this.#totalLength
+        this.#totalLength,
       );
 
       /**
@@ -1801,7 +1799,7 @@ export class Animation implements IAnimation {
      * to create forward-backward animation behavior.
      */
     let reverseProgress = 0;
-    direction === 'alternate' &&
+    direction === "alternate" &&
       this.#reverseCycle &&
       ((reverseProgress = this.#progress),
       (this.#progress = 1 - this.#progress));
@@ -1830,7 +1828,7 @@ export class Animation implements IAnimation {
     if (this.#progress >= 1 || reverseProgress >= 1) {
       if (
         this.#advanceOptions?.controls?.loop ||
-        (direction === 'alternate' && !this.#reverseCycle)
+        (direction === "alternate" && !this.#reverseCycle)
       ) {
         /**
          * Restart animation cycle.
@@ -1852,13 +1850,13 @@ export class Animation implements IAnimation {
          * Ensure final transformation state is applied
          * when animation ends normally.
          */
-        direction !== 'alternate' && this.#applyFinalTransformationMatrix(1);
+        direction !== "alternate" && this.#applyFinalTransformationMatrix(1);
       }
 
       /**
        * Toggle reverse cycle flag for alternate mode.
        */
-      direction === 'alternate' && (this.#reverseCycle = !this.#reverseCycle);
+      direction === "alternate" && (this.#reverseCycle = !this.#reverseCycle);
     }
 
     return frameData;
@@ -1921,7 +1919,7 @@ export class Animation implements IAnimation {
     const {
       scale: IS, // Default: identity scale
       skew: ISK, // Default: no skew
-      rotate: IR // Default: no rotation
+      rotate: IR, // Default: no rotation
     } = this.#initialGeometry as BaseTransformations;
 
     /**
@@ -1938,7 +1936,7 @@ export class Animation implements IAnimation {
     const {
       scale: FS,
       skew: FSK,
-      rotate: FR
+      rotate: FR,
     } = this.#finalGeometry as PivotTransformations;
 
     /*
@@ -2014,7 +2012,7 @@ export class Animation implements IAnimation {
       s.translate({
         x: p.x,
         y: p.y,
-        tType: 'r' // Relative translation mode
+        tType: "r", // Relative translation mode
       });
     }
 
@@ -2030,9 +2028,9 @@ export class Animation implements IAnimation {
       s.skew({
         sx: lerp(ISK!.sx, FSK.sx, progress),
         sy: lerp(ISK!.sy, FSK.sy, progress),
-        tType: 'p',
+        tType: "p",
         px: FSK?.px,
-        py: FSK?.py
+        py: FSK?.py,
       });
 
     /**
@@ -2047,9 +2045,9 @@ export class Animation implements IAnimation {
       s.scale({
         sx: lerp(IS!.sx, FS.sx, progress),
         sy: lerp(IS!.sy, FS.sy, progress),
-        tType: 'p',
+        tType: "p",
         px: FS.px,
-        py: FS.py
+        py: FS.py,
       });
 
     /**
@@ -2063,9 +2061,9 @@ export class Animation implements IAnimation {
     isR &&
       s.rotate({
         angle: lerp(IR!.angle, FR.angle, progress),
-        tType: 'pivot',
+        tType: "pivot",
         px: FR.px,
-        py: FR.py
+        py: FR.py,
       });
 
     /**
@@ -2099,9 +2097,9 @@ export class Animation implements IAnimation {
     attrs,
     advanceOptions,
     duration,
-    ease = 'linear',
+    ease = "linear",
     onComplete,
-    start = true
+    start = true,
   }: IAnimationOptions): void {
     this.#resetAllStates();
 
@@ -2127,7 +2125,7 @@ export class Animation implements IAnimation {
     // ------------------------------------------------------------------
 
     const geo = this.#el[GET_INTERNAL_GEOMETRY_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as {
       transformStack: TransformStack;
       shape: ShapeType;
@@ -2137,7 +2135,7 @@ export class Animation implements IAnimation {
 
     const { styleProps: sp, geometryProps: gp } = separateProperties(
       geo.shape as string,
-      attrs
+      attrs,
     );
 
     // ------------------------------------------------------------------
@@ -2161,14 +2159,14 @@ export class Animation implements IAnimation {
 
     [this.#isTranslation, translateMode] = this.#resolvePivot() as [
       boolean,
-      PivotMode
+      PivotMode,
     ];
 
     // ------------------------------------------------------------------
     // STEP 6: Reverse animation properties if direction is reverse
     // ------------------------------------------------------------------
 
-    this.#advanceOptions?.controls?.direction === 'reverse' &&
+    this.#advanceOptions?.controls?.direction === "reverse" &&
       this.#reverseAnimationProps();
 
     // ------------------------------------------------------------------
@@ -2193,20 +2191,20 @@ export class Animation implements IAnimation {
 
     let controls = this.#advanceOptions.controls as AnimationControls;
 
-    controls.optimizationTechnique !== 'preComputeFrames' &&
+    controls.optimizationTechnique !== "preComputeFrames" &&
       (controls.optimizationTechnique = choosePivotAwareOptimization(
-        this.#finalGeometry
+        this.#finalGeometry,
       ));
 
     let optimizationTechnique =
       controls.optimizationTechnique as OptimizationTechnique;
 
     // STEP 9a: Pre-compute animation frames
-    if (optimizationTechnique === 'preComputeFrames') {
+    if (optimizationTechnique === "preComputeFrames") {
       this.#preComputeFranesOrPolynomial = precomputeFramesRaw(
         this.#initialGeometry,
         this.#finalGeometry,
-        100
+        100,
       ) as optFuncType;
       this.#interpolateFunction = setPreComputedFrame;
     }
@@ -2215,7 +2213,7 @@ export class Animation implements IAnimation {
       // if (optimizationTechnique === 'fitPolynomialCofficient') {
       this.#preComputeFranesOrPolynomial = fitTransformPolynomialsFast(
         this.#initialGeometry,
-        this.#finalGeometry
+        this.#finalGeometry,
       );
       this.#interpolateFunction = transformUsingPolynomialFast;
     }
@@ -2283,7 +2281,7 @@ export class Animation implements IAnimation {
      * Style properties that currently support color interpolation.
      * These are treated symmetrically.
      */
-    const [f, s] = ['fill', 'stroke'];
+    const [f, s] = ["fill", "stroke"];
     const iS = this.#initialStyle as Record<string, unknown>;
     const fS = this.#finalStyle as Record<string, unknown>;
 
@@ -2372,7 +2370,7 @@ export class Animation implements IAnimation {
        */
       if (
         !Object.prototype.hasOwnProperty.call(this.#finalGeometry, k) ||
-        k == 'scale'
+        k == "scale"
       )
         continue;
 
@@ -2381,7 +2379,7 @@ export class Animation implements IAnimation {
        * Negating the rotation angle reverses angular direction.
        */
 
-      k === 'rotate' &&
+      k === "rotate" &&
         (this.#finalGeometry[k].angle =
           (this.#finalGeometry[k].angle as number) * -1);
 
@@ -2395,11 +2393,11 @@ export class Animation implements IAnimation {
        * Each component of the vector is negated
        * to reverse directional motion.
        */
-      k === 'translate' &&
+      k === "translate" &&
         ((this.#finalGeometry[k].x = (this.#finalGeometry[k].x as number) * -1),
         (this.#finalGeometry[k].y = (this.#finalGeometry[k].y as number) * -1));
 
-      k === 'skew' &&
+      k === "skew" &&
         ((this.#finalGeometry[k].sx =
           (this.#finalGeometry[k].sx as number) * -1),
         (this.#finalGeometry[k].sy =
@@ -2531,8 +2529,8 @@ export class Animation implements IAnimation {
        * Only relative or center-based pivots are valid here.
        * Any invalid mode is corrected automatically.
        */
-      !['r', 'relative', 'c', 'center'].includes(pivot.mode) &&
-        (pivot.mode = 'r');
+      !["r", "relative", "c", "center"].includes(pivot.mode) &&
+        (pivot.mode = "r");
 
       /**
        * Resolve the translation pivot once.
@@ -2568,7 +2566,7 @@ export class Animation implements IAnimation {
       /**
        * Pivot mode defaults to explicit pivot handling.
        */
-      pivot.mode = 'p';
+      pivot.mode = "p";
 
       // --- Common pivot has the highest priority ---
 
@@ -2588,7 +2586,7 @@ export class Animation implements IAnimation {
          * Numeric pivot provided by user.
          * Ignore zero-only pivots as invalid intent.
          */
-        if (typeof commonPivot === 'object') {
+        if (typeof commonPivot === "object") {
           // it means user given common pivot is { px : number , py : number }
           const { px: x, py: y } = commonPivot as Pivot;
           (x !== 0 || y !== 0) && ([px, py] = [x, y] as NumericPair);
@@ -2598,7 +2596,7 @@ export class Animation implements IAnimation {
          * String anchor pivot.
          * Must be resolved against OBB.
          */
-        if (typeof commonPivot === 'string') {
+        if (typeof commonPivot === "string") {
           // it means user given common pivot is PivotAnchors i.e "TL" , "BR" etc.
 
           const { px: x, py: y } = resolvePivots(commonPivot, bounds);
@@ -2633,16 +2631,16 @@ export class Animation implements IAnimation {
         // Rotate pivot
         if (
           rotatePivot &&
-          (typeof rotatePivot !== 'object' ||
+          (typeof rotatePivot !== "object" ||
             (rotatePivot.px === 0 && rotatePivot.py === 0))
         ) {
           /**
            * String anchor resolution or fallback to origin.
            */
-          if (typeof pivot.rotatePivot === 'string') {
+          if (typeof pivot.rotatePivot === "string") {
             const { px, py } = resolvePivots(
               pivot.rotatePivot as PivotAnchors,
-              bounds
+              bounds,
             );
             fg.rotate.px = px;
             fg.rotate.py = py;
@@ -2652,16 +2650,16 @@ export class Animation implements IAnimation {
         // scale pivot
         if (
           scalePivot &&
-          (typeof scalePivot !== 'object' ||
+          (typeof scalePivot !== "object" ||
             (scalePivot.px === 0 && scalePivot.py === 0))
         ) {
           /**
            * String anchor resolution or fallback to origin.
            */
-          if (typeof pivot.scalePivot === 'string') {
+          if (typeof pivot.scalePivot === "string") {
             const { px, py } = resolvePivots(
               pivot.rotatePivot as PivotAnchors,
-              bounds
+              bounds,
             );
             fg.scale.px = px;
             fg.scale.py = py;
@@ -2671,16 +2669,16 @@ export class Animation implements IAnimation {
         // skew pivot
         if (
           skewPivot &&
-          (typeof skewPivot !== 'object' ||
+          (typeof skewPivot !== "object" ||
             (skewPivot.px === 0 && skewPivot.py === 0))
         ) {
           /**
            * String anchor resolution or fallback to origin.
            */
-          if (typeof pivot.skewPivot === 'string') {
+          if (typeof pivot.skewPivot === "string") {
             const { px, py } = resolvePivots(
               pivot.rotatePivot as PivotAnchors,
-              bounds
+              bounds,
             );
             fg.skew.px = px;
             fg.skew.py = py;
@@ -2766,7 +2764,7 @@ export class Animation implements IAnimation {
      *
      * Also acts as a fallback when curve type is not explicitly provided.
      */
-    curve.curvature == 0 && (curve.path = 'linear');
+    curve.curvature == 0 && (curve.path = "linear");
 
     // const { p1, p2 } = this.#getControlPointsOfCurve(translateMode as string);
 
@@ -2805,7 +2803,7 @@ export class Animation implements IAnimation {
         curveName: curve.path as CurveType,
         pointsOnly: false,
         continuous: false,
-        continuousCount: 1
+        continuousCount: 1,
       }) as [Point2D[], ArcLengthTableEntry[], number];
 
     /**
@@ -2818,10 +2816,10 @@ export class Animation implements IAnimation {
      * with the chosen translation semantics.
      */
 
-    let anchor: PivotAnchors = 'c'; // center
+    let anchor: PivotAnchors = "c"; // center
 
     // make anchor top left
-    (translateMode == 'r' || translateMode == 'relative') && (anchor = 'tm');
+    (translateMode == "r" || translateMode == "relative") && (anchor = "tm");
 
     /**
      * Pivot reference point used for curve formation.
@@ -2903,14 +2901,14 @@ export class Animation implements IAnimation {
      * If not present, use a neutral placeholder.
      */
 
-    const lp = isP ? o[p] : 'none';
+    const lp = isP ? o[p] : "none";
 
     /**
      * Color parser instance.
      * Initialized with a neutral value to ensure
      * predictable fallback behavior.
      */
-    const colorTest = new Colors('none');
+    const colorTest = new Colors("none");
 
     /**
      * Parse the color value and replace the original property
@@ -3054,18 +3052,18 @@ export class Animation implements IAnimation {
      * initialize the corresponding finalGeometry components.
      */
 
-    'translate' in gProps &&
+    "translate" in gProps &&
       ((this.#finalGeometry.translate.x = gProps?.translate?.x || 0),
       (this.#finalGeometry.translate.y = gProps?.translate?.y || 0));
 
-    'rotate' in gProps &&
+    "rotate" in gProps &&
       (this.#finalGeometry.rotate.angle = gProps?.rotate?.angle || 0);
 
-    'scale' in gProps &&
+    "scale" in gProps &&
       ((this.#finalGeometry.scale.sx = gProps?.scale?.sx || 1),
       (this.#finalGeometry.scale.sy = gProps?.scale?.sy || 1));
 
-    'skew' in gProps &&
+    "skew" in gProps &&
       ((this.#finalGeometry.skew.sx = gProps?.skew?.sx || 0),
       (this.#finalGeometry.skew.sy = gProps?.skew?.sy || 0));
 
@@ -3086,7 +3084,7 @@ export class Animation implements IAnimation {
        * These are already handled above.
        */
       const isTeansforms =
-        k == 'translate' || k == 'rotate' || k == 'scale' || k == 'skew';
+        k == "translate" || k == "rotate" || k == "scale" || k == "skew";
 
       if (!gProps.hasOwnProperty(k) || isTeansforms) continue;
 
@@ -3105,8 +3103,8 @@ export class Animation implements IAnimation {
         PROPERTY_TRANSFORMATION_MAP[
           ((TX_PROPERTIES as readonly string[]).includes(k)
             ? k
-            : 'not') as keyof typeof PROPERTY_TRANSFORMATION_MAP
-        ] === 'Translate'
+            : "not") as keyof typeof PROPERTY_TRANSFORMATION_MAP
+        ] === "Translate"
       ) {
         this.#finalGeometry.translate.x += v;
         continue;
@@ -3121,8 +3119,8 @@ export class Animation implements IAnimation {
         PROPERTY_TRANSFORMATION_MAP[
           ((TY_PROPERTIES as readonly string[]).includes(k)
             ? k
-            : 'not') as keyof typeof PROPERTY_TRANSFORMATION_MAP
-        ] === 'Translate'
+            : "not") as keyof typeof PROPERTY_TRANSFORMATION_MAP
+        ] === "Translate"
       ) {
         this.#finalGeometry.translate.y += v;
         continue;
@@ -3137,8 +3135,8 @@ export class Animation implements IAnimation {
         PROPERTY_TRANSFORMATION_MAP[
           ((SX_PROPERTIES as readonly string[]).includes(k)
             ? k
-            : 'not') as keyof typeof PROPERTY_TRANSFORMATION_MAP
-        ] === 'Scale'
+            : "not") as keyof typeof PROPERTY_TRANSFORMATION_MAP
+        ] === "Scale"
       ) {
         this.#finalGeometry.scale.sx += this.#scaleConvertion(k, v);
         continue;
@@ -3153,8 +3151,8 @@ export class Animation implements IAnimation {
         PROPERTY_TRANSFORMATION_MAP[
           ((SY_PROPERTIES as readonly string[]).includes(k)
             ? k
-            : 'not') as keyof typeof PROPERTY_TRANSFORMATION_MAP
-        ] === 'Scale'
+            : "not") as keyof typeof PROPERTY_TRANSFORMATION_MAP
+        ] === "Scale"
       ) {
         this.#finalGeometry.scale.sy += this.#scaleConvertion(k, v);
       }

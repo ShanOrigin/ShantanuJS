@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a value does not conform to the required or expected format.
@@ -21,9 +21,9 @@ export class InvalidFormatError extends UsageError {
    */
   constructor(receivedValue: unknown, expectedFormat: string, source: string) {
     super(
-      'INVALID_FORMAT',
-      'Value does not match the expected format.',
-      new ErrorContext(receivedValue, expectedFormat, source)
+      "INVALID_FORMAT",
+      "Value does not match the expected format.",
+      new ErrorContext(receivedValue, expectedFormat, source),
     );
   }
 }

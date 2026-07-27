@@ -1,6 +1,5 @@
 Here is your full production-grade README.md for the GraphicsEntity module—structured, readable, and aligned with real-world repository standards.
 
-
 ---
 
 # GraphicsEntity Module
@@ -24,15 +23,15 @@ It acts as the **behavioral layer** of the rendering engine.
 
 ## 🧠 Architecture Position
 
-GraphicsModel  →  GraphicsEntity  →  Shape (Rect, Path, etc.) (state)         (behavior)         (implementation)
+GraphicsModel → GraphicsEntity → Shape (Rect, Path, etc.) (state) (behavior) (implementation)
 
 ### Responsibilities Split
 
-| Layer            | Role |
-|------------------|------|
-| GraphicsModel     | State (geometry + style) |
-| GraphicsEntity    | Behavior (transform + animation + effects) |
-| Shape Classes     | Shape-specific logic |
+| Layer          | Role                                       |
+| -------------- | ------------------------------------------ |
+| GraphicsModel  | State (geometry + style)                   |
+| GraphicsEntity | Behavior (transform + animation + effects) |
+| Shape Classes  | Shape-specific logic                       |
 
 ---
 
@@ -50,6 +49,7 @@ Supports full **2D affine transformations**:
 - `transform()` (raw string-based)
 
 #### Features:
+
 - Matrix-based transformation pipeline
 - Transformation stacking
 - Batch processing (`beginT()` / `endT()`)
@@ -351,3 +351,4 @@ GraphicsEntity is:
 
 
 
+```

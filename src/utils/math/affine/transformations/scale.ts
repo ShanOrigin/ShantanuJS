@@ -1,4 +1,4 @@
-import type { ScaleMethodProps } from '../../../../models/types/geometry/transform';
+import type { ScaleMethodProps } from "../../../../models/types/geometry/transform";
 /**
  * Applies a 2D scaling transformation to an existing DOMMatrix.
  *
@@ -58,27 +58,27 @@ import type { ScaleMethodProps } from '../../../../models/types/geometry/transfo
 export function scale({
   sx,
   sy,
-  tType = 'a',
+  tType = "a",
   px = 0,
   py = 0,
-  oMatrix
+  oMatrix,
 }: ScaleMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
-      case 'absolute':
-      case 'a': {
+      case "absolute":
+      case "a": {
         oMatrix.scaleSelf(sx, sy, 1, px, py);
         break;
       }
 
-      case 'pivot':
-      case 'p': {
+      case "pivot":
+      case "p": {
         oMatrix.scaleSelf(sx, sy, 1, px, py);
         break;
       }
 
-      case 'relative':
-      case 'r':
+      case "relative":
+      case "r":
       default: {
         oMatrix.scaleSelf(sx, sy);
         break;

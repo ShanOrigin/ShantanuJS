@@ -1,11 +1,11 @@
 import type {
   EasingFunction,
-  EasingType
-} from '../../../models/types/animation/easing';
+  EasingType,
+} from "../../../models/types/animation/easing";
 import {
   EASING_FUNCTION_MAP,
-  computeLinearEasing
-} from './easing-functions.js';
+  computeLinearEasing,
+} from "./easing-functions.js";
 
 /**
  * Returns an easing function based on a specified easing type.

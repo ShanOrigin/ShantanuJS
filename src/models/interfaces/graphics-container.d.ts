@@ -1,21 +1,21 @@
-import type { IGraphicsModel } from './graphics-model';
-import { GRAPHICS_TYPES } from '../types/common';
+import type { IGraphicsModel } from "./graphics-model";
+import { GRAPHICS_TYPES } from "../types/common";
 import {
   GET_INTERNAL_GRAPHICS_METHOD,
   GET_PARENT_METHOD,
   SET_INTERNAL_GRAPHICS_METHOD,
   SET_PARENT_METHOD,
   GET_Z_ORDER_OPERATION_METHOD,
-  CLEAR_Z_ORDER_OPERATION_METHOD
-} from '../../internal/keys/dev-keys';
+  CLEAR_Z_ORDER_OPERATION_METHOD,
+} from "../../internal/keys/dev-keys";
 
 import {
   GET_SCENE_ELEMENTS_METHOD,
   GET_SCENE_ELEMENT_ID_MAP_METHOD,
-  GET_SCENE_Z_ORDER_RESOLVER_METHOD
-} from '../../internal/keys/system-keys';
+  GET_SCENE_Z_ORDER_RESOLVER_METHOD,
+} from "../../internal/keys/system-keys";
 
-import type { ValidGraphicsShapes } from '../types/graphics-model';
+import type { ValidGraphicsShapes } from "../types/graphics-model";
 
 /**
  * Represents a graphical entity that can participate
@@ -36,7 +36,7 @@ export type GetInternalGraphicsAccessor = {
 export type SetInternalGraphicsAccessor = {
   [SET_INTERNAL_GRAPHICS_METHOD]: (
     element: GraphicsNode | null,
-    key: symbol
+    key: symbol,
   ) => void;
 };
 

@@ -3,30 +3,30 @@ import {
   InvalidOptionError,
   MissingRequiredAnimationParameterError,
   OutOfRangeError,
-  TypeMismatchError
-} from '../../../errors/index.js';
+  TypeMismatchError,
+} from "../../../errors/index.js";
 import type {
   AnimationControls,
-  OptimizationTechnique
-} from '../../../models/types/animation/control';
+  OptimizationTechnique,
+} from "../../../models/types/animation/control";
 import type {
   CurveMotionOptions,
-  PhysicsOptions
-} from '../../../models/types/animation/motion';
-import type { AdvancedAnimationOptions } from '../../../models/types/animation/options';
-import type { PivotOptions } from '../../../models/types/animation/pivot';
+  PhysicsOptions,
+} from "../../../models/types/animation/motion";
+import type { AdvancedAnimationOptions } from "../../../models/types/animation/options";
+import type { PivotOptions } from "../../../models/types/animation/pivot";
 import type {
   Pivot,
-  PivotAnchors
-} from '../../../models/types/geometry/anchors';
-import { PATHS_MAP } from '../../geometry/curves/curve-utils.js';
+  PivotAnchors,
+} from "../../../models/types/geometry/anchors";
+import { PATHS_MAP } from "../../geometry/curves/curve-utils.js";
 import {
   ANCHORS_MAP,
-  MODES_MAP
-} from '../../geometry/pivot-resolution/pivot-utils.js';
-import { DIRECTIONS_MAP, OPT_MAP } from '../animation-constants.js';
+  MODES_MAP,
+} from "../../geometry/pivot-resolution/pivot-utils.js";
+import { DIRECTIONS_MAP, OPT_MAP } from "../animation-constants.js";
 
-import { deepMerge } from '../animation-utils.js';
+import { deepMerge } from "../animation-utils.js";
 /**
  * Validates and applies advanced animation properties.
  *
@@ -46,7 +46,7 @@ import { deepMerge } from '../animation-utils.js';
  */
 export function advancePropsValidation(
   defaultOne: AdvancedAnimationOptions,
-  userOne: Partial<AdvancedAnimationOptions> | null
+  userOne: Partial<AdvancedAnimationOptions> | null,
 ): void {
   if (userOne === null) return;
 
@@ -74,14 +74,14 @@ export function advancePropsValidation(
  * @param userOne - User-provided advanced animation configuration
  */
 function validateAdvancePropsObject(
-  userOne: Partial<AdvancedAnimationOptions>
+  userOne: Partial<AdvancedAnimationOptions>,
 ): void {
-  if (typeof userOne !== 'object') {
+  if (typeof userOne !== "object") {
     throw new TypeMismatchError(
-      'AdvanceOption',
+      "AdvanceOption",
       typeof userOne,
-      'object',
-      'Animation.animate()'
+      "object",
+      "Animation.animate()",
     );
   }
 }
@@ -102,7 +102,7 @@ function validateAdvancePropsObject(
  * @param userOne - User-provided advanced animation configuration
  */
 function validateCurveProps(userOne: Partial<AdvancedAnimationOptions>): void {
-  if (!('curve' in userOne) || userOne.curve === undefined) {
+  if (!("curve" in userOne) || userOne.curve === undefined) {
     return;
   }
 
@@ -121,12 +121,12 @@ function validateCurveProps(userOne: Partial<AdvancedAnimationOptions>): void {
  * @param curve - Curve configuration object
  */
 function validateCurveObject(curve: NonNullable<CurveMotionOptions>): void {
-  if (curve === null || typeof curve !== 'object') {
+  if (curve === null || typeof curve !== "object") {
     throw new TypeMismatchError(
-      'curve',
+      "curve",
       typeof curve,
-      'object',
-      'Animation.animate()'
+      "object",
+      "Animation.animate()",
     );
   }
 }
@@ -139,10 +139,10 @@ function validateCurveObject(curve: NonNullable<CurveMotionOptions>): void {
 function validateCurveNotEmpty(curve: NonNullable<CurveMotionOptions>): void {
   if (Object.keys(curve).length === 0) {
     throw new InvalidOptionError(
-      'curve',
-      'empty object',
-      ['path', 'enabled', 'stepness', 'smoothness'],
-      'Animation.animate()'
+      "curve",
+      "empty object",
+      ["path", "enabled", "stepness", "smoothness"],
+      "Animation.animate()",
     );
   }
 }
@@ -153,19 +153,19 @@ function validateCurveNotEmpty(curve: NonNullable<CurveMotionOptions>): void {
  * @param curve - Curve configuration object
  */
 function validateCurvePath(curve: NonNullable<CurveMotionOptions>): void {
-  if (!('path' in curve) || typeof curve.path !== 'string') {
+  if (!("path" in curve) || typeof curve.path !== "string") {
     throw new MissingRequiredAnimationParameterError(
-      'curve.path',
-      'Animation.animate()'
+      "curve.path",
+      "Animation.animate()",
     );
   }
 
   if (!PATHS_MAP.includes(curve.path)) {
     throw new InvalidOptionError(
-      'curve.path',
+      "curve.path",
       curve.path,
       PATHS_MAP,
-      'Animation.animate()'
+      "Animation.animate()",
     );
   }
 }
@@ -179,14 +179,14 @@ function validateCurvePath(curve: NonNullable<CurveMotionOptions>): void {
  * @param curve - Curve configuration object
  */
 function validateCurveMotion(curve: NonNullable<CurveMotionOptions>): void {
-  if (curve.path === 'linear') {
+  if (curve.path === "linear") {
     return;
   }
 
   if (curve.enabled !== true) {
     throw new MissingRequiredAnimationParameterError(
-      'curve.enabled',
-      'Animation.animate()'
+      "curve.enabled",
+      "Animation.animate()",
     );
   }
 }
@@ -200,27 +200,27 @@ function validateCurveMotion(curve: NonNullable<CurveMotionOptions>): void {
  * @param curve - Curve configuration object
  */
 function validateCurveCurvatureSamples(
-  curve: NonNullable<CurveMotionOptions>
+  curve: NonNullable<CurveMotionOptions>,
 ): void {
-  if (curve.path === 'linear') {
+  if (curve.path === "linear") {
     return;
   }
 
-  if (typeof curve.curvature !== 'number') {
+  if (typeof curve.curvature !== "number") {
     throw new TypeMismatchError(
-      'curve.stepness',
+      "curve.stepness",
       typeof curve.curvature,
-      'number',
-      'Animation.animate()'
+      "number",
+      "Animation.animate()",
     );
   }
 
-  if (typeof curve.samples !== 'number') {
+  if (typeof curve.samples !== "number") {
     throw new TypeMismatchError(
-      'curve.stepness',
+      "curve.stepness",
       typeof curve.samples,
-      'number',
-      'Animation.animate()'
+      "number",
+      "Animation.animate()",
     );
   }
 }
@@ -240,9 +240,9 @@ function validateCurveCurvatureSamples(
  * @param userOne - User-provided advanced animation configuration
  */
 function validatePhysicsProps(
-  userOne: Partial<AdvancedAnimationOptions>
+  userOne: Partial<AdvancedAnimationOptions>,
 ): void {
-  if (!('physics' in userOne) || userOne.physics === undefined) {
+  if (!("physics" in userOne) || userOne.physics === undefined) {
     return;
   }
 
@@ -259,12 +259,12 @@ function validatePhysicsProps(
  * @param physics - Physics configuration object
  */
 function validatePhysicsObject(physics: NonNullable<PhysicsOptions>): void {
-  if (physics === null || typeof physics !== 'object') {
+  if (physics === null || typeof physics !== "object") {
     throw new TypeMismatchError(
-      'physics',
+      "physics",
       typeof physics,
-      'object',
-      'Animation.animate()'
+      "object",
+      "Animation.animate()",
     );
   }
 }
@@ -275,21 +275,21 @@ function validatePhysicsObject(physics: NonNullable<PhysicsOptions>): void {
  * @param physics - Physics configuration object
  */
 function validatePhysicsSpeed(physics: NonNullable<PhysicsOptions>): void {
-  if (!('speed' in physics)) {
+  if (!("speed" in physics)) {
     return;
   }
 
-  if (typeof physics.speed !== 'number') {
+  if (typeof physics.speed !== "number") {
     throw new TypeMismatchError(
-      'physics.speed',
+      "physics.speed",
       typeof physics.speed,
-      'number',
-      'Animation.animate()'
+      "number",
+      "Animation.animate()",
     );
   }
 
   if (physics.speed < 0.02 || physics.speed > 5) {
-    throw new OutOfRangeError(physics.speed, 0.02, 5, 'Animation.animate()');
+    throw new OutOfRangeError(physics.speed, 0.02, 5, "Animation.animate()");
   }
 }
 
@@ -308,8 +308,8 @@ function validatePhysicsMotion(physics: NonNullable<PhysicsOptions>): void {
 
   if (physics.enabled !== true) {
     throw new MissingRequiredAnimationParameterError(
-      'physics.enabled',
-      'Animation.animate()'
+      "physics.enabled",
+      "Animation.animate()",
     );
   }
 }
@@ -330,7 +330,7 @@ function validatePhysicsMotion(physics: NonNullable<PhysicsOptions>): void {
  * @param userOne - User-provided advanced animation configuration
  */
 function validatePivotProps(userOne: Partial<AdvancedAnimationOptions>): void {
-  if (!('pivots' in userOne) || userOne.pivots === undefined) {
+  if (!("pivots" in userOne) || userOne.pivots === undefined) {
     return;
   }
 
@@ -349,12 +349,12 @@ function validatePivotProps(userOne: Partial<AdvancedAnimationOptions>): void {
  * @param pivot - Pivot configuration object
  */
 function validatePivotObject(pivot: NonNullable<PivotOptions>): void {
-  if (pivot === null || typeof pivot !== 'object') {
+  if (pivot === null || typeof pivot !== "object") {
     throw new TypeMismatchError(
-      'pivot',
+      "pivot",
       typeof pivot,
-      'object',
-      'Animation.animate()'
+      "object",
+      "Animation.animate()",
     );
   }
 }
@@ -367,14 +367,14 @@ function validatePivotObject(pivot: NonNullable<PivotOptions>): void {
  */
 function validatePivotEntry(
   key: string,
-  value: string | Pivot | PivotAnchors
+  value: string | Pivot | PivotAnchors,
 ): void {
-  if (key === 'mode') {
+  if (key === "mode") {
     validatePivotMode(value as string);
     return;
   }
 
-  if (typeof value == 'object') {
+  if (typeof value == "object") {
     validatePivotCoordinate(value as Pivot);
     return;
   }
@@ -388,12 +388,12 @@ function validatePivotEntry(
  * @param value - Pivot mode value
  */
 function validatePivotMode(value: string): void {
-  if (typeof value !== 'string' || !MODES_MAP.includes(value)) {
+  if (typeof value !== "string" || !MODES_MAP.includes(value)) {
     throw new InvalidOptionError(
-      'pivot.mode',
+      "pivot.mode",
       String(value),
       MODES_MAP,
-      'Animation.animate()'
+      "Animation.animate()",
     );
   }
 }
@@ -405,17 +405,17 @@ function validatePivotMode(value: string): void {
  */
 function validatePivotCoordinate(pivot: Pivot): void {
   if (
-    'px' in pivot &&
-    'py' in pivot &&
-    typeof pivot.px === 'number' &&
-    typeof pivot.py === 'number'
+    "px" in pivot &&
+    "py" in pivot &&
+    typeof pivot.px === "number" &&
+    typeof pivot.py === "number"
   ) {
     return;
   } else {
     throw new InvalidFormatError(
       pivot,
-      '{ px: number, py: number }',
-      'Animation.animate()'
+      "{ px: number, py: number }",
+      "Animation.animate()",
     );
   }
 }
@@ -427,12 +427,12 @@ function validatePivotCoordinate(pivot: Pivot): void {
  * @param value - Pivot property value
  */
 function validatePivotAnchor(key: string, value: PivotAnchors): void {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new TypeMismatchError(
       `pivot.${key}`,
       typeof value,
-      ' string | { px : number, py : number }',
-      'Animation.animate()'
+      " string | { px : number, py : number }",
+      "Animation.animate()",
     );
   }
 
@@ -441,7 +441,7 @@ function validatePivotAnchor(key: string, value: PivotAnchors): void {
       `pivot.${key}`,
       value,
       ANCHORS_MAP,
-      'Animation.animate()'
+      "Animation.animate()",
     );
   }
 }
@@ -462,9 +462,9 @@ function validatePivotAnchor(key: string, value: PivotAnchors): void {
  * @param userOne - User-provided advanced animation configuration
  */
 function validateControlsProps(
-  userOne: Partial<AdvancedAnimationOptions>
+  userOne: Partial<AdvancedAnimationOptions>,
 ): void {
-  if (!('controls' in userOne) || userOne.controls === undefined) {
+  if (!("controls" in userOne) || userOne.controls === undefined) {
     return;
   }
 
@@ -482,14 +482,14 @@ function validateControlsProps(
  * @param controls - Controls configuration object
  */
 function validateControlsObject(
-  controls: NonNullable<AnimationControls>
+  controls: NonNullable<AnimationControls>,
 ): void {
-  if (controls === null || typeof controls !== 'object') {
+  if (controls === null || typeof controls !== "object") {
     throw new TypeMismatchError(
-      'controls',
+      "controls",
       typeof controls,
-      'object',
-      'Animation.animate()'
+      "object",
+      "Animation.animate()",
     );
   }
 }
@@ -500,12 +500,12 @@ function validateControlsObject(
  * @param controls - Controls configuration object
  */
 function validateControlsLoop(controls: NonNullable<AnimationControls>): void {
-  if ('loop' in controls && typeof controls.loop !== 'boolean') {
+  if ("loop" in controls && typeof controls.loop !== "boolean") {
     throw new TypeMismatchError(
-      'controls.loop',
+      "controls.loop",
       typeof controls.loop,
-      'boolean',
-      'Animation.animate()'
+      "boolean",
+      "Animation.animate()",
     );
   }
 }
@@ -516,18 +516,18 @@ function validateControlsLoop(controls: NonNullable<AnimationControls>): void {
  * @param controls - Controls configuration object
  */
 function validateControlsDirection(
-  controls: NonNullable<AnimationControls>
+  controls: NonNullable<AnimationControls>,
 ): void {
   if (
-    'direction' in controls &&
-    (typeof controls.direction !== 'string' ||
+    "direction" in controls &&
+    (typeof controls.direction !== "string" ||
       !DIRECTIONS_MAP.includes(controls.direction))
   ) {
     throw new InvalidOptionError(
-      'controls.direction',
+      "controls.direction",
       String(controls.direction),
       DIRECTIONS_MAP,
-      'Animation.animate()'
+      "Animation.animate()",
     );
   }
 }
@@ -538,17 +538,17 @@ function validateControlsDirection(
  * @param controls - Controls configuration object
  */
 function validateControlsOptimization(
-  controls: NonNullable<AnimationControls>
+  controls: NonNullable<AnimationControls>,
 ): void {
   if (
-    'optimizationTechnique' in controls &&
+    "optimizationTechnique" in controls &&
     OPT_MAP.includes(controls.optimizationTechnique as OptimizationTechnique)
   ) {
     throw new InvalidOptionError(
-      'controls.optimizationTechnique',
+      "controls.optimizationTechnique",
       String(controls.optimizationTechnique),
       OPT_MAP,
-      'Animation.animate()'
+      "Animation.animate()",
     );
   }
 }

@@ -1,6 +1,6 @@
-import { IGraphicalElementProperties } from '../../../property-definitions/specific/specific-properties';
-import type { Translation, Scale, Skew, Rotation } from '../geometry/transform';
-import { ValidGraphicsShapes } from '../graphics-model';
+import { IGraphicalElementProperties } from "../../../property-definitions/specific/specific-properties";
+import type { Translation, Scale, Skew, Rotation } from "../geometry/transform";
+import { ValidGraphicsShapes } from "../graphics-model";
 
 /**
  * Transform properties that can be animated.
@@ -19,13 +19,13 @@ export type AnimatableStyle = {
   // common
   fill?: string | number[];
   stroke?: string | number[];
-  'stroke-width'?: number;
+  "stroke-width"?: number;
   opacity?: number;
 
   // specific
-  'clip-path'?: number;
-  'font-size'?: number;
-  'font-weight'?: number;
+  "clip-path"?: number;
+  "font-size"?: number;
+  "font-weight"?: number;
 };
 
 /**
@@ -54,7 +54,7 @@ export type GeometricalAnimatableProperties = {
 // Includes geometry-related properties and supported style properties.
 // All properties are optional and resolved internally by the engine.
 export type AnimatableProperties<
-  Shapes extends ValidGraphicsShapes = ValidGraphicsShapes
+  Shapes extends ValidGraphicsShapes = ValidGraphicsShapes,
 > = Partial<
   AnimatableTransform | AnimatableStyle | IGraphicalElementProperties<Shapes>
 >;

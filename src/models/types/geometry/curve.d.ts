@@ -1,7 +1,7 @@
 /**
  * Supported interpolation curves.
  */
-export type CurveType = 'linear' | 'quadratic' | 'cubic' | 'arc' | 'earc';
+export type CurveType = "linear" | "quadratic" | "cubic" | "arc" | "earc";
 
 /**
  * Curve metadata.

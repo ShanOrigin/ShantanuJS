@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when an operation requires a shape to be attached to a canvas,
@@ -19,13 +19,13 @@ export class ShapeNotAttachedToGroupError extends UsageError {
    */
   constructor(shapeId: string, groupId: string, source: string) {
     super(
-      'GROUP_SHAPE_NOT_ATTACHED',
-      'Shape is not attached to the Group.',
+      "GROUP_SHAPE_NOT_ATTACHED",
+      "Shape is not attached to the Group.",
       new ErrorContext(
         { shapeId, groupId },
-        'shape must be added to Group before use',
-        source
-      )
+        "shape must be added to Group before use",
+        source,
+      ),
     );
   }
 }

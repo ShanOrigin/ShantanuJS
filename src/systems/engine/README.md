@@ -34,6 +34,7 @@ Engine exists to ensure:
 Engine operates with two primary components:
 
 ### 🧩 Shapes Collection
+
 ```ts
 #shapes: iShape[]
 
@@ -396,3 +397,4 @@ Engine controls WHEN, not WHAT or HOW.
 
 
 ---
+```

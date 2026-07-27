@@ -1,7 +1,7 @@
 //+++++++++++++++++++++++++++
 //  Function to get control points on arc semi circle
 //+++++++++++++++++++++++++++
-import type { CurveInfo } from '../../../../models/types/geometry/curve';
+import type { CurveInfo } from "../../../../models/types/geometry/curve";
 
 /**
  * Determines the curvature direction for an arc based on a bend factor.
@@ -19,7 +19,7 @@ import type { CurveInfo } from '../../../../models/types/geometry/curve';
  */
 
 export function getArcCurveControlInfo(
-  bend: number // bend ∈ [-1, 1], like curvature factor
+  bend: number, // bend ∈ [-1, 1], like curvature factor
 ) {
   let arcDirection = 0;
   if (bend > 0) {
@@ -28,7 +28,7 @@ export function getArcCurveControlInfo(
     arcDirection = 1;
   }
   return {
-    arcDirection
+    arcDirection,
   };
 }
 
@@ -60,7 +60,7 @@ export function getSemiCirclePoint(
   x2: number,
   y2: number,
   t: number, // progress along arc [0..1]
-  info: CurveInfo
+  info: CurveInfo,
 ) {
   const cx = (x1 + x2) / 2;
   const cy = (y1 + y2) / 2;

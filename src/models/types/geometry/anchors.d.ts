@@ -12,15 +12,7 @@
  * C  = Center
  */
 export type UpperCasePivotAnchors =
-  | 'TL'
-  | 'TM'
-  | 'TR'
-  | 'RM'
-  | 'BR'
-  | 'BM'
-  | 'BL'
-  | 'LM'
-  | 'C';
+  "TL" | "TM" | "TR" | "RM" | "BR" | "BM" | "BL" | "LM" | "C";
 
 export type LowerCasePivotAnchors = Lowercase<UpperCasePivotAnchors>;
 
@@ -41,23 +33,22 @@ export type Pivot = { px?: number; py?: number };
  * Transform reference modes.
  */
 export type LowerCaseTransformAnchors =
-  | 'r'
-  | 'relative' // local coordinate space
-  | 'a'
-  | 'absolute' // Globle or canvas coordinate space
-  | 'p'
-  | 'pivot'; // arbitry coordinate space
+  | "r"
+  | "relative" // local coordinate space
+  | "a"
+  | "absolute" // Globle or canvas coordinate space
+  | "p"
+  | "pivot"; // arbitry coordinate space
 
 export type UpperCaseTransformAnchors = Uppercase<LowerCaseTransformAnchors>;
 
 export type TransformAnchors =
-  | LowerCaseTransformAnchors
-  | UpperCaseTransformAnchors;
+  LowerCaseTransformAnchors | UpperCaseTransformAnchors;
 
 /**
  * Center anchor aliases.
  */
-export type LowerCaseCenterAnchors = 'c' | 'center';
+export type LowerCaseCenterAnchors = "c" | "center";
 
 export type UpperCaseCenterAnchors = Uppercase<LowerCaseCenterAnchors>;
 

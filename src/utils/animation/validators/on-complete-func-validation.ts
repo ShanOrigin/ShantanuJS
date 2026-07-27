@@ -1,4 +1,4 @@
-import { TypeMismatchError } from '../../../errors/index.js';
+import { TypeMismatchError } from "../../../errors/index.js";
 
 /**
  * Validates and normalizes an onComplete callback.
@@ -18,12 +18,12 @@ export function onCompleteFuncValidation(onComplete: unknown): Function {
   }
 
   // Reject non-function values
-  if (typeof onComplete !== 'function') {
+  if (typeof onComplete !== "function") {
     throw new TypeMismatchError(
-      'onComplete',
+      "onComplete",
       typeof onComplete,
-      'function',
-      'Animation.animate()'
+      "function",
+      "Animation.animate()",
     );
   }
 

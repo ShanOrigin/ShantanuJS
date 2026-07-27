@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a function or method returns a value that does not
@@ -19,9 +19,9 @@ export class InvalidReturnTypeError extends UsageError {
    */
   constructor(receivedType: string, expectedType: string, source: string) {
     super(
-      'INVALID_RETURN_TYPE',
-      'Returned value does not match the expected return type.',
-      new ErrorContext(receivedType, expectedType, source)
+      "INVALID_RETURN_TYPE",
+      "Returned value does not match the expected return type.",
+      new ErrorContext(receivedType, expectedType, source),
     );
   }
 }

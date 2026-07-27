@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a parameter is provided with a value that is not
@@ -22,12 +22,12 @@ export class InvalidOptionError extends UsageError {
     parameterName: string,
     receivedValue: string,
     allowedValues: readonly string[],
-    source: string
+    source: string,
   ) {
     super(
-      'INVALID_OPTION',
+      "INVALID_OPTION",
       `Invalid value provided for parameter '${parameterName}'.`,
-      new ErrorContext(receivedValue, allowedValues.join(' | '), source)
+      new ErrorContext(receivedValue, allowedValues.join(" | "), source),
     );
   }
 }

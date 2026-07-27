@@ -1,11 +1,11 @@
-import { lerpParams } from '../../../math/interpolation/lerp.js';
+import { lerpParams } from "../../../math/interpolation/lerp.js";
 
 import type {
   BaseTransformations,
   CreateTransformationMatrixProps,
-  PivotTransformations
-} from '../../../../models/types/geometry/transform';
-import { createAffineTransformMatrix } from '../../../math/affine/affine-matrix-creation.js';
+  PivotTransformations,
+} from "../../../../models/types/geometry/transform";
+import { createAffineTransformMatrix } from "../../../math/affine/affine-matrix-creation.js";
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -43,7 +43,7 @@ import { createAffineTransformMatrix } from '../../../math/affine/affine-matrix-
 export function precomputeFramesRaw(
   intialState: BaseTransformations,
   finalState: PivotTransformations,
-  steps: number = 100
+  steps: number = 100,
 ): Float32Array {
   const frames = new Float32Array((steps + 1) * 6);
 
@@ -60,27 +60,27 @@ export function precomputeFramesRaw(
         transformations: {
           rotate: {
             angle: params.rotate?.angle,
-            tType: 'p',
+            tType: "p",
             px: rotate?.px ?? 0,
-            py: rotate?.py ?? 0
+            py: rotate?.py ?? 0,
           },
           scale: {
             sx: params.scale?.sx,
             sy: params.scale?.sy,
-            tType: 'p',
+            tType: "p",
             px: scale?.px ?? 0,
-            py: scale?.py ?? 0
+            py: scale?.py ?? 0,
           },
           skew: {
             sx: params.skew?.sx,
             sy: params.skew?.sy,
-            tType: 'p',
+            tType: "p",
             px: skew?.px ?? 0,
-            py: skew?.py ?? 0
-          }
+            py: skew?.py ?? 0,
+          },
         },
-        major: 'column',
-        arrayType: 'float32'
+        major: "column",
+        arrayType: "float32",
       } as CreateTransformationMatrixProps) as Float32Array;
 
     const offset = i * 6;

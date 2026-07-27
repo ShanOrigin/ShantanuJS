@@ -1,7 +1,7 @@
 import {
   NegativeValueError,
-  TypeMismatchError
-} from '../../../errors/index.js';
+  TypeMismatchError,
+} from "../../../errors/index.js";
 
 /**
  * Validates and normalizes animation duration.
@@ -20,18 +20,18 @@ import {
  */
 export function timeValidation(duration: unknown): number {
   // Duration must be a number
-  if (typeof duration !== 'number') {
+  if (typeof duration !== "number") {
     throw new TypeMismatchError(
-      'duration',
+      "duration",
       typeof duration,
-      'number',
-      'Animation.animate()'
+      "number",
+      "Animation.animate()",
     );
   }
 
   // Duration must be strictly positive
   if (duration <= 0) {
-    throw new NegativeValueError(duration, 'Animation.animate()');
+    throw new NegativeValueError(duration, "Animation.animate()");
   }
 
   return duration;

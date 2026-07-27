@@ -1,29 +1,29 @@
-import { RenderNode } from '../../render-node/render-node.js';
+import { RenderNode } from "../../render-node/render-node.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  assertAccess
-} from '../../../internal/keys/dev-keys.js';
+  assertAccess,
+} from "../../../internal/keys/dev-keys.js";
 import {
   CommonGeometricProperties,
-  AllGShapeStyleProperties
-} from '../../../property-definitions/common/common-properties.js';
+  AllGShapeStyleProperties,
+} from "../../../property-definitions/common/common-properties.js";
 
 import {
   GraphicalElementProperties,
-  dimensions
-} from '../../../property-definitions/specific/specific-properties.js';
+  dimensions,
+} from "../../../property-definitions/specific/specific-properties.js";
 import type {
   InitialProps,
-  ConstructorPropsTypes
-} from '../../../models/types/common';
+  ConstructorPropsTypes,
+} from "../../../models/types/common";
 
 import {
   Log,
   parameterTypeValidator,
-  validProps
-} from '../../../utils/helpers/helpers.js';
+  validProps,
+} from "../../../utils/helpers/helpers.js";
 
 /**
  * Represents a zero-dimensional graphical Point (dot) shape.
@@ -37,7 +37,7 @@ import {
  * - Intended for internal engine use with strict access control.
  */
 
-export class Point extends RenderNode<'dot'> {
+export class Point extends RenderNode<"dot"> {
   #copies: number = 0;
   /**
    * Internal reference to the base class geometry object.
@@ -86,22 +86,22 @@ export class Point extends RenderNode<'dot'> {
    * Throws:
    * - Propagates any validation or normalization errors without interception.
    */
-  constructor(props: ConstructorPropsTypes<'dot'>) {
-    super('dot', props.id ?? '');
+  constructor(props: ConstructorPropsTypes<"dot">) {
+    super("dot", props.id ?? "");
 
     // Prevent id leakage into attribute validation
-    'id' in props && delete props.id;
+    "id" in props && delete props.id;
     // Full validation against geometry, style, and inherited class state
     parameterTypeValidator(
       props,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
-      'dot'
+      "dot",
     );
 
     // for initial setup through RenderNode
-    (props as ConstructorPropsTypes<'dot'> & InitialProps)['initial'] = true;
+    (props as ConstructorPropsTypes<"dot"> & InitialProps)["initial"] = true;
     this.attrs(props);
   }
 
@@ -121,7 +121,7 @@ export class Point extends RenderNode<'dot'> {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'dot'
+      "dot",
     );
   }
 
@@ -146,7 +146,7 @@ export class Point extends RenderNode<'dot'> {
   public clone(
     offsetX: number = 10,
     offsetY: number = 10,
-    visibleRadius?: number
+    visibleRadius?: number,
   ): Point {
     if (this.#geometry && this.#style) {
       // Extract current geometry state with safe fallbacks
@@ -155,7 +155,7 @@ export class Point extends RenderNode<'dot'> {
       // Shallow-copy style to prevent mutation of the original instance
       const style = { ...this.#style };
 
-      if ('id' in style && style.id !== '') {
+      if ("id" in style && style.id !== "") {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
@@ -166,11 +166,11 @@ export class Point extends RenderNode<'dot'> {
         cy: offsetY + cy,
         r: visibleRadius ?? r,
         initial: true,
-        ...style
-      } as ConstructorPropsTypes<'dot'> & InitialProps);
+        ...style,
+      } as ConstructorPropsTypes<"dot"> & InitialProps);
     }
 
-    throw new Error('Cannot clone: geometry or style is invalid.');
+    throw new Error("Cannot clone: geometry or style is invalid.");
   }
 
   /**
@@ -203,7 +203,7 @@ export class Point extends RenderNode<'dot'> {
 
       const { cx = 0, cy = 0 } = geo;
 
-      const [m, n] = dimensions['dot']!;
+      const [m, n] = dimensions["dot"]!;
       const totalLength = m * n;
 
       // Allocate once and reuse to minimize GC pressure
@@ -239,7 +239,7 @@ export class Point extends RenderNode<'dot'> {
    */
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array
+    temporaryState: Float32Array,
   ) {
     try {
       assertAccess(accessKey);
@@ -247,7 +247,7 @@ export class Point extends RenderNode<'dot'> {
 
       [this.#geometry.cx, this.#geometry.cy] = [
         temporaryState[0] as number,
-        temporaryState[1] as number
+        temporaryState[1] as number,
       ]; // center if circle
 
       this.#computeBounds(temporaryState);

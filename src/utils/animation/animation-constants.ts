@@ -1,5 +1,5 @@
-import { OptimizationTechnique } from '../../models/types/animation/control';
-import { AdvancedAnimationOptions } from '../../models/types/animation/options';
+import { OptimizationTechnique } from "../../models/types/animation/control";
+import { AdvancedAnimationOptions } from "../../models/types/animation/options";
 
 /**
  * Defines common style properties that can be animated for all shapes.
@@ -20,15 +20,15 @@ import { AdvancedAnimationOptions } from '../../models/types/animation/options';
  */
 export const COMMON_STYLE_ANIMATABLE_PROPERTIES = {
   // common
-  fill: '',
-  stroke: '',
-  'stroke-width': 0,
+  fill: "",
+  stroke: "",
+  "stroke-width": 0,
   opacity: 0,
 
   // specific
-  'clip-path': 0,
-  'font-size': 0,
-  'font-weight': 0
+  "clip-path": 0,
+  "font-size": 0,
+  "font-weight": 0,
 } as const;
 
 /**
@@ -52,7 +52,7 @@ export const COMMON_GEOMETRY_ANIMATABLE_PROPERTIES = {
   translate: { x: 0, y: 0 },
   scale: { sx: 1, sy: 1 },
   rotate: { angle: 0 },
-  skew: { sx: 0, sy: 0 }
+  skew: { sx: 0, sy: 0 },
 } as const;
 
 /**
@@ -71,16 +71,16 @@ export const COMMON_GEOMETRY_ANIMATABLE_PROPERTIES = {
  * SHAPE_SPECIFIC_ANIMATABLE_PROPERTIES.rect → ['x', 'y', 'width', 'height', 'rx', 'ry']
  */
 export const SHAPE_SPECIFIC_ANIMATABLE_PROPERTIES = {
-  dot: ['cx', 'cy', 'r'],
-  circle: ['cx', 'cy', 'r'],
-  rect: ['x', 'y', 'width', 'height', 'rx', 'ry'],
-  line: ['x1', 'y1'],
-  ellipse: ['cx', 'cy', 'rx', 'ry'],
-  polyline: ['points'],
-  polygon: ['points'],
-  path: ['d'],
-  text: ['x', 'y'],
-  image: ['x', 'y', 'width', 'height']
+  dot: ["cx", "cy", "r"],
+  circle: ["cx", "cy", "r"],
+  rect: ["x", "y", "width", "height", "rx", "ry"],
+  line: ["x1", "y1"],
+  ellipse: ["cx", "cy", "rx", "ry"],
+  polyline: ["points"],
+  polygon: ["points"],
+  path: ["d"],
+  text: ["x", "y"],
+  image: ["x", "y", "width", "height"],
 } as const;
 
 /**
@@ -96,13 +96,13 @@ export const SHAPE_SPECIFIC_ANIMATABLE_PROPERTIES = {
  * Dependency:
  * - Plain JavaScript arrays; does not rely on any graphics API, DOM API, or external library.
  */
-export const TX_PROPERTIES = ['translateX', 'cx', 'x', 'x1'] as const;
+export const TX_PROPERTIES = ["translateX", "cx", "x", "x1"] as const;
 
-export const TY_PROPERTIES = ['translateY', 'cy', 'y', 'y1'] as const;
+export const TY_PROPERTIES = ["translateY", "cy", "y", "y1"] as const;
 
-export const SX_PROPERTIES = ['scaleX', 'r', 'rx', 'width'] as const;
+export const SX_PROPERTIES = ["scaleX", "r", "rx", "width"] as const;
 
-export const SY_PROPERTIES = ['scaleY', 'r', 'ry', 'height'] as const;
+export const SY_PROPERTIES = ["scaleY", "r", "ry", "height"] as const;
 
 /**
  * Maps shape property names to their corresponding geometric transformation categories.
@@ -119,23 +119,23 @@ export const SY_PROPERTIES = ['scaleY', 'r', 'ry', 'height'] as const;
  */
 export const PROPERTY_TRANSFORMATION_MAP = {
   // Translate map
-  cx: 'Translate',
-  cy: 'Translate',
-  x: 'Translate',
-  y: 'Translate',
-  x1: 'Translate',
-  y1: 'Translate',
+  cx: "Translate",
+  cy: "Translate",
+  x: "Translate",
+  y: "Translate",
+  x1: "Translate",
+  y1: "Translate",
 
   // Scale map
-  r: 'Scale',
-  rx: 'Scale',
-  ry: 'Scale',
-  width: 'Scale',
-  height: 'Scale',
-  x2: 'Scale',
-  y2: 'Scale',
+  r: "Scale",
+  rx: "Scale",
+  ry: "Scale",
+  width: "Scale",
+  height: "Scale",
+  x2: "Scale",
+  y2: "Scale",
 
-  not: null
+  not: null,
 } as const;
 
 /**
@@ -144,7 +144,7 @@ export const PROPERTY_TRANSFORMATION_MAP = {
  * Direction modes define how an animation sequence progresses over time,
  * including forward playback, reversed playback, or alternating behavior.
  */
-export const DIRECTIONS_MAP = ['normal', 'reverse', 'alternate'] as const;
+export const DIRECTIONS_MAP = ["normal", "reverse", "alternate"] as const;
 
 /**
  * List of supported optional feature flags.
@@ -154,8 +154,8 @@ export const DIRECTIONS_MAP = ['normal', 'reverse', 'alternate'] as const;
  * performance or numerical behavior rather than core functionality.
  */
 export const OPT_MAP = [
-  'fitPolynomialCoefficient',
-  'preComputeFrames'
+  "fitPolynomialCoefficient",
+  "preComputeFrames",
 ] as const;
 
 /**
@@ -225,7 +225,7 @@ export const DEFAULT_ADVANCE_OPTIONS: AdvancedAnimationOptions = {
      *
      * Higher values result in faster traversal along the path.
      */
-    speed: 0.5
+    speed: 0.5,
   },
 
   /**
@@ -254,7 +254,7 @@ export const DEFAULT_ADVANCE_OPTIONS: AdvancedAnimationOptions = {
      * - 'arc'
      * - 'earc'
      */
-    path: 'linear',
+    path: "linear",
 
     /**
      * Controls curve bending (curvature).
@@ -271,7 +271,7 @@ export const DEFAULT_ADVANCE_OPTIONS: AdvancedAnimationOptions = {
      * Affects how stepness is distributed and
      * how smooth the resulting motion feels.
      */
-    samples: 0
+    samples: 0,
   },
 
   /**
@@ -293,28 +293,28 @@ export const DEFAULT_ADVANCE_OPTIONS: AdvancedAnimationOptions = {
      * The engine may override this value when required
      * to preserve correct animation behavior.
      */
-    mode: 'relative',
+    mode: "relative",
 
     /**
      * Pivot used for rotation transformations.
      *
      * Defaults to geometric center ('C').
      */
-    rotatePivot: 'C',
+    rotatePivot: "C",
 
     /**
      * Pivot used for scale transformations.
      *
      * Defaults to geometric center ('C').
      */
-    scalePivot: 'C',
+    scalePivot: "C",
 
     /**
      * Pivot used for skew transformations.
      *
      * Defaults to geometric center ('C').
      */
-    skewPivot: 'C'
+    skewPivot: "C",
   },
 
   /**
@@ -338,7 +338,7 @@ export const DEFAULT_ADVANCE_OPTIONS: AdvancedAnimationOptions = {
      * - 'reverse'
      * - 'alternate'
      */
-    direction: 'normal',
+    direction: "normal",
 
     /**
      * Specifies which optimization technique
@@ -347,6 +347,6 @@ export const DEFAULT_ADVANCE_OPTIONS: AdvancedAnimationOptions = {
      * The engine may override this choice
      * if a better strategy is detected.
      */
-    optimizationTechnique: 'fitPolynomialCoefficient'
-  }
+    optimizationTechnique: "fitPolynomialCoefficient",
+  },
 };

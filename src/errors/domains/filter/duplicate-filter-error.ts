@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when attempting to register a filter using an identifier
@@ -18,13 +18,13 @@ export class DuplicateFilterError extends UsageError {
    */
   constructor(filterId: string, filterType: string, source: string) {
     super(
-      'DUPLICATE_FILTER_ERROR',
+      "DUPLICATE_FILTER_ERROR",
       `A filter with id "${filterId}" already exists on this shape (type: "${filterType}").`,
       new ErrorContext(
         { filterId, filterType },
-        'Use a unique filter identifier or remove the existing filter before registering another one.',
-        source
-      )
+        "Use a unique filter identifier or remove the existing filter before registering another one.",
+        source,
+      ),
     );
   }
 }

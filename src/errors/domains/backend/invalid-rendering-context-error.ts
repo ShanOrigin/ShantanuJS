@@ -1,5 +1,5 @@
-import { ConfigurationError } from '../../core/errors/configuration-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { ConfigurationError } from "../../core/errors/configuration-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when the provided rendering element does not match
@@ -22,12 +22,12 @@ export class InvalidRenderingContextError extends ConfigurationError {
   constructor(
     receivedElement: unknown,
     expectedContext: string,
-    source: string
+    source: string,
   ) {
     super(
-      'INVALID_RENDERING_CONTEXT',
-      'Rendering element does not match the expected context.',
-      new ErrorContext(receivedElement, expectedContext, source)
+      "INVALID_RENDERING_CONTEXT",
+      "Rendering element does not match the expected context.",
+      new ErrorContext(receivedElement, expectedContext, source),
     );
   }
 }

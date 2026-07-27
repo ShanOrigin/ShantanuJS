@@ -1,7 +1,7 @@
 import type {
   IGraphicalElementProperties,
-  StyleForGShapeTag
-} from '../../property-definitions/common/common-properties';
+  StyleForGShapeTag,
+} from "../../property-definitions/common/common-properties";
 
 /**
  * Internal geometry attribute contract supported by canvas.
@@ -11,7 +11,7 @@ import type {
  * - Dimension properties
  * - Canvas-specific geometric state
  */
-type CanvasGeometryTypes = IGraphicalElementProperties['scene'];
+type CanvasGeometryTypes = IGraphicalElementProperties["scene"];
 
 /**
  * Internal style attribute contract supported by canvas.
@@ -21,7 +21,7 @@ type CanvasGeometryTypes = IGraphicalElementProperties['scene'];
  * - Fill properties
  * - Visual styling configuration
  */
-type CanvasStyleTypes = StyleForGShapeTag<'scene'>;
+type CanvasStyleTypes = StyleForGShapeTag<"scene">;
 
 /**
  * Mutable canvas attribute payload accepted by:
@@ -32,7 +32,7 @@ type CanvasStyleTypes = StyleForGShapeTag<'scene'>;
  * canvas styling properties.
  */
 export type CanvasAttrsPropsTypes = Partial<CanvasGeometryTypes> &
-  Partial<Pick<CanvasStyleTypes, 'stroke' | 'stroke-width' | 'fill'>>;
+  Partial<Pick<CanvasStyleTypes, "stroke" | "stroke-width" | "fill">>;
 
 /**
  * Canvas initialization configuration.

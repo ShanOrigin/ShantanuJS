@@ -1,9 +1,9 @@
-export type Components = 'event' | 'transform' | 'animation' | 'filter';
+export type Components = "event" | "transform" | "animation" | "filter";
 
-import type { IAnimation } from '../interfaces/animation';
-import type { IEvent } from '../interfaces/event';
-import type { IFilter } from '../interfaces/filters';
-import type { ITransformation } from '../interfaces/transformation';
+import type { IAnimation } from "../interfaces/animation";
+import type { IEvent } from "../interfaces/event";
+import type { IFilter } from "../interfaces/filters";
+import type { ITransformation } from "../interfaces/transformation";
 
 export type ComponentsRegistry = {
   transformation: ITransformation;
@@ -13,7 +13,4 @@ export type ComponentsRegistry = {
 };
 
 export type InitOrGetComponentsReturnType =
-  | IAnimation
-  | IEvent
-  | IFilter
-  | ITransformation;
+  IAnimation | IEvent | IFilter | ITransformation;

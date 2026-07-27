@@ -116,42 +116,42 @@ export interface IFilter {
   getAllFilters(): ReadonlyMap<string, FilterRecord>;
 }
 
-type Status = 'pending' | 'update' | 'normal';
+type Status = "pending" | "update" | "normal";
 
 export type FilterRecord =
   | {
       status: Status;
-      type: 'blur';
+      type: "blur";
       props: Required<IBlurFilter>;
     }
   | {
       status: Status;
-      type: 'contrast';
+      type: "contrast";
       props: Required<IContrastFilter>;
     }
   | {
       status: Status;
-      type: 'saturate';
+      type: "saturate";
       props: Required<ISaturateFilter>;
     }
   | {
       status: Status;
-      type: 'grayscale';
+      type: "grayscale";
       props: Required<IGrayscale>;
     }
   | {
       status: Status;
-      type: 'hueRotate';
+      type: "hueRotate";
       props: Required<IHueRotate>;
     }
   | {
       status: Status;
-      type: 'shadow';
+      type: "shadow";
       props: Required<IShadowFilter>;
     }
   | {
       status: Status;
-      type: 'glow';
+      type: "glow";
       props: Required<IGlowFilter>;
     };
 

@@ -1,30 +1,30 @@
-import { RenderNode } from '../../render-node/render-node.js';
+import { RenderNode } from "../../render-node/render-node.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  assertAccess
-} from '../../../internal/keys/dev-keys.js';
+  assertAccess,
+} from "../../../internal/keys/dev-keys.js";
 import {
   CommonGeometricProperties,
-  AllGShapeStyleProperties
-} from '../../../property-definitions/common/common-properties.js';
+  AllGShapeStyleProperties,
+} from "../../../property-definitions/common/common-properties.js";
 
 import {
   GraphicalElementProperties,
-  dimensions
-} from '../../../property-definitions/specific/specific-properties.js';
+  dimensions,
+} from "../../../property-definitions/specific/specific-properties.js";
 import type {
   InitialProps,
-  ConstructorPropsTypes
-} from '../../../models/types/common';
+  ConstructorPropsTypes,
+} from "../../../models/types/common";
 
 import {
   Log,
   parameterTypeValidator,
-  validProps
-} from '../../../utils/helpers/helpers.js';
-import { computeAABBPoints } from '../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
+  validProps,
+} from "../../../utils/helpers/helpers.js";
+import { computeAABBPoints } from "../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js";
 
 /**
  * Represents a line shape defined by two endpoints in 2D space.
@@ -40,7 +40,7 @@ import { computeAABBPoints } from '../../../utils/geometry/bounding-box/axis-ali
  * geometry logic and constraints.
  */
 
-export class Line extends RenderNode<'line'> {
+export class Line extends RenderNode<"line"> {
   #copies: number = 0;
   /**
    * Reference to the base class’s internal geometry object.
@@ -96,10 +96,10 @@ export class Line extends RenderNode<'line'> {
    *                coordinate offsets, styling options, and an optional element
    *                identifier.
    */
-  constructor(props: ConstructorPropsTypes<'line'>) {
+  constructor(props: ConstructorPropsTypes<"line">) {
     // Initialize the base graphical element as a line and extract the optional identifier
-    super('line', props?.id ?? '');
-    'id' in props && delete props.id;
+    super("line", props?.id ?? "");
+    "id" in props && delete props.id;
 
     // Perform final validation on the normalized property set before mutating state
     parameterTypeValidator(
@@ -107,11 +107,11 @@ export class Line extends RenderNode<'line'> {
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
-      'line'
+      "line",
     );
 
     // for initial setup through RenderNode
-    (props as ConstructorPropsTypes<'line'> & InitialProps)['initial'] = true;
+    (props as ConstructorPropsTypes<"line"> & InitialProps)["initial"] = true;
     this.attrs(props);
   }
 
@@ -137,7 +137,7 @@ export class Line extends RenderNode<'line'> {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'line'
+      "line",
     );
   }
 
@@ -170,7 +170,7 @@ export class Line extends RenderNode<'line'> {
       const style = { ...this.#style }; //as StyleForGShapeTag<'line'>;
 
       // Update the style identifier to reflect the clone number, if an id exists
-      if ('id' in style && style.id !== '') {
+      if ("id" in style && style.id !== "") {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
@@ -183,12 +183,12 @@ export class Line extends RenderNode<'line'> {
         x2: offsetX + x2,
         y2: offsetY + y2,
         initial: true,
-        ...style
-      } as ConstructorPropsTypes<'line'> & InitialProps);
+        ...style,
+      } as ConstructorPropsTypes<"line"> & InitialProps);
     }
 
     // Fail fast if cloning is not possible due to invalid internal state
-    throw new Error('Cannot clone: geometry or style is invalid.');
+    throw new Error("Cannot clone: geometry or style is invalid.");
   }
 
   /**
@@ -232,7 +232,7 @@ export class Line extends RenderNode<'line'> {
       const { x1 = 0, y1 = 0, x2 = 0, y2 = 0 } = geo;
 
       // Retrieve expected matrix dimensions for a line
-      const [m, n] = dimensions['line'] as [number, number];
+      const [m, n] = dimensions["line"] as [number, number];
 
       // Compute total buffer length based on dimensions
       const totalLength = m * n;
@@ -275,7 +275,7 @@ export class Line extends RenderNode<'line'> {
    */
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array
+    temporaryState: Float32Array,
   ) {
     // Ensure the caller has privileged internal access
     assertAccess(accessKey);

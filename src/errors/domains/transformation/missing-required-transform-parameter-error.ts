@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a required transformation parameter is not provided.
@@ -17,9 +17,9 @@ export class MissingRequiredTransformParameterError extends UsageError {
    */
   constructor(missingParameter: string, source: string) {
     super(
-      'TRANSFORM_MISSING_REQUIRED_PARAMETER',
-      'Required transformation parameter is missing.',
-      new ErrorContext(missingParameter, 'parameter must be provided', source)
+      "TRANSFORM_MISSING_REQUIRED_PARAMETER",
+      "Required transformation parameter is missing.",
+      new ErrorContext(missingParameter, "parameter must be provided", source),
     );
   }
 }

@@ -1,4 +1,4 @@
-import type { ParsedDaTa } from '../../../models/types/geometry/transform';
+import type { ParsedDaTa } from "../../../models/types/geometry/transform";
 
 /**
  * Parses a transformation DSL expression into a structured transformation descriptor.
@@ -76,7 +76,7 @@ export function parseExpression(expr: string): ParsedDaTa | null {
       R: /^R\(\s*(-?(?:\d+\.\d+|\d+))\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*)?(?:,\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*)?\)$/,
       S: /^S\(\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*)?(?:,\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*)?\)$/,
       H: /^H\(\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*)?(?:,\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-d+))\s*\)?\)$/,
-      F: /^F\(\s*(true|false)\s*,\s*(true|false)\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*,\s*(?:"([^"]+)"|(\w+))\s*)?\)$/
+      F: /^F\(\s*(true|false)\s*,\s*(true|false)\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*,\s*(?:"([^"]+)"|(\w+))\s*)?\)$/,
     };
 
     // -----------------------------------------------------------
@@ -108,62 +108,62 @@ export function parseExpression(expr: string): ParsedDaTa | null {
     // -----------------------------------------------------------
 
     switch (firstChar) {
-      case 'T':
+      case "T":
         return {
-          tName: 'Translate',
+          tName: "Translate",
           data: {
             x: parseFloat(m1),
             y: parseFloat(m2),
-            type: match[3] ?? match[4] ?? 'a',
+            type: match[3] ?? match[4] ?? "a",
             px: match[5] !== undefined ? parseFloat(m5) : 0,
-            py: match[6] !== undefined ? parseFloat(m6) : 0
-          }
+            py: match[6] !== undefined ? parseFloat(m6) : 0,
+          },
         };
 
-      case 'S':
+      case "S":
         return {
-          tName: 'Scale',
+          tName: "Scale",
           data: {
             sx: parseFloat(m1),
             sy: parseFloat(m2),
-            type: match[3] ?? match[4] ?? 'a',
+            type: match[3] ?? match[4] ?? "a",
             px: match[5] !== undefined ? parseFloat(m5) : 0,
-            py: match[6] !== undefined ? parseFloat(m6) : 0
-          }
+            py: match[6] !== undefined ? parseFloat(m6) : 0,
+          },
         };
 
-      case 'H':
+      case "H":
         return {
-          tName: 'Skew',
+          tName: "Skew",
           data: {
             sx: parseFloat(m1),
             sy: parseFloat(m2),
-            type: match[3] ?? match[4] ?? 'a',
+            type: match[3] ?? match[4] ?? "a",
             px: match[5] !== undefined ? parseFloat(m5) : 0,
-            py: match[6] !== undefined ? parseFloat(m6) : 0
-          }
+            py: match[6] !== undefined ? parseFloat(m6) : 0,
+          },
         };
 
-      case 'R':
+      case "R":
         return {
-          tName: 'Rotate',
+          tName: "Rotate",
           data: {
             angle: parseFloat(m1),
-            type: m2 ?? match[3] ?? 'a',
+            type: m2 ?? match[3] ?? "a",
             px: match[4] !== undefined ? parseFloat(match[4]) : 0,
-            py: match[5] !== undefined ? parseFloat(m5) : 0
-          }
+            py: match[5] !== undefined ? parseFloat(m5) : 0,
+          },
         };
 
-      case 'F':
+      case "F":
         return {
-          tName: 'Flip',
+          tName: "Flip",
           data: {
-            flipX: m1 === 'true',
-            flipY: m2 === 'true',
-            dirX: match[3] ?? match[4] ?? 'x+',
-            dirY: match[5] ?? match[6] ?? 'y+'
-          }
+            flipX: m1 === "true",
+            flipY: m2 === "true",
+            dirX: match[3] ?? match[4] ?? "x+",
+            dirY: match[5] ?? match[6] ?? "y+",
+          },
         };
 
       default:

@@ -2,7 +2,7 @@
 // Function to get control points on cubic curve
 //+++++++++++++++++++++++++++
 
-import type { Point2D } from '../../../../models/types/geometry/types';
+import type { Point2D } from "../../../../models/types/geometry/types";
 
 /**
  * Calculates control points for a cubic Bézier curve between two points.
@@ -30,7 +30,7 @@ export function getCubicCurveControlPoints(
   y1: number,
   x2: number,
   y2: number,
-  bend: number
+  bend: number,
 ): { cubicControlPoint1: Point2D; cubicControlPoint2: Point2D } {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -40,15 +40,15 @@ export function getCubicCurveControlPoints(
 
   const cubicControlPoint1 = {
     x: x1 + dx / 3 + perp.x * curveHeight,
-    y: y1 + dy / 3 + perp.y * curveHeight
+    y: y1 + dy / 3 + perp.y * curveHeight,
   };
   const cubicControlPoint2 = {
     x: x1 + (2 * dx) / 3 + perp.x * curveHeight,
-    y: y1 + (2 * dy) / 3 + perp.y * curveHeight
+    y: y1 + (2 * dy) / 3 + perp.y * curveHeight,
   };
 
   return {
     cubicControlPoint1,
-    cubicControlPoint2
+    cubicControlPoint2,
   };
 }

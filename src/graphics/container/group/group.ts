@@ -3,56 +3,56 @@ import type {
   GetParentAccessor,
   SetParentAccessor,
   GraphicsNode,
-  IGraphicsContainer
-} from '../../../models/interfaces/graphics-container';
+  IGraphicsContainer,
+} from "../../../models/interfaces/graphics-container";
 
-import type { GraphicsRenderNode } from '../../../models/interfaces/render-node';
-import type { TransformStack } from '../../../models/types/common';
-import type { ComponentsRegistry } from '../../../models/types/components';
+import type { GraphicsRenderNode } from "../../../models/interfaces/render-node";
+import type { TransformStack } from "../../../models/types/common";
+import type { ComponentsRegistry } from "../../../models/types/components";
 import type {
   BaseTransformationMeta,
   RotateMethodProps,
   ScaleMethodProps,
   SkewMethodProps,
-  TranslateMethodProps
-} from '../../../models/types/geometry/transform';
+  TranslateMethodProps,
+} from "../../../models/types/geometry/transform";
 import type {
   InternalComputedStyleAccessor,
   InternalGeometryAccessor,
-  InternalStyleAccessor
-} from '../../../models/types/graphics-model';
-import type { GroupPropsType } from '../../../models/types/shapes';
+  InternalStyleAccessor,
+} from "../../../models/types/graphics-model";
+import type { GroupPropsType } from "../../../models/types/shapes";
 
 // runtime imports
-import { Transformation } from '../../../components/transformation/transformation.js';
-import { GraphicsModel } from '../../../core/graphics-model/graphics-model.js';
+import { Transformation } from "../../../components/transformation/transformation.js";
+import { GraphicsModel } from "../../../core/graphics-model/graphics-model.js";
 import {
   InvalidGroupMethodAccessError,
   NotInitializedError,
   ShapeAlreadyExistsInGroupError,
-  ShapeNotAttachedToGroupError
-} from '../../../errors/index.js';
+  ShapeNotAttachedToGroupError,
+} from "../../../errors/index.js";
 import {
   assertAccess,
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_PARENT_METHOD,
-  SET_PARENT_METHOD
-} from '../../../internal/keys/dev-keys.js';
+  SET_PARENT_METHOD,
+} from "../../../internal/keys/dev-keys.js";
 
 import {
   AllGShapeStyleProperties,
-  CommonGeometricProperties
-} from '../../../property-definitions/common/common-properties.js';
+  CommonGeometricProperties,
+} from "../../../property-definitions/common/common-properties.js";
 import {
   dimensions,
-  GraphicalElementProperties
-} from '../../../property-definitions/specific/specific-properties.js';
-import { Log, validProps, Warn } from '../../../utils/helpers/helpers.js';
-import { composeAffineTransformations } from '../../../utils/math/affine/affine-composition.js';
-import { UPDATE_TRANSFORM_METHOD } from '../../../internal/keys/render-node-keys.js';
+  GraphicalElementProperties,
+} from "../../../property-definitions/specific/specific-properties.js";
+import { Log, validProps, Warn } from "../../../utils/helpers/helpers.js";
+import { composeAffineTransformations } from "../../../utils/math/affine/affine-composition.js";
+import { UPDATE_TRANSFORM_METHOD } from "../../../internal/keys/render-node-keys.js";
 
-import { RenderNode } from '../../render-node/render-node.js';
+import { RenderNode } from "../../render-node/render-node.js";
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -64,9 +64,9 @@ type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
 
 type groupProps = Pick<
   GroupPropsType,
-  'fill' | 'stroke' | 'stroke-width' | 'opacity'
+  "fill" | "stroke" | "stroke-width" | "opacity"
 >;
-export class Group extends RenderNode<'g'> implements IGraphicsContainer {
+export class Group extends RenderNode<"g"> implements IGraphicsContainer {
   /**
    * Reference to internal geometry state of the group.
    *
@@ -128,7 +128,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
    * - Group is always initialized with shape type `'g'`
    */
   constructor(id: string) {
-    super('g', id);
+    super("g", id);
   }
 
   /**
@@ -176,7 +176,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'g'
+      "g",
     );
   }
 
@@ -229,13 +229,13 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
     /**
      * Setter logic
      */
-    if (typeof props === 'object') {
+    if (typeof props === "object") {
       const safeProps = {} as groupProps;
 
       /**
        * Filter allowed properties
        */
-      const allowed = ['fill', 'stroke', 'stroke-width', 'opacity'] as const;
+      const allowed = ["fill", "stroke", "stroke-width", "opacity"] as const;
 
       for (let i = 0; i < allowed.length; i++) {
         const key = allowed[i];
@@ -263,7 +263,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
     /**
      * Getter logic
      */
-    if (typeof props === 'string') {
+    if (typeof props === "string") {
       return super.attrs(props);
     }
 
@@ -339,7 +339,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
     if (
       index < 0 ||
       (shape as GraphicsNodeWithInternalAccessMethods)[GET_PARENT_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) !== this
     ) {
       return 0;
@@ -402,17 +402,17 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
     const groupParent = this[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
     if (!groupParent) {
       throw new NotInitializedError(
-        'this.#fig',
-        'Group element not initialized , add this group first to canvas.',
-        'group.add()'
+        "this.#fig",
+        "Group element not initialized , add this group first to canvas.",
+        "group.add()",
       );
     }
 
-    if (groupParent.geometry.shape !== 'scene') {
+    if (groupParent.geometry.shape !== "scene") {
       throw new InvalidGroupMethodAccessError(
-        'this.add()',
+        "this.add()",
         `cannot add shape to this element , because this group\'s ( id : ${this.style.id} ) parent is not this Canvas ( id : ${groupParent.style.id} ).`,
-        'group.add()'
+        "group.add()",
       );
     }
 
@@ -422,7 +422,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
       if (!shape) continue;
 
       const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as {
         shape: string;
         dirty: boolean;
@@ -440,14 +440,14 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
           throw new ShapeAlreadyExistsInGroupError(
             shape.style.id,
             this.style.id,
-            'core.canvas.add()'
+            "core.canvas.add()",
           );
 
         const currentShape = shape.geometry.shape;
         throw new NotInitializedError(
           `this.#fig of ${currentShape}`,
           `this ${currentShape} not initialized , add this ${currentShape} first to canvas then group.`,
-          'canvas.add()'
+          "canvas.add()",
         );
       }
 
@@ -523,17 +523,17 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
     const groupParent = this[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
     if (!groupParent) {
       throw new NotInitializedError(
-        'this.#fig',
-        'Group element not initialized , add this group first to canvas.',
-        'group.add()'
+        "this.#fig",
+        "Group element not initialized , add this group first to canvas.",
+        "group.add()",
       );
     }
 
-    if (groupParent.geometry.shape !== 'scene') {
+    if (groupParent.geometry.shape !== "scene") {
       throw new InvalidGroupMethodAccessError(
-        'this.remove()',
-        'cannot add shape to this element , because this group parent is not Canvas.',
-        'group.remove()'
+        "this.remove()",
+        "cannot add shape to this element , because this group parent is not Canvas.",
+        "group.remove()",
       );
     }
 
@@ -544,7 +544,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
 
       const index = this.contains(shape); // 1 based index
       const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as {
         shape: string;
         dirty: boolean;
@@ -562,14 +562,14 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
           throw new ShapeNotAttachedToGroupError(
             shape.style.id,
             this.style.id,
-            'group.add()'
+            "group.add()",
           );
 
         const currentShape = shape.geometry.shape;
         throw new NotInitializedError(
           `this.#fig of ${currentShape}`,
           `this ${currentShape} not initialized , add this ${currentShape} first to canvas then group.`,
-          'canvas.add()'
+          "canvas.add()",
         );
       }
 
@@ -634,17 +634,17 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
       const groupParent = this[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
       if (!groupParent) {
         throw new NotInitializedError(
-          'this.#fig',
-          'Group element not initialized , add this group first to canvas.',
-          'group.add()'
+          "this.#fig",
+          "Group element not initialized , add this group first to canvas.",
+          "group.add()",
         );
       }
 
-      if (groupParent.geometry.shape !== 'scene') {
+      if (groupParent.geometry.shape !== "scene") {
         throw new InvalidGroupMethodAccessError(
-          'this.remove()',
-          'cannot add shape to this element , because this group parent is not Canvas.',
-          'group.clear()'
+          "this.remove()",
+          "cannot add shape to this element , because this group parent is not Canvas.",
+          "group.clear()",
         );
       }
       const elements = this.#groupElements;
@@ -656,7 +656,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
         const shape = elements[i] as GraphicsNodeWithInternalAccessMethods;
 
         const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-          DEV_INTERNAL_ACCESS_KEY
+          DEV_INTERNAL_ACCESS_KEY,
         ) as {
           shape: string;
           dirty: boolean;
@@ -781,7 +781,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
     /**
      * Step 1: Resolve matrix dimensions for group
      */
-    const [m, n] = dimensions['g'] as [number, number];
+    const [m, n] = dimensions["g"] as [number, number];
     const totalLength = m * n;
 
     /**
@@ -901,7 +901,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
       [minX, minY, 1],
       [maxX, minY, 1],
       [maxX, maxY, 1],
-      [minX, maxY, 1]
+      [minX, maxY, 1],
     ];
 
     return {
@@ -909,7 +909,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
       y: minY,
       width,
       height,
-      matrix: bbox
+      matrix: bbox,
     };
   }
 
@@ -944,7 +944,7 @@ export class Group extends RenderNode<'g'> implements IGraphicsContainer {
       }
 
       // Only groups can expand traversal
-      if (geo.shape === 'g') {
+      if (geo.shape === "g") {
         const children = (el as Group).getAllElements();
         for (let i = 0; i < children.length; i++) {
           stack.push(children[i]);

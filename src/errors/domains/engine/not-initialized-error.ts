@@ -1,5 +1,5 @@
-import { StateError } from '../../core/errors/state-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { StateError } from "../../core/errors/state-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a required variable, resource, or component
@@ -22,13 +22,13 @@ export class NotInitializedError extends StateError {
    */
   constructor(variableName: string, message: string, source: string) {
     super(
-      'NOT_INITIALIZED',
+      "NOT_INITIALIZED",
       `Required '${variableName}' is not initialized. ${message}`,
       new ErrorContext(
         variableName,
-        'initialized state required before usage',
-        source
-      )
+        "initialized state required before usage",
+        source,
+      ),
     );
   }
 }

@@ -4,32 +4,32 @@
 
 import {
   CanvasParentNotFoundError,
-  NotInitializedError
-} from '../../errors/index.js';
+  NotInitializedError,
+} from "../../errors/index.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
-  GET_INTERNAL_GRAPHICS_METHOD
-} from '../../internal/keys/dev-keys.js';
+  GET_INTERNAL_GRAPHICS_METHOD,
+} from "../../internal/keys/dev-keys.js";
 
 import {
   GET_SCENE_ELEMENTS_METHOD,
   GET_SCENE_ELEMENT_ID_MAP_METHOD,
   GET_SCENE_Z_ORDER_RESOLVER_METHOD,
-  SYSTEM_INTERNAL_ACCESS_KEY
-} from '../../internal/keys/system-keys.js';
+  SYSTEM_INTERNAL_ACCESS_KEY,
+} from "../../internal/keys/system-keys.js";
 
 /* -------------------------------------------------------------------------- */
 /*                             Interface Contracts                             */
 /* -------------------------------------------------------------------------- */
 
-import type { ICanvas } from '../../models/interfaces/canvas';
+import type { ICanvas } from "../../models/interfaces/canvas";
 
 import type {
   GraphicsNode,
-  IGraphicsContainer
-} from '../../models/interfaces/graphics-container';
-import type { GraphicsRenderNode } from '../../models/interfaces/render-node';
-import type { IRenderer } from '../../models/interfaces/renderer';
+  IGraphicsContainer,
+} from "../../models/interfaces/graphics-container";
+import type { GraphicsRenderNode } from "../../models/interfaces/render-node";
+import type { IRenderer } from "../../models/interfaces/renderer";
 
 /* -------------------------------------------------------------------------- */
 /*                                Common Types                                 */
@@ -37,24 +37,24 @@ import type { IRenderer } from '../../models/interfaces/renderer';
 
 import type {
   CanvasAttrsPropsTypes,
-  CanvasInitProps
-} from '../../models/types/canvas';
+  CanvasInitProps,
+} from "../../models/types/canvas";
 
-import type { AttrsMethodReturnTypes } from '../../models/types/common';
+import type { AttrsMethodReturnTypes } from "../../models/types/common";
 
-import { Log } from '../../utils/helpers/helpers.js';
+import { Log } from "../../utils/helpers/helpers.js";
 
 /* -------------------------------------------------------------------------- */
 /*                          Runtime Engine Subsystems                          */
 /* -------------------------------------------------------------------------- */
 
-import { Engine } from '../engine/engine.js';
+import { Engine } from "../engine/engine.js";
 
-import { EventSystem } from '../event/event-system.js';
+import { EventSystem } from "../event/event-system.js";
 
-import { initRenderer } from '../renderer/renderer.js';
+import { initRenderer } from "../renderer/renderer.js";
 
-import { SceneModel } from '../scene/scene-model.js';
+import { SceneModel } from "../scene/scene-model.js";
 
 /**
  * Root graphical canvas container responsible for orchestrating:
@@ -268,7 +268,7 @@ export class Canvas implements IGraphicsContainer, ICanvas {
     // Initialize Rendering Backend + Scene Model
     // =========================================================
 
-    const { id, width, height, x = 0, y = 0, context = 'SVG', ...rest } = props;
+    const { id, width, height, x = 0, y = 0, context = "SVG", ...rest } = props;
     this.#sceneModel = new SceneModel({ id, width, height, x, y, ...rest });
 
     this.#renderer = initRenderer(context, this.#sceneModel);
@@ -284,11 +284,11 @@ export class Canvas implements IGraphicsContainer, ICanvas {
     // =========================================================
 
     const canvasElements = this.#sceneModel[GET_SCENE_ELEMENTS_METHOD](
-      SYSTEM_INTERNAL_ACCESS_KEY
+      SYSTEM_INTERNAL_ACCESS_KEY,
     );
 
     const elementIdMap = this.#sceneModel[GET_SCENE_ELEMENT_ID_MAP_METHOD](
-      SYSTEM_INTERNAL_ACCESS_KEY
+      SYSTEM_INTERNAL_ACCESS_KEY,
     );
 
     // =========================================================
@@ -307,7 +307,7 @@ export class Canvas implements IGraphicsContainer, ICanvas {
 
     this.#eventSystem = new EventSystem(
       canvasElements as GraphicsRenderNode[],
-      elementIdMap as Map<string, GraphicsRenderNode>
+      elementIdMap as Map<string, GraphicsRenderNode>,
     );
 
     // =========================================================
@@ -333,7 +333,7 @@ export class Canvas implements IGraphicsContainer, ICanvas {
    */
   #mountToDOM(id: string): void {
     const rootGraphicsElement = this.#sceneModel[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     );
 
     // =========================================================
@@ -343,10 +343,10 @@ export class Canvas implements IGraphicsContainer, ICanvas {
     const host = document.getElementById(id);
 
     if (__DEV__) {
-      Log('canvas id ', id, host);
+      Log("canvas id ", id, host);
     }
     if (!host) {
-      throw new CanvasParentNotFoundError(id, 'Canvas.#mountToDOM()');
+      throw new CanvasParentNotFoundError(id, "Canvas.#mountToDOM()");
     }
 
     this.#hostElement = host;
@@ -358,8 +358,8 @@ export class Canvas implements IGraphicsContainer, ICanvas {
     if (!rootGraphicsElement) {
       throw new NotInitializedError(
         rootGraphicsElement,
-        'Root graphical primitive was not initialized by renderer',
-        'Canvas.#mountToDOM()'
+        "Root graphical primitive was not initialized by renderer",
+        "Canvas.#mountToDOM()",
       );
     }
 
@@ -369,8 +369,8 @@ export class Canvas implements IGraphicsContainer, ICanvas {
 
     host.appendChild(rootGraphicsElement);
 
-    if (getComputedStyle(host).position === 'static') {
-      host.style.position = 'relative';
+    if (getComputedStyle(host).position === "static") {
+      host.style.position = "relative";
     }
   }
 
@@ -397,26 +397,26 @@ export class Canvas implements IGraphicsContainer, ICanvas {
    */
   #bindDOMEvents(): void {
     const el = this.#sceneModel[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as unknown as HTMLElement;
 
-    el.addEventListener('pointerdown', (e) => {
+    el.addEventListener("pointerdown", (e) => {
       this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
     });
 
-    el.addEventListener('pointermove', (e) => {
+    el.addEventListener("pointermove", (e) => {
       this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
     });
 
-    el.addEventListener('pointerup', (e) => {
+    el.addEventListener("pointerup", (e) => {
       this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
     });
 
-    el.addEventListener('click', (e) => {
+    el.addEventListener("click", (e) => {
       this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
     });
 
-    el.addEventListener('dblclick', (e) => {
+    el.addEventListener("dblclick", (e) => {
       this.#eventSystem.dispatch(el, e as unknown as PointerEvent);
     });
   }

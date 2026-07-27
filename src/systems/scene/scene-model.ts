@@ -11,8 +11,8 @@ import {
   GET_Z_ORDER_OPERATION_METHOD,
   SET_PARENT_METHOD,
   GET_PARENT_METHOD,
-  SET_INTERNAL_GRAPHICS_METHOD
-} from '../../internal/keys/dev-keys.js';
+  SET_INTERNAL_GRAPHICS_METHOD,
+} from "../../internal/keys/dev-keys.js";
 
 import {
   assertSystemAccess,
@@ -22,8 +22,8 @@ import {
   GET_SCENE_ELEMENT_ID_MAP_METHOD,
   GET_SCENE_Z_ORDER_RESOLVER_METHOD,
   COMMIT_PENDING_CREATION_METHOD,
-  COMMIT_PENDING_DELETION_METHOD
-} from '../../internal/keys/system-keys.js';
+  COMMIT_PENDING_DELETION_METHOD,
+} from "../../internal/keys/system-keys.js";
 
 /* -------------------------------------------------------------------------- */
 /*                             Interface Contracts                             */
@@ -36,8 +36,8 @@ import type {
   GetParentAccessor,
   SetParentAccessor,
   ZOrderResolutionFuncAccessor,
-  ZOrderResolutionCleanUpFuncAccessor
-} from '../../models/interfaces/graphics-container';
+  ZOrderResolutionCleanUpFuncAccessor,
+} from "../../models/interfaces/graphics-container";
 
 /* -------------------------------------------------------------------------- */
 /*                                Common Types                                 */
@@ -45,29 +45,29 @@ import type {
 
 import type {
   CanvasAttrsPropsTypes,
-  CanvasInitProps
-} from '../../models/types/canvas';
+  CanvasInitProps,
+} from "../../models/types/canvas";
 
-import type { AttrsMethodReturnTypes } from '../../models/types/common';
+import type { AttrsMethodReturnTypes } from "../../models/types/common";
 
 import type {
   InternalGeometryAccessor,
-  InternalStyleAccessor
-} from '../../models/types/graphics-model';
+  InternalStyleAccessor,
+} from "../../models/types/graphics-model";
 
 /* -------------------------------------------------------------------------- */
 /*                          Runtime Engine Subsystems                          */
 /* -------------------------------------------------------------------------- */
 
-import { GraphicsModel } from '../../core/graphics-model/graphics-model.js';
-import { Log, Warn } from '../../utils/helpers/helpers.js';
+import { GraphicsModel } from "../../core/graphics-model/graphics-model.js";
+import { Log, Warn } from "../../utils/helpers/helpers.js";
 import {
   NotInitializedError,
   ShapeAlreadyExistsInCanvasError,
-  ShapeNotAttachedToCanvasError
-} from '../../errors/index.js';
-import Colors from '../../utils/colors/colors.js';
-import { RenderUpdateType } from '../../models/types/render-infrastructure.js';
+  ShapeNotAttachedToCanvasError,
+} from "../../errors/index.js";
+import Colors from "../../utils/colors/colors.js";
+import { RenderUpdateType } from "../../models/types/render-infrastructure.js";
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -79,7 +79,7 @@ type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   ZOrderResolutionCleanUpFuncAccessor;
 
 export class SceneModel
-  extends GraphicsModel<'scene'>
+  extends GraphicsModel<"scene">
   implements IGraphicsContainer
 {
   /**
@@ -288,18 +288,18 @@ export class SceneModel
     height,
     x = 0,
     y = 0,
-    fill = 'white',
-    stroke = 'black',
-    'stroke-width': sw = 0.5
-  }: Omit<CanvasInitProps, 'context'> & CanvasAttrsPropsTypes) {
-    super('scene', `${id}-Canvas`);
+    fill = "white",
+    stroke = "black",
+    "stroke-width": sw = 0.5,
+  }: Omit<CanvasInitProps, "context"> & CanvasAttrsPropsTypes) {
+    super("scene", `${id}-Canvas`);
 
     // =========================================================
     //  Dev Mode Warning (compile-time removable)
     // =========================================================
     if (__DEV__) {
       Warn(
-        'ShantanuJS is a pre-release build. Not recommended for production use.'
+        "ShantanuJS is a pre-release build. Not recommended for production use.",
       );
     }
 
@@ -313,7 +313,7 @@ export class SceneModel
       y,
       fill,
       stroke,
-      'stroke-width': sw
+      "stroke-width": sw,
     });
   }
 
@@ -374,7 +374,7 @@ export class SceneModel
    * @returns attribute value(s) or void
    */
   public override attrs(
-    props: CanvasAttrsPropsTypes | string
+    props: CanvasAttrsPropsTypes | string,
   ): AttrsMethodReturnTypes {
     // =========================================================
     // Fast exit (null/undefined/empty)
@@ -384,7 +384,7 @@ export class SceneModel
     // =========================================================
     // WRITE PATH (object)
     // =========================================================
-    if (typeof props === 'object') {
+    if (typeof props === "object") {
       // Avoid expensive Object.keys → direct check via iteration hint
       let hasKeys = false;
       for (const _ in props) {
@@ -441,18 +441,18 @@ export class SceneModel
 
       if (actualInside !== expectedInside) {
         Warn(
-          'Invariant violation: shape exists in indexMap but has mismatched ownership.',
-          { shape, expectedInside, actualInside }
+          "Invariant violation: shape exists in indexMap but has mismatched ownership.",
+          { shape, expectedInside, actualInside },
         );
       }
 
       // Stronger invariant: array-map sync
       const arr = this.#sceneElements;
       if (arr[index] !== shape) {
-        Warn('Invariant violation: indexMap and array are out of sync.', {
+        Warn("Invariant violation: indexMap and array are out of sync.", {
           index,
           shape,
-          actual: arr[index]
+          actual: arr[index],
         });
       }
     }
@@ -511,9 +511,9 @@ export class SceneModel
     const fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
     if (!fig) {
       throw new NotInitializedError(
-        'this.#fig',
-        'canvas dom element not initialized',
-        'core.canvas.#setCanvasParams()'
+        "this.#fig",
+        "canvas dom element not initialized",
+        "core.canvas.#setCanvasParams()",
       );
     }
 
@@ -529,7 +529,7 @@ export class SceneModel
       if (!shape) continue;
 
       const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as {
         shape: string;
         zIndex: number;
@@ -544,7 +544,7 @@ export class SceneModel
         throw new ShapeAlreadyExistsInCanvasError(
           shape.style.id,
           this.style.id,
-          'core.canvas.add()'
+          "core.canvas.add()",
         );
       }
 
@@ -569,23 +569,23 @@ export class SceneModel
       this.#maxZ++;
       geometry.zIndex = this.#maxZ;
 
-      geometry.renderUpdateType = 'TRANSFORM';
+      geometry.renderUpdateType = "TRANSFORM";
 
       // =========================================================
       // DEV-ONLY invariant validation
       // =========================================================
       if (__DEV__) {
         if (elements[index] !== shape || indexMap.get(shape) !== index) {
-          Warn('Invariant violation after insertion', {
+          Warn("Invariant violation after insertion", {
             shape,
             index,
             arrayValue: elements[index],
-            mapValue: indexMap.get(shape)
+            mapValue: indexMap.get(shape),
           });
         }
 
-        if (typeof geometry.zIndex !== 'number') {
-          Warn('zIndex initialization failed', shape);
+        if (typeof geometry.zIndex !== "number") {
+          Warn("zIndex initialization failed", shape);
         }
       }
     }
@@ -597,9 +597,9 @@ export class SceneModel
     const fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
     if (!fig) {
       throw new NotInitializedError(
-        'this.#fig',
-        'canvas dom element not initialized',
-        'core.canvas.#setCanvasParams()'
+        "this.#fig",
+        "canvas dom element not initialized",
+        "core.canvas.#setCanvasParams()",
       );
     }
 
@@ -611,7 +611,7 @@ export class SceneModel
       if (!shape) continue;
 
       const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as {
         shape: string;
         dirty: boolean;
@@ -624,10 +624,10 @@ export class SceneModel
 
       const parent = shape[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
-      if (parent instanceof SceneModel && parent.geometry.shape == 'canvas') {
+      if (parent instanceof SceneModel && parent.geometry.shape == "canvas") {
         Warn(
           `May be  Shape already attached in this canvas or any other canvas . Skipping.`,
-          shape
+          shape,
         );
 
         continue;
@@ -637,7 +637,7 @@ export class SceneModel
         if (__DEV__) {
           Warn(
             `Shape already attached to a context may be in this canvas or any other canvas . Skipping.`,
-            shape
+            shape,
           );
         }
         continue;
@@ -647,7 +647,7 @@ export class SceneModel
         throw new ShapeAlreadyExistsInCanvasError(
           shape.style.id,
           this.style.id,
-          'core.canvas.add()'
+          "core.canvas.add()",
         );
       }
 
@@ -758,9 +758,9 @@ export class SceneModel
 
     if (!fig) {
       throw new NotInitializedError(
-        'this.#fig',
-        'canvas dom element not initialized',
-        'core.canvas.#setCanvasParams()'
+        "this.#fig",
+        "canvas dom element not initialized",
+        "core.canvas.#setCanvasParams()",
       );
     }
 
@@ -778,7 +778,7 @@ export class SceneModel
       // =========================================================
       if (index === undefined) {
         if (__DEV__) {
-          Warn('Element not found or already removed', shape);
+          Warn("Element not found or already removed", shape);
         }
         continue;
       }
@@ -789,7 +789,7 @@ export class SceneModel
         throw new ShapeNotAttachedToCanvasError(
           shape.style.id,
           this.style.id,
-          'canvas.remove()'
+          "canvas.remove()",
         );
       }
 
@@ -909,7 +909,7 @@ export class SceneModel
       const op = shape[GET_Z_ORDER_OPERATION_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
       const elGeo = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as {
         zIndex: number;
         localDirty: boolean;

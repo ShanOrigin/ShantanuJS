@@ -54,7 +54,7 @@
  * - Layout system
  * - Spatial indexing
  */
-const TRANSFORM_COMPONENT_KEY = Symbol('TRANSFORM_COMPONENT_KEY');
+const TRANSFORM_COMPONENT_KEY = Symbol("TRANSFORM_COMPONENT_KEY");
 
 /* -------------------------------------------------------------------------- */
 /*                              Animation System                              */
@@ -76,7 +76,7 @@ const TRANSFORM_COMPONENT_KEY = Symbol('TRANSFORM_COMPONENT_KEY');
  * - Frame update loop
  * - Tween system
  */
-const ANIMATION_COMPONENT_KEY = Symbol('ANIMATION_COMPONENT_KEY');
+const ANIMATION_COMPONENT_KEY = Symbol("ANIMATION_COMPONENT_KEY");
 
 /* -------------------------------------------------------------------------- */
 /*                                Filter System                               */
@@ -97,7 +97,7 @@ const ANIMATION_COMPONENT_KEY = Symbol('ANIMATION_COMPONENT_KEY');
  * - Offscreen compositor
  * - Post-processing pipeline
  */
-const FILTER_COMPONENT_KEY = Symbol('FILTER_COMPONENT_KEY');
+const FILTER_COMPONENT_KEY = Symbol("FILTER_COMPONENT_KEY");
 
 /* -------------------------------------------------------------------------- */
 /*                                 Event System                               */
@@ -118,7 +118,7 @@ const FILTER_COMPONENT_KEY = Symbol('FILTER_COMPONENT_KEY');
  * - Event dispatcher
  * - Interaction system
  */
-const EVENT_COMPONENT_KEY = Symbol('EVENT_COMPONENT_KEY');
+const EVENT_COMPONENT_KEY = Symbol("EVENT_COMPONENT_KEY");
 
 /* -------------------------------------------------------------------------- */
 /*                             Optional Future Keys                           */
@@ -137,7 +137,7 @@ const EVENT_COMPONENT_KEY = Symbol('EVENT_COMPONENT_KEY');
  * - Path cache
  * - Triangulation cache
  */
-const GEOMETRY_CACHE_KEY = Symbol('GEOMETRY_CACHE_KEY');
+const GEOMETRY_CACHE_KEY = Symbol("GEOMETRY_CACHE_KEY");
 
 /**
  * Internal storage key for dirty-state tracking.
@@ -151,7 +151,7 @@ const GEOMETRY_CACHE_KEY = Symbol('GEOMETRY_CACHE_KEY');
  * - geometry changed
  * - render state changed
  */
-const DIRTY_STATE_KEY = Symbol('DIRTY_STATE_KEY');
+const DIRTY_STATE_KEY = Symbol("DIRTY_STATE_KEY");
 
 /**
  * Internal storage key for renderer-specific cached resources.
@@ -165,7 +165,7 @@ const DIRTY_STATE_KEY = Symbol('DIRTY_STATE_KEY');
  * - texture references
  * - cached render commands
  */
-const RENDER_RESOURCE_KEY = Symbol('RENDER_RESOURCE_KEY');
+const RENDER_RESOURCE_KEY = Symbol("RENDER_RESOURCE_KEY");
 
 export {
   TRANSFORM_COMPONENT_KEY,
@@ -174,5 +174,5 @@ export {
   EVENT_COMPONENT_KEY,
   GEOMETRY_CACHE_KEY,
   DIRTY_STATE_KEY,
-  RENDER_RESOURCE_KEY
+  RENDER_RESOURCE_KEY,
 };

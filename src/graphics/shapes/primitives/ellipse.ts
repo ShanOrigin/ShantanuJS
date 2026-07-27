@@ -1,31 +1,31 @@
-import { RenderNode } from '../../render-node/render-node.js';
+import { RenderNode } from "../../render-node/render-node.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  assertAccess
-} from '../../../internal/keys/dev-keys.js';
+  assertAccess,
+} from "../../../internal/keys/dev-keys.js";
 import {
   CommonGeometricProperties,
-  AllGShapeStyleProperties
-} from '../../../property-definitions/common/common-properties.js';
+  AllGShapeStyleProperties,
+} from "../../../property-definitions/common/common-properties.js";
 
 import {
   GraphicalElementProperties,
-  dimensions
-} from '../../../property-definitions/specific/specific-properties.js';
+  dimensions,
+} from "../../../property-definitions/specific/specific-properties.js";
 import type {
   InitialProps,
-  ConstructorPropsTypes
-} from '../../../models/types/common';
+  ConstructorPropsTypes,
+} from "../../../models/types/common";
 
 import {
   Log,
   parameterTypeValidator,
-  validProps
-} from '../../../utils/helpers/helpers.js';
+  validProps,
+} from "../../../utils/helpers/helpers.js";
 
-export class Ellipse extends RenderNode<'ellipse'> {
+export class Ellipse extends RenderNode<"ellipse"> {
   #copies: number = 0;
   /**
    * Reference to the base class’s internal geometry object.
@@ -60,20 +60,20 @@ export class Ellipse extends RenderNode<'ellipse'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(props: ConstructorPropsTypes<'ellipse'>) {
-    super('ellipse', props?.id ?? '');
+  constructor(props: ConstructorPropsTypes<"ellipse">) {
+    super("ellipse", props?.id ?? "");
 
-    'id' in props && delete props.id;
+    "id" in props && delete props.id;
     parameterTypeValidator(
       props,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
-      'ellipse'
+      "ellipse",
     );
 
     // for initial setup through RenderNode
-    (props as ConstructorPropsTypes<'ellipse'> & InitialProps)['initial'] =
+    (props as ConstructorPropsTypes<"ellipse"> & InitialProps)["initial"] =
       true;
     this.attrs(props);
   }
@@ -83,28 +83,28 @@ export class Ellipse extends RenderNode<'ellipse'> {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'ellipse'
+      "ellipse",
     );
   }
   public clone(
     offsetX: number = 10,
     offsetY: number = 10,
     visibleRadiusX?: number,
-    visibleRadiusY?: number
+    visibleRadiusY?: number,
   ): Ellipse {
     if (
       this.#geometry &&
-      typeof this.#geometry === 'object' &&
+      typeof this.#geometry === "object" &&
       this.#geometry !== null &&
       this.#style &&
-      typeof this.#style === 'object' &&
+      typeof this.#style === "object" &&
       this.#style !== null
     ) {
       const { cx = 0, cy = 0, rx = 0, ry = 0 } = this.#geometry;
 
       const style = { ...this.#style };
 
-      if ('id' in style && style.id !== '') {
+      if ("id" in style && style.id !== "") {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
@@ -114,11 +114,11 @@ export class Ellipse extends RenderNode<'ellipse'> {
         rx: (visibleRadiusX ?? 0) + rx,
         ry: (visibleRadiusY ?? 0) + ry,
         initial: true,
-        ...style
-      } as ConstructorPropsTypes<'ellipse'> & InitialProps);
+        ...style,
+      } as ConstructorPropsTypes<"ellipse"> & InitialProps);
     }
 
-    throw new Error('Cannot clone: geometry or style is invalid.');
+    throw new Error("Cannot clone: geometry or style is invalid.");
   }
 
   protected override generateMatrix(accessKey: symbol): void {
@@ -138,7 +138,7 @@ export class Ellipse extends RenderNode<'ellipse'> {
       const { cx = 0, cy = 0, rx = 0, ry = 0 } = geo;
 
       // Retrieve expected matrix dimensions for a line
-      const [m, n] = dimensions['ellipse'] as [number, number];
+      const [m, n] = dimensions["ellipse"] as [number, number];
 
       // Compute total buffer length based on dimensions
       const totalLength = m * n;
@@ -160,7 +160,7 @@ export class Ellipse extends RenderNode<'ellipse'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array
+    temporaryState: Float32Array,
   ) {
     try {
       assertAccess(accessKey);

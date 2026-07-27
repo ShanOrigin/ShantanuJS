@@ -27,7 +27,7 @@ export const CommonGeometricProperties = Object.seal({
     /**
      * Shape identifier representing the graphical entity type.
      */
-    shape: '',
+    shape: "",
 
     /**
      * Indicates whether the local transformation matrix
@@ -89,7 +89,7 @@ export const CommonGeometricProperties = Object.seal({
        * Stack skip counter used for optimized
        * traversal operations.
        */
-      skip: 0
+      skip: 0,
     },
 
     /**
@@ -150,8 +150,8 @@ export const CommonGeometricProperties = Object.seal({
      *   used by the renderer to select the appropriate
      *   synchronization path.
      */
-    renderUpdateType: 'TRANSFORM'
-  }
+    renderUpdateType: "TRANSFORM",
+  },
 });
 
 /* -------------------------------------------------------------------------- */
@@ -175,12 +175,12 @@ export const CommonStyleProperties = Object.seal({
   /**
    * Unique graphical entity identifier.
    */
-  id: '',
+  id: "",
 
   /**
    * Cursor style used during pointer interaction.
    */
-  cursor: '',
+  cursor: "",
 
   /**
    * Opacity value ranging from 0 to 1.
@@ -190,27 +190,27 @@ export const CommonStyleProperties = Object.seal({
   /**
    * Visual filter effects.
    */
-  filter: '',
+  filter: "",
 
   /**
    * Mask definition reference.
    */
-  mask: '',
+  mask: "",
 
   /**
    * Clipping path definition reference.
    */
-  'clip-path': '',
+  "clip-path": "",
 
   /**
    * Stroke dash pattern definition.
    */
-  'stroke-dasharray': '',
+  "stroke-dasharray": "",
 
   /**
    * Stroke dash offset value.
    */
-  'stroke-dashoffset': ''
+  "stroke-dashoffset": "",
 });
 
 /**
@@ -225,37 +225,37 @@ export const ShapeStyleProperties = Object.seal({
   /**
    * Fill color or fill paint source.
    */
-  fill: 'none',
+  fill: "none",
 
   /**
    * Stroke color or stroke paint source.
    */
-  stroke: 'none',
+  stroke: "none",
 
   /**
    * Stroke thickness.
    */
-  'stroke-width': 0,
+  "stroke-width": 0,
 
   /**
    * Stroke line ending style.
    */
-  'stroke-linecap': 'butt',
+  "stroke-linecap": "butt",
 
   /**
    * Stroke line join style.
    */
-  'stroke-linejoin': 'miter',
+  "stroke-linejoin": "miter",
 
   /**
    * Stroke miter limit.
    */
-  'stroke-miterlimit': 4,
+  "stroke-miterlimit": 4,
 
   /**
    * Fill algorithm rule.
    */
-  'fill-rule': 'nonzero'
+  "fill-rule": "nonzero",
 });
 
 /**
@@ -322,52 +322,52 @@ export const TextStyleProperties = Object.seal({
   /**
    * Font family name.
    */
-  'font-family': 'arial',
+  "font-family": "arial",
 
   /**
    * Font size.
    */
-  'font-size': 16,
+  "font-size": 16,
 
   /**
    * Font style definition.
    */
-  'font-style': 'normal',
+  "font-style": "normal",
 
   /**
    * Font weight definition.
    */
-  'font-weight': 'bold',
+  "font-weight": "bold",
 
   /**
    * Character spacing value.
    */
-  'letter-spacing': '0',
+  "letter-spacing": "0",
 
   /**
    * Word spacing value.
    */
-  'word-spacing': '0',
+  "word-spacing": "0",
 
   /**
    * Horizontal text alignment.
    */
-  'text-anchor': 'middle',
+  "text-anchor": "middle",
 
   /**
    * Vertical alignment baseline.
    */
-  'alignment-baseline': 'middle',
+  "alignment-baseline": "middle",
 
   /**
    * Dominant baseline definition.
    */
-  'dominant-baseline': '',
+  "dominant-baseline": "",
 
   /**
    * Text direction mode.
    */
-  direction: 'ltr'
+  direction: "ltr",
 });
 
 /* -------------------------------------------------------------------------- */
@@ -383,7 +383,7 @@ export const TextStyleProperties = Object.seal({
  */
 export const ShapeStyle = {
   ...ShapeStyleProperties,
-  ...CommonStyleProperties
+  ...CommonStyleProperties,
 };
 
 /**
@@ -398,7 +398,7 @@ export const ShapeStyle = {
 export const AllStyleProperties = {
   ...ShapeStyleProperties,
   ...CommonStyleProperties,
-  ...TextStyleProperties
+  ...TextStyleProperties,
 };
 
 /**
@@ -423,9 +423,9 @@ export const AllGShapeStyleProperties = {
   curve: ShapeStyle,
   text: {
     ...ShapeStyle,
-    ...TextStyleProperties
+    ...TextStyleProperties,
   },
-  image: ShapeStyle
+  image: ShapeStyle,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -474,8 +474,7 @@ type _ICommonGeometricPropsHelper = DeepPartial<
  * - Generated from the geometry reference object
  *   using deep partial transformation.
  */
-export interface ICommonGeometricProperties
-  extends _ICommonGeometricPropsHelper {}
+export interface ICommonGeometricProperties extends _ICommonGeometricPropsHelper {}
 
 /**
  * Common style property interface.
@@ -512,9 +511,7 @@ export type ITextStyleProperties = typeof TextStyleProperties;
  *   into a unified style contract.
  */
 export interface IAllStyleProperties
-  extends IShapeStyleProperties,
-    ICommonStyleProperties,
-    ITextStyleProperties {}
+  extends IShapeStyleProperties, ICommonStyleProperties, ITextStyleProperties {}
 
 /**
  * Graphical shape style registry interface.
@@ -563,21 +560,21 @@ export interface IAllGShapeStyleProperties {
  *   from graphical entity tags.
  */
 export type TagToGShapeStyleKeyMap = {
-  dot: 'dot';
-  rect: 'rect';
-  circle: 'circle';
-  ellipse: 'ellipse';
-  line: 'line';
-  polyline: 'polyline';
-  polygon: 'polygon';
-  text: 'text';
-  image: 'image';
-  scene: 'scene';
-  path: 'dot';
-  tspan: 'text';
-  g: 'g';
-  triangle: 'triangle';
-  curve: 'curve';
+  dot: "dot";
+  rect: "rect";
+  circle: "circle";
+  ellipse: "ellipse";
+  line: "line";
+  polyline: "polyline";
+  polygon: "polygon";
+  text: "text";
+  image: "image";
+  scene: "scene";
+  path: "dot";
+  tspan: "text";
+  g: "g";
+  triangle: "triangle";
+  curve: "curve";
 };
 
 /**
