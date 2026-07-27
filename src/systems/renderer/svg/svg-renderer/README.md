@@ -21,6 +21,7 @@ Canvas → Engine → Renderer (SVGRenderer) → DOM
 > **"Compute everything in JS → Write only minimal diff to DOM"**
 
 This ensures:
+
 - Zero redundant DOM updates
 - High rendering performance
 - Predictable rendering behavior
@@ -361,3 +362,4 @@ State → Diff → Minimal DOM Mutation
 ---
 
 
+```

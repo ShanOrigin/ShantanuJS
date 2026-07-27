@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a color value does not match any supported color format.
@@ -17,9 +17,9 @@ export class InvalidColorFormatError extends UsageError {
    */
   constructor(receivedValue: string, source: string) {
     super(
-      'COLOR_INVALID_FORMAT',
-      'Invalid color format.',
-      new ErrorContext(receivedValue, 'named | hex | rgb(a) | hsl(a)', source)
+      "COLOR_INVALID_FORMAT",
+      "Invalid color format.",
+      new ErrorContext(receivedValue, "named | hex | rgb(a) | hsl(a)", source),
     );
   }
 }

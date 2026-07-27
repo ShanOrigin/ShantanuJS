@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when attempting to add a shape to a group that already
@@ -19,13 +19,13 @@ export class ShapeAlreadyExistsInGroupError extends UsageError {
    */
   constructor(shapeId: string, groupId: string, source: string) {
     super(
-      'GROUP_SHAPE_ALREADY_EXISTS',
-      'Shape already exists in the group.',
+      "GROUP_SHAPE_ALREADY_EXISTS",
+      "Shape already exists in the group.",
       new ErrorContext(
         { shapeId, groupId },
-        'shape must not already be added to the group',
-        source
-      )
+        "shape must not already be added to the group",
+        source,
+      ),
     );
   }
 }

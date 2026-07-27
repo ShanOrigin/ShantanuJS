@@ -20,12 +20,12 @@
 /**
  * SVG namespace URI used for creating SVG elements.
  */
-export const SVGSOURCE = 'http://www.w3.org/2000/svg';
+export const SVGSOURCE = "http://www.w3.org/2000/svg";
 
 /**
  * Identifier representing SVG rendering context.
  */
-export const SVG_CONTEXT = 'svg';
+export const SVG_CONTEXT = "svg";
 
 /**
  * Cached document reference for DOM operations.
@@ -46,7 +46,7 @@ const doc: Document = document;
  */
 export function createSVGElement(
   tagName: string,
-  namespace: string = SVGSOURCE
+  namespace: string = SVGSOURCE,
 ): SVGElement {
   return doc.createElementNS(namespace, tagName) as SVGElement;
 }
@@ -68,12 +68,12 @@ export function createSVGElement(
 export function setSVGAttrs(
   shape: SVGElement,
   key: string,
-  value: string | number
+  value: string | number,
 ): void {
   try {
     // Special case: text node content
-    (shape.tagName === 'text' &&
-      key === 'text' &&
+    (shape.tagName === "text" &&
+      key === "text" &&
       (shape.textContent = value.toString())) ||
       shape.setAttribute(key, String(value));
   } catch (e) {
@@ -101,13 +101,13 @@ export function setSVGAttrs(
 export function addTo(
   parent: SVGSVGElement | SVGGElement | SVGElement,
   node: SVGElement,
-  index?: number
+  index?: number,
 ) {
   if (!parent) return false;
 
   // Insert at specific index if valid
   if (
-    typeof index === 'number' &&
+    typeof index === "number" &&
     index >= 0 &&
     index < parent.children.length
   ) {
@@ -132,7 +132,7 @@ export function addTo(
  */
 export function removeFrom(
   parent: SVGSVGElement | SVGGElement | SVGElement,
-  node: SVGElement
+  node: SVGElement,
 ) {
   return Boolean(parent?.removeChild(node));
 }

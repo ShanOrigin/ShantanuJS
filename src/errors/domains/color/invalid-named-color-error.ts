@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a provided named color is not recognized or supported
@@ -18,9 +18,9 @@ export class InvalidNamedColorError extends UsageError {
    */
   constructor(colorName: string, source: string) {
     super(
-      'COLOR_INVALID_NAMED_COLOR',
-      'Invalid named color.',
-      new ErrorContext(colorName, 'supported named color', source)
+      "COLOR_INVALID_NAMED_COLOR",
+      "Invalid named color.",
+      new ErrorContext(colorName, "supported named color", source),
     );
   }
 }

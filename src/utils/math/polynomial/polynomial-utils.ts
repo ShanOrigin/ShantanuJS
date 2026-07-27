@@ -28,7 +28,7 @@ export function makeCubic(
   start: number,
   end: number,
   startVel = 0,
-  endVel = 0
+  endVel = 0,
 ): CubicPoly {
   const a0 = start;
   const a1 = startVel;

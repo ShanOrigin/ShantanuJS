@@ -2,4 +2,4 @@
 export {};
 
 globalThis.__DEV__ =
-  typeof __SHANTANU_DEV__ !== 'undefined' ? __SHANTANU_DEV__ : true;
+  typeof __SHANTANU_DEV__ !== "undefined" ? __SHANTANU_DEV__ : true;

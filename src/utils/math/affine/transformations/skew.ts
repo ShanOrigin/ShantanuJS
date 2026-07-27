@@ -1,4 +1,4 @@
-import type { SkewMethodProps } from '../../../../models/types/geometry/transform';
+import type { SkewMethodProps } from "../../../../models/types/geometry/transform";
 
 /**
  * Applies a 2D skew (shear) transformation to an existing DOMMatrix.
@@ -60,22 +60,22 @@ import type { SkewMethodProps } from '../../../../models/types/geometry/transfor
 export function skew({
   sx,
   sy,
-  tType = 'a',
+  tType = "a",
   px = 0,
   py = 0,
-  oMatrix
+  oMatrix,
 }: SkewMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
-      case 'relative':
-      case 'r': {
+      case "relative":
+      case "r": {
         sx && oMatrix.skewXSelf(sx);
         sy && oMatrix.skewYSelf(sy);
         break;
       }
 
-      case 'absolute':
-      case 'a': {
+      case "absolute":
+      case "a": {
         oMatrix.translateSelf(px, py);
         sx && oMatrix.skewXSelf(sx);
         sy && oMatrix.skewYSelf(sy);
@@ -83,8 +83,8 @@ export function skew({
         break;
       }
 
-      case 'pivot':
-      case 'p':
+      case "pivot":
+      case "p":
       default: {
         oMatrix.translateSelf(px, py);
         sx && oMatrix.skewXSelf(sx);

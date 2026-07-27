@@ -1,7 +1,7 @@
 /**
  * Motion path.
  */
-export type MotionPath = string | 'linear' | 'quadratic' | 'cubic' | 'arc';
+export type MotionPath = string | "linear" | "quadratic" | "cubic" | "arc";
 
 /**
  * Curve motion configuration.

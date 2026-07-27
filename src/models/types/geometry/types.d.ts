@@ -27,5 +27,5 @@ export type BboxProps = {
   matrix: number[][];
 };
 
-export type Major = 'row' | 'column';
-export type ArrayType = 'normal' | 'float32';
+export type Major = "row" | "column";
+export type ArrayType = "normal" | "float32";

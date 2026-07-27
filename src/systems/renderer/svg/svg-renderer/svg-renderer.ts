@@ -7,18 +7,18 @@ import {
   GET_INTERNAL_GRAPHICS_METHOD,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  SET_INTERNAL_GRAPHICS_METHOD
-} from '../../../../internal/keys/dev-keys.js';
+  SET_INTERNAL_GRAPHICS_METHOD,
+} from "../../../../internal/keys/dev-keys.js";
 
 import {
   GET_PENDING_CREATION_ELEMENTS_METHOD,
   COMMIT_PENDING_CREATION_METHOD,
   GET_PENDING_DELETION_ELEMENTS_METHOD,
   COMMIT_PENDING_DELETION_METHOD,
-  SYSTEM_INTERNAL_ACCESS_KEY
-} from '../../../../internal/keys/system-keys.js';
+  SYSTEM_INTERNAL_ACCESS_KEY,
+} from "../../../../internal/keys/system-keys.js";
 
-import { GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD } from '../../../../internal/keys/render-node-keys.js';
+import { GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD } from "../../../../internal/keys/render-node-keys.js";
 
 /* -------------------------------------------------------------------------- */
 /*                             Interface Contracts                             */
@@ -32,46 +32,46 @@ import type {
   SetParentAccessor,
   ZOrderResolutionFuncAccessor,
   ZOrderResolutionCleanUpFuncAccessor,
-  GetSceneElementsAccessor
-} from '../../../../models/interfaces/graphics-container';
+  GetSceneElementsAccessor,
+} from "../../../../models/interfaces/graphics-container";
 
-import type { InternalGenerateCMatrixAndBoundMethodAccessor } from '../../../../models/types/render-node';
+import type { InternalGenerateCMatrixAndBoundMethodAccessor } from "../../../../models/types/render-node";
 
-import type { IRenderer } from '../../../../models/interfaces/renderer';
-import type { TransformStack } from '../../../../models/types/common';
+import type { IRenderer } from "../../../../models/interfaces/renderer";
+import type { TransformStack } from "../../../../models/types/common";
 /* -------------------------------------------------------------------------- */
 /*                                Common Types                                 */
 /* -------------------------------------------------------------------------- */
 
 import type {
   InternalGeometryAccessor,
-  InternalStyleAccessor
-} from '../../../../models/types/graphics-model';
+  InternalStyleAccessor,
+} from "../../../../models/types/graphics-model";
 import type {
   RenderInfrastructure,
-  RenderUpdateType
-} from '../../../../models/types/render-infrastructure';
+  RenderUpdateType,
+} from "../../../../models/types/render-infrastructure";
 /* -------------------------------------------------------------------------- */
 /*                          Runtime Engine Subsystems                          */
 /* -------------------------------------------------------------------------- */
 
-import { GraphicsModel } from '../../../../core/graphics-model/graphics-model.js';
+import { GraphicsModel } from "../../../../core/graphics-model/graphics-model.js";
 
 //import { Warn } from '../../utils/hshapepers/helpers.js';
 import {
   InvalidInternalStateError,
-  InvalidRenderableShapeError
-} from '../../../../errors/index.js';
+  InvalidRenderableShapeError,
+} from "../../../../errors/index.js";
 
-import { createSVGElement, SVGSOURCE, removeFrom } from '../core/core.js';
-import { SceneModel } from '../../../scene/scene-model.js';
-import { RenderPhase } from '../../../../utils/helpers/helpers.js';
+import { createSVGElement, SVGSOURCE, removeFrom } from "../core/core.js";
+import { SceneModel } from "../../../scene/scene-model.js";
+import { RenderPhase } from "../../../../utils/helpers/helpers.js";
 import {
   FilterRecord,
-  IGlowFilter
-} from '../../../../models/interfaces/filters.js';
-import { SVGFilters } from '../filters/svg-filters.js';
-import { GraphicsRenderNode } from '../../../../models/interfaces/render-node.js';
+  IGlowFilter,
+} from "../../../../models/interfaces/filters.js";
+import { SVGFilters } from "../filters/svg-filters.js";
+import { GraphicsRenderNode } from "../../../../models/interfaces/render-node.js";
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -328,25 +328,25 @@ export class SVGRenderer implements IRenderer {
     // Viewport Host
     // =========================================================
 
-    const svg = createSVGElement('svg', SVGSOURCE);
+    const svg = createSVGElement("svg", SVGSOURCE);
 
     // =========================================================
     // Resource Host
     // =========================================================
 
-    const defs = createSVGElement('defs', SVGSOURCE);
+    const defs = createSVGElement("defs", SVGSOURCE);
 
     // =========================================================
     // Surface Host
     // =========================================================
 
-    const surface = createSVGElement('rect', SVGSOURCE);
+    const surface = createSVGElement("rect", SVGSOURCE);
 
     // =========================================================
     // Scene Content Host
     // =========================================================
 
-    const contentRoot = createSVGElement('g', SVGSOURCE);
+    const contentRoot = createSVGElement("g", SVGSOURCE);
 
     // =========================================================
     // Stable Infrastructure Hierarchy
@@ -368,10 +368,10 @@ export class SVGRenderer implements IRenderer {
 
     const domStyle = svg.style;
 
-    domStyle.position = 'absolute';
-    domStyle.display = 'block';
-    domStyle.boxSizing = 'border-box';
-    domStyle.overflow = 'hidden';
+    domStyle.position = "absolute";
+    domStyle.display = "block";
+    domStyle.boxSizing = "border-box";
+    domStyle.overflow = "hidden";
 
     // =========================================================
     // Register Renderer Infrastructure
@@ -381,7 +381,7 @@ export class SVGRenderer implements IRenderer {
       viewportHost: svg,
       resourceHost: defs,
       surfaceHost: surface,
-      contentHost: contentRoot
+      contentHost: contentRoot,
     });
   }
 
@@ -406,15 +406,15 @@ export class SVGRenderer implements IRenderer {
     // =========================================================
 
     const geoRef = this.#scene[GET_INTERNAL_GEOMETRY_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     );
 
     const styleRef = this.#scene[GET_INTERNAL_STYLE_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     );
 
     const figRef = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as SVGSVGElement;
 
     // =========================================================
@@ -455,17 +455,17 @@ export class SVGRenderer implements IRenderer {
     // Viewport Sizing
     // =========================================================
 
-    geoCache['__width'] !== ws &&
-      (figRef.setAttribute('width', ws), (geoCache['__width'] = ws));
+    geoCache["__width"] !== ws &&
+      (figRef.setAttribute("width", ws), (geoCache["__width"] = ws));
 
-    geoCache['__height'] !== hs &&
-      (figRef.setAttribute('height', hs), (geoCache['__height'] = hs));
+    geoCache["__height"] !== hs &&
+      (figRef.setAttribute("height", hs), (geoCache["__height"] = hs));
 
     // =========================================================
     // Viewport Coordinate Space
     // =========================================================
 
-    figRef.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    figRef.setAttribute("viewBox", `0 0 ${width} ${height}`);
 
     // =========================================================
     // DOM Positioning
@@ -473,49 +473,49 @@ export class SVGRenderer implements IRenderer {
 
     const domStyle = figRef.style;
 
-    geoCache['__x'] !== xs &&
-      ((domStyle.left = `${x}px`), (geoCache['__x'] = xs));
+    geoCache["__x"] !== xs &&
+      ((domStyle.left = `${x}px`), (geoCache["__x"] = xs));
 
-    geoCache['__y'] !== ys &&
-      ((domStyle.top = `${y}px`), (geoCache['__y'] = ys));
+    geoCache["__y"] !== ys &&
+      ((domStyle.top = `${y}px`), (geoCache["__y"] = ys));
 
     // =========================================================
     // Surface Geometry
     // =========================================================
 
-    surface.setAttribute('x', '0');
-    surface.setAttribute('y', '0');
+    surface.setAttribute("x", "0");
+    surface.setAttribute("y", "0");
 
-    geoCache['__surfaceWidth'] !== ws &&
-      (surface.setAttribute('width', ws), (geoCache['__surfaceWidth'] = ws));
+    geoCache["__surfaceWidth"] !== ws &&
+      (surface.setAttribute("width", ws), (geoCache["__surfaceWidth"] = ws));
 
-    geoCache['__surfaceHeight'] !== hs &&
-      (surface.setAttribute('height', hs), (geoCache['__surfaceHeight'] = hs));
+    geoCache["__surfaceHeight"] !== hs &&
+      (surface.setAttribute("height", hs), (geoCache["__surfaceHeight"] = hs));
 
     // =========================================================
     // Surface Styling
     // =========================================================
 
-    const stroke = styleRef.stroke ?? 'black';
+    const stroke = styleRef.stroke ?? "black";
 
-    const fill = styleRef.fill ?? 'white';
+    const fill = styleRef.fill ?? "white";
 
-    const sw = styleRef['stroke-width'] ?? 0;
+    const sw = styleRef["stroke-width"] ?? 0;
 
     const sws = this.#numToStr(sw);
 
     // Fill
-    styleCache['fill'] !== fill &&
-      (surface.setAttribute('fill', fill), (styleCache['fill'] = fill));
+    styleCache["fill"] !== fill &&
+      (surface.setAttribute("fill", fill), (styleCache["fill"] = fill));
 
     // Stroke
-    styleCache['stroke'] !== stroke &&
-      (surface.setAttribute('stroke', stroke), (styleCache['stroke'] = stroke));
+    styleCache["stroke"] !== stroke &&
+      (surface.setAttribute("stroke", stroke), (styleCache["stroke"] = stroke));
 
     // Stroke Width
-    styleCache['stroke-width'] !== sws &&
-      (surface.setAttribute('stroke-width', sws),
-      (styleCache['stroke-width'] = sws));
+    styleCache["stroke-width"] !== sws &&
+      (surface.setAttribute("stroke-width", sws),
+      (styleCache["stroke-width"] = sws));
   }
 
   /* ============================================================================
@@ -602,7 +602,7 @@ export class SVGRenderer implements IRenderer {
     if (!removedElements.length) return;
 
     const domScene = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     );
 
     for (let i = removedElements.length; i > 0; i--) {
@@ -610,7 +610,7 @@ export class SVGRenderer implements IRenderer {
         i
       ] as GraphicsNodeWithInternalAccessMethods;
       const domEle = element[GET_INTERNAL_GRAPHICS_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       );
 
       removeFrom(domScene, domEle);
@@ -641,7 +641,7 @@ export class SVGRenderer implements IRenderer {
       // STEP 1: Validate renderable shape
       // --------------------------------------------------------------------------
       if (!(shape instanceof GraphicsModel)) {
-        throw new InvalidRenderableShapeError(shape, 'Renderer.render');
+        throw new InvalidRenderableShapeError(shape, "Renderer.render");
       }
       // --------------------------------------------------------------------------
       // STEP 2: Extract geometry reference (internal state)
@@ -657,11 +657,11 @@ export class SVGRenderer implements IRenderer {
 
       if (!figRef) {
         const tagName: string = (
-          shapeType === 'dot'
-            ? 'circle'
-            : shapeType === 'curve'
-            ? 'polyline'
-            : shapeType
+          shapeType === "dot"
+            ? "circle"
+            : shapeType === "curve"
+              ? "polyline"
+              : shapeType
         ) as string;
 
         figRef = createSVGElement(tagName, SVGSOURCE);
@@ -825,13 +825,13 @@ export class SVGRenderer implements IRenderer {
       // STEP 1: Validate renderable shape
       // --------------------------------------------------------------------------
       if (!(shape instanceof GraphicsModel)) {
-        throw new InvalidRenderableShapeError(shape, 'Renderer.render');
+        throw new InvalidRenderableShapeError(shape, "Renderer.render");
       }
       // --------------------------------------------------------------------------
       // STEP 2: Extract geometry reference (internal state)
       // --------------------------------------------------------------------------
       const geoRef = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as Partial<{
         localDirty: boolean; // indicates if re-render is needed
         renderUpdateType: RenderUpdateType;
@@ -844,9 +844,9 @@ export class SVGRenderer implements IRenderer {
       if (!geoRef) {
         throw new InvalidInternalStateError(
           geoRef,
-          'initialized geometry reference',
-          'Shape geometry is missing',
-          'Renderer.render'
+          "initialized geometry reference",
+          "Shape geometry is missing",
+          "Renderer.render",
         );
       }
 
@@ -878,13 +878,13 @@ export class SVGRenderer implements IRenderer {
 
         // update bounds only when geometry of shape changed
         // update canonical buffer or matrix when shape is 'text' or some future shapes may be
-        if (geoRef.renderUpdateType === 'GEOMETRY') {
+        if (geoRef.renderUpdateType === "GEOMETRY") {
           let setCMatrix = false;
-          if (geoRef.shape === 'text') setCMatrix = true;
+          if (geoRef.shape === "text") setCMatrix = true;
           shape[GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD](
             this.#measureSVGBBox(figRef as SVGGraphicsElement),
             setCMatrix,
-            DEV_INTERNAL_ACCESS_KEY
+            DEV_INTERNAL_ACCESS_KEY,
           );
         }
         if (sceneRoot) {
@@ -915,7 +915,7 @@ export class SVGRenderer implements IRenderer {
         this.#processFilters(rShape, resourceHost);
       }
       const renderUpdateType = geoRef.renderUpdateType;
-      if (renderUpdateType === 'TRANSFORM') {
+      if (renderUpdateType === "TRANSFORM") {
         const styleCache = this.#getOrInitStyleCache(figRef);
         /**
          * Applies the computed world transform to the DOM shapeement.
@@ -937,14 +937,14 @@ export class SVGRenderer implements IRenderer {
 
           const transformStr = `matrix(${a} ${b} ${c} ${d} ${e} ${f})`;
 
-          if (styleCache['transform'] !== transformStr) {
-            figRef.setAttribute('transform', transformStr);
-            styleCache['transform'] = transformStr;
+          if (styleCache["transform"] !== transformStr) {
+            figRef.setAttribute("transform", transformStr);
+            styleCache["transform"] = transformStr;
           }
         }
       } else if (
-        renderUpdateType === 'GEOMETRY' ||
-        renderUpdateType == 'STYLE'
+        renderUpdateType === "GEOMETRY" ||
+        renderUpdateType == "STYLE"
       ) {
         this.#attributeSetter(shape);
       }
@@ -986,7 +986,7 @@ export class SVGRenderer implements IRenderer {
     // STEP 2: Extract geometry reference (internal state)
     // --------------------------------------------------------------------------
     const geoRef = shape[GET_INTERNAL_GEOMETRY_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as Partial<{
       localDirty: boolean; // indicates if re-render is needed
       buffer: Float32Array; // geometry buffer (used in poly shapes)
@@ -999,9 +999,9 @@ export class SVGRenderer implements IRenderer {
     if (!geoRef) {
       throw new InvalidInternalStateError(
         geoRef,
-        'initialized geometry reference',
-        'Shape geometry is missing',
-        'Renderer.render'
+        "initialized geometry reference",
+        "Shape geometry is missing",
+        "Renderer.render",
       );
     }
 
@@ -1074,7 +1074,7 @@ export class SVGRenderer implements IRenderer {
        *
        * Cache ensures DOM updates only when values change.
        */
-      case 'dot': {
+      case "dot": {
         const { cx, cy, r } = geoRef as {
           cx: number;
           cy: number;
@@ -1086,9 +1086,9 @@ export class SVGRenderer implements IRenderer {
         const cyStr = this.#numToStr(cy);
         const rStr = this.#numToStr(cr);
 
-        geoCache['__cx'] !== cxStr && (desiredAttrs['cx'] = cxStr);
-        geoCache['__cy'] !== cyStr && (desiredAttrs['cy'] = cyStr);
-        geoCache['__r'] !== rStr && (desiredAttrs['r'] = rStr);
+        geoCache["__cx"] !== cxStr && (desiredAttrs["cx"] = cxStr);
+        geoCache["__cy"] !== cyStr && (desiredAttrs["cy"] = cyStr);
+        geoCache["__r"] !== rStr && (desiredAttrs["r"] = rStr);
 
         break;
       }
@@ -1104,7 +1104,7 @@ export class SVGRenderer implements IRenderer {
        *
        * Each coordinate is diff-checked independently.
        */
-      case 'line': {
+      case "line": {
         const { x1, y1, x2, y2 } = geoRef as {
           x1: number;
           y1: number;
@@ -1117,10 +1117,10 @@ export class SVGRenderer implements IRenderer {
         const x2s = this.#numToStr(x2);
         const y2s = this.#numToStr(y2);
 
-        geoCache['__x1'] !== x1s && (desiredAttrs['x1'] = x1s);
-        geoCache['__y1'] !== y1s && (desiredAttrs['y1'] = y1s);
-        geoCache['__x2'] !== x2s && (desiredAttrs['x2'] = x2s);
-        geoCache['__y2'] !== y2s && (desiredAttrs['y2'] = y2s);
+        geoCache["__x1"] !== x1s && (desiredAttrs["x1"] = x1s);
+        geoCache["__y1"] !== y1s && (desiredAttrs["y1"] = y1s);
+        geoCache["__x2"] !== x2s && (desiredAttrs["x2"] = x2s);
+        geoCache["__y2"] !== y2s && (desiredAttrs["y2"] = y2s);
 
         break;
       }
@@ -1136,7 +1136,7 @@ export class SVGRenderer implements IRenderer {
        *
        * Uses direct numeric-to-string conversion and cache comparison.
        */
-      case 'circle': {
+      case "circle": {
         const { cx, cy, r } = geoRef as {
           cx: number;
           cy: number;
@@ -1147,9 +1147,9 @@ export class SVGRenderer implements IRenderer {
         const cys = this.#numToStr(cy);
         const rs = this.#numToStr(r);
 
-        geoCache['__cx'] !== cxs && (desiredAttrs['cx'] = cxs);
-        geoCache['__cy'] !== cys && (desiredAttrs['cy'] = cys);
-        geoCache['__r'] !== rs && (desiredAttrs['r'] = rs);
+        geoCache["__cx"] !== cxs && (desiredAttrs["cx"] = cxs);
+        geoCache["__cy"] !== cys && (desiredAttrs["cy"] = cys);
+        geoCache["__r"] !== rs && (desiredAttrs["r"] = rs);
 
         break;
       }
@@ -1165,7 +1165,7 @@ export class SVGRenderer implements IRenderer {
        *
        * Each attribute is independently diff-checked.
        */
-      case 'ellipse': {
+      case "ellipse": {
         const { cx, cy, rx, ry } = geoRef as {
           cx: number;
           cy: number;
@@ -1178,10 +1178,10 @@ export class SVGRenderer implements IRenderer {
         const rxs = this.#numToStr(rx);
         const rys = this.#numToStr(ry);
 
-        geoCache['__cx'] !== cxs && (desiredAttrs['cx'] = cxs);
-        geoCache['__cy'] !== cys && (desiredAttrs['cy'] = cys);
-        geoCache['__rx'] !== rxs && (desiredAttrs['rx'] = rxs);
-        geoCache['__ry'] !== rys && (desiredAttrs['ry'] = rys);
+        geoCache["__cx"] !== cxs && (desiredAttrs["cx"] = cxs);
+        geoCache["__cy"] !== cys && (desiredAttrs["cy"] = cys);
+        geoCache["__rx"] !== rxs && (desiredAttrs["rx"] = rxs);
+        geoCache["__ry"] !== rys && (desiredAttrs["ry"] = rys);
 
         break;
       }
@@ -1198,14 +1198,14 @@ export class SVGRenderer implements IRenderer {
        *
        * Default values ensure stable rendering even if not provided.
        */
-      case 'rect': {
+      case "rect": {
         const {
           x,
           y,
           width,
           height,
           rx = 0,
-          ry = 0
+          ry = 0,
         } = geoRef as {
           x: number;
           y: number;
@@ -1222,12 +1222,12 @@ export class SVGRenderer implements IRenderer {
         const rxs = this.#numToStr(rx);
         const rys = this.#numToStr(ry);
 
-        geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
-        geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
-        geoCache['__width'] !== ws && (desiredAttrs['width'] = ws);
-        geoCache['__height'] !== hs && (desiredAttrs['height'] = hs);
-        geoCache['__rx'] !== rxs && (desiredAttrs['rx'] = rxs);
-        geoCache['__ry'] !== rys && (desiredAttrs['ry'] = rys);
+        geoCache["__x"] !== xs && (desiredAttrs["x"] = xs);
+        geoCache["__y"] !== ys && (desiredAttrs["y"] = ys);
+        geoCache["__width"] !== ws && (desiredAttrs["width"] = ws);
+        geoCache["__height"] !== hs && (desiredAttrs["height"] = hs);
+        geoCache["__rx"] !== rxs && (desiredAttrs["rx"] = rxs);
+        geoCache["__ry"] !== rys && (desiredAttrs["ry"] = rys);
 
         break;
       }
@@ -1243,14 +1243,14 @@ export class SVGRenderer implements IRenderer {
        *
        * This avoids costly string rebuilding for unchanged geometry.
        */
-      case 'polyline':
-      case 'polygon':
-      case 'curve': {
+      case "polyline":
+      case "polygon":
+      case "curve": {
         const { buffer: matrix } = geoRef as {
           buffer: Float32Array;
         };
 
-        const prevMatrixRef = geoCache['__buffer'] as Float32Array;
+        const prevMatrixRef = geoCache["__buffer"] as Float32Array;
 
         if (prevMatrixRef !== matrix) {
           const len = matrix.length;
@@ -1260,7 +1260,7 @@ export class SVGRenderer implements IRenderer {
             parts[i] = `${matrix[i]},${matrix[i + 1]}`;
           }
 
-          desiredAttrs['points'] = parts.join(' ');
+          desiredAttrs["points"] = parts.join(" ");
         }
 
         break;
@@ -1276,12 +1276,12 @@ export class SVGRenderer implements IRenderer {
        *
        * Only updates when path string changes.
        */
-      case 'path': {
+      case "path": {
         const { d } = geoRef as { d: string };
 
-        if (typeof d === 'string') {
-          if (geoCache['__d'] !== d) {
-            desiredAttrs['d'] = d;
+        if (typeof d === "string") {
+          if (geoCache["__d"] !== d) {
+            desiredAttrs["d"] = d;
           }
         }
 
@@ -1301,7 +1301,7 @@ export class SVGRenderer implements IRenderer {
        *
        * Geometry diffing applies only to position.
        */
-      case 'text': {
+      case "text": {
         const { x, y, text } = geoRef as {
           x: number;
           y: number;
@@ -1311,8 +1311,8 @@ export class SVGRenderer implements IRenderer {
         const xs = this.#numToStr(x);
         const ys = this.#numToStr(y);
 
-        geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
-        geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
+        geoCache["__x"] !== xs && (desiredAttrs["x"] = xs);
+        geoCache["__y"] !== ys && (desiredAttrs["y"] = ys);
 
         figRef.textContent = text;
 
@@ -1331,7 +1331,7 @@ export class SVGRenderer implements IRenderer {
        *
        * Each attribute is diff-checked independently.
        */
-      case 'image': {
+      case "image": {
         const { x, y, width, height, href } = geoRef as {
           x: number;
           y: number;
@@ -1345,11 +1345,11 @@ export class SVGRenderer implements IRenderer {
         const ws = this.#numToStr(width);
         const hs = this.#numToStr(height);
 
-        geoCache['__x'] !== xs && (desiredAttrs['x'] = xs);
-        geoCache['__y'] !== ys && (desiredAttrs['y'] = ys);
-        geoCache['__width'] !== ws && (desiredAttrs['width'] = ws);
-        geoCache['__height'] !== hs && (desiredAttrs['height'] = hs);
-        geoCache['__href'] !== href && (desiredAttrs['href'] = href);
+        geoCache["__x"] !== xs && (desiredAttrs["x"] = xs);
+        geoCache["__y"] !== ys && (desiredAttrs["y"] = ys);
+        geoCache["__width"] !== ws && (desiredAttrs["width"] = ws);
+        geoCache["__height"] !== hs && (desiredAttrs["height"] = hs);
+        geoCache["__href"] !== href && (desiredAttrs["href"] = href);
 
         break;
       }
@@ -1450,7 +1450,7 @@ export class SVGRenderer implements IRenderer {
 
     // Inserting transform into style if shape id dirty
 
-    if (styleRef && typeof styleRef === 'object') {
+    if (styleRef && typeof styleRef === "object") {
       const styleObj = styleRef as Record<string, string | number>;
 
       for (const k in styleObj) {
@@ -1464,7 +1464,7 @@ export class SVGRenderer implements IRenderer {
         }
       }
     }
-    geoRef.renderUpdateType = 'TRANSFORM';
+    geoRef.renderUpdateType = "TRANSFORM";
   }
 
   //===================================
@@ -1500,41 +1500,41 @@ export class SVGRenderer implements IRenderer {
 
   #initializeFilter(
     filterId: string,
-    filterData: FilterRecord
+    filterData: FilterRecord,
   ): SVGFilterElement {
     let filter!: SVGFilterElement;
     const fType = filterData.type;
 
     switch (fType) {
-      case 'blur': {
+      case "blur": {
         filter = SVGFilters.blur(filterId, filterData.props.radius);
         break;
       }
-      case 'contrast': {
+      case "contrast": {
         filter = SVGFilters.contrast(filterId, filterData.props.amount);
         break;
       }
 
-      case 'saturate': {
+      case "saturate": {
         filter = SVGFilters.saturate(filterId, filterData.props.amount);
         break;
       }
-      case 'grayscale': {
+      case "grayscale": {
         filter = SVGFilters.grayscale(filterId, filterData.props.amount);
         break;
       }
 
-      case 'hueRotate': {
+      case "hueRotate": {
         filter = SVGFilters.hueRotate(filterId, filterData.props.angle);
         break;
       }
 
-      case 'glow': {
+      case "glow": {
         filter = SVGFilters.glow(filterId, filterData.props);
         break;
       }
 
-      case 'shadow': {
+      case "shadow": {
         filter = SVGFilters.shadow(filterId, filterData.props);
         break;
       }

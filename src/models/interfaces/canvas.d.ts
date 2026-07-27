@@ -1,4 +1,4 @@
-import { IEngine } from './engine';
+import { IEngine } from "./engine";
 
 /**
  * Core canvas container contract.

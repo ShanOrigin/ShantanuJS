@@ -5,8 +5,8 @@
 import {
   InvalidOptionError,
   NotInitializedError,
-  ReadOnlyPropertyError
-} from '../../errors/index.js';
+  ReadOnlyPropertyError,
+} from "../../errors/index.js";
 
 /* -------------------------------------------------------------------------- */
 /*                         Internal Development Keys                          */
@@ -22,22 +22,22 @@ import {
   GET_PARENT_METHOD,
   GET_Z_ORDER_OPERATION_METHOD,
   SET_INTERNAL_GRAPHICS_METHOD,
-  SET_PARENT_METHOD
-} from '../../internal/keys/dev-keys.js';
+  SET_PARENT_METHOD,
+} from "../../internal/keys/dev-keys.js";
 
 /* -------------------------------------------------------------------------- */
 /*                   Graphics Interfaces + Helpers Types                      */
 /* -------------------------------------------------------------------------- */
 
-import type { IGraphicsModel } from '../../models/interfaces/graphics-model';
+import type { IGraphicsModel } from "../../models/interfaces/graphics-model";
 
 import type {
   InternalGeometry,
   InternalStyle,
   PublicGeometry,
   PublicStyle,
-  ValidGraphicsShapes
-} from '../../models/types/graphics-model';
+  ValidGraphicsShapes,
+} from "../../models/types/graphics-model";
 
 /* -------------------------------------------------------------------------- */
 /*                                Common Types                                */
@@ -48,10 +48,10 @@ import type {
   AttrsMethodReturnTypes,
   GetAttrsMethodsReturnTypes,
   GRAPHICS_TYPES,
-  TransformStack
-} from '../../models/types/common';
+  TransformStack,
+} from "../../models/types/common";
 
-import type { DeepReadonly } from '../../models/types/graphics-model';
+import type { DeepReadonly } from "../../models/types/graphics-model";
 
 /* -------------------------------------------------------------------------- */
 /*                       Common Property Definitions                          */
@@ -59,22 +59,22 @@ import type { DeepReadonly } from '../../models/types/graphics-model';
 
 import {
   AllGShapeStyleProperties,
-  CommonGeometricProperties
-} from '../../property-definitions/common/common-properties.js';
+  CommonGeometricProperties,
+} from "../../property-definitions/common/common-properties.js";
 
 /* -------------------------------------------------------------------------- */
 /*                      Shape Property Definitions                            */
 /* -------------------------------------------------------------------------- */
 
-import { GraphicalElementProperties } from '../../property-definitions/specific/specific-properties.js';
+import { GraphicalElementProperties } from "../../property-definitions/specific/specific-properties.js";
 
 /* -------------------------------------------------------------------------- */
 /*                              Utility Modules                               */
 /* -------------------------------------------------------------------------- */
 
-import Colors from '../../utils/colors/colors.js';
+import Colors from "../../utils/colors/colors.js";
 
-import { generateId } from '../../utils/helpers/helpers.js';
+import { generateId } from "../../utils/helpers/helpers.js";
 
 /**
  * Abstract base model representing a graphical entity within the rendering system.
@@ -452,9 +452,9 @@ import { generateId } from '../../utils/helpers/helpers.js';
  * @template T - Constrained key representing a valid graphical shape type.
  */
 
-export abstract class GraphicsModel<T extends ValidGraphicsShapes>
-  implements IGraphicsModel<T>
-{
+export abstract class GraphicsModel<
+  T extends ValidGraphicsShapes,
+> implements IGraphicsModel<T> {
   /**
    * Internal renderer-bound graphics implementation reference.
    *
@@ -651,7 +651,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
    * - Transformation stack always initialized with identity matrix
    */
 
-  constructor(shapeName: T, ID: string = '') {
+  constructor(shapeName: T, ID: string = "") {
     try {
       /**
        * Local structural references.
@@ -676,9 +676,9 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        */
       if (!internalGeometry) {
         throw new NotInitializedError(
-          'this.#geometry',
-          'Internal geometry is not initialized due to internal state corruption (internal bug).',
-          'core.graphicsModel.constructor()'
+          "this.#geometry",
+          "Internal geometry is not initialized due to internal state corruption (internal bug).",
+          "core.graphicsModel.constructor()",
         );
       }
 
@@ -702,16 +702,16 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
 
       internalGeometry.localDirty = true;
 
-      Object.defineProperty(internalGeometry, 'shape', {
+      Object.defineProperty(internalGeometry, "shape", {
         value: shapeName,
         writable: false,
         configurable: false,
-        enumerable: true
+        enumerable: true,
       });
 
       internalGeometry.transformStack = {
         stack: [identityMatrix],
-        skip: 0
+        skip: 0,
       };
 
       internalGeometry.worldMatrix = new Float32Array(identityMatrix);
@@ -722,19 +722,19 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
       // Default Style Initialization
       // ============================================================
 
-      const color = new Colors('rgb(0,0,0)');
+      const color = new Colors("rgb(0,0,0)");
 
       GraphicsModel.prototype.attrs.call(this, {
-        'stroke-width': 0.5,
+        "stroke-width": 0.5,
         stroke: color.isColor(),
-        fill: color.isColor('none', true)[1]
+        fill: color.isColor("none", true)[1],
       });
 
-      Object.defineProperty(style, 'id', {
+      Object.defineProperty(style, "id", {
         value: id,
         writable: false,
         configurable: false,
-        enumerable: true
+        enumerable: true,
       });
 
       // ============================================================
@@ -742,7 +742,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
       // ============================================================
 
       this.geometry = this.#createReadonlyProxy(
-        internalGeometry
+        internalGeometry,
       ) as PublicGeometry<T>;
       this.style = this.#createReadonlyProxy(style as object) as PublicStyle<T>;
 
@@ -853,7 +853,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
    */
   [SET_PARENT_METHOD](
     parent: GraphicsModel<ValidGraphicsShapes>,
-    accessKey: symbol
+    accessKey: symbol,
   ): void {
     assertAccess(accessKey);
 
@@ -1075,7 +1075,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
          * - Non-null
          * - Object type
          */
-        if (value !== null && typeof value === 'object') {
+        if (value !== null && typeof value === "object") {
           return wrap(value);
         }
 
@@ -1091,9 +1091,9 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        */
       set(_, prop) {
         throw new ReadOnlyPropertyError(
-          'assign to ',
+          "assign to ",
           String(prop),
-          'core.GraphicsModel.#createReadonlyProxy()'
+          "core.GraphicsModel.#createReadonlyProxy()",
         );
       },
 
@@ -1106,9 +1106,9 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        */
       deleteProperty(_, prop) {
         throw new ReadOnlyPropertyError(
-          'delete',
+          "delete",
           String(prop),
-          'core.GraphicsModel.#createReadonlyProxy()'
+          "core.GraphicsModel.#createReadonlyProxy()",
         );
       },
 
@@ -1121,9 +1121,9 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        */
       defineProperty(_, prop) {
         throw new ReadOnlyPropertyError(
-          'define',
+          "define",
           String(prop),
-          'core.GraphicsModel.#createReadonlyProxy()'
+          "core.GraphicsModel.#createReadonlyProxy()",
         );
       },
 
@@ -1136,11 +1136,11 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        */
       setPrototypeOf() {
         throw new ReadOnlyPropertyError(
-          'modify prototype of ',
-          '',
-          'core.GraphicsModel.#createReadonlyProxy()'
+          "modify prototype of ",
+          "",
+          "core.GraphicsModel.#createReadonlyProxy()",
         );
-      }
+      },
     };
 
     /**
@@ -1209,8 +1209,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        * Used to determine shape-specific property scope.
        */
       const shape = this.#geometry?.shape as
-        | keyof typeof GraphicalElementProperties
-        | undefined;
+        keyof typeof GraphicalElementProperties | undefined;
 
       /**
        * Case 1: Property belongs to shape-specific geometric properties.
@@ -1237,9 +1236,9 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
          */
 
         throw new ReadOnlyPropertyError(
-          'assign to',
+          "assign to",
           String(prop),
-          'core.GraphicsModel.#isGeometricProp()'
+          "core.GraphicsModel.#isGeometricProp()",
         );
       }
 
@@ -1328,11 +1327,11 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
      * - `id` → unique identifier (assigned during initialization)
      * - `inside` → internal structural linkage
      */
-    if (prop == 'id' || prop == 'inside' || prop == 'transform')
+    if (prop == "id" || prop == "inside" || prop == "transform")
       throw new ReadOnlyPropertyError(
-        'assign to',
+        "assign to",
         String(prop),
-        'core.GraphicsModel.#isStyleProp()'
+        "core.GraphicsModel.#isStyleProp()",
       );
 
     /**
@@ -1425,7 +1424,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
       /**
        * Guard: input must be a non-empty object.
        */
-      if (typeof prop !== 'object' || Object.keys(prop).length == 0) return;
+      if (typeof prop !== "object" || Object.keys(prop).length == 0) return;
 
       /**
        * Extract the first key-value pair only.
@@ -1448,8 +1447,8 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
          * (e.g., renderer, layout engine) for update/recalculation.
          */
 
-        this.#geometry.renderUpdateType = 'GEOMETRY';
-      } else if (typeof this.#style == 'object' && this.#isStyleProp(key)) {
+        this.#geometry.renderUpdateType = "GEOMETRY";
+      } else if (typeof this.#style == "object" && this.#isStyleProp(key)) {
         /**
          * Route to style domain if property qualifies.
          *
@@ -1457,13 +1456,13 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
          */
         (this.#style as Record<string, string | number>)[key] = value;
 
-        this.#geometry.renderUpdateType = 'STYLE';
+        this.#geometry.renderUpdateType = "STYLE";
       } else {
         throw new InvalidOptionError(
           key,
-          'undefined',
+          "undefined",
           [],
-          'core.graphicsModel.#setAttrs()'
+          "core.graphicsModel.#setAttrs()",
         );
       }
 
@@ -1566,9 +1565,9 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
          *
          * Returns a copy of the Float32Array to prevent external mutation.
          */
-        if (key === 'buffer') {
+        if (key === "buffer") {
           return (value as Float32Array).slice();
-        } else if (key == 'TransformStack') {
+        } else if (key == "TransformStack") {
           /**
            * Special Case: TransformStack
            *
@@ -1586,9 +1585,9 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
       } else {
         throw new InvalidOptionError(
           key,
-          'undefined',
+          "undefined",
           [],
-          'core.graphicsModel.#setAttrs()'
+          "core.graphicsModel.#setAttrs()",
         );
       }
     } catch (e) {
@@ -1708,8 +1707,8 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        * - Ignore empty object or empty string input
        */
       if (
-        (typeof props === 'object' && Object.keys(props).length === 0) ||
-        (typeof props === 'string' && props.trim() === '') ||
+        (typeof props === "object" && Object.keys(props).length === 0) ||
+        (typeof props === "string" && props.trim() === "") ||
         (Array.isArray(props) && props.length == 0)
       )
         return;
@@ -1719,7 +1718,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
        * - Iterate through all key-value pairs
        * - Delegate each to internal mutation handler
        */
-      if (typeof props === 'object') {
+      if (typeof props === "object") {
         const entries = Object.entries(props);
 
         for (let i = 0; i < entries.length; i++) {
@@ -1735,7 +1734,7 @@ export abstract class GraphicsModel<T extends ValidGraphicsShapes>
         // ============================================================
         // Getter Mode
         // ============================================================
-      } else if (typeof props === 'string') {
+      } else if (typeof props === "string") {
         return this.#getAttr(props.trim());
       } else if (Array.isArray(props)) {
         props = props as string[];

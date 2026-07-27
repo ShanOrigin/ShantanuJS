@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when attempting to add a shape to a canvas that already
@@ -19,13 +19,13 @@ export class ShapeAlreadyExistsInCanvasError extends UsageError {
    */
   constructor(shapeId: string, canvasId: string, source: string) {
     super(
-      'CANVAS_SHAPE_ALREADY_EXISTS',
-      'Shape already exists in the canvas.',
+      "CANVAS_SHAPE_ALREADY_EXISTS",
+      "Shape already exists in the canvas.",
       new ErrorContext(
         { shapeId, canvasId },
-        'shape must not already be added to the canvas',
-        source
-      )
+        "shape must not already be added to the canvas",
+        source,
+      ),
     );
   }
 }

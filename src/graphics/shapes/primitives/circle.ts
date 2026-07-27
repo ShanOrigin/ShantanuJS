@@ -1,29 +1,29 @@
-import { RenderNode } from '../../render-node/render-node.js';
+import { RenderNode } from "../../render-node/render-node.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  assertAccess
-} from '../../../internal/keys/dev-keys.js';
+  assertAccess,
+} from "../../../internal/keys/dev-keys.js";
 import {
   CommonGeometricProperties,
-  AllGShapeStyleProperties
-} from '../../../property-definitions/common/common-properties.js';
+  AllGShapeStyleProperties,
+} from "../../../property-definitions/common/common-properties.js";
 
 import {
   GraphicalElementProperties,
-  dimensions
-} from '../../../property-definitions/specific/specific-properties.js';
+  dimensions,
+} from "../../../property-definitions/specific/specific-properties.js";
 import type {
   InitialProps,
-  ConstructorPropsTypes
-} from '../../../models/types/common';
+  ConstructorPropsTypes,
+} from "../../../models/types/common";
 import {
   parameterTypeValidator,
-  validProps
-} from '../../../utils/helpers/helpers.js';
+  validProps,
+} from "../../../utils/helpers/helpers.js";
 
-export class Circle extends RenderNode<'circle'> {
+export class Circle extends RenderNode<"circle"> {
   #copies: number = 0;
   /**
    * Reference to the base class’s internal geometry object.
@@ -58,21 +58,21 @@ export class Circle extends RenderNode<'circle'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(props: ConstructorPropsTypes<'circle'>) {
-    super('circle', props?.id ?? '');
+  constructor(props: ConstructorPropsTypes<"circle">) {
+    super("circle", props?.id ?? "");
 
-    'id' in props && delete props.id;
+    "id" in props && delete props.id;
 
     parameterTypeValidator(
       props,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
-      'circle'
+      "circle",
     );
 
     // for initial setup through RenderNode
-    (props as ConstructorPropsTypes<'circle'> & InitialProps)['initial'] = true;
+    (props as ConstructorPropsTypes<"circle"> & InitialProps)["initial"] = true;
     this.attrs(props);
   }
 
@@ -81,23 +81,23 @@ export class Circle extends RenderNode<'circle'> {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'circle'
+      "circle",
     );
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Circle {
     if (
       this.#geometry &&
-      typeof this.#geometry === 'object' &&
+      typeof this.#geometry === "object" &&
       this.#geometry !== null &&
       this.#style &&
-      typeof this.#style === 'object' &&
+      typeof this.#style === "object" &&
       this.#style !== null
     ) {
       const { cx = 0, cy = 0, r = 0 } = this.#geometry;
 
       const style = { ...this.#style };
-      if ('id' in style && style.id !== '') {
+      if ("id" in style && style.id !== "") {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
@@ -106,11 +106,11 @@ export class Circle extends RenderNode<'circle'> {
         cy: offsetY + cy,
         r,
         initial: true,
-        ...style
-      } as ConstructorPropsTypes<'circle'> & InitialProps);
+        ...style,
+      } as ConstructorPropsTypes<"circle"> & InitialProps);
     }
 
-    throw new Error('Cannot clone: geometry or style is invalid.');
+    throw new Error("Cannot clone: geometry or style is invalid.");
   }
 
   protected override generateMatrix(accessKey: symbol): void {
@@ -128,7 +128,7 @@ export class Circle extends RenderNode<'circle'> {
       const { cx = 0, cy = 0, r = 0 } = geo;
 
       // Retrieve expected matrix dimensions for a line
-      const [m, n] = dimensions['circle'] as [number, number];
+      const [m, n] = dimensions["circle"] as [number, number];
 
       // Compute total buffer length based on dimensions
       const totalLength = m * n;
@@ -149,7 +149,7 @@ export class Circle extends RenderNode<'circle'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array
+    temporaryState: Float32Array,
   ) {
     try {
       assertAccess(accessKey);
@@ -161,7 +161,7 @@ export class Circle extends RenderNode<'circle'> {
       this.#geometry.r = Math.hypot(rx - cx, ry - cy);
       [this.#geometry.cx, this.#geometry.cy] = [
         temporaryState[0]!,
-        temporaryState[1]!
+        temporaryState[1]!,
       ];
 
       this.#computeBounds(temporaryState);

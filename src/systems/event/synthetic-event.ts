@@ -1,8 +1,8 @@
-import type { GraphicsNode } from '../../models/interfaces/graphics-container';
+import type { GraphicsNode } from "../../models/interfaces/graphics-container";
 import {
   ISyntheticEvent,
-  NormalizedPointer
-} from '../../models/interfaces/synthetic-event';
+  NormalizedPointer,
+} from "../../models/interfaces/synthetic-event";
 
 /**
  * ============================================================================
@@ -18,7 +18,7 @@ import {
 export const enum EventPhase {
   CAPTURE = 1,
   TARGET = 2,
-  BUBBLE = 3
+  BUBBLE = 3,
 }
 
 /**
@@ -141,7 +141,7 @@ export class SyntheticEvent implements ISyntheticEvent {
       tiltX: nativeEvent.tiltX,
       tiltY: nativeEvent.tiltY,
       button: nativeEvent.button,
-      buttons: nativeEvent.buttons
+      buttons: nativeEvent.buttons,
     });
   }
 

@@ -1,40 +1,40 @@
-import '../env.global.js'; // Must be imported first.
+import "../env.global.js"; // Must be imported first.
 
 /* -------------------------------------------------------------------------- */
 /*                                Core Modules                                */
 /* -------------------------------------------------------------------------- */
 
-import { Canvas } from '../systems/canvas/canvas.js';
+import { Canvas } from "../systems/canvas/canvas.js";
 
 /* -------------------------------------------------------------------------- */
 /*                                   Shapes                                   */
 /* -------------------------------------------------------------------------- */
 
-import { Line } from '../graphics/shapes/primitives/line.js';
-import { Point } from '../graphics/shapes/primitives/point.js';
-import { Circle } from '../graphics/shapes/primitives/circle.js';
-import { Ellipse } from '../graphics/shapes/primitives/ellipse.js';
-import { Rect } from '../graphics/shapes/primitives/rectangle.js';
-import { Polyline } from '../graphics/shapes/primitives/polyline.js';
-import { Polygon } from '../graphics/shapes/primitives/polygon.js';
+import { Line } from "../graphics/shapes/primitives/line.js";
+import { Point } from "../graphics/shapes/primitives/point.js";
+import { Circle } from "../graphics/shapes/primitives/circle.js";
+import { Ellipse } from "../graphics/shapes/primitives/ellipse.js";
+import { Rect } from "../graphics/shapes/primitives/rectangle.js";
+import { Polyline } from "../graphics/shapes/primitives/polyline.js";
+import { Polygon } from "../graphics/shapes/primitives/polygon.js";
 
-import { ArcCurve } from '../graphics/shapes/curves/arc-curve.js';
-import { QuadraticCurve } from '../graphics/shapes/curves/quadratic-curve.js';
-import { CubicCurve } from '../graphics/shapes/curves/cubic-curve.js';
-import { EarcCurve } from '../graphics/shapes/curves/earc-curve.js';
+import { ArcCurve } from "../graphics/shapes/curves/arc-curve.js";
+import { QuadraticCurve } from "../graphics/shapes/curves/quadratic-curve.js";
+import { CubicCurve } from "../graphics/shapes/curves/cubic-curve.js";
+import { EarcCurve } from "../graphics/shapes/curves/earc-curve.js";
 
 /* -------------------------------------------------------------------------- */
 /*                                    Media                                   */
 /* -------------------------------------------------------------------------- */
 
-import { Image } from '../graphics/media/image.js';
-import { Text } from '../graphics/media/text.js';
+import { Image } from "../graphics/media/image.js";
+import { Text } from "../graphics/media/text.js";
 
 /* -------------------------------------------------------------------------- */
 /*                                 Containers                                 */
 /* -------------------------------------------------------------------------- */
 
-import { Group } from '../graphics/container/group/group.js';
+import { Group } from "../graphics/container/group/group.js";
 
 /**
  * The root namespace of the ShantanuJS library.
@@ -68,7 +68,7 @@ export const ShantanuJS = {
     QuadraticCurve,
     CubicCurve,
     ArcCurve,
-    EarcCurve
+    EarcCurve,
   },
 
   /**
@@ -76,13 +76,13 @@ export const ShantanuJS = {
    */
   Media: {
     Text,
-    Image
+    Image,
   },
 
   /**
    * Container for grouping multiple graphics.
    */
-  Group
+  Group,
 } as const;
 
 /**

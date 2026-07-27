@@ -2,13 +2,13 @@
  * Events supported by the graphics event system.
  */
 export type SupportedEvents =
-  | 'click'
-  | 'dblclick'
-  | 'pointerdown'
-  | 'pointermove'
-  | 'pointerup'
-  | 'pointerenter'
-  | 'pointerleave';
+  | "click"
+  | "dblclick"
+  | "pointerdown"
+  | "pointermove"
+  | "pointerup"
+  | "pointerenter"
+  | "pointerleave";
 
 /**
  * Callback invoked when an event is dispatched to a graphics object.

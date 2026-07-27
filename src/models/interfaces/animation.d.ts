@@ -1,8 +1,8 @@
-import type { EasingFunction, EasingType } from '../types/animation/easing';
+import type { EasingFunction, EasingType } from "../types/animation/easing";
 import type {
   IAnimationOptions,
-  UpdateAnimationReturnType
-} from '../types/animation/options';
+  UpdateAnimationReturnType,
+} from "../types/animation/options";
 
 /**
  * Common animation controller interface.

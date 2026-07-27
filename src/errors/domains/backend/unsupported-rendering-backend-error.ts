@@ -1,5 +1,5 @@
-import { ConfigurationError } from '../../core/errors/configuration-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { ConfigurationError } from "../../core/errors/configuration-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a requested rendering backend is not supported by the library.
@@ -22,12 +22,12 @@ export class UnsupportedRenderingBackendError extends ConfigurationError {
   constructor(
     requestedBackend: string,
     supportedBackends: readonly string[],
-    source: string
+    source: string,
   ) {
     super(
-      'RENDERING_BACKEND_UNSUPPORTED',
-      'Requested rendering backend is not supported.',
-      new ErrorContext(requestedBackend, supportedBackends.join(' | '), source)
+      "RENDERING_BACKEND_UNSUPPORTED",
+      "Requested rendering backend is not supported.",
+      new ErrorContext(requestedBackend, supportedBackends.join(" | "), source),
     );
   }
 }

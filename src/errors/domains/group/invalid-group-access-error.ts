@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a parameter is provided with a value that is not
@@ -19,9 +19,9 @@ export class InvalidGroupMethodAccessError extends UsageError {
    */
   constructor(methodName: string, message: string, source: string) {
     super(
-      'INVALID_GROUP_METHOD_ACCESS',
+      "INVALID_GROUP_METHOD_ACCESS",
       message,
-      new ErrorContext(methodName, '', source)
+      new ErrorContext(methodName, "", source),
     );
   }
 }

@@ -1,4 +1,4 @@
-import type { CurveInfo } from '../../../../models/types/geometry/curve';
+import type { CurveInfo } from "../../../../models/types/geometry/curve";
 /**
  * Computes the coordinates of a point along an elliptical arc between two points.
  *
@@ -27,7 +27,7 @@ export function getEllipsePoint(
   x2: number,
   y2: number,
   t: number,
-  info: CurveInfo
+  info: CurveInfo,
 ) {
   const cx = (x1 + x2) / 2;
   const cy = (y1 + y2) / 2;

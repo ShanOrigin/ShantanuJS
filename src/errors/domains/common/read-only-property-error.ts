@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when an attempt is made to modify a read-only property
@@ -21,9 +21,9 @@ export class ReadOnlyPropertyError extends UsageError {
    */
   constructor(operation: string, propertyName: string, source: string) {
     super(
-      'READ_ONLY_PROPERTY',
+      "READ_ONLY_PROPERTY",
       `Cannot ${operation} read-only property "${propertyName}".`,
-      new ErrorContext(propertyName, 'property must remain immutable', source)
+      new ErrorContext(propertyName, "property must remain immutable", source),
     );
   }
 }

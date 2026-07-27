@@ -1,13 +1,13 @@
 import {
   InvalidOptionError,
-  TypeMismatchError
-} from '../../../errors/index.js';
+  TypeMismatchError,
+} from "../../../errors/index.js";
 
 import {
   SHAPE_SPECIFIC_ANIMATABLE_PROPERTIES,
   COMMON_STYLE_ANIMATABLE_PROPERTIES,
-  COMMON_GEOMETRY_ANIMATABLE_PROPERTIES
-} from '../animation-constants.js';
+  COMMON_GEOMETRY_ANIMATABLE_PROPERTIES,
+} from "../animation-constants.js";
 
 /**
  * Validates user-provided animation properties against
@@ -30,12 +30,12 @@ export type ShapeType = keyof typeof SHAPE_SPECIFIC_ANIMATABLE_PROPERTIES;
 
 export function userPropsValidation(props: unknown, shape: ShapeType): void {
   // Ensure props is a plain object
-  if (props === null || typeof props !== 'object' || Array.isArray(props)) {
+  if (props === null || typeof props !== "object" || Array.isArray(props)) {
     throw new TypeMismatchError(
-      'attrs',
+      "attrs",
       typeof props,
-      'object',
-      'Animation.animate()'
+      "object",
+      "Animation.animate()",
     );
   }
 
@@ -43,10 +43,10 @@ export function userPropsValidation(props: unknown, shape: ShapeType): void {
 
   if (!Array.isArray(shapeAttrs)) {
     throw new InvalidOptionError(
-      'shape',
+      "shape",
       shape,
       Object.keys(SHAPE_SPECIFIC_ANIMATABLE_PROPERTIES),
-      'Animation.animate()'
+      "Animation.animate()",
     );
   }
 
@@ -68,18 +68,18 @@ export function userPropsValidation(props: unknown, shape: ShapeType): void {
         key,
         key,
         [...shapeAttrs, ...styleKeys, ...geometryKeys],
-        'Animation.animate()'
+        "Animation.animate()",
       );
     }
 
     // Shape-specific attributes must be numeric
     if (isShapeAttr) {
-      if (typeof value !== 'number') {
+      if (typeof value !== "number") {
         throw new TypeMismatchError(
           key,
           typeof value,
-          'number',
-          'Animation.animate()'
+          "number",
+          "Animation.animate()",
         );
       }
       continue;
@@ -87,22 +87,22 @@ export function userPropsValidation(props: unknown, shape: ShapeType): void {
 
     // Style property validation
     if (isStyleProp) {
-      if (key === 'fill' || key === 'stroke') {
-        if (typeof value !== 'string') {
+      if (key === "fill" || key === "stroke") {
+        if (typeof value !== "string") {
           throw new TypeMismatchError(
             key,
             typeof value,
-            'string',
-            'Animation.animate()'
+            "string",
+            "Animation.animate()",
           );
         }
       } else {
-        if (typeof value !== 'number') {
+        if (typeof value !== "number") {
           throw new TypeMismatchError(
             key,
             typeof value,
-            'number',
-            'Animation.animate()'
+            "number",
+            "Animation.animate()",
           );
         }
       }
@@ -111,83 +111,83 @@ export function userPropsValidation(props: unknown, shape: ShapeType): void {
 
     // Geometry transform validation
     if (isGeometryProp) {
-      if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+      if (value === null || typeof value !== "object" || Array.isArray(value)) {
         throw new TypeMismatchError(
           key,
           typeof value,
-          'object',
-          'Animation.animate()'
+          "object",
+          "Animation.animate()",
         );
       }
 
       // Translate validation
-      if (key === 'translate') {
-        if (!('x' in value) || typeof value.x !== 'number') {
+      if (key === "translate") {
+        if (!("x" in value) || typeof value.x !== "number") {
           throw new TypeMismatchError(
-            'translate.x',
+            "translate.x",
             typeof value.x,
-            'number',
-            'Animation.animate()'
+            "number",
+            "Animation.animate()",
           );
         }
-        if (!('y' in value) || typeof value.y !== 'number') {
+        if (!("y" in value) || typeof value.y !== "number") {
           throw new TypeMismatchError(
-            'translate.y',
+            "translate.y",
             typeof value.y,
-            'number',
-            'Animation.animate()'
+            "number",
+            "Animation.animate()",
           );
         }
       }
 
       // Scale validation
-      if (key === 'scale') {
-        if (!('sx' in value) || typeof value.sx !== 'number') {
+      if (key === "scale") {
+        if (!("sx" in value) || typeof value.sx !== "number") {
           throw new TypeMismatchError(
-            'scale.sx',
+            "scale.sx",
             typeof value.sx,
-            'number',
-            'Animation.animate()'
+            "number",
+            "Animation.animate()",
           );
         }
-        if (!('sy' in value) || typeof value.sy !== 'number') {
+        if (!("sy" in value) || typeof value.sy !== "number") {
           throw new TypeMismatchError(
-            'scale.sy',
+            "scale.sy",
             typeof value.sy,
-            'number',
-            'Animation.animate()'
+            "number",
+            "Animation.animate()",
           );
         }
       }
 
       // Skew validation
-      if (key === 'skew') {
-        if (!('sx' in value) || typeof value.sx !== 'number') {
+      if (key === "skew") {
+        if (!("sx" in value) || typeof value.sx !== "number") {
           throw new TypeMismatchError(
-            'skew.sx',
+            "skew.sx",
             typeof value.sx,
-            'number',
-            'Animation.animate()'
+            "number",
+            "Animation.animate()",
           );
         }
-        if (!('sy' in value) || typeof value.sy !== 'number') {
+        if (!("sy" in value) || typeof value.sy !== "number") {
           throw new TypeMismatchError(
-            'skew.sy',
+            "skew.sy",
             typeof value.sy,
-            'number',
-            'Animation.animate()'
+            "number",
+            "Animation.animate()",
           );
         }
       }
 
       // Rotate validation
-      if (key === 'rotate') {
-        if (!('angle' in value) || typeof value.angle !== 'number') {
+      if (key === "rotate") {
+        if (!("angle" in value) || typeof value.angle !== "number") {
           throw new TypeMismatchError(
-            'rotate.angle',
+            "rotate.angle",
             typeof value.angle,
-            'number',
-            'Animation.animate()'
+            "number",
+            "Animation.animate()",
           );
         }
       }

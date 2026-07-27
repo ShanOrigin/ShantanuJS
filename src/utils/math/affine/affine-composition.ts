@@ -1,5 +1,5 @@
-import type { TransformStack } from '../../../models/types/common';
-import { affineMatrixMultiply } from '../matrix/matrix-multiplication.js';
+import type { TransformStack } from "../../../models/types/common";
+import { affineMatrixMultiply } from "../matrix/matrix-multiplication.js";
 
 /**
  * Composes the active affine transformation matrices contained within a
@@ -67,7 +67,7 @@ import { affineMatrixMultiply } from '../matrix/matrix-multiplication.js';
  */
 export function composeAffineTransformations(
   transformStack: TransformStack,
-  required = false
+  required = false,
 ): Float32Array {
   const { stack, skip } = transformStack;
 

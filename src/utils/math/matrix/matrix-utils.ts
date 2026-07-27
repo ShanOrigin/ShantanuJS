@@ -25,7 +25,7 @@
 export function isValidMatrix(
   mat: Float32Array[], // Correctly type the matrix as an array of Float32Arrays
   matlen: number,
-  rowlen: number
+  rowlen: number,
 ): mat is Float32Array[] {
   // Proper return type to indicate it's a valid matrix of Float32Arrays
   try {
@@ -41,7 +41,7 @@ export function isValidMatrix(
 
       // Check that every element in the row is a number
       for (let j = 0; valid && j < row.length; j++) {
-        valid &&= typeof row[j] === 'number';
+        valid &&= typeof row[j] === "number";
       }
 
       // If any row fails the validation, break early
@@ -53,7 +53,7 @@ export function isValidMatrix(
       return valid;
     } else {
       throw new Error(
-        'Given matrix is not valid! Please check your parameters and ensure all elements are numbers.'
+        "Given matrix is not valid! Please check your parameters and ensure all elements are numbers.",
       );
     }
   } catch (e) {
@@ -87,12 +87,12 @@ export function isValidMatrix(
 export function getTransformationMatrix(
   tList: any[] | undefined,
   which: number = 0,
-  major: 'r' | 'c' = 'r'
+  major: "r" | "c" = "r",
 ): number[][] {
   const TMat = [
     [1, 0, 0],
     [0, 1, 0],
-    [0, 0, 1]
+    [0, 0, 1],
   ];
 
   try {
@@ -105,7 +105,7 @@ export function getTransformationMatrix(
     if (index < 0 || index >= tList.length) {
       return TMat;
     }
-    if (!('TMatrix' in tList[index])) {
+    if (!("TMatrix" in tList[index])) {
       return TMat;
     }
 
@@ -117,7 +117,7 @@ export function getTransformationMatrix(
     const [a = 1, b = 0, g = 0, c = 0, d = 1, h = 0, e = 0, f = 0, i = 1] =
       tmat;
 
-    if (major === 'r') {
+    if (major === "r") {
       // Row-major: [ [a c e], [b d f], [g h i] ]
       TMat[0] = [a, c, e];
       TMat[1] = [b, d, f];

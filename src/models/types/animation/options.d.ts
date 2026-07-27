@@ -1,9 +1,9 @@
-import type { PivotOptions } from './pivot';
-import type { CurveMotionOptions, PhysicsOptions } from './motion';
-import type { AnimationControls } from './control';
-import type { EasingFunction, EasingType } from './easing';
-import type { AnimatableProperties } from './animatable';
-import type { ValidGraphicsShapes } from '../graphics-model';
+import type { PivotOptions } from "./pivot";
+import type { CurveMotionOptions, PhysicsOptions } from "./motion";
+import type { AnimationControls } from "./control";
+import type { EasingFunction, EasingType } from "./easing";
+import type { AnimatableProperties } from "./animatable";
+import type { ValidGraphicsShapes } from "../graphics-model";
 
 /**
  * Advanced animation configuration.
@@ -22,7 +22,7 @@ export type AdvancedAnimationOptions = {
  * Configuration for starting an animation.
  */
 export interface IAnimationOptions<
-  Shapes extends ValidGraphicsShapes = ValidGraphicsShapes
+  Shapes extends ValidGraphicsShapes = ValidGraphicsShapes,
 > {
   /** Target properties to animate. */
   attrs: AnimatableProperties<Shapes>;

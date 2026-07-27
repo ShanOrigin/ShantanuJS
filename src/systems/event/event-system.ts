@@ -1,7 +1,7 @@
-import { SyntheticEvent, EventPhase } from './synthetic-event.js';
+import { SyntheticEvent, EventPhase } from "./synthetic-event.js";
 
-import type { GraphicsRenderNode } from '../../models/interfaces/render-node';
-import type { SupportedEvents } from '../../models/interfaces/event';
+import type { GraphicsRenderNode } from "../../models/interfaces/render-node";
+import type { SupportedEvents } from "../../models/interfaces/event";
 //import { hitTestShape } from './hitTestShape.js';
 
 /**
@@ -36,7 +36,7 @@ export class EventSystem {
 
   constructor(
     shapes: GraphicsRenderNode[],
-    elementsIdMap: Map<string, GraphicsRenderNode>
+    elementsIdMap: Map<string, GraphicsRenderNode>,
   ) {
     this.#shapes = shapes;
     this.#elementsIdMap = elementsIdMap;
@@ -121,11 +121,11 @@ export class EventSystem {
     const rect = el.getBoundingClientRect();
     const styles = window.getComputedStyle(el);
 
-    const borderLeft = parseFloat(styles.borderLeftWidth || '0');
-    const borderTop = parseFloat(styles.borderTopWidth || '0');
+    const borderLeft = parseFloat(styles.borderLeftWidth || "0");
+    const borderTop = parseFloat(styles.borderTopWidth || "0");
 
-    const paddingLeft = parseFloat(styles.paddingLeft || '0');
-    const paddingTop = parseFloat(styles.paddingTop || '0');
+    const paddingLeft = parseFloat(styles.paddingLeft || "0");
+    const paddingTop = parseFloat(styles.paddingTop || "0");
 
     const offsetX = rect.left + borderLeft + paddingLeft;
     const offsetY = rect.top + borderTop + paddingTop;
@@ -145,7 +145,7 @@ export class EventSystem {
     // STEP 3: Create synthetic event
     // ----------------------------------------------------------------------
 
-    const eventType = nativeEvent.type as SyntheticEvent['type'];
+    const eventType = nativeEvent.type as SyntheticEvent["type"];
     const event = new SyntheticEvent(eventType, target, nativeEvent);
 
     // ----------------------------------------------------------------------
@@ -215,7 +215,7 @@ export class EventSystem {
   #hitTest(
     elements: GraphicsRenderNode[],
     x: number,
-    y: number
+    y: number,
   ): GraphicsRenderNode | null {
     let best: GraphicsRenderNode | null = null;
     let bestZ = -Infinity;
@@ -262,7 +262,7 @@ export class EventSystem {
   #aabbContains(
     x: number,
     y: number,
-    bounds: Float32Array // [minX , minY , maxX , maxY]
+    bounds: Float32Array, // [minX , minY , maxX , maxY]
   ): boolean {
     return x >= bounds[0] && x <= bounds[2] && y >= bounds[1] && y <= bounds[3];
   }
@@ -298,7 +298,7 @@ export class EventSystem {
       if (!inside) break;
 
       // Extract parent ID (after '-')
-      const idx = inside.indexOf('-');
+      const idx = inside.indexOf("-");
       if (idx === -1) break;
 
       const parentId = inside.slice(idx + 1);
@@ -322,7 +322,7 @@ export class EventSystem {
    */
   #invoke(node: GraphicsRenderNode, event: SyntheticEvent): boolean {
     const handler = (node as GraphicsRenderNode).events.getEventHandler(
-      event.type as SupportedEvents
+      event.type as SupportedEvents,
     );
     if (!handler) return false;
 

@@ -1,5 +1,5 @@
-import { lerp } from './lerp.js';
-import { interpolateAlongCurve } from './interpolate-along-curve.js';
+import { lerp } from "./lerp.js";
+import { interpolateAlongCurve } from "./interpolate-along-curve.js";
 /**
  * Applies a precomputed transformation frame for a given progress along an animation.
  *
@@ -33,7 +33,7 @@ export function setPreComputedFrame(
   curvePoints: { x: number; y: number }[],
   progress: number,
   isTranslate: boolean,
-  steps: number = 100
+  steps: number = 100,
 ) {
   const tr = isTranslate
     ? interpolateAlongCurve(curvePoints, progress)
@@ -52,27 +52,27 @@ export function setPreComputedFrame(
   const b = lerp(
     preComputeFranes[offset0 + 1]!,
     preComputeFranes[offset1 + 1]!,
-    t
+    t,
   );
   const c = lerp(
     preComputeFranes[offset0 + 2]!,
     preComputeFranes[offset1 + 2]!,
-    t
+    t,
   );
   const d = lerp(
     preComputeFranes[offset0 + 3]!,
     preComputeFranes[offset1 + 3]!,
-    t
+    t,
   );
   const e = lerp(
     preComputeFranes[offset0 + 4]! + tr.x,
     preComputeFranes[offset1 + 4]! + tr.x,
-    t
+    t,
   );
   const f = lerp(
     preComputeFranes[offset0 + 5]! + tr.y,
     preComputeFranes[offset1 + 5]! + tr.y,
-    t
+    t,
   );
 
   // column major

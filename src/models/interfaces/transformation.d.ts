@@ -2,8 +2,8 @@ import {
   TranslateMethodProps,
   RotateMethodProps,
   ScaleMethodProps,
-  SkewMethodProps
-} from '../types/affine-transformations';
+  SkewMethodProps,
+} from "../types/affine-transformations";
 
 export interface ITransformation {
   translate(translateProps: TranslateMethodProps): Float32Array | void;

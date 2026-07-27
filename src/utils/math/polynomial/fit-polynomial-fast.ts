@@ -1,11 +1,11 @@
 import type {
   BaseTransformations,
   CreateTransformationMatrixProps,
-  PivotTransformations
-} from '../../../models/types/geometry/transform';
+  PivotTransformations,
+} from "../../../models/types/geometry/transform";
 
-import { makeCubic } from './polynomial-utils.js';
-import { createAffineTransformMatrix } from '../affine/affine-matrix-creation.js';
+import { makeCubic } from "./polynomial-utils.js";
+import { createAffineTransformMatrix } from "../affine/affine-matrix-creation.js";
 /**
  * Generates cubic polynomials for each transformation matrix coefficient to enable smooth animation.
  *
@@ -28,7 +28,7 @@ import { createAffineTransformMatrix } from '../affine/affine-matrix-creation.js
 export function fitTransformPolynomialsFast(
   initialState: BaseTransformations,
   finalState: PivotTransformations,
-  base?: Float32Array
+  base?: Float32Array,
 ) {
   // Compose start/end matrices
 
@@ -46,27 +46,27 @@ export function fitTransformPolynomialsFast(
       transformations: {
         rotate: {
           angle: iR?.angle,
-          tType: 'p',
+          tType: "p",
           px: fR.px ?? 0,
-          py: fR.py ?? 0
+          py: fR.py ?? 0,
         },
         scale: {
           sx: iS?.sx,
           sy: iS?.sy,
-          tType: 'p',
+          tType: "p",
           px: fS.px ?? 0,
-          py: fS.py ?? 0
+          py: fS.py ?? 0,
         },
         skew: {
           sx: iSk?.sx,
           sy: iSk?.sy,
-          tType: 'p',
+          tType: "p",
           px: fSk.px ?? 0,
-          py: fSk.py ?? 0
-        }
+          py: fSk.py ?? 0,
+        },
       },
-      major: 'column',
-      arrayType: 'float32'
+      major: "column",
+      arrayType: "float32",
     } as CreateTransformationMatrixProps) as Float32Array;
 
   let a1!: number,
@@ -81,27 +81,27 @@ export function fitTransformPolynomialsFast(
       transformations: {
         rotate: {
           angle: fR?.angle,
-          tType: 'p',
+          tType: "p",
           px: fR.px ?? 0,
-          py: fR.py ?? 0
+          py: fR.py ?? 0,
         },
         scale: {
           sx: fS?.sx,
           sy: fS?.sy,
-          tType: 'p',
+          tType: "p",
           px: fS.px ?? 0,
-          py: fS.py ?? 0
+          py: fS.py ?? 0,
         },
         skew: {
           sx: fSk?.sx,
           sy: fSk?.sy,
-          tType: 'p',
+          tType: "p",
           px: fSk.px ?? 0,
-          py: fSk.py ?? 0
-        }
+          py: fSk.py ?? 0,
+        },
       },
-      major: 'column',
-      arrayType: 'float32'
+      major: "column",
+      arrayType: "float32",
     } as CreateTransformationMatrixProps) as Float32Array;
 
   // Build cubic per coefficient
@@ -111,6 +111,6 @@ export function fitTransformPolynomialsFast(
     c: makeCubic(c0, c1),
     d: makeCubic(d0, d1),
     e: makeCubic(e0, e1),
-    f: makeCubic(f0, f1)
+    f: makeCubic(f0, f1),
   };
 }

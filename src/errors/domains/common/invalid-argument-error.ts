@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when an argument is provided but does not satisfy
@@ -25,12 +25,12 @@ export class InvalidArgumentError extends UsageError {
     argumentName: string,
     receivedValue: unknown,
     expectedDescription: string,
-    source: string
+    source: string,
   ) {
     super(
-      'INVALID_ARGUMENT',
+      "INVALID_ARGUMENT",
       `Invalid value provided for argument '${argumentName}'.`,
-      new ErrorContext(receivedValue, expectedDescription, source)
+      new ErrorContext(receivedValue, expectedDescription, source),
     );
   }
 }

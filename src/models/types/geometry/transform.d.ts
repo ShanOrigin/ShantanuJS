@@ -1,5 +1,5 @@
-import { CenterAnchors, Pivot, TransformAnchors } from './anchors';
-import { ArrayType, Major } from './types';
+import { CenterAnchors, Pivot, TransformAnchors } from "./anchors";
+import { ArrayType, Major } from "./types";
 
 /**
  * Translation.
@@ -49,8 +49,7 @@ export interface BaseTransformationMeta extends Pivot {
 
 // Translate
 export interface TranslateMethodProps
-  extends BaseTransformationMeta,
-    Translation {
+  extends BaseTransformationMeta, Translation {
   tType?: TransformAnchors | CenterAnchors;
 }
 

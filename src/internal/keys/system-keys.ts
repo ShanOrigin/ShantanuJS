@@ -1,4 +1,4 @@
-import { UnauthorizedInternalAccessError } from '../../errors/index.js';
+import { UnauthorizedInternalAccessError } from "../../errors/index.js";
 
 /* -------------------------------------------------------------------------- */
 /*                         Internal Scene Collection Keys                      */
@@ -24,7 +24,7 @@ import { UnauthorizedInternalAccessError } from '../../errors/index.js';
  * - Returns the live internal collection reference.
  * - External/public mutation is not permitted.
  */
-const GET_SCENE_ELEMENTS_METHOD = Symbol('GET_SCENE_ELEMENTS_METHOD');
+const GET_SCENE_ELEMENTS_METHOD = Symbol("GET_SCENE_ELEMENTS_METHOD");
 
 /**
  * Computed method symbol used to retrieve the internal
@@ -51,7 +51,7 @@ const GET_SCENE_ELEMENTS_METHOD = Symbol('GET_SCENE_ELEMENTS_METHOD');
  * - External/public mutation is not permitted.
  */
 const GET_PENDING_CREATION_ELEMENTS_METHOD = Symbol(
-  'GET_PENDING_CREATION_ELEMENTS_METHOD'
+  "GET_PENDING_CREATION_ELEMENTS_METHOD",
 );
 
 /**
@@ -79,7 +79,7 @@ const GET_PENDING_CREATION_ELEMENTS_METHOD = Symbol(
  * - External/public mutation is not permitted.
  */
 const GET_PENDING_DELETION_ELEMENTS_METHOD = Symbol(
-  'GET_PENDING_DELETION_ELEMENTS_METHOD'
+  "GET_PENDING_DELETION_ELEMENTS_METHOD",
 );
 
 /**
@@ -100,7 +100,7 @@ const GET_PENDING_DELETION_ELEMENTS_METHOD = Symbol(
  * - Intended for internal rendering orchestration only.
  * - Not part of the public canvas API surface.
  */ const GET_SCENE_Z_ORDER_RESOLVER_METHOD = Symbol(
-  'GET_Z_ORDER_RESOLVER_METHOD'
+  "GET_Z_ORDER_RESOLVER_METHOD",
 );
 
 /**
@@ -123,7 +123,7 @@ const GET_PENDING_DELETION_ELEMENTS_METHOD = Symbol(
  * - Returns the live internal identifier map reference.
  * - Mutations bypass normal public API protections.
  */
-const GET_SCENE_ELEMENT_ID_MAP_METHOD = Symbol('GET_ELEMENT_ID_MAP_METHOD');
+const GET_SCENE_ELEMENT_ID_MAP_METHOD = Symbol("GET_ELEMENT_ID_MAP_METHOD");
 
 /**
  * Computed method symbol used to activate a successfully
@@ -175,7 +175,7 @@ const GET_SCENE_ELEMENT_ID_MAP_METHOD = Symbol('GET_ELEMENT_ID_MAP_METHOD');
  * - Does not create backend graphical resources.
  * - Does not perform rendering.
  */
-const COMMIT_PENDING_CREATION_METHOD = Symbol('COMMIT_PENDING_CREATION_METHOD');
+const COMMIT_PENDING_CREATION_METHOD = Symbol("COMMIT_PENDING_CREATION_METHOD");
 
 /**
  * Internal commit method responsible for resolving all pending
@@ -211,7 +211,7 @@ const COMMIT_PENDING_CREATION_METHOD = Symbol('COMMIT_PENDING_CREATION_METHOD');
  * - Restricted to trusted internal engine and renderer systems.
  * - Protected through capability-based access validation.
  */
-const COMMIT_PENDING_DELETION_METHOD = Symbol('COMMIT_PENDING_DELETION_METHOD');
+const COMMIT_PENDING_DELETION_METHOD = Symbol("COMMIT_PENDING_DELETION_METHOD");
 
 /* -------------------------------------------------------------------------- */
 /*                         System Internal Capability                          */
@@ -250,7 +250,7 @@ const COMMIT_PENDING_DELETION_METHOD = Symbol('COMMIT_PENDING_DELETION_METHOD');
  * - Exposure of this token grants privileged access
  *   to mutable internal runtime systems.
  */
-const SYSTEM_INTERNAL_ACCESS_KEY = Symbol('SYSTEM_INTERNAL_ACCESS_KEY');
+const SYSTEM_INTERNAL_ACCESS_KEY = Symbol("SYSTEM_INTERNAL_ACCESS_KEY");
 
 /**
  * Validates whether the provided access key is authorized
@@ -312,9 +312,9 @@ function assertSystemAccess(key: symbol): true {
   if (key !== SYSTEM_INTERNAL_ACCESS_KEY) {
     throw new UnauthorizedInternalAccessError(
       key,
-      'SYSTEM_INTERNAL_ACCESS_KEY',
-      'Invalid access to privileged internal system state',
-      'assertSystemAccess function call'
+      "SYSTEM_INTERNAL_ACCESS_KEY",
+      "Invalid access to privileged internal system state",
+      "assertSystemAccess function call",
     );
   }
 
@@ -330,5 +330,5 @@ export {
   SYSTEM_INTERNAL_ACCESS_KEY,
   COMMIT_PENDING_CREATION_METHOD,
   COMMIT_PENDING_DELETION_METHOD,
-  assertSystemAccess
+  assertSystemAccess,
 };
