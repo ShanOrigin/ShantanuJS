@@ -358,6 +358,7 @@ export default class ShantanuJSTestTool {
 
     try {
       assertions = this.#runVerify(testDef.expect, this.#context);
+      this.#context.canvas.engine.flush();
     } catch (error) {
       verifyErrors.push(error as Error);
     }
@@ -450,8 +451,6 @@ export default class ShantanuJSTestTool {
     this.#results.tests[id] = output;
 
     if (!this.#constraints.save) {
-      console.clear();
-
       this.#displayAnalysis(this.#results as any);
       return;
     }
