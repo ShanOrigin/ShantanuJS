@@ -153,9 +153,6 @@ export function initializeCanvasAndShapes(
     "stroke-width": 2,
   });
 
-  canvas.engine.stop();
-  canvas.engine.update();
-
   // --------------------------------------------------------------------------
   // Create Shapes
   // --------------------------------------------------------------------------
