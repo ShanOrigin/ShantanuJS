@@ -66,6 +66,7 @@ export class Curve extends RenderNode<"curve"> {
     super("curve", props?.id ?? "");
 
     try {
+      "id" in props && delete props.id;
       const {
         x1,
         y1,
@@ -238,10 +239,10 @@ export class Curve extends RenderNode<"curve"> {
       }
 
       return new Curve({
-        x1,
-        x2,
-        y1,
-        y2,
+        x1: x1 + offsetX,
+        x2: x2 + offsetX,
+        y1: y1 + offsetY,
+        y2: y2 + offsetY,
         curvature,
         smoothness,
         continuous,
