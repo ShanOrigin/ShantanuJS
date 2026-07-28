@@ -156,6 +156,7 @@ export function initializeCanvasAndShapes(
   canvas.engine.stop();
   canvas.engine.update();
 
+  /*
   // --------------------------------------------------------------------------
   // Create Shapes
   // --------------------------------------------------------------------------
@@ -192,6 +193,7 @@ export function initializeCanvasAndShapes(
     text: "Queen",
     fill: "black",
   });
+*/
 
   const arcCurve = new API.Shapes.ArcCurve({
     ...shapeGeometry.arcCurve,
@@ -212,7 +214,7 @@ export function initializeCanvasAndShapes(
     ...shapeGeometry.earcCurve,
     stroke: "purple",
   });
-
+  /*
   const polyline = new API.Shapes.Polyline({
     ...shapeGeometry.polyline,
     fill: "none",
@@ -231,25 +233,27 @@ export function initializeCanvasAndShapes(
     ...shapeGeometry.image,
     href: "../../deps.png",
   });
-
+*/
   // --------------------------------------------------------------------------
   // Add Shapes
   // --------------------------------------------------------------------------
 
   canvas.add(
-    line,
+    /*  line,
     point,
     circle,
     ellipse,
     rect,
     text,
+*/
     arcCurve,
     cubicCurve,
     quadraticCurve,
     earcCurve,
-    polyline,
+    /*  polyline,
     polygon,
     image,
+*/
   );
 
   // --------------------------------------------------------------------------
@@ -259,18 +263,20 @@ export function initializeCanvasAndShapes(
   ctx.canvas = canvas;
 
   ctx.shapes = {
-    line,
+    /*   line,
     point,
     circle,
     ellipse,
     rect,
     text,
+*/
     arcCurve,
     cubicCurve,
     quadraticCurve,
     earcCurve,
-    polyline,
+    /*   polyline,
     polygon,
     image,
+*/
   };
 }
