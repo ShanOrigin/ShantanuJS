@@ -32,6 +32,9 @@ export function cloneMethod() {
                 expectedStatus: "pass",
                 validate(shape, { value }) {
                   const clone = shape.clone();
+
+                  ctx.canvas.add(clone);
+
                   const cloneIdData = (clone.style.id as string).split("-");
                   return cloneIdData[0] === value ? "pass" : "fail";
                 },
