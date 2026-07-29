@@ -1,3 +1,4 @@
+import { type } from "os";
 import { ShantanuJS } from "../../index/index.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
@@ -40,8 +41,11 @@ import type {
   Tests,
 } from "./types";
 
+export type Shape = GraphicsNode;
+export type Canvas = ShantanuJS.Canvas;
+
 export type Context = {
-  shapes: Record<string, GraphicsNode>;
+  shapes: Record<string, Shape | Canvas>;
   canvas: ShantanuJS.Canvas;
 };
 
