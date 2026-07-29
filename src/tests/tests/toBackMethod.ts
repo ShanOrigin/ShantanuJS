@@ -1,4 +1,4 @@
-import shantanuJSTest from "../testingTool/shantanuJS-test.js";
+import shantanuJSTest, { Shape } from "../testingTool/shantanuJS-test.js";
 import { initializeCanvasAndShapes } from "../data/initializeCanvasAndShapes.js";
 
 export function toBackMethod() {
@@ -21,7 +21,7 @@ export function toBackMethod() {
           },
 
           actions(api, ctx) {
-            ctx.shapes[name].toBack();
+            (ctx.shapes[name] as Shape).toBack();
           },
 
           expect: {

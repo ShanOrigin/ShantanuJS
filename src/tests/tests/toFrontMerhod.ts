@@ -1,4 +1,4 @@
-import shantanuJSTest from "../testingTool/shantanuJS-test.js";
+import shantanuJSTest, { Shape } from "../testingTool/shantanuJS-test.js";
 import { initializeCanvasAndShapes } from "../data/initializeCanvasAndShapes.js";
 
 export function toFrontMethod() {
@@ -22,7 +22,7 @@ export function toFrontMethod() {
           },
 
           actions(api, ctx) {
-            ctx.shapes[name].toFront();
+            (ctx.shapes[name] as Shape).toFront();
           },
 
           expect: {

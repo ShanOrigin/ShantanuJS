@@ -1,4 +1,4 @@
-import shantanuJSTest from "../testingTool/shantanuJS-test.js";
+import shantanuJSTest, { Shape } from "../testingTool/shantanuJS-test.js";
 import { initializeCanvasAndShapes } from "../data/initializeCanvasAndShapes.js";
 
 export function hideMethod() {
@@ -39,7 +39,7 @@ export function hideMethod() {
           // --------------------------------------------------
           actions(api, ctx) {
             // Modify shape
-            ctx.shapes[name].hide();
+            (ctx.shapes[name] as Shape).hide();
           },
 
           // --------------------------------------------------

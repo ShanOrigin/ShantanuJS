@@ -1,4 +1,4 @@
-import shantanuJSTest from "../testingTool/shantanuJS-test.js";
+import shantanuJSTest, { Shape } from "../testingTool/shantanuJS-test.js";
 import { initializeCanvasAndShapes } from "../data/initializeCanvasAndShapes.js";
 
 export function cloneMethod() {
@@ -28,7 +28,7 @@ export function cloneMethod() {
 
             validators: {
               id: {
-                value: ctx.shapes[name].style.id,
+                value: (ctx.shapes[name] as Shape).style.id,
                 expectedStatus: "pass",
                 validate(shape, { value }) {
                   const clone = shape.clone();

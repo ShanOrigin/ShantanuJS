@@ -1,4 +1,4 @@
-import shantanuJSTest from "../testingTool/shantanuJS-test.js";
+import shantanuJSTest, { Shape } from "../testingTool/shantanuJS-test.js";
 import { initializeCanvasAndShapes } from "../data/initializeCanvasAndShapes.js";
 
 export function showMethod() {
@@ -24,7 +24,7 @@ export function showMethod() {
           },
 
           actions(api, ctx) {
-            ctx.shapes[name].show();
+            (ctx.shapes[name] as Shape).show();
           },
 
           expect: {
