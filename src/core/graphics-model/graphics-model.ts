@@ -1039,7 +1039,32 @@ export abstract class GraphicsModel<
      * @returns Proxied object with readonly enforcement
      */
     const wrap = (value: object): object => {
-      return new Proxy(value, handler);
+      // TypedArray → return detached copy
+      if (ArrayBuffer.isView(value)) {
+        return (value as Float32Array).slice();
+      }
+
+      // Array → deep copy
+      if (Array.isArray(value)) {
+        return value.map((element) =>
+          element !== null && typeof element === "object"
+            ? wrap(element)
+            : element,
+        );
+      }
+
+      // Plain object → deep copy
+      const copy: Record<string, any> = {};
+
+      for (const key in value) {
+        const element = (value as Record<string, any>)[key];
+        copy[key] =
+          element !== null && typeof element === "object"
+            ? wrap(element)
+            : element;
+      }
+
+      return new Proxy(copy, handler);
     };
 
     /**
