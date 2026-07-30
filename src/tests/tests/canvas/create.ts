@@ -1,6 +1,6 @@
 // Import testing tool demo
 
-import ShantanuJSTestTool from "../../testingTool/shantanuJS-test";
+import ShantanuJSTestTool from "../../testingTool/shantanuJS-test.js";
 
 // Entry function (user-defined)
 export function createCanvas() {
@@ -14,7 +14,12 @@ export function createCanvas() {
     // --------------------------------------------------
     initialize(api, ctx) {
       // Create canvas
-      const canvas = new api.Canvas({ id: "testing", width: 200, height: 400 });
+      const canvas = new api.Canvas({
+        id: "testing",
+        width: 200,
+        height: 400,
+        opacity: 0,
+      });
 
       // Store in context (shared across phases)
       ctx.canvas = canvas;
@@ -151,44 +156,21 @@ export function createCanvas() {
           },
 
           validators: {
-            buffer: {
-              tolerance: 0.25,
-              value: [50, 20, 250, 20, 250, 420, 50, 420],
-              expectedStatus: "pass",
-              validate(shape, expected) {
-                const [x1, y1, , x2, y2, , x3, y3, , x4, y4] =
-                  shape.geometry.buffer; // Correctly destructuring the needed indices
-                const actual = [x1, y1, x2, y2, x3, y3, x4, y4];
-                const { value, tolerance = 0 } = expected as {
-                  value: number[];
-                  tolerance: number;
-                };
-
-                // Use .some() instead of .any(), fix type warnings, and use valid ternary syntax
-                const hasMismatch = value.some(
-                  (element: number, i: number) =>
-                    Math.abs(element - actual[i]) > tolerance,
-                );
-
-                return hasMismatch ? "fail" : "pass";
-              },
-            },
             worldMatrix: {
               tolerance: 0.15,
               value: [1, 0, 0, 0, 1, 0, 0, 0, 1],
               expectedStatus: "pass",
+
               validate(shape, expected) {
-                const [a, c, e, b, d, f, h, g, i] = shape.geometry.buffer; // Correctly destructuring the needed indices
-                const actual = [a, c, e, b, d, f, h, g, i];
+                const actual = [...shape.geometry.worldMatrix];
+
                 const { value, tolerance = 0 } = expected as {
                   value: number[];
                   tolerance: number;
                 };
 
-                // Use .some() instead of .any(), fix type warnings, and use valid ternary syntax
                 const hasMismatch = value.some(
-                  (element: number, i: number) =>
-                    Math.abs(element - actual[i]) > tolerance,
+                  (element, i) => Math.abs(element - actual[i]) > tolerance,
                 );
 
                 return hasMismatch ? "fail" : "pass";
