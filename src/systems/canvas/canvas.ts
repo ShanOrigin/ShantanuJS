@@ -41,6 +41,10 @@ import type {
 } from "../../models/types/canvas";
 
 import type { AttrsMethodReturnTypes } from "../../models/types/common";
+import {
+  PublicGeometry,
+  PublicStyle,
+} from "../../models/types/graphics-model.js";
 
 import { Log } from "../../utils/helpers/helpers.js";
 
@@ -237,6 +241,32 @@ export class Canvas implements IGraphicsContainer, ICanvas {
   #eventSystem!: EventSystem;
 
   /**
+   * Public readonly proxy for geometry.
+   *
+   * Characteristics:
+   * - Prevents external mutation
+   * - Reflects internal `#geometry` state
+   *
+   * Design Intent:
+   * - Enforces strict separation between internal mutation logic and external consumption
+   */
+  //  public geometry!: ICommonGeometricProperties['geometry'] &
+  //   IGraphicalElementProperties[T];
+
+  public geometry!: PublicGeometry<"scene">;
+  /**
+   * Public readonly proxy for style.
+   *
+   * Characteristics:
+   * - Prevents external mutation
+   * - Reflects internal `#style` state
+   *
+   * Design Intent:
+   * - Ensures styling is controlled via defined APIs, not direct mutation
+   */
+  public style!: PublicStyle<"scene">;
+
+  /**
    * Creates a new root canvas container instance.
    *
    * Responsibilities:
@@ -270,7 +300,8 @@ export class Canvas implements IGraphicsContainer, ICanvas {
 
     const { id, width, height, x = 0, y = 0, context = "SVG", ...rest } = props;
     this.#sceneModel = new SceneModel({ id, width, height, x, y, ...rest });
-
+    this.geometry = this.#sceneModel.geometry;
+    this.style = this.#sceneModel.style;
     this.#renderer = initRenderer(context, this.#sceneModel);
 
     // =========================================================
