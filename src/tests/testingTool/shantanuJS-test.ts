@@ -877,11 +877,13 @@ export default class ShantanuJSTestTool {
     if (!style) return;
 
     const oracle = this.#getOracleFlags();
-
-    const element = shape[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY,
-    );
-    const computedStyle = window.getComputedStyle(element);
+    let computedStyle!: CSSStyleDeclaration;
+    if (oracle.browser) {
+      const element = shape[GET_INTERNAL_GRAPHICS_METHOD](
+        DEV_INTERNAL_ACCESS_KEY,
+      );
+      computedStyle = window.getComputedStyle(element);
+    }
     const libraryStyle = shape.style as Record<string, Primitive>;
 
     const verifyGroup = (
