@@ -16,13 +16,6 @@ export function createCanvas() {
       // Create canvas
       const canvas = new api.Canvas({ id: "testing", width: 200, height: 400 });
 
-      // Apply base styles
-      canvas.attrs({
-        fill: "green",
-        stroke: "red",
-        "stroke-width": 0,
-      });
-
       // Store in context (shared across phases)
       ctx.canvas = canvas;
 
@@ -40,10 +33,10 @@ export function createCanvas() {
         // TEST METADATA (REQUIRED)
         // --------------------------------------------------
         testInfo: {
-          description: "Update stroke color of a line",
-          module: "shapes",
+          description: "Canvas initialization",
+          module: "system/canvas",
           testType: "unit",
-          element: "line",
+          element: "canvas",
         },
 
         // --------------------------------------------------
@@ -53,12 +46,15 @@ export function createCanvas() {
         // ACTIONS PHASE (Act)
         // --------------------------------------------------
         actions(api, ctx) {
-          // Modify shape
-          ctx.shapes.line.attrs({
-            stroke: "blue",
+          // Apply base styles
+          ctx.canvas.attrs({
+            fill: "green",
+            stroke: "red",
+            "stroke-width": 1,
+            opacity: 1,
+            x: 50,
+            y: 20,
           });
-
-          console.log(ctx.shapes.line);
         },
 
         // --------------------------------------------------
@@ -67,40 +63,102 @@ export function createCanvas() {
         expect: {
           constraints: { save: true, oracle: { browser: false } },
           // Target shapes (by key from ctx.shapes)
-          testSubject: "line",
+          testSubject: "canvas",
 
           // -------- STYLE VALIDATION --------
           style: {
             attrs: {
-              stroke: {
-                value: "blue",
+              fill: {
+                value: "green",
                 expectedStatus: "pass",
               },
-              "stroke-width": {
-                value: 3,
-                expectedStatus: "pass",
-              },
-            },
-            notEqualTo: {
               stroke: {
                 value: "red",
                 expectedStatus: "pass",
               },
               "stroke-width": {
-                value: 2,
-                expectedStatus: "fail",
+                value: 1,
+                expectedStatus: "pass",
+              },
+              opacity: {
+                value: 1,
+                expectedStatus: "pass",
+              },
+            },
+
+            notEqualTo: {
+              fill: {
+                value: "blue",
+                expectedStatus: "pass",
+              },
+              stroke: {
+                value: "green",
+                expectedStatus: "pass",
+              },
+              "stroke-width": {
+                value: 5,
+                expectedStatus: "pass",
+              },
+              opacity: {
+                value: 0.5,
+                expectedStatus: "pass",
+              },
+            },
+          },
+
+          // -------- GEOMETRY VALIDATION --------
+
+          geometry: {
+            equalTo: {
+              shape: { value: "scene", expectedStatus: "pass" },
+              x: {
+                value: 50,
+                expectedStatus: "pass",
+              },
+              y: {
+                value: 20,
+                expectedStatus: "pass",
+              },
+              width: {
+                value: 200,
+                expectedStatus: "pass",
+              },
+              height: {
+                value: 400,
+                expectedStatus: "pass",
+              },
+            },
+
+            notEqualTo: {
+              shape: { value: "scene", expectedStatus: "pass" },
+              x: {
+                value: 10,
+                expectedStatus: "pass",
+              },
+              y: {
+                value: 20,
+                expectedStatus: "pass",
+              },
+              width: {
+                value: 100,
+                expectedStatus: "pass",
+              },
+              height: {
+                value: 300,
+                expectedStatus: "pass",
               },
             },
           },
 
           validators: {
             buffer: {
-              tolerance: 0.5,
-              value: [20, 40, 50, 40],
+              tolerance: 0.25,
+              value: [50, 20, 250, 20, 250, 420, 50, 420],
               expectedStatus: "pass",
               validate(shape, expected) {
-                const [x1, y1, , x2, y2] = shape.geometry.buffer; // Correctly destructuring the needed indices
-                const actual = [x1, y1, x2, y2];
+                const [x1, y1, , x2, y2, , x3, y3, , x4, y4] =
+                  shape.geometry.buffer; // Correctly destructuring the needed indices
+                const actual = [x1, y1, x2, y2, x3, y3, x4, y4];
                 const { value, tolerance = 0 } = expected as {
                   value: number[];
                   tolerance: number;
@@ -115,12 +173,27 @@ export function createCanvas() {
                 return hasMismatch ? "fail" : "pass";
               },
             },
-          },
+            worldMatrix: {
+              tolerance: 0.15,
+              value: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+              expectedStatus: "pass",
+              validate(shape, expected) {
+                const [a, c, e, b, d, f, h, g, i] = shape.geometry.buffer; // Correctly destructuring the needed indices
+                const actual = [a, c, e, b, d, f, h, g, i];
+                const { value, tolerance = 0 } = expected as {
+                  value: number[];
+                  tolerance: number;
+                };
 
-          // -------- GEOMETRY VALIDATION --------
-          geometry: {
-            equalTo: {},
-            greaterThan: {},
+                // Use .some() instead of .any(), fix type warnings, and use valid ternary syntax
+                const hasMismatch = value.some(
+                  (element: number, i: number) =>
+                    Math.abs(element - actual[i]) > tolerance,
+                );
+
+                return hasMismatch ? "fail" : "pass";
+              },
+            },
           },
 
           // -------- ERROR VALIDATION (optional) --------
