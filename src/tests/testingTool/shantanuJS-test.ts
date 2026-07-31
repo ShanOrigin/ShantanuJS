@@ -53,6 +53,7 @@ export type fn = (api: ShantanuJSTypes, ctx: Context) => void;
 
 export type shTestParams = {
   testInfo: TestInfo;
+  capture?: { before?: boolean; after?: boolean };
   setup?: fn;
   actions: fn;
   expect: ExpectedBlock;
@@ -256,7 +257,7 @@ export default class ShantanuJSTestTool {
     run,
   }: {
     initialize: (api: ShantanuJSTypes, ctx: Context) => void;
-    run: (ctx: Context) => void;
+    run: (ctx: Context, api?: ShantanuJSTypes) => void;
   }) {
     try {
       initialize(this.#api, this.#context);
@@ -266,7 +267,7 @@ export default class ShantanuJSTestTool {
       return;
     }
 
-    run(this.#context);
+    run(this.#context, this.#api);
   }
 
   /**
@@ -296,6 +297,11 @@ export default class ShantanuJSTestTool {
    * - Persists the generated report when enabled.
    */
   public shTest(testDef: shTestParams): void {
+    let capture = { before: true, after: true };
+    if (testDef.capture) {
+      capture = { ...capture, ...testDef.capture };
+    }
+
     this.#validateTest(testDef);
 
     this.#constraints = {
@@ -331,7 +337,7 @@ export default class ShantanuJSTestTool {
     // Capture Initial State
     // ---------------------------------------------------------------------------
 
-    states.before = this.#captureState(testDef.expect);
+    capture.before && (states.before = this.#captureState(testDef.expect));
 
     // ---------------------------------------------------------------------------
     // Actions
@@ -352,7 +358,7 @@ export default class ShantanuJSTestTool {
     // Capture Final State
     // ---------------------------------------------------------------------------
 
-    states.after = this.#captureState(testDef.expect);
+    capture.after && (states.after = this.#captureState(testDef.expect));
 
     // ---------------------------------------------------------------------------
     // Verify
@@ -633,6 +639,9 @@ export default class ShantanuJSTestTool {
     const geometryProps = new Set<string>();
     const validatorProps = new Set<string>();
 
+    if (!shape) {
+      throw new Error(` testSubject = ${expected.testSubject} is ${shape}`);
+    }
     const style = shape.style as Record<string, unknown>;
     const geometry = shape.geometry as Record<string, unknown>;
     /**
@@ -974,12 +983,19 @@ export default class ShantanuJSTestTool {
       for (const [property, data] of Object.entries(properties)) {
         const { value: expected, expectedStatus, tolerance = 0 } = data;
 
-        const result = this.#compareNumber(
-          actualGeometry[property],
-          expected as number,
-          tolerance,
-          mode,
-        );
+        const result =
+          typeof expected == "number"
+            ? this.#compareNumber(
+                actualGeometry[property],
+                expected as number,
+                tolerance,
+                mode,
+              )
+            : this.#compare(
+                expected,
+                actualGeometry[property],
+                mode as "eq" | "neq",
+              );
 
         assertions.push({
           crossCheck: "library",
