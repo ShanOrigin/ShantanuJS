@@ -73,6 +73,7 @@ export function createCanvas() {
           // -------- STYLE VALIDATION --------
           style: {
             attrs: {
+              id: { value: "testing-Canvas", expectedStatus: "pass" },
               fill: {
                 value: "green",
                 expectedStatus: "pass",
@@ -92,6 +93,7 @@ export function createCanvas() {
             },
 
             notEqualTo: {
+              id: { value: "testing-Canvas", expectedStatus: "fail" },
               fill: {
                 value: "blue",
                 expectedStatus: "pass",
@@ -135,14 +137,14 @@ export function createCanvas() {
             },
 
             notEqualTo: {
-              shape: { value: "scene", expectedStatus: "pass" },
+              shape: { value: "scene", expectedStatus: "fail" },
               x: {
                 value: 10,
                 expectedStatus: "pass",
               },
               y: {
                 value: 20,
-                expectedStatus: "pass",
+                expectedStatus: "fail",
               },
               width: {
                 value: 100,
