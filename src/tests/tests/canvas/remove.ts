@@ -90,7 +90,7 @@ export function removeCanvasMethod() {
           // EXPECT PHASE (Assert)
           // --------------------------------------------------
           expect: {
-            constraints: { save: false, oracle: { browser: false } },
+            constraints: { save: true, oracle: { browser: false } },
             // Target shapes (by key from ctx.shapes)
             testSubject: name,
             validators: {
