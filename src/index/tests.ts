@@ -7,6 +7,8 @@ import { toFrontMethod } from "../tests/tests/toFrontMerhod.js";
 import { cloneMethod } from "../tests/tests/cloneMethod.js";
 
 import { createCanvas } from "../tests/tests/canvas/create.js";
+import { addCanvasMethod } from "../tests/tests/canvas/add.js";
+import { removeCanvasMethod } from "../tests/tests/canvas/remove.js";
 // Entry function (user-defined)
 export function runTests(module: string, method: string) {
   switch (module) {
@@ -50,12 +52,17 @@ function canvasMethods(method: string) {
     case "create":
       createCanvas();
       break;
-
+    case "add":
+      addCanvasMethod();
+      break;
+    case "remove":
+      removeCanvasMethod();
+      break;
     default:
       break;
   }
 }
 
 const module = "canvas";
-const method = "create";
+const method = "remove";
 setTimeout(() => runTests(module, method), 5000);
