@@ -6,7 +6,7 @@ import { ShantanuJS } from "../../index";
  * and size the default testing scene. Style properties (fill, stroke, etc.)
  * should be supplied when constructing each shape.
  */
-const shapeGeometry = {
+export const shapeGeometry = {
   // ------------------------------------------------------------------------
   // Row 1
   // ------------------------------------------------------------------------
