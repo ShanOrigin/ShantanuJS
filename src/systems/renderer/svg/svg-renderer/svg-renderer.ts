@@ -601,11 +601,10 @@ export class SVGRenderer implements IRenderer {
 
     if (!removedElements.length) return;
 
-    const domScene = this.#scene[GET_INTERNAL_GRAPHICS_METHOD](
-      DEV_INTERNAL_ACCESS_KEY,
-    );
+    const infrastructure = this.#sceneInfrastructure.get(this.#scene);
+    const sceneRoot = infrastructure!.contentHost as SVGGElement;
 
-    for (let i = removedElements.length; i > 0; i--) {
+    for (let i = removedElements.length - 1; i >= 0; i--) {
       const element = removedElements[
         i
       ] as GraphicsNodeWithInternalAccessMethods;
@@ -613,11 +612,9 @@ export class SVGRenderer implements IRenderer {
         DEV_INTERNAL_ACCESS_KEY,
       );
 
-      removeFrom(domScene, domEle);
+      removeFrom(sceneRoot, domEle);
 
       element[SET_INTERNAL_GRAPHICS_METHOD](null, DEV_INTERNAL_ACCESS_KEY);
-
-      removedElements.pop();
     }
   }
 

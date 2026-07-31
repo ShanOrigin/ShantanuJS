@@ -754,7 +754,7 @@ export class SceneModel
   }
 
   public remove(...targets: GraphicsNode[]): this {
-    const fig = this.#fig;
+    const fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
     if (!fig) {
       throw new NotInitializedError(
