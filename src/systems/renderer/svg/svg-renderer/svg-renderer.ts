@@ -12,9 +12,9 @@ import {
 
 import {
   GET_PENDING_CREATION_ELEMENTS_METHOD,
-  COMMIT_PENDING_CREATION_METHOD,
+  RESET_PENDING_CREATION_METHOD,
   GET_PENDING_DELETION_ELEMENTS_METHOD,
-  COMMIT_PENDING_DELETION_METHOD,
+  RESET_PENDING_DELETION_METHOD,
   SYSTEM_INTERNAL_ACCESS_KEY,
 } from "../../../../internal/keys/system-keys.js";
 
@@ -725,9 +725,9 @@ export class SVGRenderer implements IRenderer {
     switch (phase) {
       case RenderPhase.PREPARE:
         this.#processPendingDeletions();
-        this.#scene[COMMIT_PENDING_DELETION_METHOD]();
+        this.#scene[RESET_PENDING_DELETION_METHOD]();
         this.#processPendingCreations();
-        this.#scene[COMMIT_PENDING_CREATION_METHOD]();
+        this.#scene[RESET_PENDING_CREATION_METHOD]();
         break;
 
       case RenderPhase.RENDER:
