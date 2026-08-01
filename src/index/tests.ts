@@ -9,6 +9,10 @@ import { cloneMethod } from "../tests/tests/cloneMethod.js";
 import { createCanvas } from "../tests/tests/canvas/create.js";
 import { addCanvasMethod } from "../tests/tests/canvas/add.js";
 import { removeCanvasMethod } from "../tests/tests/canvas/remove.js";
+import { clearCanvasMethod } from "../tests/tests/canvas/clear.js";
+import { containsCanvasMethod } from "../tests/tests/canvas/contains.js";
+import { getAllElementsCanvasMethod } from "../tests/tests/canvas/getAllElements.js";
+import { attrsCanvasMethod } from "../tests/tests/canvas/attrs.js";
 // Entry function (user-defined)
 export function runTests(module: string, method: string) {
   switch (module) {
@@ -58,11 +62,27 @@ function canvasMethods(method: string) {
     case "remove":
       removeCanvasMethod();
       break;
+    case "clear":
+      clearCanvasMethod();
+      break;
+
+    case "contains":
+      containsCanvasMethod();
+      break;
+
+    case "getAllElements":
+      getAllElementsCanvasMethod();
+      break;
+
+    case "attrs":
+      attrsCanvasMethod();
+      break;
+
     default:
       break;
   }
 }
 
 const module = "canvas";
-const method = "remove";
+const method = "attrs";
 setTimeout(() => runTests(module, method), 5000);
