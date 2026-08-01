@@ -129,7 +129,6 @@ export class SceneModel
    * - Shapes in this collection must not be rendered.
    */
   #pendingDeletionElements: GraphicsNode[] = [];
-  #removedElements: GraphicsNode[] = [];
 
   /**
    * O(1) index lookup map for shapes.
@@ -182,45 +181,6 @@ export class SceneModel
    * - Reused for all event dispatch operations
    */
   //  #eventSystem!: EventSystem;
-
-  /**
-   * Root graphical node representing this canvas in the rendering layer.
-   *
-   * Semantics:
-   * - For SVG: <svg> or <g> element
-   * - For other renderers: equivalent root abstraction
-   *
-   * Initialization:
-   * - Retrieved via internal access hook.
-   *
-   * Invariant:
-   * - Must remain consistent with renderer context.
-   */
-  #fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
-
-  /**
-   * Internal style state of the canvas.
-   *
-   * Contains:
-   * - Unique identifier (`id`)
-   * - Styling attributes relevant to rendering
-   *
-   * Invariant:
-   * - `id` must be stable and unique across all canvases.
-   */
-  #style = this[GET_INTERNAL_STYLE_METHOD](DEV_INTERNAL_ACCESS_KEY);
-
-  /**
-   * Internal geometry state of the canvas.
-   *
-   * Contains:
-   * - Rendering context (e.g., SVG, Canvas2D)
-   * - Spatial metadata
-   *
-   * Invariant:
-   * - Context must remain consistent once initialized.
-   */
-  #geometry = this[GET_INTERNAL_GEOMETRY_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
   /**
    * Minimum z-index boundary.
@@ -436,16 +396,6 @@ export class SceneModel
     // DEV-ONLY INVARIANT CHECK (no runtime cost in production)
     // =========================================================
     if (__DEV__) {
-      const expectedInside = `canvas-${this.#style.id}`;
-      const actualInside = shape.style?.inside;
-
-      if (actualInside !== expectedInside) {
-        Warn(
-          "Invariant violation: shape exists in indexMap but has mismatched ownership.",
-          { shape, expectedInside, actualInside },
-        );
-      }
-
       // Stronger invariant: array-map sync
       const arr = this.#sceneElements;
       if (arr[index] !== shape) {
@@ -546,6 +496,20 @@ export class SceneModel
 
       if (!shape) continue;
 
+      // =========================================================
+      // STEP 1: PENDING DELETION STATE
+      // =========================================================
+      //
+      // A shape pending deletion from this scene may still retain its
+      // backend graphical resource until renderer synchronization.
+      //
+      // If it is re-added before synchronization, the pending deletion
+      // can be cancelled and the existing backend resource reused.
+      //
+      const pendingDeletionIndex = this.#pendingDeletionElements.indexOf(shape);
+
+      const cancelPendingDeletion = pendingDeletionIndex !== -1;
+
       const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
         DEV_INTERNAL_ACCESS_KEY,
       ) as {
@@ -563,7 +527,11 @@ export class SceneModel
 
       const parent = shape[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
-      if (parent instanceof SceneModel && parent.geometry.shape === "canvas") {
+      if (
+        parent &&
+        parent instanceof SceneModel &&
+        parent.geometry.shape === "scene"
+      ) {
         Warn(
           "Maybe shape already attached in this canvas or another canvas. Skipping.",
           shape,
@@ -572,7 +540,10 @@ export class SceneModel
         continue;
       }
 
-      if (shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY)) {
+      if (
+        shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY) &&
+        !cancelPendingDeletion
+      ) {
         if (__DEV__) {
           Warn(
             "Shape already attached to a context, maybe in this canvas or another canvas. Skipping.",
@@ -583,6 +554,9 @@ export class SceneModel
         continue;
       }
 
+      if (cancelPendingDeletion) {
+        this.#pendingDeletionElements.splice(pendingDeletionIndex, 1);
+      }
       // =========================================================
       // STEP 2: ACTIVE SCENE VALIDATION
       // =========================================================
@@ -629,8 +603,15 @@ export class SceneModel
       // =========================================================
       // STEP 6: QUEUE RENDERER SYNCHRONIZATION
       // =========================================================
-
-      this.#pendingCreationElements.push(shape);
+      //
+      // A shape restored from pending deletion still owns its existing
+      // backend graphical resource, so no new creation is required.
+      //
+      // Only genuinely new shapes are queued for backend creation.
+      //
+      if (!cancelPendingDeletion) {
+        this.#pendingCreationElements.push(shape);
+      }
 
       // =========================================================
       // STEP 7: DEV-ONLY INVARIANT VALIDATION
@@ -740,6 +721,26 @@ export class SceneModel
 
       if (!shape) continue;
 
+      // =========================================================
+      // STEP 0 : CANCEL PENDING CREATION
+      // =========================================================
+      //
+      // If the shape was added and removed before renderer
+      // synchronization, its backend graphical resource has not
+      // been created yet.
+      //
+      // Cancel the pending creation request and continue with the
+      // normal logical scene removal. No renderer deletion should
+      // be queued because no backend resource exists to remove.
+      //
+      const pendingCreationIndex = this.#pendingCreationElements.indexOf(shape);
+
+      const cancelPendingCreation = pendingCreationIndex !== -1;
+
+      if (cancelPendingCreation) {
+        this.#pendingCreationElements.splice(pendingCreationIndex, 1);
+      }
+
       const index = indexMap.get(shape);
 
       // =========================================================
@@ -782,7 +783,13 @@ export class SceneModel
       // STEP 2: QUEUE RENDERER SYNCHRONIZATION
       // =========================================================
 
-      this.#pendingDeletionElements.push(shape);
+      // Queue backend cleanup only if the shape had already completed
+      // renderer creation. A cancelled pending creation has no backend
+      // resource that requires deletion.
+      //
+      if (!cancelPendingCreation) {
+        this.#pendingDeletionElements.push(shape);
+      }
 
       // =========================================================
       // STEP 3: O(1) SWAP-POP
