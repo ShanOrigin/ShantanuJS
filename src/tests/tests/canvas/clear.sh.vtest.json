@@ -1,0 +1,45 @@
+{
+  "meta": {
+    "info": {
+      "module": "system/canvas",
+      "testType": "unit",
+      "canvasId": "testing-Canvas"
+    },
+    "environment": {
+      "libraryVersion": "0.0.0",
+      "browser": {
+        "name": "Firefox",
+        "version": "152.0"
+      },
+      "platform": "Linux"
+    }
+  },
+  "tests": {
+    "unit-system/canvas-canvas-0": {
+      "information": {
+        "description": "Canvas .clear() method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "canvas",
+        "id": "unit-system/canvas-canvas-0"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    }
+  }
+}
