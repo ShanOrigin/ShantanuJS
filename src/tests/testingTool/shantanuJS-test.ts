@@ -323,7 +323,7 @@ export default class ShantanuJSTestTool {
     if (testDef.setup) {
       try {
         testDef.setup(this.#api, this.#context);
-        this.#context.canvas.engine.flush();
+        //  this.#context.canvas.engine.flush();
       } catch (error) {
         setupErrors.push(error as Error);
       }
@@ -345,7 +345,7 @@ export default class ShantanuJSTestTool {
 
     try {
       testDef.actions(this.#api, this.#context);
-      this.#context.canvas.engine.flush();
+      // this.#context.canvas.engine.flush();
     } catch (error) {
       actionErrors.push(error as Error);
     }
@@ -368,7 +368,7 @@ export default class ShantanuJSTestTool {
 
     try {
       assertions = this.#runVerify(testDef.expect, this.#context);
-      this.#context.canvas.engine.flush();
+      //  this.#context.canvas.engine.flush();
     } catch (error) {
       verifyErrors.push(error as Error);
     }
@@ -533,6 +533,9 @@ export default class ShantanuJSTestTool {
     const info = meta?.info || {};
     const env = meta?.environment || {};
 
+    console.log("\n\t===============================================\n");
+    console.log("\n", tests[0].information.description, "\n");
+    console.log("\n\t===============================================\n");
     console.log("\n\t================ TEST ANALYSIS ================\n");
 
     console.log(`\tModule      : ${info.module}`);
