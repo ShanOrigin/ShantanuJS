@@ -82,12 +82,9 @@ export function getAllElementsCanvasMethod() {
             ctx.shapes[name] = sh;
             ctx.canvas.add(sh);
           });
-          ctx.canvas.engine.flush();
         },
         actions(api, ctx) {
           // Apply base styles
-
-          ctx.canvas.engine.flush();
         },
 
         // --------------------------------------------------
@@ -115,7 +112,7 @@ export function getAllElementsCanvasMethod() {
                 const totalBefore = allElements.length;
 
                 ctx.canvas.clear();
-                ctx.canvas.engine.flush();
+
                 const totalAfter = ctx.canvas.getAllElements().length;
 
                 return allPresent && totalBefore == 13 && totalAfter == 0

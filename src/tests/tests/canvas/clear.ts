@@ -82,12 +82,9 @@ export function clearCanvasMethod() {
             ctx.shapes[name] = sh;
             ctx.canvas.add(sh);
           });
-          ctx.canvas.engine.flush();
         },
         actions(api, ctx) {
           // Apply base styles
-
-          ctx.canvas.engine.flush();
         },
 
         // --------------------------------------------------
@@ -104,9 +101,9 @@ export function clearCanvasMethod() {
 
               validate(shape, expected) {
                 const totalBefore = ctx.canvas.getAllElements().length;
-                console.log("totalBefore", totalBefore);
+
                 ctx.canvas.clear();
-                ctx.canvas.engine.flush();
+
                 const totalAfter = ctx.canvas.getAllElements().length;
 
                 return totalBefore == 13 && totalAfter == 0 ? "pass" : "fail";

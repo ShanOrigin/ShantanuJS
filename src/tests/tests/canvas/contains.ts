@@ -81,8 +81,6 @@ export function containsCanvasMethod() {
           actions(api, ctx) {
             // Apply base styles
             ctx.canvas.add(sh);
-
-            // ctx.canvas.engine.flush();
           },
 
           // --------------------------------------------------

@@ -82,8 +82,6 @@ export function removeCanvasMethod() {
           actions(api, ctx) {
             // Apply base styles
             ctx.canvas.add(sh);
-
-            ctx.canvas.engine.flush();
           },
 
           // --------------------------------------------------
@@ -103,7 +101,6 @@ export function removeCanvasMethod() {
                   let deleted = true;
                   if (contains) {
                     ctx.canvas.remove(shape);
-                    ctx.canvas.engine.flush();
                     deleted = ctx.canvas.getAllElements().includes(shape);
                   }
                   return contains && !deleted ? "pass" : "fail";
