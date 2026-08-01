@@ -1,9 +1,10 @@
 // Import testing tool demo
 
-import ShantanuJSTestTool from "../../testingTool/shantanuJS-test";
+import { height, width } from "happy-dom/lib/PropertySymbol.js";
+import ShantanuJSTestTool from "../../testingTool/shantanuJS-test.js";
 
 // Entry function (user-defined)
-export function runTests() {
+export function attrsCanvasMethod() {
   // Create test environment (MANDATORY: pass import.meta.url)
   const testEnv = new ShantanuJSTestTool(import.meta.url);
 
@@ -14,42 +15,19 @@ export function runTests() {
     // --------------------------------------------------
     initialize(api, ctx) {
       // Create canvas
-      const canvas = new api.Canvas({ id: "testing", width: 200, height: 400 });
-
-      // Apply base styles
-      canvas.attrs({
-        fill: "green",
-        stroke: "red",
-        "stroke-width": 0,
+      const canvas = new api.Canvas({
+        id: "testing",
+        width: 200,
+        height: 400,
+        opacity: 0,
       });
 
       // Store in context (shared across phases)
       ctx.canvas = canvas;
 
-      const rectangle = new api.Shapes.Rect({
-        x: 20,
-        y: 40,
-        width: 50,
-        height: 40,
-      });
-      ctx.canvas.add(rectangle);
-
-      rectangle.attrs({
-        stroke: "purple",
-        "stroke-width": 2,
-      });
-
-      const line = new api.Shapes.Line({ x1: 20, y1: 40, x2: 50, y2: 40 });
-      canvas.add(line);
-
-      line.attrs({
-        stroke: "red",
-        "stroke-width": 2,
-      });
-
       // Store shapes in context
       ctx.shapes = {};
-      ctx.shapes.line = line;
+      ctx.shapes.canvas = canvas;
     },
 
     // --------------------------------------------------
@@ -61,10 +39,10 @@ export function runTests() {
         // TEST METADATA (REQUIRED)
         // --------------------------------------------------
         testInfo: {
-          description: "Update stroke color of a line",
-          module: "shapes",
+          description: "Canvas initialization",
+          module: "system/canvas",
           testType: "unit",
-          element: "line",
+          element: "canvas",
         },
 
         // --------------------------------------------------
@@ -74,12 +52,18 @@ export function runTests() {
         // ACTIONS PHASE (Act)
         // --------------------------------------------------
         actions(api, ctx) {
-          // Modify shape
-          ctx.shapes.line.attrs({
-            stroke: "blue",
+          // Apply base styles
+          ctx.canvas.attrs({
+            fill: "green",
+            stroke: "red",
+            "stroke-width": 1,
+            opacity: 1,
+            x: 50,
+            y: 20,
+            width: 100,
+            height: 200,
+            "stroke-dasharray": "5 2",
           });
-
-          console.log(ctx.shapes.line);
         },
 
         // --------------------------------------------------
@@ -88,60 +72,116 @@ export function runTests() {
         expect: {
           constraints: { save: true, oracle: { browser: false } },
           // Target shapes (by key from ctx.shapes)
-          testSubject: "line",
+          testSubject: "canvas",
 
           // -------- STYLE VALIDATION --------
           style: {
             attrs: {
-              stroke: {
-                value: "blue",
+              id: { value: "testing-Canvas", expectedStatus: "pass" },
+              fill: {
+                value: "green",
                 expectedStatus: "pass",
               },
-              "stroke-width": {
-                value: 3,
-                expectedStatus: "pass",
-              },
-            },
-            notEqualTo: {
               stroke: {
                 value: "red",
                 expectedStatus: "pass",
               },
               "stroke-width": {
-                value: 2,
-                expectedStatus: "fail",
+                value: 1,
+                expectedStatus: "pass",
+              },
+              opacity: {
+                value: 1,
+                expectedStatus: "pass",
               },
             },
-          },
 
-          validators: {
-            buffer: {
-              tolerance: 0.5,
-              value: [20, 40, 50, 40],
-              expectedStatus: "pass",
-              validate(shape, expected) {
-                const [x1, y1, , x2, y2] = shape.geometry.buffer; // Correctly destructuring the needed indices
-                const actual = [x1, y1, x2, y2];
-                const { value, tolerance = 0 } = expected as {
-                  value: number[];
-                  tolerance: number;
-                };
-
-                // Use .some() instead of .any(), fix type warnings, and use valid ternary syntax
-                const hasMismatch = value.some(
-                  (element: number, i: number) =>
-                    Math.abs(element - actual[i]) > tolerance,
-                );
-
-                return hasMismatch ? "fail" : "pass";
+            notEqualTo: {
+              id: { value: "testing-Canvas", expectedStatus: "fail" },
+              fill: {
+                value: "blue",
+                expectedStatus: "pass",
+              },
+              stroke: {
+                value: "green",
+                expectedStatus: "pass",
+              },
+              "stroke-width": {
+                value: 5,
+                expectedStatus: "pass",
+              },
+              opacity: {
+                value: 0.5,
+                expectedStatus: "pass",
               },
             },
           },
 
           // -------- GEOMETRY VALIDATION --------
+
           geometry: {
-            equalTo: {},
-            greaterThan: {},
+            equalTo: {
+              shape: { value: "scene", expectedStatus: "pass" },
+              x: {
+                value: 50,
+                expectedStatus: "pass",
+              },
+              y: {
+                value: 20,
+                expectedStatus: "pass",
+              },
+              width: {
+                value: 100,
+                expectedStatus: "pass",
+              },
+              height: {
+                value: 200,
+                expectedStatus: "pass",
+              },
+            },
+
+            notEqualTo: {
+              shape: { value: "scene", expectedStatus: "fail" },
+              x: {
+                value: 10,
+                expectedStatus: "pass",
+              },
+              y: {
+                value: 20,
+                expectedStatus: "fail",
+              },
+              width: {
+                value: 200,
+                expectedStatus: "pass",
+              },
+              height: {
+                value: 300,
+                expectedStatus: "pass",
+              },
+            },
+          },
+
+          validators: {
+            worldMatrix: {
+              tolerance: 0.15,
+              value: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+              expectedStatus: "pass",
+
+              validate(shape, expected) {
+                const actual = [...shape.geometry.worldMatrix];
+
+                const { value, tolerance = 0 } = expected as {
+                  value: number[];
+                  tolerance: number;
+                };
+
+                const hasMismatch = value.some(
+                  (element, i) => Math.abs(element - actual[i]) > tolerance,
+                );
+
+                return hasMismatch ? "fail" : "pass";
+              },
+            },
           },
 
           // -------- ERROR VALIDATION (optional) --------
