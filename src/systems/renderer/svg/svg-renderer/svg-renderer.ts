@@ -496,26 +496,13 @@ export class SVGRenderer implements IRenderer {
     // Surface Styling
     // =========================================================
 
-    const stroke = styleRef.stroke ?? "black";
+    (Object.keys(styleRef) as Array<keyof typeof styleRef>).forEach((key) => {
+      const value = String(styleRef[key]);
+      surface.setAttribute(key, String(value));
 
-    const fill = styleRef.fill ?? "white";
-
-    const sw = styleRef["stroke-width"] ?? 0;
-
-    const sws = this.#numToStr(sw);
-
-    // Fill
-    styleCache["fill"] !== fill &&
-      (surface.setAttribute("fill", fill), (styleCache["fill"] = fill));
-
-    // Stroke
-    styleCache["stroke"] !== stroke &&
-      (surface.setAttribute("stroke", stroke), (styleCache["stroke"] = stroke));
-
-    // Stroke Width
-    styleCache["stroke-width"] !== sws &&
-      (surface.setAttribute("stroke-width", sws),
-      (styleCache["stroke-width"] = sws));
+      styleCache[key] !== value &&
+        (surface.setAttribute(key, value), (styleCache[key] = value));
+    });
   }
 
   /* ============================================================================
