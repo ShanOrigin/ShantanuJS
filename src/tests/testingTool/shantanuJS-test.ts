@@ -847,7 +847,6 @@ export default class ShantanuJSTestTool {
       this.#verifyGeometry(shape, geometry, assertions);
     }
     if (validators) {
-      console.log(validators);
       this.#verifyValidators(shape, assertions, validators);
     }
 
@@ -1051,7 +1050,6 @@ export default class ShantanuJSTestTool {
       return;
     }
 
-    console.log("validators");
     for (const [property, validator] of Object.entries(validators)) {
       const {
         validate,
