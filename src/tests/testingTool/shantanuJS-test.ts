@@ -1,4 +1,3 @@
-import { type } from "os";
 import { ShantanuJS } from "../../index/index.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
@@ -533,9 +532,6 @@ export default class ShantanuJSTestTool {
     const info = meta?.info || {};
     const env = meta?.environment || {};
 
-    console.log("\n\t===============================================\n");
-    console.log("\n", tests[0].information.description, "\n");
-    console.log("\n\t===============================================\n");
     console.log("\n\t================ TEST ANALYSIS ================\n");
 
     console.log(`\tModule      : ${info.module}`);
@@ -549,8 +545,14 @@ export default class ShantanuJSTestTool {
     let failed = 0;
 
     console.log("\n\t================ ALL TEST CASES ===============\n");
-
+    let dis = false;
     for (const [id, test] of Object.entries(tests)) {
+      if (!dis) {
+        console.log("\n\t===============================================\n");
+        console.log("\n\t", test.information.description, "\n");
+        dis = true;
+        console.log("\n\t===============================================\n");
+      }
       total++;
 
       const status = (test as any).status;
