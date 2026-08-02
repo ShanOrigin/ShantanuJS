@@ -1,10 +1,10 @@
 // Import testing tool demo
-import { hideMethod } from "../tests/tests/hideMethod.js";
-import { showMethod } from "../tests/tests/showMethod.js";
-import { toBackMethod } from "../tests/tests/toBackMethod.js";
-import { toFrontMethod } from "../tests/tests/toFrontMerhod.js";
+import { hideMethod } from "../tests/tests/shape/basic/hideMethod.js";
+import { showMethod } from "../tests/tests/shape/basic/showMethod.js";
+import { toBackMethod } from "../tests/tests/shape/basic/toBackMethod.js";
+import { toFrontMethod } from "../tests/tests/shape/basic/toFrontMerhod.js";
 
-import { cloneMethod } from "../tests/tests/cloneMethod.js";
+import { cloneMethod } from "../tests/tests/shape/basic/cloneMethod.js";
 
 import { createCanvas } from "../tests/tests/canvas/create.js";
 import { addCanvasMethod } from "../tests/tests/canvas/add.js";
