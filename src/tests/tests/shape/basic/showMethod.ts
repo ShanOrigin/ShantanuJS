@@ -1,5 +1,5 @@
-import shantanuJSTest, { Shape } from "../testingTool/shantanuJS-test.js";
-import { initializeCanvasAndShapes } from "../data/initializeCanvasAndShapes.js";
+import shantanuJSTest, { Shape } from "../../../testingTool/shantanuJS-test.js";
+import { initializeCanvasAndShapes } from "../../../data/initializeCanvasAndShapes.js";
 
 export function showMethod() {
   const testEnv = new shantanuJSTest(import.meta.url);

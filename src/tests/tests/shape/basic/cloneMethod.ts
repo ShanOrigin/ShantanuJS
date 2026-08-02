@@ -1,8 +1,10 @@
-import shantanuJSTest, { Shape } from "../testingTool/shantanuJS-test.js";
-import { initializeCanvasAndShapes } from "../data/initializeCanvasAndShapes.js";
+import { initializeCanvasAndShapes } from "../../../data/initializeCanvasAndShapes.js";
+import ShantanuJSTestTool, {
+  Shape,
+} from "../../../testingTool/shantanuJS-test.js";
 
 export function cloneMethod() {
-  const testEnv = new shantanuJSTest(import.meta.url);
+  const testEnv = new ShantanuJSTestTool(import.meta.url);
 
   testEnv.env({
     initialize(api, ctx) {
