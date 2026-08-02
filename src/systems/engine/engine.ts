@@ -694,7 +694,6 @@ export class Engine implements IEngine {
       // -----------------------------------------------------------
       if (geo.localDirty || geo.worldDirty) {
         shape[UPDATE_TRANSFORM_METHOD](DEV_INTERNAL_ACCESS_KEY);
-        if (__DEV__) Log("in update transform");
 
         // -----------------------------------------------------------
         // ANIMATION (delta)
@@ -720,7 +719,6 @@ export class Engine implements IEngine {
             affineMatrixMultiply(base, animationMatrix, geo.localMatrix);
 
             if (style) shape.attrs(style);
-            if (__DEV__) Log(" setting animation matrix");
           }
         } else {
           geo.localMatrix.set(base);
@@ -915,10 +913,6 @@ export class Engine implements IEngine {
         childLocalMatrix,
         childWorldMatrix,
       );
-
-      if (childGeometry.shape == "rect") {
-        Log("worldMatrix", JSON.stringify(childWorldMatrix));
-      }
     }
   }
 
