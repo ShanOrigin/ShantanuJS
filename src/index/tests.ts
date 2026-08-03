@@ -13,6 +13,7 @@ import { clearCanvasMethod } from "../tests/tests/canvas/clear.js";
 import { containsCanvasMethod } from "../tests/tests/canvas/contains.js";
 import { getAllElementsCanvasMethod } from "../tests/tests/canvas/getAllElements.js";
 import { attrsCanvasMethod } from "../tests/tests/canvas/attrs.js";
+import { getBBoxMethod } from "../tests/tests/shape/basic/getBBoxMethod.js";
 // Entry function (user-defined)
 export function runTests(module: string, method: string) {
   switch (module) {
@@ -46,7 +47,8 @@ function shapeBasicMethod(method: string) {
 
     case "clone":
       cloneMethod();
-    default:
+    case "getBBox":
+      getBBoxMethod();
       break;
   }
 }
@@ -83,6 +85,6 @@ function canvasMethods(method: string) {
   }
 }
 
-const module = "canvas";
-const method = "attrs";
+const module = "shape";
+const method = "getBBox";
 setTimeout(() => runTests(module, method), 5000);
