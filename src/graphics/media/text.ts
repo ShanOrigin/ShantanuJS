@@ -24,6 +24,7 @@ import {
   parameterTypeValidator,
   validProps,
 } from "../../utils/helpers/helpers.js";
+import { computeAABBPoints } from "../../utils/geometry/bounding-box/axis-aligned-bounding-box.js";
 
 export class Text extends RenderNode<"text"> {
   #copies: number = 0;
@@ -193,11 +194,28 @@ export class Text extends RenderNode<"text"> {
         temporaryState[0]!,
         temporaryState[1]!,
       ]; // center if circle
+      this.#computeBounds(temporaryState);
     } catch (e) {
       throw e;
     }
   }
 
+  #computeBounds(buffer: Float32Array) {
+    const geo = this.#geometry as {
+      bounds: Float32Array;
+    };
+    const bounds = computeAABBPoints(buffer);
+
+    // Allocate the buffer once or reallocate only if the size has changed
+    if (!geo.bounds || geo.bounds.length !== 4) {
+      geo.bounds = new Float32Array(4);
+    }
+
+    geo.bounds[0] = bounds.maxX;
+    geo.bounds[1] = bounds.minY;
+    geo.bounds[2] = bounds.maxX;
+    geo.bounds[3] = bounds.maxY;
+  }
   /**
    * Computes an approximate bounding box for a text node prior to
    * renderer realization.
