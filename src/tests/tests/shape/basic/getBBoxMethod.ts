@@ -286,7 +286,8 @@ export function getBBoxMethod() {
 
           expect: {
             constraints: {
-              save: false,
+              save: true,
+              oracle: { browser: false },
             },
 
             testSubject: name,
