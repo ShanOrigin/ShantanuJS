@@ -130,6 +130,13 @@ export type Validator = {
   validate: (
     shape: GraphicsRenderNodeWithInternals,
     expected: { value: unknown; tolerance?: number },
+    bboxes?: {
+      getBrowserBBoxPoints?: (
+        canvas: any,
+        shape: GraphicsRenderNodeWithInternals,
+      ) => [number, number][];
+      getLibraryBBoxPoints?: (shape: GraphicsRenderNode) => [number, number][];
+    },
   ) => AssertionStatus;
 };
 

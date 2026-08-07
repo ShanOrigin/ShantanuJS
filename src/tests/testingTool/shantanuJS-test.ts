@@ -1062,7 +1062,14 @@ export default class ShantanuJSTestTool {
         value,
         tolerance = 0,
       } = validator as Validator;
-      const actualStatus = validate(shape, { value, tolerance });
+      const actualStatus = validate(
+        shape,
+        { value, tolerance },
+        {
+          getBrowserBBoxPoints: this.#getBrowserBBoxPoints.bind(this),
+          getLibraryBBoxPoints: this.#getLibraryBBoxPoints.bind(this),
+        },
+      );
 
       assertions.push({
         crossCheck: "library",
