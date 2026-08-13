@@ -1,0 +1,345 @@
+{
+  "meta": {
+    "info": {
+      "module": "system/canvas",
+      "testType": "unit",
+      "canvasId": "testing-Canvas"
+    },
+    "environment": {
+      "libraryVersion": "0.0.0",
+      "browser": {
+        "name": "Firefox",
+        "version": "152.0"
+      },
+      "platform": "Linux"
+    }
+  },
+  "tests": {
+    "unit-system/canvas-canvas-0": {
+      "information": {
+        "description": "Canvas initialization",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "canvas",
+        "id": "unit-system/canvas-canvas-0"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "worldMatrix": {
+              "0": 1,
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 1,
+              "5": 0,
+              "6": 0,
+              "7": 0,
+              "8": 1
+            }
+          },
+          "style": {
+            "id": "testing-Canvas",
+            "fill": "white",
+            "stroke": "black",
+            "stroke-width": 0.5
+          },
+          "geometry": {
+            "shape": "scene",
+            "x": 0,
+            "y": 0,
+            "width": 200,
+            "height": 400
+          }
+        },
+        "after": {
+          "user-defined": {
+            "worldMatrix": {
+              "0": 1,
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 1,
+              "5": 0,
+              "6": 0,
+              "7": 0,
+              "8": 1
+            }
+          },
+          "style": {
+            "id": "testing-Canvas",
+            "fill": "green",
+            "stroke": "red",
+            "stroke-width": 1,
+            "opacity": 1
+          },
+          "geometry": {
+            "shape": "scene",
+            "x": 50,
+            "y": 20,
+            "width": 100,
+            "height": 200
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 22,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": "testing-Canvas",
+          "expected": "testing-Canvas",
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "fill",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": "green",
+          "expected": "green",
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "stroke",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": "red",
+          "expected": "red",
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "stroke-width",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "id",
+          "expectedStatus": "fail",
+          "checkType": "neq",
+          "actual": "testing-Canvas",
+          "expected": "testing-Canvas",
+          "actualStatus": "fail"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "fill",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": "green",
+          "expected": "blue",
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "stroke",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": "red",
+          "expected": "green",
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "stroke-width",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 5,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0.5,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "shape",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": "scene",
+          "expected": "scene",
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "x",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 50,
+          "expected": 50,
+          "delta": 0,
+          "tolerance": 0,
+          "actualStatus": "pass",
+          "reason": "equal (within tolerance)"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "y",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 20,
+          "expected": 20,
+          "delta": 0,
+          "tolerance": 0,
+          "actualStatus": "pass",
+          "reason": "equal (within tolerance)"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "width",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 100,
+          "expected": 100,
+          "delta": 0,
+          "tolerance": 0,
+          "actualStatus": "pass",
+          "reason": "equal (within tolerance)"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "height",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 200,
+          "expected": 200,
+          "delta": 0,
+          "tolerance": 0,
+          "actualStatus": "pass",
+          "reason": "equal (within tolerance)"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "shape",
+          "expectedStatus": "fail",
+          "checkType": "neq",
+          "actual": "scene",
+          "expected": "scene",
+          "actualStatus": "fail"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "x",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 50,
+          "expected": 10,
+          "delta": 40,
+          "tolerance": 0,
+          "actualStatus": "pass",
+          "reason": "not equal (outside tolerance)"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "y",
+          "expectedStatus": "fail",
+          "checkType": "neq",
+          "actual": 20,
+          "expected": 20,
+          "delta": 0,
+          "tolerance": 0,
+          "actualStatus": "fail",
+          "reason": "not equal (outside tolerance)"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "width",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 100,
+          "expected": 200,
+          "delta": 100,
+          "tolerance": 0,
+          "actualStatus": "pass",
+          "reason": "not equal (outside tolerance)"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "height",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 200,
+          "expected": 300,
+          "delta": 100,
+          "tolerance": 0,
+          "actualStatus": "pass",
+          "reason": "not equal (outside tolerance)"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": [
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1
+          ],
+          "property": "worldMatrix",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        },
+        {
+          "domain": "error",
+          "property": "throws",
+          "actualStatus": "pass",
+          "expectedStatus": "pass",
+          "expected": {},
+          "actual": {}
+        }
+      ]
+    }
+  }
+}

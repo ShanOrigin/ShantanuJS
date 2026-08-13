@@ -1,4 +1,4 @@
-import { namedColorsList } from './colorsInfo.js';
+import { namedColorsList } from "./colors-info.js";
 
 export default class Colors {
   #color: string;
@@ -24,7 +24,7 @@ export default class Colors {
    * - Relies on a predefined `namedColorsList` object or array. Does NOT depend on DOM or graphics APIs.
    */
 
-  #isNamedColor(color: string = ''): boolean {
+  #isNamedColor(color: string = ""): boolean {
     return color.toLowerCase() in namedColorsList;
   }
 
@@ -45,9 +45,9 @@ export default class Colors {
    * - Pure string validation. No DOM or graphics dependencies.
    */
 
-  #isHex(color: string = ''): boolean {
+  #isHex(color: string = ""): boolean {
     return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(
-      color
+      color,
     );
   }
 
@@ -68,9 +68,9 @@ export default class Colors {
    * - Pure string validation. No DOM or graphics dependencies.
    */
 
-  #isRGB(color: string = ''): boolean {
+  #isRGB(color: string = ""): boolean {
     return /^rgb\(\s*(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\s*,\s*(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\s*,\s*(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\s*\)$/i.test(
-      color
+      color,
     );
   }
 
@@ -92,9 +92,9 @@ export default class Colors {
    * - Pure string validation. No DOM or graphics dependencies.
    */
 
-  #isRGBA(color: string = ''): boolean {
+  #isRGBA(color: string = ""): boolean {
     return /^rgba\(\s*(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\s*,\s*(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\s*,\s*(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\s*,\s*(1|0|0?\.\d+)\s*\)$/i.test(
-      color
+      color,
     );
   }
 
@@ -115,9 +115,9 @@ export default class Colors {
    * - Pure string validation. No DOM or graphics dependencies.
    */
 
-  #isHSL(color: string = ''): boolean {
+  #isHSL(color: string = ""): boolean {
     return /^hsl\(\s*(?:360|3[0-5]\d|[12]?\d{1,2}|0)\s*,\s*(?:100|[1-9]?\d)%\s*,\s*(?:100|[1-9]?\d)%\s*\)$/i.test(
-      color
+      color,
     );
   }
 
@@ -139,9 +139,9 @@ export default class Colors {
    * - Pure string validation. No DOM or graphics dependencies.
    */
 
-  #isHSLA(color: string = ''): boolean {
+  #isHSLA(color: string = ""): boolean {
     return /^hsla\(\s*(?:360|3[0-5]\d|[12]?\d{1,2}|0)\s*,\s*(?:100|[1-9]?\d)%\s*,\s*(?:100|[1-9]?\d)%\s*,\s*(?:1|0|0?\.\d+)\s*\)$/i.test(
-      color
+      color,
     );
   }
 
@@ -175,20 +175,20 @@ export default class Colors {
    */
 
   public isColor(
-    color: string = '',
-    info: boolean = false
+    color: string = "",
+    info: boolean = false,
   ): string | [string, string] {
     try {
       const checks: [string, () => boolean][] = [
-        ['named', this.#isNamedColor.bind(this)],
-        ['rgb', this.#isRGB.bind(this)],
-        ['rgba', this.#isRGBA.bind(this)],
-        ['hex', this.#isHex.bind(this)],
-        ['hsl', this.#isHSL.bind(this)],
-        ['hsla', this.#isHSLA.bind(this)]
+        ["named", this.#isNamedColor.bind(this)],
+        ["rgb", this.#isRGB.bind(this)],
+        ["rgba", this.#isRGBA.bind(this)],
+        ["hex", this.#isHex.bind(this)],
+        ["hsl", this.#isHSL.bind(this)],
+        ["hsla", this.#isHSLA.bind(this)],
       ];
 
-      const testColor = color != '' ? color : this.#color;
+      const testColor = color != "" ? color : this.#color;
 
       for (const [type, check] of checks) {
         if ((check as (t: string) => boolean)(testColor)) {
@@ -196,19 +196,19 @@ export default class Colors {
         }
       }
 
-      const hint = this.#color.trim().toLowerCase().split('(');
+      const hint = this.#color.trim().toLowerCase().split("(");
       const formatHint = checks.find(([type]) => type === hint[0]);
-      const failedType = formatHint?.[0] || 'unknown';
+      const failedType = formatHint?.[0] || "unknown";
 
       console.warn(
         `The given Format : ${failedType} -> Color  ${
           this.#color
-        } is not in a proper color format. by default set 'none' = rgba(0,0,0,0)`
+        } is not in a proper color format. by default set 'none' = rgba(0,0,0,0)`,
       );
-      return info ? ['named', 'none'] : 'none';
+      return info ? ["named", "none"] : "none";
     } catch (e) {
       console.error(e);
-      return info ? ['named', 'none'] : 'none';
+      return info ? ["named", "none"] : "none";
     }
   }
 
@@ -248,7 +248,7 @@ export default class Colors {
     }
 
     // Hex
-    if (color.startsWith('#') && this.#isHex(color)) {
+    if (color.startsWith("#") && this.#isHex(color)) {
       let r: number,
         g: number,
         b: number,
@@ -268,27 +268,27 @@ export default class Colors {
         b = parseInt(color.slice(5, 7), 16);
         a = parseInt(color.slice(7, 9), 16) / 255;
       } else {
-        throw new Error('Invalid hex color');
+        throw new Error("Invalid hex color");
       }
       return [r, g, b, a];
     }
 
     // RGB or RGBA
     const rgbMatch = color.match(
-      /rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/
+      /rgba?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)/,
     );
     if ((this.#isRGB(color) || this.#isRGBA(color)) && rgbMatch) {
       return [
         parseFloat(rgbMatch[1]!),
         parseFloat(rgbMatch[2]!),
         parseFloat(rgbMatch[3]!),
-        rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1
+        rgbMatch[4] ? parseFloat(rgbMatch[4]) : 1,
       ];
     }
 
     // HSL or HSLA
     const hslMatch = color.match(
-      /hsla?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%(?:\s*,\s*([\d.]+))?\s*\)/
+      /hsla?\s*\(\s*([\d.]+)\s*,\s*([\d.]+)%\s*,\s*([\d.]+)%(?:\s*,\s*([\d.]+))?\s*\)/,
     );
     if ((this.#isHSL(color) || this.#isHSLA(color)) && hslMatch) {
       const h = parseFloat(hslMatch[1]!);
@@ -314,11 +314,11 @@ export default class Colors {
         Math.round((r + m) * 255),
         Math.round((g + m) * 255),
         Math.round((b + m) * 255),
-        a
+        a,
       ];
     }
 
-    throw new Error('Unsupported color format');
+    throw new Error("Unsupported color format");
   }
 
   /**
@@ -354,19 +354,19 @@ export default class Colors {
       number,
       number,
       number,
-      number
+      number,
     ];
-    if (targetFormat == 'lerp') return [r, g, b, a];
+    if (targetFormat == "lerp") return [r, g, b, a];
     switch (targetFormat.toLowerCase()) {
-      case 'hex':
-        const toHex = (n: number) => n.toString(16).padStart(2, '0');
+      case "hex":
+        const toHex = (n: number) => n.toString(16).padStart(2, "0");
         return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-      case 'rgba':
+      case "rgba":
         return `rgba(${r}, ${g}, ${b}, ${a})`;
-      case 'rgb':
+      case "rgb":
         return `rgb(${r}, ${g}, ${b})`;
-      case 'hsla':
-      case 'hsl':
+      case "hsla":
+      case "hsl":
         const rNorm = r / 255,
           gNorm = g / 255,
           bNorm = b / 255;
@@ -399,14 +399,14 @@ export default class Colors {
         s = Math.round(s * 100);
         l = Math.round(l * 100);
 
-        if (targetFormat.toLowerCase() === 'hsla') {
+        if (targetFormat.toLowerCase() === "hsla") {
           return `hsla(${h}, ${s}%, ${l}%, ${a})`;
         } else {
           return `hsl(${h}, ${s}%, ${l}%)`;
         }
 
       default:
-        throw new Error('Unsupported target format');
+        throw new Error("Unsupported target format");
     }
   }
 }

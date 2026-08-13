@@ -1,0 +1,1005 @@
+/* -------------------------------------------------------------------------- */
+/*                            Internal Capability Keys                         */
+/* -------------------------------------------------------------------------- */
+
+import {
+  DEV_INTERNAL_ACCESS_KEY,
+  GET_INTERNAL_GRAPHICS_METHOD,
+  GET_INTERNAL_GEOMETRY_METHOD,
+  GET_INTERNAL_STYLE_METHOD,
+  CLEAR_Z_ORDER_OPERATION_METHOD,
+  GET_Z_ORDER_OPERATION_METHOD,
+  SET_PARENT_METHOD,
+  GET_PARENT_METHOD,
+  SET_INTERNAL_GRAPHICS_METHOD,
+} from "../../internal/keys/dev-keys.js";
+
+import {
+  assertSystemAccess,
+  GET_SCENE_ELEMENTS_METHOD,
+  GET_PENDING_CREATION_ELEMENTS_METHOD,
+  GET_PENDING_DELETION_ELEMENTS_METHOD,
+  GET_SCENE_ELEMENT_ID_MAP_METHOD,
+  GET_SCENE_Z_ORDER_RESOLVER_METHOD,
+  RESET_PENDING_CREATION_METHOD,
+  RESET_PENDING_DELETION_METHOD,
+} from "../../internal/keys/system-keys.js";
+
+/* -------------------------------------------------------------------------- */
+/*                             Interface Contracts                             */
+/* -------------------------------------------------------------------------- */
+
+import type {
+  GraphicsNode,
+  IGraphicsContainer,
+  GetInternalGraphicsAccessor,
+  GetParentAccessor,
+  SetParentAccessor,
+  ZOrderResolutionFuncAccessor,
+  ZOrderResolutionCleanUpFuncAccessor,
+} from "../../models/interfaces/graphics-container";
+
+/* -------------------------------------------------------------------------- */
+/*                                Common Types                                 */
+/* -------------------------------------------------------------------------- */
+
+import type {
+  CanvasAttrsPropsTypes,
+  CanvasInitProps,
+} from "../../models/types/canvas";
+
+import type { AttrsMethodReturnTypes } from "../../models/types/common";
+
+import type {
+  InternalGeometryAccessor,
+  InternalStyleAccessor,
+} from "../../models/types/graphics-model";
+
+/* -------------------------------------------------------------------------- */
+/*                          Runtime Engine Subsystems                          */
+/* -------------------------------------------------------------------------- */
+
+import { GraphicsModel } from "../../core/graphics-model/graphics-model.js";
+import { Log, Warn } from "../../utils/helpers/helpers.js";
+import {
+  NotInitializedError,
+  ShapeAlreadyExistsInCanvasError,
+  ShapeNotAttachedToCanvasError,
+} from "../../errors/index.js";
+import Colors from "../../utils/colors/colors.js";
+import { RenderUpdateType } from "../../models/types/render-infrastructure.js";
+
+type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
+  InternalGeometryAccessor &
+  InternalStyleAccessor &
+  GetInternalGraphicsAccessor &
+  GetParentAccessor &
+  SetParentAccessor &
+  ZOrderResolutionFuncAccessor &
+  ZOrderResolutionCleanUpFuncAccessor;
+
+export class SceneModel
+  extends GraphicsModel<"scene">
+  implements IGraphicsContainer
+{
+  /**
+   * Shapes awaiting backend renderer creation.
+   *
+   * Semantics:
+   * - Contains shapes recently added to the scene.
+   * - Renderer must create corresponding backend resources
+   *   (SVG nodes, DOM nodes, etc.) before normal updates occur.
+   *
+   * Lifecycle:
+   * - Added when a shape enters the scene.
+   * - Removed after successful renderer initialization.
+   *
+   * Constraints:
+   * - Must not contain shapes scheduled for deletion.
+   */
+  #pendingCreationElements: GraphicsNode[] = [];
+  /**
+   * Internal storage of all shapes belonging to this canvas.
+   *
+   * Semantics:
+   * - Acts as the authoritative ordered collection of shapes.
+   * - Used for iteration, rendering order, and bulk operations.
+   *
+   * Constraints:
+   * - Must stay in sync with `#elementIndexMap`.
+   * - No duplicates allowed.
+   *
+   * Mutation Rules:
+   * - Only mutated via controlled methods (`addTo`, `remove`, `clear`).
+   */
+  #sceneElements: GraphicsNode[] = [];
+
+  /**
+   * Shapes awaiting backend renderer destruction.
+   *
+   * Semantics:
+   * - Contains shapes removed from the scene.
+   * - Renderer must dispose associated backend resources.
+   *
+   * Lifecycle:
+   * - Added when a shape is removed.
+   * - Cleared after renderer deletion completes.
+   *
+   * Constraints:
+   * - Shapes in this collection must not be rendered.
+   */
+  #pendingDeletionElements: GraphicsNode[] = [];
+
+  /**
+   * O(1) index lookup map for shapes.
+   *
+   * Key: shape reference
+   * Value: index in `#sceneElements`
+   *
+   * Purpose:
+   * - Eliminates O(n) lookup cost.
+   * - Enables O(1) containment and removal (swap-pop strategy).
+   *
+   * Critical Invariant:
+   * - For every entry (shape → index):
+   *   `#sceneElements[index] === shape`
+   *
+   * Failure Impact:
+   * - Any desynchronization leads to structural corruption.
+   */
+  #elementIndexMap: Map<GraphicsNode, number> = new Map();
+  /**
+   * O(1) lookup map: id → shape
+   *
+   * PURPOSE:
+   * - Resolve parent via `inside`
+   * - Used by engine for hierarchy resolution
+   */
+  #elementIdMap: Map<string, GraphicsNode> = new Map();
+
+  /**
+   * Centralized synthetic event dispatcher for this canvas.
+   *
+   * Responsibilities:
+   * - Receives native DOM pointer events
+   * - Performs hit testing across all canvas elements
+   * - Resolves event target based on z-index and geometry
+   * - Builds propagation path using ECS `inside` relationships
+   * - Executes event phases (capture → target → bubble)
+   *
+   * Design Constraints:
+   * - Owned exclusively by Canvas (single dispatch authority)
+   * - Must operate on the same element registry used by rendering engine
+   * - Must remain stateless with respect to scene structure (consumes external maps)
+   *
+   * Invariant:
+   * - Must be initialized before any DOM event binding occurs
+   * - Must always reference the latest shapes array and element ID map
+   *
+   * Lifecycle:
+   * - Created once during Canvas initialization
+   * - Reused for all event dispatch operations
+   */
+  //  #eventSystem!: EventSystem;
+
+  /**
+   * Minimum z-index boundary.
+   *
+   * ----------------------------------------------------------------------------
+   * ROLE
+   * ----------------------------------------------------------------------------
+   * Tracks the lowest assigned z-index in the current canvas.
+   *
+   * ----------------------------------------------------------------------------
+   * BEHAVIOR
+   * ----------------------------------------------------------------------------
+   * Decremented when elements are moved to the back.
+   */
+  #minZ: number = 0;
+
+  /**
+   * Maximum z-index boundary.
+   *
+   * ----------------------------------------------------------------------------
+   * ROLE
+   * ----------------------------------------------------------------------------
+   * Tracks the highest assigned z-index in the current canvas.
+   *
+   * ----------------------------------------------------------------------------
+   * BEHAVIOR
+   * ----------------------------------------------------------------------------
+   * Incremented on:
+   * - element insertion
+   * - move-to-front operations
+   */
+  #maxZ: number = 0;
+
+  /**
+   * Initializes a Canvas instance with a rendering context and DOM binding.
+   *
+   * Core Responsibilities:
+   * - Validates runtime environment and configuration
+   * - Resolves and binds DOM container
+   * - Initializes rendering root (`#fig`)
+   * - Sets immutable rendering context
+   * - Applies initial attributes (size, position, stroke defaults)
+   * - Bootstraps renderer and engine lifecycle
+   *
+   * Design Invariants:
+   * - `#geometry.context` is immutable after initialization
+   * - `#fig` must exist before attaching to DOM
+   * - `#parent` must be a valid DOM node
+   * - Renderer and Engine must be initialized before any mutation APIs are used
+   *
+   * Failure Model:
+   * - Constructor is fail-fast: any invalid state aborts initialization
+   * - No partial initialization is allowed
+   *
+   * @param id - DOM container id where canvas will be mounted
+   * @param width - Canvas width
+   * @param height - Canvas height
+   * @param context - Rendering context (currently SVG only)
+   * @param x - Initial x-offset
+   * @param y - Initial y-offset
+   */
+  constructor({
+    id,
+    width,
+    height,
+    x = 0,
+    y = 0,
+    fill = "white",
+    stroke = "black",
+    "stroke-width": sw = 0.5,
+  }: Omit<CanvasInitProps, "context"> & CanvasAttrsPropsTypes) {
+    super("scene", `${id}-Canvas`);
+
+    // =========================================================
+    //  Dev Mode Warning (compile-time removable)
+    // =========================================================
+    if (__DEV__) {
+      Warn(
+        "ShantanuJS is a pre-release build. Not recommended for production use.",
+      );
+    }
+
+    // =========================================================
+    //  Apply Initial Attributes (atomic)
+    // =========================================================
+    this.attrs({
+      width,
+      height,
+      x,
+      y,
+      fill,
+      stroke,
+      "stroke-width": sw,
+    });
+  }
+
+  [GET_PENDING_CREATION_ELEMENTS_METHOD](systemAccessKey: symbol) {
+    assertSystemAccess(systemAccessKey);
+
+    return this.#pendingCreationElements;
+  }
+
+  [GET_SCENE_ELEMENTS_METHOD](systemAccessKey: symbol) {
+    assertSystemAccess(systemAccessKey);
+
+    return this.#sceneElements;
+  }
+
+  [GET_PENDING_DELETION_ELEMENTS_METHOD](systemAccessKey: symbol) {
+    assertSystemAccess(systemAccessKey);
+
+    return this.#pendingDeletionElements;
+  }
+
+  [GET_SCENE_Z_ORDER_RESOLVER_METHOD](systemAccessKey: symbol) {
+    assertSystemAccess(systemAccessKey);
+
+    return this.#resolveZOrder.bind(this);
+  }
+
+  [GET_SCENE_ELEMENT_ID_MAP_METHOD](systemAccessKey: symbol) {
+    assertSystemAccess(systemAccessKey);
+    return this.#elementIdMap;
+  }
+
+  /**
+   * Sets or retrieves canvas attributes.
+   *
+   * Overloads:
+   * - Object input → sets attributes (write path)
+   * - String input → retrieves attributes (read path)
+   *
+   * Write Semantics:
+   * - Delegates to base `attrs` for state mutation
+   * - Applies canvas-specific DOM updates
+   * - Minimizes DOM writes by checking relevant keys
+   *
+   * Read Semantics:
+   * - Supports space-separated keys
+   * - Returns:
+   *    - single value → primitive
+   *    - multiple values → array
+   *    - no valid keys → undefined
+   *
+   * Performance:
+   * - Single pass parsing
+   * - Avoids unnecessary Object.keys()
+   * - Avoids redundant string trims/splits
+   *
+   * @param props - attribute object or query string
+   * @returns attribute value(s) or void
+   */
+  public override attrs(
+    props: CanvasAttrsPropsTypes | string,
+  ): AttrsMethodReturnTypes {
+    // =========================================================
+    // Fast exit (null/undefined/empty)
+    // =========================================================
+    if (!props) return;
+
+    // =========================================================
+    // WRITE PATH (object)
+    // =========================================================
+    if (typeof props === "object") {
+      // Avoid expensive Object.keys → direct check via iteration hint
+      let hasKeys = false;
+      for (const _ in props) {
+        hasKeys = true;
+        break;
+      }
+      if (!hasKeys) return;
+
+      // Base mutation
+      super.attrs(props);
+
+      return undefined;
+    }
+
+    // =========================================================
+    // READ PATH (string)
+    // =========================================================
+    //
+    const result = super.attrs(props as string);
+    return result;
+  }
+
+  /**
+   * Returns the 1-based index of a shape within this canvas.
+   *
+   * Core Semantics:
+   * - O(1) lookup via internal index map
+   * - Returns:
+   *    - index + 1 → if shape exists in this canvas
+   *    - 0 → if shape does not exist
+   *
+   * Design Decision:
+   * - `#elementIndexMap` is the authoritative source of containment
+   * - Ownership (`style.inside`) is treated as a secondary invariant
+   *
+   * Debug Behavior:
+   * - In development mode, validates internal consistency
+   *
+   * @param shape - Shape to query
+   * @returns 1-based index or 0 if not found
+   */
+  public contains(shape: GraphicsNode): number {
+    if (!shape) return 0;
+
+    const index = this.#elementIndexMap.get(shape);
+    if (index === undefined) return 0;
+
+    // =========================================================
+    // DEV-ONLY INVARIANT CHECK (no runtime cost in production)
+    // =========================================================
+    if (__DEV__) {
+      // Stronger invariant: array-map sync
+      const arr = this.#sceneElements;
+      if (arr[index] !== shape) {
+        Warn("Invariant violation: indexMap and array are out of sync.", {
+          index,
+          shape,
+          actual: arr[index],
+        });
+      }
+    }
+
+    return index + 1;
+  }
+
+  /**
+   * Adds shapes to the active scene with O(1) insertion and queues them
+   * for deferred renderer creation.
+   *
+   * ============================================================================
+   * CORE SEMANTICS
+   * ============================================================================
+   * - Each shape is validated independently before mutation.
+   * - Prevents duplicate insertion into the same canvas.
+   * - Prevents insertion if the shape is already attached to another context.
+   * - Inserts the shape into the active scene immediately.
+   * - Registers the shape in scene index and identifier mappings.
+   * - Establishes scene ownership immediately.
+   * - Queues the shape for deferred backend graphical resource creation.
+   *
+   * ============================================================================
+   * RENDERER SYNCHRONIZATION
+   * ============================================================================
+   * - Logical scene insertion is synchronous.
+   * - Backend graphical resource creation is deferred until renderer preparation.
+   * - Pending creation retains the shape until renderer synchronization succeeds.
+   * - `flush()` may be used to force immediate renderer synchronization.
+   *
+   * ============================================================================
+   * Z-ORDER INITIALIZATION
+   * ============================================================================
+   * - Each successfully inserted shape receives a unique zIndex.
+   * - zIndex is derived from the incrementing maxZ counter.
+   * - Insertion order therefore defines the initial render order.
+   * - Existing zIndex values are not normalized or reordered.
+   *
+   * ============================================================================
+   * RENDER STATE INITIALIZATION
+   * ============================================================================
+   * - Newly inserted shapes are marked dirty for engine processing.
+   * - World state is marked dirty for transformation propagation.
+   * - Initial render update type is configured for transformation processing.
+   *
+   * ============================================================================
+   * INVARIANTS AFTER INSERTION
+   * ============================================================================
+   * - `#sceneElements[index] === shape`.
+   * - `#elementIndexMap.get(shape) === index`.
+   * - `#elementIdMap` contains the shape identifier.
+   * - The shape is owned by this scene.
+   * - The shape has a valid scene zIndex.
+   * - The shape exists in the pending creation queue until renderer
+   *   synchronization completes.
+   *
+   * ============================================================================
+   * FAILURE STRATEGY
+   * ============================================================================
+   * - Invalid or already attached shapes are skipped without mutation.
+   * - Duplicate active-scene insertion throws an explicit error.
+   * - No authoritative scene mutation occurs before validation succeeds.
+   *
+   * ============================================================================
+   * PERFORMANCE
+   * ============================================================================
+   * - O(1) active scene insertion.
+   * - O(1) index registration.
+   * - O(1) identifier registration.
+   *
+   * @param rest - Shapes to add.
+   * @returns This scene instance.
+   */
+
+  public add(...rest: GraphicsNode[]): this {
+    const fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+    if (!fig) {
+      throw new NotInitializedError(
+        "this.#fig",
+        "canvas dom element not initialized",
+        "core.canvas.#setCanvasParams()",
+      );
+    }
+
+    const elements = this.#sceneElements;
+    const indexMap = this.#elementIndexMap;
+
+    for (let i = 0; i < rest.length; i++) {
+      const shape = rest[i] as GraphicsNodeWithInternalAccessMethods;
+
+      if (!shape) continue;
+
+      // =========================================================
+      // STEP 1: PENDING DELETION STATE
+      // =========================================================
+      //
+      // A shape pending deletion from this scene may still retain its
+      // backend graphical resource until renderer synchronization.
+      //
+      // If it is re-added before synchronization, the pending deletion
+      // can be cancelled and the existing backend resource reused.
+      //
+      const pendingDeletionIndex = this.#pendingDeletionElements.indexOf(shape);
+
+      const cancelPendingDeletion = pendingDeletionIndex !== -1;
+
+      const geometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
+        DEV_INTERNAL_ACCESS_KEY,
+      ) as {
+        shape: string;
+        dirty: boolean;
+        localDirty: boolean;
+        worldDirty: boolean;
+        zIndex: number;
+        renderUpdateType: RenderUpdateType;
+      };
+
+      // =========================================================
+      // STEP 1: OWNERSHIP VALIDATION
+      // =========================================================
+
+      const parent = shape[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+      if (
+        parent &&
+        parent instanceof SceneModel &&
+        parent.geometry.shape === "scene"
+      ) {
+        Warn(
+          "Maybe shape already attached in this canvas or another canvas. Skipping.",
+          shape,
+        );
+
+        continue;
+      }
+
+      if (
+        shape[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY) &&
+        !cancelPendingDeletion
+      ) {
+        if (__DEV__) {
+          Warn(
+            "Shape already attached to a context, maybe in this canvas or another canvas. Skipping.",
+            shape,
+          );
+        }
+
+        continue;
+      }
+
+      if (cancelPendingDeletion) {
+        this.#pendingDeletionElements.splice(pendingDeletionIndex, 1);
+      }
+      // =========================================================
+      // STEP 2: ACTIVE SCENE VALIDATION
+      // =========================================================
+
+      if (indexMap.has(shape)) {
+        throw new ShapeAlreadyExistsInCanvasError(
+          shape.style.id,
+          this.style.id,
+          "core.canvas.add()",
+        );
+      }
+
+      // =========================================================
+      // STEP 3: AUTHORITATIVE SCENE INSERTION
+      // =========================================================
+
+      const index = elements.length;
+
+      elements.push(shape);
+
+      indexMap.set(shape, index);
+
+      this.#elementIdMap.set(shape.style.id, shape);
+
+      shape[SET_PARENT_METHOD](this, DEV_INTERNAL_ACCESS_KEY);
+
+      // =========================================================
+      // STEP 4: Z-ORDER INITIALIZATION
+      // =========================================================
+
+      this.#maxZ++;
+
+      geometry.zIndex = this.#maxZ;
+
+      // =========================================================
+      // STEP 5: RENDER STATE INITIALIZATION
+      // =========================================================
+
+      geometry.dirty = true;
+      geometry.localDirty = true;
+      geometry.worldDirty = true;
+      geometry.renderUpdateType = "TRANSFORM";
+
+      // =========================================================
+      // STEP 6: QUEUE RENDERER SYNCHRONIZATION
+      // =========================================================
+      //
+      // A shape restored from pending deletion still owns its existing
+      // backend graphical resource, so no new creation is required.
+      //
+      // Only genuinely new shapes are queued for backend creation.
+      //
+      if (!cancelPendingDeletion) {
+        this.#pendingCreationElements.push(shape);
+      }
+
+      // =========================================================
+      // STEP 7: DEV-ONLY INVARIANT VALIDATION
+      // =========================================================
+
+      if (__DEV__) {
+        if (elements[index] !== shape || indexMap.get(shape) !== index) {
+          Warn("Invariant violation after insertion", {
+            shape,
+            index,
+            arrayValue: elements[index],
+            mapValue: indexMap.get(shape),
+          });
+        }
+
+        if (typeof geometry.zIndex !== "number") {
+          Warn("zIndex initialization failed", shape);
+        }
+      }
+    }
+
+    return this;
+  }
+
+  /**
+   * Clears the pending creation queue after renderer synchronization.
+   *
+   * Called after all queued graphical resources have been successfully created
+   * by the renderer. This method does not modify active scene membership.
+   *
+   * @internal
+   */
+  [RESET_PENDING_CREATION_METHOD]() {
+    this.#pendingCreationElements.length = 0;
+  }
+
+  /**
+   * Removes shapes from the active scene using an O(1) swap-pop strategy
+   * and queues them for deferred renderer cleanup.
+   *
+   * NOTE: Active scene order is NOT preserved.
+   *
+   * ============================================================================
+   * CORE SEMANTICS
+   * ============================================================================
+   * - Removes the shape from the active scene immediately.
+   * - Uses indexMap + swap-pop for O(1) active collection removal.
+   * - Removes the shape from scene index and identifier mappings.
+   * - Clears scene ownership immediately.
+   * - Queues the removed shape in the pending deletion collection so the
+   *   renderer can remove its backend graphical representation later.
+   * - Safe against duplicate removals.
+   * - Handles group recursion deterministically.
+   *
+   * ============================================================================
+   * RENDERER SYNCHRONIZATION
+   * ============================================================================
+   * - Logical scene removal is synchronous.
+   * - Backend graphical resource removal is deferred until renderer preparation.
+   * - Pending deletion retains the removed shape until renderer cleanup succeeds.
+   * - `flush()` may be used to force immediate renderer synchronization.
+   *
+   * ============================================================================
+   * Z-ORDER HANDLING
+   * ============================================================================
+   * - Removed shape's zIndex is cleared.
+   * - No reordering or normalization is performed.
+   * - Remaining shapes retain their existing zIndex values.
+   *
+   * This ensures:
+   * - O(1) removal cost is preserved.
+   * - zIndex space remains stable.
+   * - Future normalization can be deferred.
+   *
+   * ============================================================================
+   * INVARIANTS AFTER REMOVAL
+   * ============================================================================
+   * - The removed shape does not exist in `#sceneElements`.
+   * - The removed shape does not exist in `#elementIndexMap`.
+   * - The removed shape does not exist in `#elementIdMap`.
+   * - All remaining indexMap entries correspond to their current array indices.
+   * - The removed shape has no scene ownership.
+   * - The removed shape has no active scene zIndex association.
+   * - The removed shape remains available through the pending deletion queue
+   *   until renderer synchronization completes.
+   *
+   * @param targets - Shapes to remove.
+   * @returns This scene instance.
+   */
+
+  public remove(...targets: GraphicsNode[]): this {
+    const fig = this[GET_INTERNAL_GRAPHICS_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+    if (!fig) {
+      throw new NotInitializedError(
+        "this.#fig",
+        "canvas dom element not initialized",
+        "core.canvas.#setCanvasParams()",
+      );
+    }
+
+    const elements = this.#sceneElements;
+    const indexMap = this.#elementIndexMap;
+
+    for (let i = 0; i < targets.length; i++) {
+      const shape = targets[i] as GraphicsNodeWithInternalAccessMethods;
+
+      if (!shape) continue;
+
+      // =========================================================
+      // STEP 0 : CANCEL PENDING CREATION
+      // =========================================================
+      //
+      // If the shape was added and removed before renderer
+      // synchronization, its backend graphical resource has not
+      // been created yet.
+      //
+      // Cancel the pending creation request and continue with the
+      // normal logical scene removal. No renderer deletion should
+      // be queued because no backend resource exists to remove.
+      //
+      const pendingCreationIndex = this.#pendingCreationElements.indexOf(shape);
+
+      const cancelPendingCreation = pendingCreationIndex !== -1;
+
+      if (cancelPendingCreation) {
+        this.#pendingCreationElements.splice(pendingCreationIndex, 1);
+      }
+
+      const index = indexMap.get(shape);
+
+      // =========================================================
+      // STEP 1: OWNERSHIP VALIDATION
+      // =========================================================
+
+      if (index === undefined) {
+        if (__DEV__) {
+          Warn("Element not found or already removed", shape);
+        }
+
+        continue;
+      }
+
+      const parent = shape[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+      if (parent !== this) {
+        throw new ShapeNotAttachedToCanvasError(
+          shape.style.id,
+          this.style.id,
+          "canvas.remove()",
+        );
+      }
+
+      // =========================================================
+      // Group handling
+      // =========================================================
+
+      /*if (el instanceof Group) {
+      const groupElements = el.getAllElements();
+      el.ungroup();
+
+    //  if (groupElements.length > 0) {
+    //    this.remove(...groupElements.slice());
+    //  }
+    }
+    */
+
+      // =========================================================
+      // STEP 2: QUEUE RENDERER SYNCHRONIZATION
+      // =========================================================
+
+      // Queue backend cleanup only if the shape had already completed
+      // renderer creation. A cancelled pending creation has no backend
+      // resource that requires deletion.
+      //
+      if (!cancelPendingCreation) {
+        this.#pendingDeletionElements.push(shape);
+      }
+
+      // =========================================================
+      // STEP 3: O(1) SWAP-POP
+      // =========================================================
+
+      const lastIndex = elements.length - 1;
+      const lastElement = elements[lastIndex];
+
+      if (index !== lastIndex) {
+        elements[index] = lastElement;
+        indexMap.set(lastElement, index);
+      }
+
+      elements.pop();
+
+      // =========================================================
+      // STEP 4: REMOVE SCENE INDEXING
+      // =========================================================
+
+      indexMap.delete(shape);
+
+      this.#elementIdMap.delete(shape.style.id);
+
+      // =========================================================
+      // STEP 5: CLEAN INTERNAL SCENE STATE
+      // =========================================================
+
+      const geo = shape[GET_INTERNAL_GEOMETRY_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+      if (geo) {
+        geo.zIndex = undefined as unknown as number;
+
+        geo.localDirty = false;
+        geo.worldDirty = false;
+      }
+
+      shape[SET_PARENT_METHOD](null, DEV_INTERNAL_ACCESS_KEY);
+    }
+
+    return this;
+  }
+
+  /**
+   * Clears the pending deletion queue after renderer synchronization.
+   *
+   * Called after all queued graphical resources have been successfully removed
+   * by the renderer. This method does not modify active scene membership.
+   *
+   * @internal
+   */
+  [RESET_PENDING_DELETION_METHOD]() {
+    this.#pendingDeletionElements.length = 0;
+  }
+
+  /**
+   * Removes all elements from the canvas.
+   *
+   * ============================================================================
+   * CORE SEMANTICS
+   * ============================================================================
+   * Performs a full teardown of all canvas-managed elements.
+   *
+   * This includes:
+   * - DOM detachment (if applicable)
+   * - Ownership reset
+   * - Geometry context cleanup
+   * - zIndex cleanup
+   *
+   * ============================================================================
+   * INVARIANTS AFTER EXECUTION
+   * ============================================================================
+   * - #sceneElements is empty
+   * - #elementIndexMap is empty
+   * - All shapes are detached from DOM
+   * - All shapes have:
+   *   - no zIndex (style.zIndex cleared)
+   * - z-order boundaries reset
+   *
+   * ============================================================================
+   * @returns this
+   */
+  public clear(): this {
+    this.remove(...this.#sceneElements.slice());
+    return this;
+  }
+
+  /**
+   * Returns a snapshot of all elements.
+   *
+   * Semantics:
+   * - Provides a shallow copy to protect internal state
+   *
+   * Performance:
+   * - O(n) copy (intentional for safety)
+   *
+   * @returns Array<GraphicsNode>
+   */
+  public getAllElements(): Array<GraphicsNode> {
+    return this.#sceneElements.slice();
+  }
+
+  /**
+   * Resolves all pending z-order operations for shapes in this canvas.
+   *
+   * ============================================================================
+   * CORE RESPONSIBILITY
+   * ============================================================================
+   * Converts transient z-order intents (stored in shapes) into persistent
+   * numeric zIndex values.
+   *
+   * ============================================================================
+   * EXECUTION MODEL
+   * ============================================================================
+   * - Iterates through all shapes
+   * - Reads pending z-order operation
+   * - Updates zIndex using min/max boundaries
+   * - Clears operation after applying
+   *
+   * ============================================================================
+   * ORDERING STRATEGY
+   * ============================================================================
+   * - Front:  zIndex = ++maxZ
+   * ============================================================================
+   * INVARIANTS
+   * ============================================================================
+   * - Every shape must have a unique zIndex
+   * - zIndex is the single source of truth for rendering order
+   * - No DOM manipulation occurs here
+   *
+   * ============================================================================
+   * PERFORMANCE
+   * ============================================================================
+   * O(n) where n = number of shapes (linear scan)
+   *
+   * ============================================================================
+   * SIDE EFFECTS
+   * ============================================================================
+   * Mutates:
+   * - shape.style.zIndex
+   * - internal min/max boundaries
+   */
+  #resolveZOrder(): void {
+    const elements = this.#sceneElements;
+
+    for (let i = 0; i < elements.length; i++) {
+      const shape = elements[i] as GraphicsNodeWithInternalAccessMethods;
+
+      const op = shape[GET_Z_ORDER_OPERATION_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+      const elGeo = shape[GET_INTERNAL_GEOMETRY_METHOD](
+        DEV_INTERNAL_ACCESS_KEY,
+      ) as {
+        zIndex: number;
+        localDirty: boolean;
+      };
+      if (op === 1) {
+        this.#maxZ++;
+        elGeo.zIndex = this.#maxZ;
+        elGeo.localDirty = true;
+      }
+
+      if (op === -1) {
+        this.#minZ--;
+        elGeo.zIndex = this.#minZ;
+        elGeo.localDirty = true;
+      }
+
+      shape[CLEAR_Z_ORDER_OPERATION_METHOD](DEV_INTERNAL_ACCESS_KEY);
+    }
+  }
+
+  /**
+   * Marks all descendants of a container as worldDirty.
+   *
+   * ============================================================================
+   * PURPOSE
+   * ============================================================================
+   * - Propagates transform invalidation through full hierarchy
+   * - Used when container transform or hierarchy changes
+   *
+   * ============================================================================
+   * DESIGN
+   * ============================================================================
+   * - Uses iterative DFS (no recursion)
+   * - Respects shallow getAllElements() contract
+   * - Traverses only through containers (groups)
+   *
+   * ============================================================================
+   * @param container - Root container (Canvas or Group)
+   */
+  #markWorldDirtyCascade() {
+    const stack = [...this.getAllElements()];
+
+    while (stack.length) {
+      const el = stack.pop() as GraphicsNode;
+      const geo = el.geometry as { shape: string; worldDirty: boolean };
+
+      if (!geo.worldDirty) {
+        geo.worldDirty = true;
+      }
+
+      /*
+      // Only groups can expand traversal
+      if (geo.shape === 'group') {
+        const children = (el as Group).getAllElements();
+        for (let i = 0; i < children.length; i++) {
+          stack.push(children[i]);
+        }
+      }
+			*/
+    }
+  }
+}

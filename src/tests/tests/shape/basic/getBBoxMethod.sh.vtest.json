@@ -1,0 +1,617 @@
+{
+  "meta": {
+    "info": {
+      "module": "core",
+      "testType": "unit",
+      "canvasId": "testing-Canvas"
+    },
+    "environment": {
+      "libraryVersion": "0.0.0",
+      "browser": {
+        "name": "Firefox",
+        "version": "152.0"
+      },
+      "platform": "Linux"
+    }
+  },
+  "tests": {
+    "unit-core-arcCurve-6": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "arcCurve",
+        "id": "unit-core-arcCurve-6"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 110,
+              "1": 250,
+              "2": 110,
+              "3": 295
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 110,
+              "1": 250,
+              "2": 110,
+              "3": 295
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-circle-2": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "circle",
+        "id": "unit-core-circle-2"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 282,
+              "1": 12,
+              "2": 338,
+              "3": 68
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 282,
+              "1": 12,
+              "2": 338,
+              "3": 68
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-cubicCurve-7": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "cubicCurve",
+        "id": "unit-core-cubicCurve-7"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 240,
+              "1": 250,
+              "2": 240,
+              "3": 297.25
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 240,
+              "1": 250,
+              "2": 240,
+              "3": 297.25
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-earcCurve-9": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "earcCurve",
+        "id": "unit-core-earcCurve-9"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 110,
+              "1": 360,
+              "2": 110,
+              "3": 391.5
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 110,
+              "1": 360,
+              "2": 110,
+              "3": 391.5
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-ellipse-3": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "ellipse",
+        "id": "unit-core-ellipse-3"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 40,
+              "1": 120,
+              "2": 100,
+              "3": 160
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 40,
+              "1": 120,
+              "2": 100,
+              "3": 160
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-image-12": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "image",
+        "id": "unit-core-image-12"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 140,
+              "1": 445,
+              "2": 140,
+              "3": 535
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 140,
+              "1": 445,
+              "2": 140,
+              "3": 535
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-line-0": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "line",
+        "id": "unit-core-line-0"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 110,
+              "1": 40,
+              "2": 110,
+              "3": 40
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 110,
+              "1": 40,
+              "2": 110,
+              "3": 40
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-point-1": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "point",
+        "id": "unit-core-point-1"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 166,
+              "1": 36,
+              "2": 174,
+              "3": 44
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 166,
+              "1": 36,
+              "2": 174,
+              "3": 44
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-polygon-11": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "polygon",
+        "id": "unit-core-polygon-11"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 360,
+              "1": 335,
+              "2": 360,
+              "3": 425
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 360,
+              "1": 335,
+              "2": 360,
+              "3": 425
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-polyline-10": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "polyline",
+        "id": "unit-core-polyline-10"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 240,
+              "1": 335,
+              "2": 240,
+              "3": 385
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 240,
+              "1": 335,
+              "2": 240,
+              "3": 385
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-quadraticCurve-8": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "quadraticCurve",
+        "id": "unit-core-quadraticCurve-8"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 370,
+              "1": 250,
+              "2": 370,
+              "3": 281.5
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 370,
+              "1": 250,
+              "2": 370,
+              "3": 281.5
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-rect-4": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "rect",
+        "id": "unit-core-rect-4"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 200,
+              "1": 110,
+              "2": 200,
+              "3": 170
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 200,
+              "1": 110,
+              "2": 200,
+              "3": 170
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-text-5": {
+      "information": {
+        "description": "Testing .getBBox() method",
+        "module": "core",
+        "testType": "unit",
+        "element": "text",
+        "id": "unit-core-text-5"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "bounds": {
+              "0": 308.1000061035156,
+              "1": 137,
+              "2": 308.1000061035156,
+              "3": 153
+            }
+          }
+        },
+        "after": {
+          "user-defined": {
+            "bounds": {
+              "0": 308.1000061035156,
+              "1": 137,
+              "2": 308.1000061035156,
+              "3": 153
+            }
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "property": "bounds",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    }
+  }
+}

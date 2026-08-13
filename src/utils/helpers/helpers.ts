@@ -1,17 +1,59 @@
+import { InvalidArgumentError } from "../../errors/index.js";
+
+/**
+ * Controls the high-level rendering lifecycle of the engine.
+ *
+ * - `PREPARE`: Perform all computations and state preparation required
+ *   before rendering.
+ * - `RENDER`: Execute the actual rendering process using the prepared state.
+ */
+export enum RenderPhase {
+  PREPARE = "PREPARE",
+  RENDER = "RENDER",
+}
+
+/**
+ * Defines which part of a renderable object is being updated.
+ *
+ * - `GEOMETRY`: Updates both geometric and style properties and triggers
+ *   derived computations such as bounding box and canonical matrix updates.
+ * - `STYLE`: Applies visual style changes only, without geometry
+ *   or transform recalculations.
+ * - `TRANSFORM`: Applies transform changes only using the existing world matrix
+ */
+export enum RenderUpdateType {
+  GEOMETRY = "GEOMETRY",
+  STYLE = "STYLE",
+  TRANSFORM = "TRANSFORM",
+}
+
+/**
+ * Generates a unique identifier for engine objects.
+ *
+ * If a non-empty `userId` is provided, it is returned unchanged.
+ * Otherwise, a 16-character identifier is generated using
+ * `crypto.randomUUID()` when available, with a random string fallback.
+ *
+ * @param userId - Optional user-supplied identifier.
+ * @returns A unique identifier string.
+ * @throws Rethrows any unexpected runtime error encountered during generation.
+ */
 export function generateId(userId?: string): string {
   try {
-    if (userId && userId.trim() !== '') return userId;
+    if (userId && userId.trim() !== "") return userId;
 
-    if (typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+    if (typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
     }
+
     // Fallback
     const chars =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
     const fallback = Array.from(
       { length: 16 },
-      () => chars[Math.floor(Math.random() * chars.length)]
-    ).join('');
+      () => chars[Math.floor(Math.random() * chars.length)],
+    ).join("");
 
     return fallback;
   } catch (e) {
@@ -47,7 +89,7 @@ export function Log(...args: unknown[]): void {
  */
 
 export function cwarn(msg: string) {
-  console.warn('Below Operation may break entire Pipeline be careful...!');
+  console.warn("Below Operation may break entire Pipeline be careful...!");
   console.warn(msg);
 }
 
@@ -82,35 +124,35 @@ export function validProps(
   AllGShapeStyleProperties: object,
   CommonGeometricProperties: object,
   GraphicalElementProperties: object,
-  shape: string
+  shape: string,
 ) {
   const { id, roleOfSVG, name, d, ...rest } = (AllGShapeStyleProperties as any)[
     shape
   ];
   console.warn(
-    ' Note: The default properties of Rect elements are meant for viewing only. Do not try to modify the read-only properties — doing so may cause unexpected behavior or even break the program.\n\nYou can safely modify all properties listed under the "modifiable" section using the `.attrs()` method or by passing them in the props when creating the element.'
+    ' Note: The default properties of Rect elements are meant for viewing only. Do not try to modify the read-only properties — doing so may cause unexpected behavior or even break the program.\n\nYou can safely modify all properties listed under the "modifiable" section using the `.attrs()` method or by passing them in the props when creating the element.',
   );
 
   const props = {
     geometry: {
       readOnly: {
-        ...(CommonGeometricProperties as any).geometry
+        ...(CommonGeometricProperties as any).geometry,
       },
       modifiable: {
-        ...(GraphicalElementProperties as any)[shape]
-      }
+        ...(GraphicalElementProperties as any)[shape],
+      },
     },
     style: {
       readOnly: {
         id,
         roleOfSVG,
         name,
-        d
+        d,
       },
       modifiable: {
-        ...rest
-      }
-    }
+        ...rest,
+      },
+    },
   };
 
   return props;
@@ -140,16 +182,16 @@ export function validProps(
 
 export function autoFixGeometry(
   props: Record<string, any>,
-  geometryKeys: string[]
+  geometryKeys: string[],
 ): void {
   for (const key of geometryKeys) {
     const value = props[key];
 
-    if (key in props && typeof value == 'number' && value < 0) {
+    if (key in props && typeof value == "number" && value < 0) {
       console.warn(
         `⚠️  Property '${key}' was negative (${value}). Automatically converted to positive (${Math.abs(
-          value
-        )}).`
+          value,
+        )}).`,
       );
       props[key] = Math.abs(value);
     }
@@ -185,11 +227,11 @@ export function parameterTypeValidator(
   geometry: object,
   style: object,
   classOriented: object,
-  shape: string
+  shape: string,
 ) {
   try {
     const geomShape =
-      shape == '' ? (geometry as any) : (geometry as any)[shape] ?? {};
+      shape == "" ? (geometry as any) : ((geometry as any)[shape] ?? {});
     const styleShape = (style as any)[shape] ?? {};
     const classO = (classOriented as any) ?? {};
 
@@ -202,86 +244,22 @@ export function parameterTypeValidator(
       if (isP) {
         if (actual == null) {
           throw new TypeError(
-            `Invalid value for '${shape}' parameter '${k}': expected '${typeof expected}', got '${actual}'`
+            `Invalid value for '${shape}' parameter '${k}': expected '${typeof expected}', got '${actual}'`,
           );
         }
 
         if (
-          typeof expected !== 'undefined' &&
+          typeof expected !== "undefined" &&
           typeof actual !== typeof expected
         ) {
           throw new TypeError(
-            `Invalid type for '${shape}' parameter '${k}': expected '${typeof expected}', got '${typeof actual}' (value: ${actual})`
+            `Invalid type for '${shape}' parameter '${k}': expected '${typeof expected}', got '${typeof actual}' (value: ${actual})`,
           );
         }
       }
     }
   } catch (error) {
     throw error;
-  }
-}
-
-/**
- * Checks whether a given matrix is valid by verifying its structure and contents.
- *
- * Purpose:
- * - Ensures that the matrix is an array of `Float32Array` rows.
- * - Confirms that the matrix has the expected number of rows (`matlen`) and each row has the expected length (`rowlen`).
- * - Validates that every element in the matrix is a number, preventing runtime errors in computations.
- *
- * Dependency:
- * - This function does not depend on any graphics API (like WebGL or Canvas2D).
- * - It works purely with JavaScript arrays and typed arrays (`Float32Array`).
- *
- * @param mat - The matrix to validate, as an array of `Float32Array` rows.
- * @param matlen - The expected number of rows in the matrix.
- * @param rowlen - The expected number of elements in each row.
- *
- * @returns `true` if the matrix is valid and matches the expected structure; otherwise, throws an error.
- *
- * @throws Error if:
- * - The matrix is not an array of the expected length.
- * - Any row is not a `Float32Array` or does not have the expected number of elements.
- * - Any element in the matrix is not a number.
- */
-
-export function isValidMatrix(
-  mat: Float32Array[], // Correctly type the matrix as an array of Float32Arrays
-  matlen: number,
-  rowlen: number
-): mat is Float32Array[] {
-  // Proper return type to indicate it's a valid matrix of Float32Arrays
-  try {
-    // Check if mat is an array and has the expected number of rows
-    let valid = Array.isArray(mat) && mat.length === matlen;
-
-    // Validate each row in the matrix
-    for (let i = 0; i < mat.length; i++) {
-      const row = mat[i] as Float32Array;
-
-      // Ensure each row is a Float32Array and has the correct length
-      valid &&= row instanceof Float32Array && row.length === rowlen;
-
-      // Check that every element in the row is a number
-      for (let j = 0; valid && j < row.length; j++) {
-        valid &&= typeof row[j] === 'number';
-      }
-
-      // If any row fails the validation, break early
-      if (!valid) break;
-    }
-    // console.log(valid);
-    // If the matrix is valid, return true; otherwise, throw an error
-    if (valid) {
-      return valid;
-    } else {
-      throw new Error(
-        'Given matrix is not valid! Please check your parameters and ensure all elements are numbers.'
-      );
-    }
-  } catch (e) {
-    // Rethrow the error for further handling
-    throw e;
   }
 }
 
@@ -311,47 +289,47 @@ export function animationChecks(
   avdProp: object | null,
   duration: number,
   ease: ((t: number) => number) | string | null,
-  onComplete: Function | null
+  onComplete: Function | null,
 ) {
   // ==== Parameter Validation ====
   if (
-    typeof attrs !== 'object' ||
+    typeof attrs !== "object" ||
     attrs === null ||
     Object.keys(attrs).length < 1
   ) {
     throw new Error(
-      "animate(): 'attrs' must be a valid object with at least one property."
+      "animate(): 'attrs' must be a valid object with at least one property.",
     );
   }
 
-  if (avdProp !== null && typeof avdProp !== 'object') {
+  if (avdProp !== null && typeof avdProp !== "object") {
     throw new Error("animate(): 'avdProp' must be an object or null.");
   }
 
-  if (typeof duration !== 'number' || duration <= 0) {
+  if (typeof duration !== "number" || duration <= 0) {
     throw new Error("animate(): 'duration' must be a positive number.");
   }
 
   if (
     ease !== null &&
     ease !== undefined &&
-    typeof ease !== 'function' &&
-    typeof ease !== 'string'
+    typeof ease !== "function" &&
+    typeof ease !== "string"
   ) {
     throw new Error(
-      "animate(): 'ease' must be a function, string, null, or undefined."
+      "animate(): 'ease' must be a function, string, null, or undefined.",
     );
   }
 
-  if (typeof ease === 'function') {
+  if (typeof ease === "function") {
     try {
       const testResult = ease(0.5);
-      if (typeof testResult !== 'number' || isNaN(testResult)) {
+      if (typeof testResult !== "number" || isNaN(testResult)) {
         throw new Error();
       }
     } catch {
       throw new Error(
-        "animate(): 'ease' function must accept a number and return a valid number."
+        "animate(): 'ease' function must accept a number and return a valid number.",
       );
     }
   }
@@ -359,88 +337,209 @@ export function animationChecks(
   if (
     onComplete !== null &&
     onComplete !== undefined &&
-    typeof onComplete !== 'function'
+    typeof onComplete !== "function"
   ) {
     throw new Error(
-      "animate(): 'onComplete' must be a function, null, or undefined."
+      "animate(): 'onComplete' must be a function, null, or undefined.",
     );
   }
 }
 
 /**
- * Retrieves a specific transformation matrix from a list of transformations.
+ * Canonical default property map for transformation and animation parameters.
  *
- * Purpose:
- * - Provides a 3x3 matrix representing the transformation at a given index in a transformation history list.
- * - Supports both row-major and column-major formats for matrix representation.
- * - Returns the identity matrix if the requested transformation is missing or invalid.
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This object defines the canonical default values for all common
+ * transformation-related properties used throughout the animation
+ * and transformation pipeline.
  *
- * Dependency:
- * - This function does not rely on any graphics API (like WebGL or Canvas2D).
- * - Works purely with JavaScript arrays and `Float32Array` for storing matrix data.
+ * It acts as a normalization baseline when user input is partial,
+ * missing, or intentionally omitted.
  *
- * @param tList - An array containing transformation entries, each with a `TMatrix` property (as a `Float32Array`).
- * @param which - Index or identifier of the transformation to retrieve. Defaults to `0`.
- *                If `-1`, the function returns the last transformation in the list.
- * @param major - Determines whether the returned matrix is row-major (`'r'`) or column-major (`'c'`). Defaults to `'r'`.
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - This object is pure data with no behavior
+ * - Values represent safe, neutral defaults
+ * - All keys correspond to known transformation parameters
+ * - Defaults are intentionally permissive, not restrictive
  *
- * @returns A 3x3 matrix as a nested array of numbers. Returns the identity matrix if no valid transformation is found.
+ * -------------------------------------------------------------------------
+ * USAGE CONTRACT
+ * -------------------------------------------------------------------------
+ * This object is used for:
+ * - initializing transformation parameter objects
+ * - filling missing values during parsing or normalization
+ * - ensuring predictable engine behavior without defensive checks
  *
- * @warning Console warnings are issued if the requested transformation is missing, invalid, or improperly formatted.
+ * This object is NOT:
+ * - a validation schema
+ * - a runtime configuration object
+ * - user-facing API surface
+ *
+ * -------------------------------------------------------------------------
+ * DEPENDENCIES
+ * -------------------------------------------------------------------------
+ * None.
+ * This is a standalone, engine-internal constant.
+ *
+ * -------------------------------------------------------------------------
+ * PROPERTY SEMANTICS
+ * -------------------------------------------------------------------------
+ * - x, y        : Translation offsets
+ * - sx, sy      : Scale factors
+ * - angle       : Rotation angle (degrees)
+ * - flipX, flipY: Flip flags
+ * - dirX, dirY  : Flip direction hints
+ * - tType       : Transformation mode identifier
+ * - px, py      : Pivot coordinates
+ * - callbacks   : No-op default callback
  */
+export const propTypes = {
+  x: 0,
+  y: 0,
+  sx: 0,
+  sy: 0,
+  angle: 0,
+  flipX: true,
+  flipY: true,
+  dirX: "x+",
+  dirY: "y+",
+  tType: "a",
+  px: 0,
+  py: 0,
+  callbacks: () => {},
+};
 
-export function getTransformationMatrix(
-  tList: any[] | undefined,
-  which: string | number = 0,
-  major: 'r' | 'c' = 'r'
-): number[][] {
-  const TMat = [
-    [1, 0, 0],
-    [0, 1, 0],
-    [0, 0, 1]
-  ];
+/**
+ * Computes the geometric center of a quadrilateral from homogeneous coordinates.
+ *
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This function calculates the geometric center (centroid) of a shape
+ * defined by four corner points.
+ *
+ * The center is computed as the arithmetic mean of the four X coordinates
+ * and the four Y coordinates.
+ *
+ * -------------------------------------------------------------------------
+ * INPUT CONTRACT
+ * -------------------------------------------------------------------------
+ * - The input buffer is expected to contain four points
+ * - Each point is represented in homogeneous form
+ * - Only X and Y components are considered
+ *
+ * Expected layout (length ≥ 12):
+ *   [x1, y1, _, x2, y2, _, x3, y3, _, x4, y4, _]
+ *
+ * Z / homogeneous components are ignored.
+ *
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - No validation of buffer length is performed
+ * - Missing values default to 0
+ * - The function is pure and side-effect free
+ *
+ * -------------------------------------------------------------------------
+ * USAGE CONTEXT
+ * -------------------------------------------------------------------------
+ * This helper is typically used for:
+ * - pivot resolution
+ * - center-based transformations
+ * - alignment and normalization logic
+ *
+ * -------------------------------------------------------------------------
+ * PARAMETERS
+ * -------------------------------------------------------------------------
+ * @param m - Float32Array containing corner coordinates in homogeneous layout.
+ *
+ * -------------------------------------------------------------------------
+ * RETURNS
+ * -------------------------------------------------------------------------
+ * A tuple [cx, cy] representing the geometric center of the shape.
+ */
+export function getCentre(m: Float32Array): number[] {
+  // -----------------------------------------------------------
+  // STEP 1: Destructure corner coordinates with safe defaults
+  // -----------------------------------------------------------
 
-  try {
-    if ((!tList && !Array.isArray(tList)) || tList.length === 0) {
-      console.warn('No transformations applied yet.');
-      return TMat;
-    }
+  const [x1 = 0, y1 = 0, , x2 = 0, y2 = 0, , x3 = 0, y3 = 0, , x4 = 0, y4 = 0] =
+    m;
 
-    let index = typeof which === 'number' ? which : 0;
-    if (index === -1) index = tList.length - 1;
-    if (index < 0 || index >= tList.length) {
-      console.warn(`Invalid transformation index: ${index}`);
-      return TMat;
-    }
-    if (!('TMatrix' in tList[index])) {
-      console.warn('Invalid Parameter');
-      return TMat;
-    }
+  // -----------------------------------------------------------
+  // STEP 2: Compute centroid coordinates
+  // -----------------------------------------------------------
 
-    const tmat = tList[index]?.TMatrix;
-    if (!(tmat instanceof Float32Array) || tmat.length < 9) {
-      console.warn('Invalid transformation matrix.');
-      return TMat;
-    }
+  const cx = (x1 + x2 + x3 + x4) / 4;
+  const cy = (y1 + y2 + y3 + y4) / 4;
 
-    const [a = 1, b = 0, g = 0, c = 0, d = 1, h = 0, e = 0, f = 0, i = 1] =
-      tmat;
+  return [cx, cy];
+}
 
-    if (major === 'r') {
-      // Row-major: [ [a c e], [b d f], [g h i] ]
-      TMat[0] = [a, c, e];
-      TMat[1] = [b, d, f];
-      TMat[2] = [g, h, i];
-    } else {
-      // Column-major: [ [a b g], [c d h], [e f i] ]
-      TMat[0] = [a, b, g];
-      TMat[1] = [c, d, h];
-      TMat[2] = [e, f, i];
-    }
+/**
+ * Validates and normalizes a transformation mode identifier.
+ *
+ * -------------------------------------------------------------------------
+ * CORE RESPONSIBILITY
+ * -------------------------------------------------------------------------
+ * This function verifies that a provided transformation type identifier
+ * corresponds to a supported transformation mode.
+ *
+ * Supported modes include:
+ * - absolute ('absolute' | 'a')
+ * - relative ('relative' | 'r')
+ * - pivot    ('pivot'    | 'p')
+ *
+ * The check is case-insensitive.
+ *
+ * -------------------------------------------------------------------------
+ * DESIGN INVARIANTS
+ * -------------------------------------------------------------------------
+ * - Only known transformation mode identifiers are accepted
+ * - No defaulting or coercion is performed on invalid input
+ * - Validation is purely string-based
+ *
+ * -------------------------------------------------------------------------
+ * ERROR BEHAVIOR
+ * -------------------------------------------------------------------------
+ * Throws InvalidArgumentError if the provided type does not match
+ * any supported transformation mode.
+ *
+ * This indicates a caller-side contract violation.
+ *
+ * -------------------------------------------------------------------------
+ * PARAMETERS
+ * -------------------------------------------------------------------------
+ * @param type - Transformation mode identifier.
+ *
+ * -------------------------------------------------------------------------
+ * RETURNS
+ * -------------------------------------------------------------------------
+ * The original transformation type string if valid.
+ */
+export function typeCheck(tType: string): string {
+  // -----------------------------------------------------------
+  // STEP 1: Normalize input for comparison
+  // -----------------------------------------------------------
 
-    return TMat;
-  } catch (e) {
-    console.error('getTMatrix() failed:', e);
-    return TMat;
+  const lowerType = tType.toLowerCase();
+
+  // -----------------------------------------------------------
+  // STEP 2: Validate against supported modes
+  // -----------------------------------------------------------
+
+  if (!["absolute", "a", "relative", "r", "pivot", "p"].includes(lowerType)) {
+    throw new InvalidArgumentError(
+      "tType",
+      tType,
+      `Invalid transformation type: "${tType}". Expected one of 'absolute' | 'a', 'relative' | 'r', or 'pivot' | 'p'.`,
+      "transformation",
+    );
   }
+
+  return tType;
 }

@@ -1,0 +1,204 @@
+import { RenderNode } from "../../render-node/render-node.js";
+import {
+  DEV_INTERNAL_ACCESS_KEY,
+  GET_INTERNAL_GEOMETRY_METHOD,
+  GET_INTERNAL_STYLE_METHOD,
+  assertAccess,
+} from "../../../internal/keys/dev-keys.js";
+import {
+  CommonGeometricProperties,
+  AllGShapeStyleProperties,
+} from "../../../property-definitions/common/common-properties.js";
+
+import {
+  GraphicalElementProperties,
+  dimensions,
+} from "../../../property-definitions/specific/specific-properties.js";
+import type {
+  InitialProps,
+  ConstructorPropsTypes,
+} from "../../../models/types/common";
+
+import {
+  Log,
+  parameterTypeValidator,
+  validProps,
+} from "../../../utils/helpers/helpers.js";
+
+export class Ellipse extends RenderNode<"ellipse"> {
+  #copies: number = 0;
+  /**
+   * Reference to the base class’s internal geometry object.
+   *
+   * This is a direct reference, not a copy. Any mutation performed through this
+   * field will affect the original geometry maintained by the parent/base class.
+   * Intended strictly for internal use with privileged access.
+   *
+   * @private
+   */
+  #geometry = this[GET_INTERNAL_GEOMETRY_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+  /**
+   * Reference to the base class’s internal style object.
+   *
+   * This field points to the original style state owned by the parent/base class.
+   * Mutations propagate immediately to the source style and influence rendering
+   * or appearance wherever that style is consumed.
+   *
+   * @private
+   */
+  #style = this[GET_INTERNAL_STYLE_METHOD](DEV_INTERNAL_ACCESS_KEY);
+
+  /**
+   * Reference to the parent class’s internal private properties container.
+   *
+   * Provides privileged access to selected private state of the parent class.
+   * This is used to coordinate behavior across inheritance boundaries without
+   * duplicating or re-owning state.
+   *
+   * @private
+   */
+  #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
+
+  constructor(props: ConstructorPropsTypes<"ellipse">) {
+    super("ellipse", props?.id ?? "");
+
+    "id" in props && delete props.id;
+    parameterTypeValidator(
+      props,
+      GraphicalElementProperties,
+      AllGShapeStyleProperties,
+      this.#classProp,
+      "ellipse",
+    );
+
+    // for initial setup through RenderNode
+    (props as ConstructorPropsTypes<"ellipse"> & InitialProps)["initial"] =
+      true;
+    this.attrs(props);
+  }
+
+  static validProps() {
+    return validProps(
+      AllGShapeStyleProperties,
+      CommonGeometricProperties,
+      GraphicalElementProperties,
+      "ellipse",
+    );
+  }
+  public clone(
+    offsetX: number = 10,
+    offsetY: number = 10,
+    visibleRadiusX?: number,
+    visibleRadiusY?: number,
+  ): Ellipse {
+    if (
+      this.#geometry &&
+      typeof this.#geometry === "object" &&
+      this.#geometry !== null &&
+      this.#style &&
+      typeof this.#style === "object" &&
+      this.#style !== null
+    ) {
+      const { cx = 0, cy = 0, rx = 0, ry = 0 } = this.#geometry;
+
+      const style = { ...this.#style };
+
+      if ("id" in style && style.id !== "") {
+        style.id = `${style.id}-c${++this.#copies}`;
+      }
+
+      return new Ellipse({
+        cx: offsetX + cx,
+        cy: offsetY + cy,
+        rx: (visibleRadiusX ?? 0) + rx,
+        ry: (visibleRadiusY ?? 0) + ry,
+        initial: true,
+        ...style,
+      } as ConstructorPropsTypes<"ellipse"> & InitialProps);
+    }
+
+    throw new Error("Cannot clone: geometry or style is invalid.");
+  }
+
+  protected override generateMatrix(accessKey: symbol): void {
+    try {
+      assertAccess(accessKey);
+      const geo = this.#geometry as {
+        buffer: Float32Array;
+
+        cx: number;
+        cy: number;
+        rx: number;
+        ry: number;
+      };
+
+      if (!geo) return;
+
+      const { cx = 0, cy = 0, rx = 0, ry = 0 } = geo;
+
+      // Retrieve expected matrix dimensions for a line
+      const [m, n] = dimensions["ellipse"] as [number, number];
+
+      // Compute total buffer length based on dimensions
+      const totalLength = m * n;
+
+      // Allocate the buffer once or reallocate only if the size has changed
+      if (!geo.buffer || geo.buffer.length !== totalLength) {
+        geo.buffer = new Float32Array(totalLength);
+      }
+
+      const sb = geo.buffer as Float32Array;
+      sb.set([cx, cy, 1, cx + rx, cy, 1, cx, cy + ry, 1], 0);
+
+      //     renderer.render({ el: this });
+      this.restoreDimension(DEV_INTERNAL_ACCESS_KEY, sb);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  protected override restoreDimension(
+    accessKey: symbol,
+    temporaryState: Float32Array,
+  ) {
+    try {
+      assertAccess(accessKey);
+      if (!this.#geometry) return;
+
+      const [cx, cy] = [temporaryState[0]!, temporaryState[1]!]; // center of ellipse
+
+      const a = Math.hypot(temporaryState[3]! - cx, temporaryState[4]! - cy);
+
+      const b = Math.hypot(temporaryState[6]! - cx, temporaryState[7]! - cy);
+
+      [this.#geometry.rx, this.#geometry.ry] = [a, b];
+      [this.#geometry.cx, this.#geometry.cy] = [cx, cy];
+
+      this.#computeBounds(temporaryState);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  #computeBounds(buffer: Float32Array) {
+    const geo = this.#geometry as {
+      bounds: Float32Array;
+      rx: number;
+      ry: number;
+    };
+
+    const [cx, cy, _] = buffer;
+    // Allocate the buffer once or reallocate only if the size has changed
+    if (!geo.bounds || geo.bounds.length !== 4) {
+      geo.bounds = new Float32Array(4);
+    }
+
+    const rx = geo.rx;
+    const ry = geo.ry;
+    geo.bounds[0] = cx - rx;
+    geo.bounds[1] = cy - ry;
+    geo.bounds[2] = cx + rx;
+    geo.bounds[3] = cy + ry;
+  }
+}

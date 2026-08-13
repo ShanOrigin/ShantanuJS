@@ -1,0 +1,357 @@
+{
+  "meta": {
+    "info": {
+      "module": "system/canvas",
+      "testType": "unit",
+      "canvasId": "testing-Canvas"
+    },
+    "environment": {
+      "libraryVersion": "0.0.0",
+      "browser": {
+        "name": "Firefox",
+        "version": "152.0"
+      },
+      "platform": "Linux"
+    }
+  },
+  "tests": {
+    "unit-system/canvas-arcCurve-6": {
+      "information": {
+        "description": "Canvas .add( arcCurve ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "arcCurve",
+        "id": "unit-system/canvas-arcCurve-6"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-circle-2": {
+      "information": {
+        "description": "Canvas .add( circle ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "circle",
+        "id": "unit-system/canvas-circle-2"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-cubicCurve-7": {
+      "information": {
+        "description": "Canvas .add( cubicCurve ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "cubicCurve",
+        "id": "unit-system/canvas-cubicCurve-7"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-earcCurve-9": {
+      "information": {
+        "description": "Canvas .add( earcCurve ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "earcCurve",
+        "id": "unit-system/canvas-earcCurve-9"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-ellipse-3": {
+      "information": {
+        "description": "Canvas .add( ellipse ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "ellipse",
+        "id": "unit-system/canvas-ellipse-3"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-image-12": {
+      "information": {
+        "description": "Canvas .add( image ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "image",
+        "id": "unit-system/canvas-image-12"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-line-0": {
+      "information": {
+        "description": "Canvas .add( line ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "line",
+        "id": "unit-system/canvas-line-0"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-point-1": {
+      "information": {
+        "description": "Canvas .add( point ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "point",
+        "id": "unit-system/canvas-point-1"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-polygon-11": {
+      "information": {
+        "description": "Canvas .add( polygon ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "polygon",
+        "id": "unit-system/canvas-polygon-11"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-polyline-10": {
+      "information": {
+        "description": "Canvas .add( polyline ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "polyline",
+        "id": "unit-system/canvas-polyline-10"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-quadraticCurve-8": {
+      "information": {
+        "description": "Canvas .add( quadraticCurve ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "quadraticCurve",
+        "id": "unit-system/canvas-quadraticCurve-8"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-rect-4": {
+      "information": {
+        "description": "Canvas .add( rect ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "rect",
+        "id": "unit-system/canvas-rect-4"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-system/canvas-text-5": {
+      "information": {
+        "description": "Canvas .add( text ) method testing",
+        "module": "system/canvas",
+        "testType": "unit",
+        "element": "text",
+        "id": "unit-system/canvas-text-5"
+      },
+      "states": {},
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": "",
+          "property": "id",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    }
+  }
+}

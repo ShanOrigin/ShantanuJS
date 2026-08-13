@@ -1,0 +1,141 @@
+import { interpolatePointOnCurve } from "../../../math/interpolation/interpolate-point-on-curve.js";
+import { getCubicCurveControlPoints } from "../curve-paths/cubic-curve.js";
+import { getQuadraticCurveControlPoint } from "../curve-paths/quadratic-curve.js";
+import { getArcCurveControlInfo } from "../curve-paths/arc-curve.js";
+import { getCurveAdaptiveSmoothness } from "../curve-utils.js";
+import { Point2D } from "../../../../models/types/geometry/types.js";
+import {
+  ArcLengthTableEntry,
+  CurveInfo,
+  CurveType,
+} from "../../../../models/types/geometry/curve.js";
+
+//+++++++++++++++++++++++++++
+// Function  to generate control points and store and Calculate arc length parameterizati       on  on curve
+//+++++++++++++++++++++++++++
+
+/**
+ * Generates points along a specified curve between two points.
+ *
+ * Purpose:
+ * - Computes interpolated points along linear, quadratic, cubic, or arc curves.
+ * - Builds an arc-length table to track distances along the curve for animation or measurement purposes.
+ * - Adapts smoothness based on distance and element parameters.
+ * - Supports bend factor to control curvature.
+ *
+ * Dependency:
+ * - Depends on helper functions such as `clampBend`, `getQuadraticCurveControlPoint`, `getCubicCurveControlPoints`, `getArcCurveControlInfo`, and `interpolatePointOnCurve`.
+ * - Uses basic math functions (`Math.hypot`) but does not require any graphics API or DOM API.
+ *
+ * @param P1 - Starting point `{ x, y }` of the curve.
+ * @param P2 - Ending point `{ x, y }` of the curve.
+ * @param bend - Optional curvature factor; defaults to 0.
+ * @param smoothness - Optional number of segments along the curve; if 0 or invalid, calculated adaptively.
+ * @param curveName - Type of curve: `'linear'`, `'quadratic'`, `'cubic'`, or `'arc'`. Default is `'quadratic'`.
+ *
+ * @returns A tuple `[points, table, totalLength]` where:
+ * - `points` → array of `{ x, y }` points along the curve.
+ * - `table` → array of `{ t, distance }` entries representing the arc-length parameterization.
+ * - `totalLength` → total length of the curve.
+ */
+
+export function generateCurvePoints({
+  P1,
+  P2,
+  bend = 0,
+  smoothness = 0,
+  curveName = "quadratic",
+  pointsOnly = false,
+  continuous = false,
+  continuousCount = 1,
+}: {
+  P1: Point2D;
+  P2: Point2D;
+  bend?: number;
+  smoothness?: number;
+  curveName?: CurveType;
+  pointsOnly: boolean;
+  continuous?: boolean;
+  continuousCount?: number;
+}): [Point2D[], ArcLengthTableEntry[], number] | Point2D[] {
+  const table: ArcLengthTableEntry[] = [{ t: 0, distance: 0 }];
+  const points: Point2D[] = [];
+  let curveInfo: CurveInfo = {};
+  let totalLength = 0;
+
+  let { x: x1, y: y1 } = P1;
+  let { x: x2, y: y2 } = P2;
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+
+  // If continuous mode is active, precompute base distanc
+  if (bend === 0) curveName = "linear";
+
+  if (!Number.isFinite(smoothness) || smoothness <= 0) {
+    smoothness = getCurveAdaptiveSmoothness(P1, P2, bend, curveName);
+  }
+
+  let lastT = 0;
+
+  !continuous && (continuousCount = 1); // where continiousCount is given but not specified curve is continious so no continiouvity
+
+  for (let count = 0; count < continuousCount; count++) {
+    if (count > 0) {
+      // flip bend if you want oscillation
+      bend *= -1;
+
+      // shift the segment forward in the same stride direction
+      x1 = x2;
+      y1 = y2;
+      x2 = x1 + dx;
+      y2 = y1 + dy;
+    }
+
+    switch (curveName) {
+      case "quadratic":
+        curveInfo = getQuadraticCurveControlPoint(x1, y1, x2, y2, bend);
+        break;
+      case "cubic":
+        curveInfo = getCubicCurveControlPoints(x1, y1, x2, y2, bend);
+        break;
+      case "arc":
+        curveInfo = getArcCurveControlInfo(bend);
+        break;
+      case "earc":
+        curveInfo["arcDirection"] = bend;
+        break;
+      case "linear":
+        break;
+      default:
+        break;
+    }
+
+    for (let i = 0; i <= smoothness; i++) {
+      const t = i / smoothness;
+      const absolute = interpolatePointOnCurve(
+        x1,
+        y1,
+        x2,
+        y2,
+        t,
+        curveName,
+        curveInfo,
+      );
+
+      points.push({ x: absolute.x, y: absolute.y });
+
+      if (points.length > 1 && !pointsOnly) {
+        const prev = points[points.length - 2] as Point2D;
+        const curr = points[points.length - 1] as Point2D;
+        const segmentLength = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+        totalLength += segmentLength;
+        const arct = (lastT * smoothness + i) / (smoothness * continuousCount);
+        table.push({ t: arct, distance: totalLength });
+      }
+    }
+    lastT += 1; // move to next segment
+  }
+
+  return pointsOnly ? points : [points, table, totalLength];
+}
