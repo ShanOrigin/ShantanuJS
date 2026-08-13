@@ -1,5 +1,5 @@
-import { StateError } from '../../core/errors/state-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { StateError } from "../../core/errors/state-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when an internal object or system state is invalid, inconsistent,
@@ -26,12 +26,12 @@ export class InvalidInternalStateError extends StateError {
     receivedState: unknown,
     expectedState: string,
     message: string,
-    source: string
+    source: string,
   ) {
     super(
-      'INVALID_INTERNAL_STATE',
+      "INVALID_INTERNAL_STATE",
       `Internal state is invalid or corrupted. ${message}`,
-      new ErrorContext(receivedState, expectedState, source)
+      new ErrorContext(receivedState, expectedState, source),
     );
   }
 }

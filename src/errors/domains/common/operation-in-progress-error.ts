@@ -1,5 +1,5 @@
-import { StateError } from '../../core/errors/state-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { StateError } from "../../core/errors/state-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when an operation is attempted while another incompatible
@@ -22,16 +22,16 @@ export class OperationInProgressError extends StateError {
   constructor(
     currentOperation: string,
     attemptedOperation: string,
-    source: string
+    source: string,
   ) {
     super(
-      'OPERATION_IN_PROGRESS',
-      'Cannot perform operation while another operation is in progress.',
+      "OPERATION_IN_PROGRESS",
+      "Cannot perform operation while another operation is in progress.",
       new ErrorContext(
         attemptedOperation,
         `no operation allowed while '${currentOperation}' is in progress`,
-        source
-      )
+        source,
+      ),
     );
   }
 }

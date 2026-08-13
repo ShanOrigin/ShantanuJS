@@ -200,7 +200,7 @@ function hitTestByType(p: HitTestCommonGeoSet, x: number, y: number): boolean {
 function applyMatrix(m: Float32Array, x: number, y: number) {
   return {
     x: m[0] * x + m[3] * y + m[6],
-    y: m[1] * x + m[4] * y + m[7]
+    y: m[1] * x + m[4] * y + m[7],
   };
 }
 
@@ -260,7 +260,7 @@ function invertMatrix(m: Float32Array): Float32Array {
     0,
     (c * f - d * e) * invDet,
     (b * e - a * f) * invDet,
-    1
+    1,
   ]);
 }
 
@@ -275,7 +275,7 @@ function hitPoint(
   radius: number,
   stroke: number,
   x: number,
-  y: number
+  y: number,
 ): boolean {
   const cx = buf[0];
   const cy = buf[1];
@@ -300,7 +300,7 @@ function pointToSegmentDistance(
   x1: number,
   y1: number,
   x2: number,
-  y2: number
+  y2: number,
 ): number {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -332,7 +332,7 @@ function hitLine(
   buf: Float32Array,
   stroke: number,
   x: number,
-  y: number
+  y: number,
 ): boolean {
   const half = stroke / 2;
 
@@ -350,7 +350,7 @@ function hitPolyline(
   buf: Float32Array,
   stroke: number,
   x: number,
-  y: number
+  y: number,
 ): boolean {
   const half = stroke / 2;
 
@@ -362,7 +362,7 @@ function hitPolyline(
         buf[i],
         buf[i + 1],
         buf[i + 3],
-        buf[i + 4]
+        buf[i + 4],
       ) <= half
     ) {
       return true;
@@ -384,7 +384,7 @@ function hitPolygon(
   buf: Float32Array,
   stroke: number,
   x: number,
-  y: number
+  y: number,
 ): boolean {
   // Stroke check (edges)
   if (hitPolyline(buf, stroke, x, y)) return true;
@@ -425,7 +425,7 @@ function hitCircle(
   buf: Float32Array,
   stroke: number,
   x: number,
-  y: number
+  y: number,
 ): boolean {
   const cx = buf[0];
   const cy = buf[1];
@@ -466,7 +466,7 @@ function hitEllipse(
   buf: Float32Array,
   stroke: number,
   x: number,
-  y: number
+  y: number,
 ): boolean {
   const cx = buf[0];
   const cy = buf[1];
@@ -531,7 +531,7 @@ function hitRect(
   ry: number,
   stroke: number,
   x: number,
-  y: number
+  y: number,
 ): boolean {
   const x1 = buffer[0],
     y1 = buffer[1];

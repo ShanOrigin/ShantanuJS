@@ -1,5 +1,5 @@
-import { InternalError } from '../../core/errors/internal-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { InternalError } from "../../core/errors/internal-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when restricted internal APIs, symbols, objects, or execution
@@ -38,12 +38,12 @@ export class UnauthorizedInternalAccessError extends InternalError {
     receivedKey: unknown,
     expectedKey: string,
     message: string,
-    source: string
+    source: string,
   ) {
     super(
-      'UNAUTHORIZED_INTERNAL_ACCESS',
+      "UNAUTHORIZED_INTERNAL_ACCESS",
       `Unauthorized internal access detected. ${message}`,
-      new ErrorContext(receivedKey, expectedKey, source)
+      new ErrorContext(receivedKey, expectedKey, source),
     );
   }
 }

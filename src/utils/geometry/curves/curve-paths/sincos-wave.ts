@@ -32,7 +32,7 @@ export function Wave(
   y2: number,
   numberOfWaves: number,
   stiffness: number = 20,
-  type: 'sin' | 'cos' | 'tan' = 'sin'
+  type: "sin" | "cos" | "tan" = "sin",
 ) {
   const amplitude = stiffness;
   const waveSegments: { x: number; y: number }[] = [];
@@ -53,9 +53,9 @@ export function Wave(
 
       let rawY: number;
 
-      if (type === 'cos') {
+      if (type === "cos") {
         rawY = Math.cos((2 * Math.PI * localX) / wavelength);
-      } else if (type === 'tan') {
+      } else if (type === "tan") {
         // Clamp tan to avoid extreme spikes
         rawY = Math.tan((2 * Math.PI * localX) / wavelength);
         rawY = Math.max(-1, Math.min(1, rawY)); // clamp between -1 and 1
@@ -70,7 +70,7 @@ export function Wave(
 
       waveSegments.push({
         x: Number((x1 + rotatedX).toFixed(5)),
-        y: Number((y1 + rotatedY).toFixed(5))
+        y: Number((y1 + rotatedY).toFixed(5)),
       });
     }
   }

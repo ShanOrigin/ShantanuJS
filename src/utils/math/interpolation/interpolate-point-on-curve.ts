@@ -2,14 +2,14 @@
 // Function to Calculate control points on curve
 //+++++++++++++++++++++++++++
 
-import { lerp } from '../interpolation/lerp.js';
-import { getSemiCirclePoint } from '../../geometry/curves/curve-paths/arc-curve.js';
-import { getEllipsePoint } from '../../geometry/curves/curve-paths/ellipse-arc-curve.js';
+import { lerp } from "../interpolation/lerp.js";
+import { getSemiCirclePoint } from "../../geometry/curves/curve-paths/arc-curve.js";
+import { getEllipsePoint } from "../../geometry/curves/curve-paths/ellipse-arc-curve.js";
 import type {
   CurveInfo,
-  CurveType
-} from '../../../models/types/geometry/curve';
-import type { Point2D } from '../../../models/types/geometry/types';
+  CurveType,
+} from "../../../models/types/geometry/curve";
+import type { Point2D } from "../../../models/types/geometry/types";
 
 /**
  * Computes the interpolated point at a given progress along a specified curve.
@@ -41,26 +41,26 @@ export function interpolatePointOnCurve(
   y2: number,
   t: number,
   curveName: CurveType,
-  curveInfo: CurveInfo
+  curveInfo: CurveInfo,
 ): Point2D {
   switch (curveName) {
-    case 'linear':
+    case "linear":
       return {
         x: lerp(x1, x2, t),
-        y: lerp(y1, y2, t)
+        y: lerp(y1, y2, t),
       };
 
-    case 'quadratic': {
+    case "quadratic": {
       const { quadraticControlX: cx = 0, quadraticControlY: cy = 0 } =
         curveInfo;
       const oneMinusT = 1 - t;
       return {
         x: oneMinusT * oneMinusT * x1 + 2 * oneMinusT * t * cx + t * t * x2,
-        y: oneMinusT * oneMinusT * y1 + 2 * oneMinusT * t * cy + t * t * y2
+        y: oneMinusT * oneMinusT * y1 + 2 * oneMinusT * t * cy + t * t * y2,
       };
     }
 
-    case 'cubic': {
+    case "cubic": {
       const { cubicControlPoint1: c1, cubicControlPoint2: c2 } = curveInfo;
 
       const oneMinusT = 1 - t;
@@ -74,15 +74,15 @@ export function interpolatePointOnCurve(
           oneMinusT ** 3 * y1 +
           3 * oneMinusT ** 2 * t * c1.y +
           3 * oneMinusT * t ** 2 * c2.y +
-          t ** 3 * y2
+          t ** 3 * y2,
       };
     }
 
-    case 'arc': {
+    case "arc": {
       return getSemiCirclePoint(x1, y1, x2, y2, t, curveInfo);
     }
 
-    case 'earc': {
+    case "earc": {
       return getEllipsePoint(x1, y1, x2, y2, t, curveInfo);
     }
 

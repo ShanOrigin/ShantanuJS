@@ -1,5 +1,3 @@
-
-
 # 🚀 Canvas — Core Rendering Container
 
 ---
@@ -26,6 +24,7 @@ It is responsible for:
 Canvas operates on **three layers of truth**:
 
 ### 1. 🧱 Structural Layer (**Authoritative**)
+
 - `#canvasElements: iShape[]`
 - `#elementIndexMap: Map<iShape, number>`
 
@@ -34,12 +33,14 @@ Canvas operates on **three layers of truth**:
 ---
 
 ### 2. 🧩 Semantic Layer (**Derived**)
+
 - `shape.style`
 - `shape.geometry`
 
 ---
 
 ### 3. 🎨 Rendering Layer (**Projection**)
+
 - DOM / SVG nodes
 - `#fig` (root element)
 
@@ -53,12 +54,12 @@ Mutation → Structure → Semantic Sync → DOM Projection → Engine Render
 
 ## ⚡ Performance Model
 
-| Operation | Complexity |
-|----------|-----------|
-| `addTo()` | O(1) |
-| `remove()` | O(1) |
-| `contain()` | O(1) |
-| `clear()` | O(n) |
+| Operation   | Complexity |
+| ----------- | ---------- |
+| `addTo()`   | O(1)       |
+| `remove()`  | O(1)       |
+| `contain()` | O(1)       |
+| `clear()`   | O(n)       |
 
 > ⚠️ **Trade-off:**  
 > Removal uses **swap-pop** → **order is NOT preserved**
@@ -369,3 +370,4 @@ you get a rendering engine-level system.
 
 
 ---
+```

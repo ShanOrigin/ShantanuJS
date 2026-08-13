@@ -1,5 +1,5 @@
-import { ShantanuJSError } from './shantanu-js-error.js';
-import { ErrorContext } from '../diagnostics/error-context.js';
+import { ShantanuJSError } from "./shantanu-js-error.js";
+import { ErrorContext } from "../diagnostics/error-context.js";
 
 /**
  * Base class for errors caused by invalid object or system state.

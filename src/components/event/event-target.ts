@@ -1,8 +1,8 @@
 import type {
   Handler,
   IEvent,
-  SupportedEvents
-} from '../../models/interfaces/event';
+  SupportedEvents,
+} from "../../models/interfaces/event";
 
 /**
  * ============================================================================

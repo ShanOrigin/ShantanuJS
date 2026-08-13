@@ -40,7 +40,7 @@ export type RenderInfrastructure<
   TViewportHost = unknown,
   TResourceHost = unknown,
   TSurfaceHost = unknown,
-  TContentHost = unknown
+  TContentHost = unknown,
 > = {
   /**
    * Primary backend viewport or render host.
@@ -83,4 +83,4 @@ export type RenderInfrastructure<
   contentHost: TContentHost;
 };
 
-export type RenderUpdateType = 'GEOMETRY' | 'STYLE' | 'TRANSFORM';
+export type RenderUpdateType = "GEOMETRY" | "STYLE" | "TRANSFORM";

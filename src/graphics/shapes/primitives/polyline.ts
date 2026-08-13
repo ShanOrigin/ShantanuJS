@@ -1,32 +1,37 @@
-import { RenderNode } from '../../render-node/render-node.js';
+import { RenderNode } from "../../render-node/render-node.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  assertAccess
-} from '../../../internal/keys/dev-keys.js';
+  assertAccess,
+} from "../../../internal/keys/dev-keys.js";
 import {
   CommonGeometricProperties,
-  AllGShapeStyleProperties
-} from '../../../property-definitions/common/common-properties.js';
+  AllGShapeStyleProperties,
+} from "../../../property-definitions/common/common-properties.js";
 
 import {
   GraphicalElementProperties,
-  dimensions
-} from '../../../property-definitions/specific/specific-properties.js';
+  dimensions,
+} from "../../../property-definitions/specific/specific-properties.js";
 import type {
   InitialProps,
-  ConstructorPropsTypes
-} from '../../../models/types/common';
+  ConstructorPropsTypes,
+} from "../../../models/types/common";
 
 import {
   Log,
   parameterTypeValidator,
-  validProps
-} from '../../../utils/helpers/helpers.js';
-import { computeAABBPoints } from '../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
+  validProps,
+} from "../../../utils/helpers/helpers.js";
+import { computeAABBPoints } from "../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js";
 
-export class Polyline extends RenderNode<'polyline'> {
+type PolylineBaseProps = ConstructorPropsTypes<"polyline">;
+type PolylineConstructorProps = Omit<PolylineBaseProps, "points"> & {
+  points: string | number[][];
+};
+
+export class Polyline extends RenderNode<"polyline"> {
   #copies: number = 0;
   /**
    * Reference to the base class’s internal geometry object.
@@ -61,54 +66,53 @@ export class Polyline extends RenderNode<'polyline'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(
-    props: ConstructorPropsTypes<'polyline'> & { points: number[][] }
-  ) {
-    super('polyline', props?.id ?? '');
+  constructor(props: PolylineConstructorProps) {
+    super("polyline", props?.id ?? "");
 
-    'id' in props && delete props.id;
-    let pointsAttr: string = '';
+    "id" in props && delete props.id;
+    let pointsAttr: string = "";
 
     const points = props?.points;
-    if (points && typeof points === 'string') {
+    if (points && typeof points === "string") {
       // Form: "x1,y1 x2,y2 x3,y3 ..."
       pointsAttr = points.trim();
     } else {
       // Form: [[x1, y1], [x2, y2], ...]
       if (
         (points && !Array.isArray(points)) ||
-        !points.every(
+        !(points as number[][]).every(
           (row: number[]) =>
             Array.isArray(row) &&
             row.length === 2 &&
-            typeof row[0] == 'number' &&
-            typeof row[1] == 'number'
+            typeof row[0] == "number" &&
+            typeof row[1] == "number",
         )
       ) {
         throw new Error(
-          'Invalid matrix: must be an array of [x, y] coordinates.'
+          "Invalid matrix: must be an array of [x, y] coordinates.",
         );
       }
 
       for (let i = 0; i < points.length; i++) {
-        pointsAttr += points[i]![0] + ',' + points[i]![1];
+        pointsAttr += points[i]![0] + "," + points[i]![1];
         if (i < points.length - 1) {
-          pointsAttr += ' ';
+          pointsAttr += " ";
         }
       }
+      props.points = pointsAttr as string;
     }
 
     parameterTypeValidator(
-      props,
+      props as PolylineBaseProps,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
-      'polyline'
+      "polyline",
     );
     // for initial setup through RenderNode
-    (props as ConstructorPropsTypes<'polyline'> & InitialProps)['initial'] =
+    (props as ConstructorPropsTypes<"polyline"> & InitialProps)["initial"] =
       true;
-    this.attrs(props);
+    this.attrs(props as PolylineBaseProps);
   }
 
   static validProps() {
@@ -116,17 +120,17 @@ export class Polyline extends RenderNode<'polyline'> {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'polyline'
+      "polyline",
     );
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Polyline {
     if (
       this.#geometry &&
-      typeof this.#geometry === 'object' &&
+      typeof this.#geometry === "object" &&
       this.#geometry !== null &&
       this.#style &&
-      typeof this.#style === 'object' &&
+      typeof this.#style === "object" &&
       this.#style !== null
     ) {
       const { buffer } = this.#geometry;
@@ -139,18 +143,19 @@ export class Polyline extends RenderNode<'polyline'> {
       }
 
       const style = { ...this.#style };
-      if ('id' in style && style.id !== '') {
+      if ("id" in style && style.id !== "") {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
       return new Polyline({
         points: newPoints,
         ...style,
-        initial: true
-      } as ConstructorPropsTypes<'polyline'> & InitialProps & { points: number[][] });
+        initial: true,
+      } as ConstructorPropsTypes<"polyline"> &
+        InitialProps & { points: number[][] });
     }
 
-    throw new Error('Cannot clone: geometry or style is invalid.');
+    throw new Error("Cannot clone: geometry or style is invalid.");
   }
 
   #validatePolylineCoordinates(path: string) {
@@ -160,7 +165,7 @@ export class Polyline extends RenderNode<'polyline'> {
 
     // Check if the path matches the valid polyline format
     if (!coordinateListRegex.test(path)) {
-      throw new Error('given path or coordinate are not valid ');
+      throw new Error("given path or coordinate are not valid ");
     }
 
     // Split the path into individual coordinates (by spaces), then split each pair by comma
@@ -169,12 +174,12 @@ export class Polyline extends RenderNode<'polyline'> {
 
     for (let i = 0; i < rowVertex.length; i++) {
       const pair = rowVertex[i]!.trim();
-      const s = pair.indexOf(',');
+      const s = pair.indexOf(",");
       const x = parseFloat(pair.slice(0, s));
       const y = parseFloat(pair.slice(s + 1));
 
       if (isNaN(x) || isNaN(y)) {
-        throw new Error('X or Y are not numbers');
+        throw new Error("X or Y are not numbers");
       }
 
       const offset = i * 3;
@@ -201,18 +206,18 @@ export class Polyline extends RenderNode<'polyline'> {
 
       if (!geo) return;
 
-      const rawPoints = this.attrs('points') as string;
+      const rawPoints = this.attrs("points") as string;
       const vmat = this.#validatePolylineCoordinates(rawPoints);
       if (!(vmat instanceof Float32Array)) {
         throw new Error(
-          'Invalid point data: could not generate transformation matrix.'
+          "Invalid point data: could not generate transformation matrix.",
         );
       }
 
       const m = vmat.length / 3;
 
       // Retrieve expected matrix dimensions for a line
-      const [_, n] = dimensions['polyline'] as [number, number];
+      const [_, n] = dimensions["polyline"] as [number, number];
 
       // Compute total buffer length based on dimensions
       const totalLength = m * n;
@@ -233,7 +238,7 @@ export class Polyline extends RenderNode<'polyline'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array
+    temporaryState: Float32Array,
   ) {
     try {
       assertAccess(accessKey);
@@ -242,7 +247,7 @@ export class Polyline extends RenderNode<'polyline'> {
 
       // Replacing reduce with traditional loop
 
-      let points = '';
+      let points = "";
       for (let i = 0; i < m.length; i += 3) {
         points += `${m[i]!},${m[i + 1]!} `;
       }

@@ -8,14 +8,14 @@
  * This list is used for validation and lookup of easing behaviors.
  */
 export const EASING_MAP: readonly string[] = [
-  'linear',
-  'easeInQuad',
-  'easeOutQuad',
-  'easeInOutQuad',
-  'easeInCubic',
-  'easeOutCubic',
-  'easeInOutCubic',
-  'easeOutBounce',
-  'easeInBounce',
-  'easeInOutBounce'
+  "linear",
+  "easeInQuad",
+  "easeOutQuad",
+  "easeInOutQuad",
+  "easeInCubic",
+  "easeOutCubic",
+  "easeInOutCubic",
+  "easeOutBounce",
+  "easeInBounce",
+  "easeInOutBounce",
 ] as const;

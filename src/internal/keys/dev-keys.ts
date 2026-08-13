@@ -1,4 +1,4 @@
-import { UnauthorizedInternalAccessError } from '../../errors/index.js';
+import { UnauthorizedInternalAccessError } from "../../errors/index.js";
 
 /**
  * Developer-accessible internal symbols used for controlled engine
@@ -67,7 +67,7 @@ import { UnauthorizedInternalAccessError } from '../../errors/index.js';
  *
  * Symbol descriptions should always remain explicit and searchable.
  */
-const DEV_INTERNAL_ACCESS_KEY = Symbol('DEV_INTERNAL_ACCESS_KEY');
+const DEV_INTERNAL_ACCESS_KEY = Symbol("DEV_INTERNAL_ACCESS_KEY");
 
 /* -------------------------------------------------------------------------- */
 /*                           Component Registration                           */
@@ -97,7 +97,7 @@ const DEV_INTERNAL_ACCESS_KEY = Symbol('DEV_INTERNAL_ACCESS_KEY');
  * represents a computed method identifier,
  * not component data itself.
  */
-const SET_COMPONENT_METHOD = Symbol('SET_COMPONENT_METHOD');
+const SET_COMPONENT_METHOD = Symbol("SET_COMPONENT_METHOD");
 
 /* -------------------------------------------------------------------------- */
 /*                          Internal Geometry Access                          */
@@ -130,7 +130,7 @@ const SET_COMPONENT_METHOD = Symbol('SET_COMPONENT_METHOD');
  *
  *
  */
-const GET_INTERNAL_GEOMETRY_METHOD = Symbol('GET_INTERNAL_GEOMETRY_METHOD');
+const GET_INTERNAL_GEOMETRY_METHOD = Symbol("GET_INTERNAL_GEOMETRY_METHOD");
 
 /* -------------------------------------------------------------------------- */
 /*                            Internal Style Access                           */
@@ -158,7 +158,7 @@ const GET_INTERNAL_GEOMETRY_METHOD = Symbol('GET_INTERNAL_GEOMETRY_METHOD');
  *   shape[GET_INTERNAL_STYLE_METHOD](DEV_INTERNAL_ACCESS_KEY);
  * ```
  */
-const GET_INTERNAL_STYLE_METHOD = Symbol('GET_INTERNAL_STYLE_METHOD');
+const GET_INTERNAL_STYLE_METHOD = Symbol("GET_INTERNAL_STYLE_METHOD");
 
 /* -------------------------------------------------------------------------- */
 /*                      Internal Computed Style Access                        */
@@ -196,7 +196,7 @@ const GET_INTERNAL_STYLE_METHOD = Symbol('GET_INTERNAL_STYLE_METHOD');
  * ```
  */
 const GET_INTERNAL_COMPUTED_STYLE_METHOD = Symbol(
-  'GET_INTERNAL_COMPUTED_STYLE_METHOD'
+  "GET_INTERNAL_COMPUTED_STYLE_METHOD",
 );
 
 /* -------------------------------------------------------------------------- */
@@ -246,7 +246,7 @@ const GET_INTERNAL_COMPUTED_STYLE_METHOD = Symbol(
  * - validate backend compatibility
  * - reject duplicate attachment attempts
  */
-const SET_INTERNAL_GRAPHICS_METHOD = Symbol('SET_INTERNAL_GRAPHICS_METHOD');
+const SET_INTERNAL_GRAPHICS_METHOD = Symbol("SET_INTERNAL_GRAPHICS_METHOD");
 
 /* -------------------------------------------------------------------------- */
 /*                         Internal Graphics Retrieval                         */
@@ -310,7 +310,7 @@ const SET_INTERNAL_GRAPHICS_METHOD = Symbol('SET_INTERNAL_GRAPHICS_METHOD');
  * Together they form the controlled backend graphics
  * attachment/retrieval interface for renderer infrastructure.
  */
-const GET_INTERNAL_GRAPHICS_METHOD = Symbol('GET_INTERNAL_GRAPHICS_METHOD');
+const GET_INTERNAL_GRAPHICS_METHOD = Symbol("GET_INTERNAL_GRAPHICS_METHOD");
 
 /* -------------------------------------------------------------------------- */
 /*                         Internal Z-Order Retrieval                          */
@@ -353,7 +353,7 @@ const GET_INTERNAL_GRAPHICS_METHOD = Symbol('GET_INTERNAL_GRAPHICS_METHOD');
  * - unnecessary render sorting
  * - excessive reflow/recomposition
  */
-const GET_Z_ORDER_OPERATION_METHOD = Symbol('GET_Z_ORDER_OPERATION_METHOD');
+const GET_Z_ORDER_OPERATION_METHOD = Symbol("GET_Z_ORDER_OPERATION_METHOD");
 
 /* -------------------------------------------------------------------------- */
 /*                           Internal Z-Order Reset                           */
@@ -398,7 +398,7 @@ const GET_Z_ORDER_OPERATION_METHOD = Symbol('GET_Z_ORDER_OPERATION_METHOD');
  * - preserves deterministic scheduling
  * - avoids mid-frame graph corruption
  */
-const CLEAR_Z_ORDER_OPERATION_METHOD = Symbol('CLEAR_Z_ORDER_OPERATION_METHOD');
+const CLEAR_Z_ORDER_OPERATION_METHOD = Symbol("CLEAR_Z_ORDER_OPERATION_METHOD");
 
 /* -------------------------------------------------------------------------- */
 /*                               Future Expansion                             */
@@ -414,7 +414,7 @@ const CLEAR_Z_ORDER_OPERATION_METHOD = Symbol('CLEAR_Z_ORDER_OPERATION_METHOD');
  * - inverse matrix
  * - dirty propagation state
  */
-const GET_INTERNAL_TRANSFORM_METHOD = Symbol('GET_INTERNAL_TRANSFORM_METHOD');
+const GET_INTERNAL_TRANSFORM_METHOD = Symbol("GET_INTERNAL_TRANSFORM_METHOD");
 
 /**
  * Recommended future method symbol for retrieving
@@ -426,7 +426,7 @@ const GET_INTERNAL_TRANSFORM_METHOD = Symbol('GET_INTERNAL_TRANSFORM_METHOD');
  * - scheduler metadata
  * - playback state
  */
-const GET_INTERNAL_ANIMATION_METHOD = Symbol('GET_INTERNAL_ANIMATION_METHOD');
+const GET_INTERNAL_ANIMATION_METHOD = Symbol("GET_INTERNAL_ANIMATION_METHOD");
 
 /**
  * Recommended future method symbol for internal
@@ -438,7 +438,7 @@ const GET_INTERNAL_ANIMATION_METHOD = Symbol('GET_INTERNAL_ANIMATION_METHOD');
  * - batching metadata
  * - pipeline state
  */
-const GET_RENDER_CACHE_METHOD = Symbol('GET_RENDER_CACHE_METHOD');
+const GET_RENDER_CACHE_METHOD = Symbol("GET_RENDER_CACHE_METHOD");
 
 /**
  * Computed method symbol used to assign the internal
@@ -449,7 +449,7 @@ const GET_RENDER_CACHE_METHOD = Symbol('GET_RENDER_CACHE_METHOD');
  *
  * Access must remain restricted to engine systems only.
  */
-const SET_PARENT_METHOD = Symbol('SET_PARENT_METHOD');
+const SET_PARENT_METHOD = Symbol("SET_PARENT_METHOD");
 
 /**
  * Computed method symbol used to retrieve the internal
@@ -460,7 +460,7 @@ const SET_PARENT_METHOD = Symbol('SET_PARENT_METHOD');
  *
  * Access must remain restricted to engine systems only.
  */
-const GET_PARENT_METHOD = Symbol('GET_PARENT_METHOD');
+const GET_PARENT_METHOD = Symbol("GET_PARENT_METHOD");
 
 /**
  * Validates whether the provided access key is authorized
@@ -516,9 +516,9 @@ function assertAccess(key: symbol): true {
   if (key !== DEV_INTERNAL_ACCESS_KEY) {
     throw new UnauthorizedInternalAccessError(
       key,
-      'DEV_INTERNAL_ACCESS_KEY',
-      'Invalid access to internal state via invalid key',
-      'assertAccess function call'
+      "DEV_INTERNAL_ACCESS_KEY",
+      "Invalid access to internal state via invalid key",
+      "assertAccess function call",
     );
   }
 
@@ -540,5 +540,5 @@ export {
   GET_RENDER_CACHE_METHOD,
   SET_PARENT_METHOD,
   GET_PARENT_METHOD,
-  assertAccess
+  assertAccess,
 };

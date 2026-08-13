@@ -1,6 +1,5 @@
 Here is a production-grade README.md for your GraphicsModel class. This is structured, technical, and suitable for a real repository.
 
-
 ---
 
 # GraphicsModel
@@ -38,6 +37,7 @@ Z-Order Operations (toFront / toBack) ↓ Direct DOM Manipulation
 Handles all structural and spatial properties.
 
 **Includes:**
+
 - Shape identity (immutable)
 - Transformation stack
 - Dirty flag (render trigger)
@@ -45,6 +45,7 @@ Handles all structural and spatial properties.
 - Rendering context
 
 **Invariants:**
+
 - `shape` is immutable
 - `transformStack` always initialized
 - `dirty` reflects render state
@@ -56,10 +57,12 @@ Handles all structural and spatial properties.
 Handles all visual properties.
 
 **Includes:**
+
 - Stroke, fill, vector effects, etc.
 - Immutable `id`
 
 **Invariants:**
+
 - `id` cannot be modified
 - Style must pass validation before mutation
 
@@ -70,9 +73,11 @@ Handles all visual properties.
 Represents the actual rendered object.
 
 **Current:**
+
 - SVGElement
 
 **Future:**
+
 - Canvas objects
 - WebGL buffers
 
@@ -81,6 +86,7 @@ Represents the actual rendered object.
 ## 🔐 Access Control Model
 
 ### Public Access (Safe)
+
 - `geometry`
 - `style`
 
@@ -89,6 +95,7 @@ Represents the actual rendered object.
 ---
 
 ### Privileged Access (Unsafe)
+
 - `getIGeo(accessKey)`
 - `getIStyle(accessKey)`
 - `getIFig(accessKey)`
@@ -303,3 +310,4 @@ Transactional mutation system
 ---
 
 
+```

@@ -2,31 +2,32 @@ import {
   TranslateMethodProps,
   RotateMethodProps,
   ScaleMethodProps,
-  SkewMethodProps
-} from '../types/affine-transformations';
+  SkewMethodProps,
+} from "../types/affine-transformations";
 
 import type {
   AttrsMethodReturnTypes,
-  AttrsMethodPropsTypes
-} from '../types/common';
+  AttrsMethodPropsTypes,
+} from "../types/common";
 
 import type {
   ValidGraphicsShapes,
   InternalGeometry,
   PublicGeometry,
   InternalStyle,
-  PublicStyle
-} from '../types/graphics-model';
-import type { IGraphicsModel } from './graphics-model';
-import type { ValidGraphicsShapes } from '../types/graphics-model';
-import type { IAnimationOptions } from '../types/animation/options';
-import type { IAnimation } from './animation';
-import type { BboxProps } from '../types/geometry/types';
-import { IEvent } from './event';
-import { IFilter } from './filters';
+  PublicStyle,
+} from "../types/graphics-model";
+import type { IGraphicsModel } from "./graphics-model";
+import type { ValidGraphicsShapes } from "../types/graphics-model";
+import type { IAnimationOptions } from "../types/animation/options";
+import type { IAnimation } from "./animation";
+import type { BboxProps } from "../types/geometry/types";
+import { IEvent } from "./event";
+import { IFilter } from "./filters";
 
-export interface IRenderNode<T extends ValidGraphicsShapes>
-  extends IGraphicsModel<T> {
+export interface IRenderNode<
+  T extends ValidGraphicsShapes,
+> extends IGraphicsModel<T> {
   attrs(props: AttrsMethodPropsTypes<T> | string): AttrsMethodReturnTypes;
 
   getBBox(includeStroke?: boolean): BboxProps;
@@ -58,8 +59,8 @@ export interface IRenderNode<T extends ValidGraphicsShapes>
   isAnimation(): boolean;
   animate(props: IAnimationOptions<T>): void;
   animation(
-    props: IAnimationOptions<T>
-  ): Omit<IAnimation, 'animate' | 'update'>;
+    props: IAnimationOptions<T>,
+  ): Omit<IAnimation, "animate" | "update">;
 
   /*
    * --------------------------------------------------------------------------
@@ -87,6 +88,6 @@ export interface IRenderNode<T extends ValidGraphicsShapes>
  * - Can be attached to structural containers such as canvas/group
  */
 export interface GraphicsRenderNode<
-  T extends ValidGraphicsShapes = ValidGraphicsShapes
-> extends IGraphicsModel<T>,
-    IRenderNode<T> {}
+  T extends ValidGraphicsShapes = ValidGraphicsShapes,
+>
+  extends IGraphicsModel<T>, IRenderNode<T> {}

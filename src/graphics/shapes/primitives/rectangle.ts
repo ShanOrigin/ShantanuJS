@@ -1,32 +1,32 @@
-import { RenderNode } from '../../render-node/render-node.js';
+import { RenderNode } from "../../render-node/render-node.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  assertAccess
-} from '../../../internal/keys/dev-keys.js';
+  assertAccess,
+} from "../../../internal/keys/dev-keys.js";
 import {
   CommonGeometricProperties,
-  AllGShapeStyleProperties
-} from '../../../property-definitions/common/common-properties.js';
+  AllGShapeStyleProperties,
+} from "../../../property-definitions/common/common-properties.js";
 
 import {
   GraphicalElementProperties,
-  dimensions
-} from '../../../property-definitions/specific/specific-properties.js';
+  dimensions,
+} from "../../../property-definitions/specific/specific-properties.js";
 import type {
   InitialProps,
-  ConstructorPropsTypes
-} from '../../../models/types/common';
+  ConstructorPropsTypes,
+} from "../../../models/types/common";
 
 import {
   Log,
   parameterTypeValidator,
-  validProps
-} from '../../../utils/helpers/helpers.js';
-import { computeAABBPoints } from '../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js';
+  validProps,
+} from "../../../utils/helpers/helpers.js";
+import { computeAABBPoints } from "../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js";
 
-export class Rect extends RenderNode<'rect'> {
+export class Rect extends RenderNode<"rect"> {
   #copies: number = 0;
   /**
    * Reference to the base class’s internal geometry object.
@@ -62,21 +62,21 @@ export class Rect extends RenderNode<'rect'> {
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
   // Actual implementation
-  constructor(props: ConstructorPropsTypes<'rect'>) {
-    super('rect', props?.id ?? '');
+  constructor(props: ConstructorPropsTypes<"rect">) {
+    super("rect", props?.id ?? "");
 
-    'id' in props && delete props.id;
+    "id" in props && delete props.id;
 
     parameterTypeValidator(
       props,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
-      'rect'
+      "rect",
     );
 
     // for initial setup through RenderNode
-    (props as ConstructorPropsTypes<'rect'> & InitialProps)['initial'] = true;
+    (props as ConstructorPropsTypes<"rect"> & InitialProps)["initial"] = true;
     this.attrs(props);
   }
 
@@ -86,7 +86,7 @@ export class Rect extends RenderNode<'rect'> {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'rect'
+      "rect",
     );
   }
 
@@ -94,14 +94,14 @@ export class Rect extends RenderNode<'rect'> {
     offsetX: number = 10,
     offsetY: number = 10,
     width?: number,
-    height?: number
+    height?: number,
   ): Rect {
     if (
       this.#geometry &&
-      typeof this.#geometry === 'object' &&
+      typeof this.#geometry === "object" &&
       this.#geometry !== null &&
       this.#style &&
-      typeof this.#style === 'object' &&
+      typeof this.#style === "object" &&
       this.#style !== null
     ) {
       const {
@@ -110,11 +110,11 @@ export class Rect extends RenderNode<'rect'> {
         width: w = 0,
         height: h = 0,
         rx = 0,
-        ry = 0
+        ry = 0,
       } = this.#geometry;
 
       const style = { ...this.#style };
-      if ('id' in style && style.id !== '') {
+      if ("id" in style && style.id !== "") {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
@@ -126,11 +126,11 @@ export class Rect extends RenderNode<'rect'> {
         rx,
         ry,
         initial: true,
-        ...style
-      } as ConstructorPropsTypes<'rect'> & InitialProps);
+        ...style,
+      } as ConstructorPropsTypes<"rect"> & InitialProps);
     }
 
-    throw new Error('Cannot clone: geometry or style is invalid.');
+    throw new Error("Cannot clone: geometry or style is invalid.");
   }
 
   protected override generateMatrix(accessKey: symbol): void {
@@ -149,7 +149,7 @@ export class Rect extends RenderNode<'rect'> {
 
       const { x = 0, y = 0, width: w = 0, height: h = 0 } = geo;
       // Retrieve expected matrix dimensions for a line
-      const [m, n] = dimensions['rect'] as [number, number];
+      const [m, n] = dimensions["rect"] as [number, number];
 
       // Compute total buffer length based on dimensions
       const totalLength = m * n;
@@ -171,7 +171,7 @@ export class Rect extends RenderNode<'rect'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryStatus: Float32Array
+    temporaryStatus: Float32Array,
   ) {
     try {
       assertAccess(accessKey);
@@ -191,21 +191,21 @@ export class Rect extends RenderNode<'rect'> {
         base.subarray(0, 3),
         base.subarray(3, 6),
         base.subarray(6, 9),
-        base.subarray(9, 12)
+        base.subarray(9, 12),
       ];
 
       //   if (!isValidMatrix(m, 4, 3)) return;
       const dim = this.#validateShapeMatrix(
         DEV_INTERNAL_ACCESS_KEY,
         m,
-        true
+        true,
       ) as [number, number];
 
       Array.isArray(dim) &&
         (([geo.width, geo.height] = dim),
         ([geo.x, geo.y] = [
           temporaryStatus[0] as number,
-          temporaryStatus[1] as number
+          temporaryStatus[1] as number,
         ]));
 
       this.#computeBounds(temporaryStatus);
@@ -234,7 +234,7 @@ export class Rect extends RenderNode<'rect'> {
   #validateShapeMatrix(
     accessKey: symbol,
     matrix: Float32Array[],
-    output: boolean = false
+    output: boolean = false,
   ): boolean | number[] {
     assertAccess(accessKey);
     if (matrix.length !== 4) return false;
@@ -243,7 +243,7 @@ export class Rect extends RenderNode<'rect'> {
       Float32Array,
       Float32Array,
       Float32Array,
-      Float32Array
+      Float32Array,
     ];
 
     // --- Utility functions ---
@@ -255,7 +255,7 @@ export class Rect extends RenderNode<'rect'> {
 
     const vec = (
       [x1, y1]: Float32Array,
-      [x2, y2]: Float32Array
+      [x2, y2]: Float32Array,
     ): Float32Array => new Float32Array([x2! - x1!, y2! - y1!]);
 
     const cross = ([x1, y1]: Float32Array, [x2, y2]: Float32Array) =>
@@ -309,15 +309,15 @@ export class Rect extends RenderNode<'rect'> {
       // Recompute positions with snapped lengths
       B.set([
         A[0]! + AB[0]! * (avgWidth / AB_len),
-        A[1]! + AB[1]! * (avgWidth / AB_len)
+        A[1]! + AB[1]! * (avgWidth / AB_len),
       ]);
       C.set([
         B[0]! + BC[0]! * (avgHeight / BC_len),
-        B[1]! + BC[1]! * (avgHeight / BC_len)
+        B[1]! + BC[1]! * (avgHeight / BC_len),
       ]);
       D.set([
         C[0]! - AB[0]! * (avgWidth / AB_len),
-        C[1]! - AB[1]! * (avgWidth / AB_len)
+        C[1]! - AB[1]! * (avgWidth / AB_len),
       ]);
     }
 

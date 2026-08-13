@@ -22,13 +22,11 @@ Instead, it coordinates specialized subsystems responsible for isolated domains.
 
 `Canvas` sits at the top of the runtime rendering pipeline.
 
-
 Canvas
- ├── SceneModel
- ├── Renderer
- ├── Engine
- └── EventSystem
-
+├── SceneModel
+├── Renderer
+├── Engine
+└── EventSystem
 
 ---
 
@@ -50,8 +48,6 @@ Element lookup coordination
 
 Z-order synchronization
 
-
-
 ---
 
 2. Rendering Coordination
@@ -66,9 +62,7 @@ Canvas2D
 
 Future rendering backends
 
-
 The rendering backend itself is abstracted behind the Renderer layer.
-
 
 ---
 
@@ -86,8 +80,6 @@ Dirty state propagation
 
 Render synchronization
 
-
-
 ---
 
 4. Event Dispatch Integration
@@ -102,9 +94,7 @@ Pointer event forwarding
 
 Synthetic event dispatch delegation
 
-
 Graphical entities themselves remain completely DOM-independent.
-
 
 ---
 
@@ -124,7 +114,6 @@ Scene membership management
 
 Z-order state
 
-
 The SceneModel intentionally does not own:
 
 Renderer
@@ -132,7 +121,6 @@ Renderer
 Engine
 
 EventSystem
-
 
 This separation preserves architectural isolation between:
 
@@ -143,8 +131,6 @@ Runtime execution
 Rendering logic
 
 Interaction systems
-
-
 
 ---
 
@@ -159,8 +145,6 @@ SVG elements
 Canvas draw operations
 
 Future GPU primitives
-
-
 
 ---
 
@@ -178,8 +162,6 @@ Rendering lifecycle coordination
 
 Render synchronization
 
-
-
 ---
 
 EventSystem
@@ -196,8 +178,6 @@ Propagation path construction
 
 Capture/bubble execution
 
-
-
 ---
 
 Internal Access Model
@@ -208,12 +188,9 @@ Symbol-keyed computed methods
 
 Capability-token validation
 
-
 Example:
 
-sceneModel[GET_CANVAS_ELEMENTS_METHOD](
-  SYSTEM_INTERNAL_ACCESS_KEY
-);
+sceneModel[GET_CANVAS_ELEMENTS_METHOD](SYSTEM_INTERNAL_ACCESS_KEY);
 
 This architecture provides:
 
@@ -225,26 +202,23 @@ Internal subsystem isolation
 
 Reduced accidental state corruption
 
-
-
 ---
 
 Initialization Flow
 
 Canvas
-   ↓
+↓
 SceneModel creation
-   ↓
+↓
 Renderer initialization
-   ↓
+↓
 Engine creation
-   ↓
+↓
 EventSystem creation
-   ↓
+↓
 DOM event binding
-   ↓
+↓
 Engine startup
-
 
 ---
 
@@ -253,14 +227,13 @@ Constructor
 Signature
 
 constructor(props: {
-  id: string;
-  width: number;
-  height: number;
-  x: number;
-  y: number;
-  context: GRAPHICS_CONTEXT;
+id: string;
+width: number;
+height: number;
+x: number;
+y: number;
+context: GRAPHICS_CONTEXT;
 })
-
 
 ---
 
@@ -272,13 +245,11 @@ Structural Initialization
 
 Creates internal SceneModel
 
-
 Rendering Initialization
 
 Resolves rendering backend
 
 Initializes renderer instance
-
 
 Engine Initialization
 
@@ -286,27 +257,21 @@ Creates runtime rendering engine
 
 Connects scene collections and resolver systems
 
-
 Event System Initialization
 
 Creates centralized event dispatcher
-
 
 DOM Integration
 
 Binds native pointer/mouse events
 
-
 Runtime Startup
 
 Starts rendering engine lifecycle
 
-
-
 ---
 
 Public API
-
 
 ---
 
@@ -322,11 +287,9 @@ Enables rendering participation
 
 Establishes scene ownership
 
-
 Returns
 
 this
-
 
 ---
 
@@ -342,11 +305,9 @@ Removes rendering participation
 
 Clears ownership links
 
-
 Returns
 
 this
-
 
 ---
 
@@ -356,16 +317,14 @@ Checks whether a graphical entity exists within the canvas scene graph.
 
 Return Semantics
 
-Value	Meaning
+Value Meaning
 
-0	Entity does not exist
-1	Entity exists
-
+0 Entity does not exist
+1 Entity exists
 
 Design Note
 
 This method intentionally uses lightweight numeric containment semantics.
-
 
 ---
 
@@ -381,11 +340,9 @@ Clears rendering participation
 
 Resets scene structure
 
-
 Returns
 
 this
-
 
 ---
 
@@ -396,7 +353,6 @@ Returns all registered graphical entities.
 Returns
 
 GraphicsNode[]
-
 
 ---
 
@@ -412,22 +368,19 @@ Setter access
 
 Multi-property retrieval
 
-
-
 ---
 
 Event Flow
 
 DOM Event
-   ↓
+↓
 Canvas
-   ↓
+↓
 EventSystem
-   ↓
+↓
 Synthetic Event Dispatch
-   ↓
+↓
 Graphical Entity Handlers
-
 
 ---
 
@@ -437,22 +390,19 @@ Declarative Scene Interaction
 
 Graphical entities interact through declarative APIs rather than direct renderer manipulation.
 
-
 ---
 
 Strict Layer Separation
 
 The architecture separates:
 
-Layer	Responsibility
+Layer Responsibility
 
-Canvas	Orchestration
-SceneModel	Structural State
-Renderer	Rendering Backend
-Engine	Runtime Execution
-EventSystem	Interaction Dispatch
-
-
+Canvas Orchestration
+SceneModel Structural State
+Renderer Rendering Backend
+Engine Runtime Execution
+EventSystem Interaction Dispatch
 
 ---
 
@@ -466,8 +416,6 @@ Symbol-keyed access methods
 
 Encapsulation boundaries
 
-
-
 ---
 
 DOM Independence
@@ -475,7 +423,6 @@ DOM Independence
 Graphical entities remain independent from DOM APIs.
 
 Only Canvas interacts directly with native browser events.
-
 
 ---
 
@@ -493,8 +440,6 @@ Centralized runtime containers
 
 Modular subsystem registration
 
-
-
 ---
 
 Proxy/Access Overhead
@@ -507,8 +452,6 @@ Symbol-key resolution overhead
 
 Runtime access validation
 
-
-
 ---
 
 Single Root Ownership
@@ -519,8 +462,6 @@ One root scene container
 
 One engine ownership chain per canvas
 
-
-
 ---
 
 Final Characterization
@@ -528,8 +469,6 @@ Final Characterization
 Canvas represents:
 
 > A root orchestration container coordinating scene state, rendering systems, runtime execution, and synthetic interaction flow.
-
-
 
 It acts as the primary integration point between:
 

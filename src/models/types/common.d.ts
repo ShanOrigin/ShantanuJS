@@ -1,21 +1,15 @@
-import type { StyleForGShapeTag } from '../../property-definitions/common/common-properties';
-import type { IGraphicalElementProperties } from '../../property-definitions/specific/specific-properties';
+import type { StyleForGShapeTag } from "../../property-definitions/common/common-properties";
+import type { IGraphicalElementProperties } from "../../property-definitions/specific/specific-properties";
 
-import type { ValidGraphicsShapes } from './graphics-model';
+import type { ValidGraphicsShapes } from "./graphics-model";
 
 export type GRAPHICS_TYPES = SVGElement;
 
 export type GetAttrsMethodsReturnTypes =
-  | string
-  | number
-  | Float32Array
-  | object
-  | undefined;
+  string | number | Float32Array | object | undefined;
 
 export type AttrsMethodReturnTypes =
-  | void
-  | GetAttrsMethodsReturnTypes[]
-  | GetAttrsMethodsReturnTypes;
+  void | GetAttrsMethodsReturnTypes[] | GetAttrsMethodsReturnTypes;
 
 export type TransformStack = {
   stack: Float32Array[];
@@ -23,13 +17,7 @@ export type TransformStack = {
 };
 
 export type Primitive =
-  | string
-  | number
-  | boolean
-  | bigint
-  | symbol
-  | undefined
-  | null;
+  string | number | boolean | bigint | symbol | undefined | null;
 
 export type NativeTypedArray =
   | Int8Array
@@ -45,17 +33,17 @@ export type NativeTypedArray =
   | BigUint64Array;
 
 export type InternalKeys =
-  | 'id'
-  | 'localDirty'
-  | 'worldDirty'
-  | 'shape'
-  | 'zIndex'
-  | 'buffer'
-  | 'parentMatrix'
-  | 'localMatrix'
-  | 'transformStack'
-  | 'bounds'
-  | 'renderUpdateType';
+  | "id"
+  | "localDirty"
+  | "worldDirty"
+  | "shape"
+  | "zIndex"
+  | "buffer"
+  | "parentMatrix"
+  | "localMatrix"
+  | "transformStack"
+  | "bounds"
+  | "renderUpdateType";
 
 export type AttrsMethodPropsTypes<T extends ValidGraphicsShapes> = Partial<
   IGraphicalElementProperties[T]

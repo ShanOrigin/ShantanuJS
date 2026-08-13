@@ -1,14 +1,14 @@
-import { interpolatePointOnCurve } from '../../../math/interpolation/interpolate-point-on-curve.js';
-import { getCubicCurveControlPoints } from '../curve-paths/cubic-curve.js';
-import { getQuadraticCurveControlPoint } from '../curve-paths/quadratic-curve.js';
-import { getArcCurveControlInfo } from '../curve-paths/arc-curve.js';
-import { getCurveAdaptiveSmoothness } from '../curve-utils.js';
-import { Point2D } from '../../../../models/types/geometry/types.js';
+import { interpolatePointOnCurve } from "../../../math/interpolation/interpolate-point-on-curve.js";
+import { getCubicCurveControlPoints } from "../curve-paths/cubic-curve.js";
+import { getQuadraticCurveControlPoint } from "../curve-paths/quadratic-curve.js";
+import { getArcCurveControlInfo } from "../curve-paths/arc-curve.js";
+import { getCurveAdaptiveSmoothness } from "../curve-utils.js";
+import { Point2D } from "../../../../models/types/geometry/types.js";
 import {
   ArcLengthTableEntry,
   CurveInfo,
-  CurveType
-} from '../../../../models/types/geometry/curve.js';
+  CurveType,
+} from "../../../../models/types/geometry/curve.js";
 
 //+++++++++++++++++++++++++++
 // Function  to generate control points and store and Calculate arc length parameterizati       on  on curve
@@ -44,10 +44,10 @@ export function generateCurvePoints({
   P2,
   bend = 0,
   smoothness = 0,
-  curveName = 'quadratic',
+  curveName = "quadratic",
   pointsOnly = false,
   continuous = false,
-  continuousCount = 1
+  continuousCount = 1,
 }: {
   P1: Point2D;
   P2: Point2D;
@@ -70,7 +70,7 @@ export function generateCurvePoints({
   const dy = y2 - y1;
 
   // If continuous mode is active, precompute base distanc
-  if (bend === 0) curveName = 'linear';
+  if (bend === 0) curveName = "linear";
 
   if (!Number.isFinite(smoothness) || smoothness <= 0) {
     smoothness = getCurveAdaptiveSmoothness(P1, P2, bend, curveName);
@@ -93,19 +93,19 @@ export function generateCurvePoints({
     }
 
     switch (curveName) {
-      case 'quadratic':
+      case "quadratic":
         curveInfo = getQuadraticCurveControlPoint(x1, y1, x2, y2, bend);
         break;
-      case 'cubic':
+      case "cubic":
         curveInfo = getCubicCurveControlPoints(x1, y1, x2, y2, bend);
         break;
-      case 'arc':
+      case "arc":
         curveInfo = getArcCurveControlInfo(bend);
         break;
-      case 'earc':
-        curveInfo['arcDirection'] = bend;
+      case "earc":
+        curveInfo["arcDirection"] = bend;
         break;
-      case 'linear':
+      case "linear":
         break;
       default:
         break;
@@ -120,7 +120,7 @@ export function generateCurvePoints({
         y2,
         t,
         curveName,
-        curveInfo
+        curveInfo,
       );
 
       points.push({ x: absolute.x, y: absolute.y });

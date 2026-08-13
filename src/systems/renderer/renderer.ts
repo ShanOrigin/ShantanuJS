@@ -1,10 +1,10 @@
-import { SVGRenderer } from './svg/svg-renderer/svg-renderer.js';
+import { SVGRenderer } from "./svg/svg-renderer/svg-renderer.js";
 
-import type { GRAPHICS_CONTEXT } from '../../models/types/graphics-model';
+import type { GRAPHICS_CONTEXT } from "../../models/types/graphics-model";
 
-import { UnsupportedRenderingBackendError } from '../../errors/index.js';
-import type { IRenderer } from '../../models/interfaces/renderer';
-import { SceneModel } from '../scene/scene-model.js';
+import { UnsupportedRenderingBackendError } from "../../errors/index.js";
+import type { IRenderer } from "../../models/interfaces/renderer";
+import { SceneModel } from "../scene/scene-model.js";
 
 /**
  * Initializes and returns the appropriate rendering backend based on the provided context.
@@ -85,13 +85,13 @@ import { SceneModel } from '../scene/scene-model.js';
  */
 export function initRenderer(
   context: GRAPHICS_CONTEXT,
-  scene: SceneModel
+  scene: SceneModel,
 ): IRenderer {
   // --------------------------------------------------------------------------
   // Select renderer implementation based on context
   // --------------------------------------------------------------------------
   switch (context) {
-    case 'SVG':
+    case "SVG":
       // Instantiate SVG rendering backend
       return new SVGRenderer(scene);
 
@@ -101,8 +101,8 @@ export function initRenderer(
       // ----------------------------------------------------------------------
       throw new UnsupportedRenderingBackendError(
         context as unknown as string, // received invalid context
-        ['svg'], // list of supported contexts
-        'core.backend.initRenderer()' // source identifier for debugging
+        ["svg"], // list of supported contexts
+        "core.backend.initRenderer()", // source identifier for debugging
       );
   }
 }

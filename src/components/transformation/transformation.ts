@@ -17,13 +17,13 @@ import type {
   ScaleMethodProps,
   SkewMethodProps,
   RotateMethodProps,
-  ParsedDaTa
-} from '../../models/types/geometry/transform';
+  ParsedDaTa,
+} from "../../models/types/geometry/transform";
 
-import type { GraphicsNode } from '../../models/interfaces/graphics-container';
+import type { GraphicsNode } from "../../models/interfaces/graphics-container";
 
-import type { InternalGeometryAccessor } from '../../models/types/graphics-model';
-import type { ICommonGeometricProperties } from '../../property-definitions/common/common-properties';
+import type { InternalGeometryAccessor } from "../../models/types/graphics-model";
+import type { ICommonGeometricProperties } from "../../property-definitions/common/common-properties";
 
 /**
  * ============================================================================
@@ -42,8 +42,8 @@ import type { ICommonGeometricProperties } from '../../property-definitions/comm
 import {
   InvalidArgumentError,
   InvalidFormatError,
-  OperationInProgressError
-} from '../../errors/index.js';
+  OperationInProgressError,
+} from "../../errors/index.js";
 
 /**
  * ============================================================================
@@ -56,25 +56,25 @@ import {
  * - low-level type and property checks
  */
 
-import { resetMatrix } from '../../utils/math/matrix/matrix-utils.js';
+import { resetMatrix } from "../../utils/math/matrix/matrix-utils.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
-  GET_INTERNAL_GEOMETRY_METHOD
-} from '../../internal/keys/dev-keys.js';
+  GET_INTERNAL_GEOMETRY_METHOD,
+} from "../../internal/keys/dev-keys.js";
 
-import { affineMatrixMultiplyUsingDOMMatrix } from '../../utils/math/matrix/matrix-multiplication.js';
+import { affineMatrixMultiplyUsingDOMMatrix } from "../../utils/math/matrix/matrix-multiplication.js";
 
 import {
   parameterTypeValidator,
-  propTypes
-} from '../../utils/helpers/helpers.js';
-import { translate } from '../../utils/math/affine/transformations/translation.js';
-import { scale } from '../../utils/math/affine/transformations/scale.js';
-import { rotate } from '../../utils/math/affine/transformations/rotate.js';
-import { skew } from '../../utils/math/affine/transformations/skew.js';
-import { parseExpression } from '../../utils/math/affine/affine-expression-parser.js';
-import type { ITransformation } from '../../models/interfaces/transformation';
-import { resolvePivots } from '../../utils/geometry/pivot-resolution/pivot-utils.js';
+  propTypes,
+} from "../../utils/helpers/helpers.js";
+import { translate } from "../../utils/math/affine/transformations/translation.js";
+import { scale } from "../../utils/math/affine/transformations/scale.js";
+import { rotate } from "../../utils/math/affine/transformations/rotate.js";
+import { skew } from "../../utils/math/affine/transformations/skew.js";
+import { parseExpression } from "../../utils/math/affine/affine-expression-parser.js";
+import type { ITransformation } from "../../models/interfaces/transformation";
+import { resolvePivots } from "../../utils/geometry/pivot-resolution/pivot-utils.js";
 
 /**
  * ============================================================================
@@ -208,7 +208,7 @@ export class Transformation implements ITransformation {
    * - Bypasses public API safety layers intentionally
    * - Intended strictly for engine-internal use
    */
-  readonly #geometry: ICommonGeometricProperties['geometry'];
+  readonly #geometry: ICommonGeometricProperties["geometry"];
 
   /**
    * Readonly Internal style state of the associated shape.
@@ -364,9 +364,9 @@ export class Transformation implements ITransformation {
   public beginT(): this {
     if (this.#isBatching)
       throw new OperationInProgressError(
-        ' .beginT() Transformation batching is already active Call .endT() before invoking .beginT() again.',
-        'Cannot apply any new transformation',
-        'transformation.beginT()'
+        " .beginT() Transformation batching is already active Call .endT() before invoking .beginT() again.",
+        "Cannot apply any new transformation",
+        "transformation.beginT()",
       );
 
     this.#isBatching = true;
@@ -434,7 +434,7 @@ export class Transformation implements ITransformation {
     this.#isBatching = false;
 
     const finalMatrix = this.#batchingAndFinalizeTransformHandler({
-      transformMatrix: this.#composedMatrix
+      transformMatrix: this.#composedMatrix,
     }) as Float32Array;
 
     resetMatrix(this.#composedMatrix);
@@ -491,7 +491,7 @@ export class Transformation implements ITransformation {
    * Returns the current instance when batching is active, otherwise returns void.
    */
   #batchingAndFinalizeTransformHandler({
-    transformMatrix
+    transformMatrix,
   }: {
     transformMatrix: DOMMatrix;
   }): Float32Array | void {
@@ -591,9 +591,9 @@ export class Transformation implements ITransformation {
   public translate({
     x,
     y,
-    tType = 'a',
+    tType = "a",
     px = 0,
-    py = 0
+    py = 0,
   }: TranslateMethodProps): void | Float32Array {
     try {
       /* ---------------------------------------------------------------------
@@ -608,7 +608,7 @@ export class Transformation implements ITransformation {
        * ---------------------------------------------------------------------
        * Ensure all translation inputs conform to the expected type contracts.
        */
-      parameterTypeValidator({ x, y, tType, px, py }, propTypes, {}, {}, '');
+      parameterTypeValidator({ x, y, tType, px, py }, propTypes, {}, {}, "");
 
       /* ---------------------------------------------------------------------
        * STEP 3: Resolve pivot coordinates for absolute or center translation
@@ -619,10 +619,10 @@ export class Transformation implements ITransformation {
 
       const TA = tType.toLowerCase();
 
-      if (TA != 'p' && TA != 'pivot')
+      if (TA != "p" && TA != "pivot")
         ({ px, py } = resolvePivots(
           tType,
-          this.#geometry?.bounds as Float32Array
+          this.#geometry?.bounds as Float32Array,
         ));
 
       /* ---------------------------------------------------------------------
@@ -642,7 +642,7 @@ export class Transformation implements ITransformation {
        */
 
       return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#tempMatrix
+        transformMatrix: this.#tempMatrix,
       }) as Float32Array | void;
     } catch (e) {
       // Propagate errors without interception to preserve original semantics
@@ -706,9 +706,9 @@ export class Transformation implements ITransformation {
   public scale({
     sx,
     sy,
-    tType = 'a',
+    tType = "a",
     px = 0,
-    py = 0
+    py = 0,
   }: ScaleMethodProps): void | Float32Array {
     try {
       /* ---------------------------------------------------------------------
@@ -723,7 +723,7 @@ export class Transformation implements ITransformation {
        * ---------------------------------------------------------------------
        * Ensure all scale inputs conform to the expected type contracts.
        */
-      parameterTypeValidator({ sx, sy, tType, px, py }, propTypes, {}, {}, '');
+      parameterTypeValidator({ sx, sy, tType, px, py }, propTypes, {}, {}, "");
 
       /* ---------------------------------------------------------------------
        * STEP 3: Resolve pivot coordinates for absolute scaling
@@ -733,10 +733,10 @@ export class Transformation implements ITransformation {
        */
       const TA = tType.toLowerCase();
 
-      if (TA != 'p' && TA != 'pivot')
+      if (TA != "p" && TA != "pivot")
         ({ px, py } = resolvePivots(
           tType,
-          this.#geometry?.bounds as Float32Array
+          this.#geometry?.bounds as Float32Array,
         ));
       /* ---------------------------------------------------------------------
        * STEP 4: Generate scaling matrix
@@ -754,7 +754,7 @@ export class Transformation implements ITransformation {
        * transformation lifecycle handling.
        */
       return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#tempMatrix
+        transformMatrix: this.#tempMatrix,
       }) as Float32Array | void;
     } catch (e) {
       // Preserve original error semantics
@@ -817,9 +817,9 @@ export class Transformation implements ITransformation {
    */
   public rotate({
     angle,
-    tType = 'a',
+    tType = "a",
     px = 0,
-    py = 0
+    py = 0,
   }: RotateMethodProps): void | Float32Array {
     try {
       /* ---------------------------------------------------------------------
@@ -834,7 +834,7 @@ export class Transformation implements ITransformation {
        * ---------------------------------------------------------------------
        * Ensure all rotation inputs conform to the expected type contracts.
        */
-      parameterTypeValidator({ angle, tType, px, py }, propTypes, {}, {}, '');
+      parameterTypeValidator({ angle, tType, px, py }, propTypes, {}, {}, "");
 
       /* ---------------------------------------------------------------------
        * STEP 3: Normalize rotation angle
@@ -852,10 +852,10 @@ export class Transformation implements ITransformation {
        */
       const TA = tType.toLowerCase();
 
-      if (TA != 'p' && TA != 'pivot')
+      if (TA != "p" && TA != "pivot")
         ({ px, py } = resolvePivots(
           tType,
-          this.#geometry?.bounds as Float32Array
+          this.#geometry?.bounds as Float32Array,
         ));
       /* ---------------------------------------------------------------------
        * STEP 5: Generate rotation matrix
@@ -873,7 +873,7 @@ export class Transformation implements ITransformation {
        * transformation lifecycle handling.
        */
       return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#tempMatrix
+        transformMatrix: this.#tempMatrix,
       }) as Float32Array | void;
     } catch (e) {
       // Preserve original error semantics
@@ -938,9 +938,9 @@ export class Transformation implements ITransformation {
   public skew({
     sx,
     sy,
-    tType = 'a',
+    tType = "a",
     px = 0,
-    py = 0
+    py = 0,
   }: SkewMethodProps): void | Float32Array {
     try {
       /* ---------------------------------------------------------------------
@@ -955,7 +955,7 @@ export class Transformation implements ITransformation {
        * ---------------------------------------------------------------------
        * Ensure all skew inputs conform to the expected type contracts.
        */
-      parameterTypeValidator({ sx, sy, tType, px, py }, propTypes, {}, {}, '');
+      parameterTypeValidator({ sx, sy, tType, px, py }, propTypes, {}, {}, "");
 
       /* ---------------------------------------------------------------------
        * STEP 3: Normalize skew angles
@@ -973,10 +973,10 @@ export class Transformation implements ITransformation {
        */
       const TA = tType.toLowerCase();
 
-      if (TA != 'p' && TA != 'pivot')
+      if (TA != "p" && TA != "pivot")
         ({ px, py } = resolvePivots(
           tType,
-          this.#geometry?.bounds as Float32Array
+          this.#geometry?.bounds as Float32Array,
         ));
       /* ---------------------------------------------------------------------
        * STEP 5: Generate skew matrix
@@ -994,7 +994,7 @@ export class Transformation implements ITransformation {
        * transformation lifecycle handling.
        */
       return this.#batchingAndFinalizeTransformHandler({
-        transformMatrix: this.#tempMatrix
+        transformMatrix: this.#tempMatrix,
       }) as Float32Array | void;
     } catch (e) {
       // Preserve original error semantics
@@ -1148,7 +1148,7 @@ export class Transformation implements ITransformation {
        * Direct mode is indicated by a trailing 'D' character.
        */
       input.trim();
-      let directMode = input[input.length - 1] === 'D' ? true : false;
+      let directMode = input[input.length - 1] === "D" ? true : false;
       input = directMode ? input.slice(0, input.length - 1) : input;
 
       /* ---------------------------------------------------------------------
@@ -1161,8 +1161,8 @@ export class Transformation implements ITransformation {
       if (!expressions) {
         throw new InvalidFormatError(
           input,
-          'valid transformation expression sequence',
-          'transformation.transform()'
+          "valid transformation expression sequence",
+          "transformation.transform()",
         );
       }
 
@@ -1172,25 +1172,25 @@ export class Transformation implements ITransformation {
        * Convert each expression into a structured transformation descriptor.
        */
       const results: ParsedDaTa[] = [];
-      let transformation = '',
-        Ttype = '';
+      let transformation = "",
+        Ttype = "";
 
       for (const expr of expressions) {
         const parsed = parseExpression(expr.trim());
 
         if (parsed) {
           results.push(parsed);
-          transformation += parsed.tName + ' -> ';
+          transformation += parsed.tName + " -> ";
 
-          'data' in parsed &&
-            'tType' in parsed.data &&
-            (Ttype += parsed.data.tType + ' -> ');
+          "data" in parsed &&
+            "tType" in parsed.data &&
+            (Ttype += parsed.data.tType + " -> ");
         } else {
           throw new InvalidArgumentError(
-            'expression',
+            "expression",
             expr,
-            'valid transformation expression',
-            'transformation.transform()'
+            "valid transformation expression",
+            "transformation.transform()",
           );
         }
       }

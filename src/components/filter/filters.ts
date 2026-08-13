@@ -7,10 +7,10 @@ import type {
   IContrastFilter,
   ISaturateFilter,
   IGrayscale,
-  IHueRotate
-} from '../../models/interfaces/filters';
+  IHueRotate,
+} from "../../models/interfaces/filters";
 
-import { DuplicateFilterError } from '../../errors/index.js';
+import { DuplicateFilterError } from "../../errors/index.js";
 
 /**
  * Manages the collection of graphical filters applied to a renderable object.
@@ -48,53 +48,53 @@ export class Filters implements IFilter {
       throw new DuplicateFilterError(
         id,
         String(this.#filters.get(id)?.type),
-        src
+        src,
       );
     }
   }
 
   blur(id: string, props: IBlurFilter): void {
-    this.#preChecks(id, 'blur');
+    this.#preChecks(id, "blur");
     this.#filters.set(id, {
-      status: 'pending',
-      type: 'blur',
-      props
+      status: "pending",
+      type: "blur",
+      props,
     });
   }
 
   contrast(id: string, props: IContrastFilter): void {
-    this.#preChecks(id, 'contrast');
+    this.#preChecks(id, "contrast");
     this.#filters.set(id, {
-      status: 'pending',
-      type: 'contrast',
-      props
+      status: "pending",
+      type: "contrast",
+      props,
     });
   }
 
   saturate(id: string, props: ISaturateFilter): void {
-    this.#preChecks(id, 'saturate');
+    this.#preChecks(id, "saturate");
     this.#filters.set(id, {
-      status: 'pending',
-      type: 'saturate',
-      props
+      status: "pending",
+      type: "saturate",
+      props,
     });
   }
 
   grayscale(id: string, props: IGrayscale): void {
-    this.#preChecks(id, 'grayscale');
+    this.#preChecks(id, "grayscale");
     this.#filters.set(id, {
-      status: 'pending',
-      type: 'grayscale',
-      props
+      status: "pending",
+      type: "grayscale",
+      props,
     });
   }
 
   hueRotate(id: string, props: IHueRotate): void {
-    this.#preChecks(id, 'hueRotate');
+    this.#preChecks(id, "hueRotate");
     this.#filters.set(id, {
-      status: 'pending',
-      type: 'hueRotate',
-      props
+      status: "pending",
+      type: "hueRotate",
+      props,
     });
   }
 
@@ -111,11 +111,11 @@ export class Filters implements IFilter {
    * @param props Glow filter configuration.
    */
   glow(id: string, props: IGlowFilter): void {
-    this.#preChecks(id, 'glow');
+    this.#preChecks(id, "glow");
     this.#filters.set(id, {
-      status: 'pending',
-      type: 'glow',
-      props
+      status: "pending",
+      type: "glow",
+      props,
     });
   }
 
@@ -133,11 +133,11 @@ export class Filters implements IFilter {
    * @param props Shadow filter configuration.
    */
   shadow(id: string, props: IShadowFilter): void {
-    this.#preChecks(id, ' shadow');
+    this.#preChecks(id, " shadow");
     this.#filters.set(id, {
-      status: 'pending',
-      type: 'shadow',
-      props
+      status: "pending",
+      type: "shadow",
+      props,
     });
   }
 

@@ -1,12 +1,12 @@
-import type { AttrsMethodReturnTypes } from '../types/common';
+import type { AttrsMethodReturnTypes } from "../types/common";
 
 import type {
   ValidGraphicsShapes,
   InternalGeometry,
   PublicGeometry,
   InternalStyle,
-  PublicStyle
-} from '../types/graphics-model';
+  PublicStyle,
+} from "../types/graphics-model";
 
 export interface IGraphicsModel<T extends ValidGraphicsShapes> {
   readonly geometry: PublicGeometry<T>;
@@ -14,7 +14,7 @@ export interface IGraphicsModel<T extends ValidGraphicsShapes> {
   readonly style: PublicStyle<T>;
 
   attrs(
-    props: Partial<InternalGeometry<T> & InternalStyle<T>> | string
+    props: Partial<InternalGeometry<T> & InternalStyle<T>> | string,
   ): AttrsMethodReturnTypes;
 
   toFront(): void;

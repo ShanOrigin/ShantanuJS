@@ -1,0 +1,424 @@
+{
+  "meta": {
+    "info": {
+      "module": "core",
+      "testType": "unit",
+      "canvasId": "testing-Canvas"
+    },
+    "environment": {
+      "libraryVersion": "0.0.0",
+      "browser": {
+        "name": "Firefox",
+        "version": "152.0"
+      },
+      "platform": "Linux"
+    }
+  },
+  "tests": {
+    "unit-core-arcCurve-5": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "arcCurve",
+        "id": "unit-core-arcCurve-5"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 6
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -6
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -6,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-circle-2": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "circle",
+        "id": "unit-core-circle-2"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 3
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -3
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -3,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-cubicCurve-6": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "cubicCurve",
+        "id": "unit-core-cubicCurve-6"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 7
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -7
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -7,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-earcCurve-8": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "earcCurve",
+        "id": "unit-core-earcCurve-8"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 9
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -9
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -9,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-ellipse-3": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "ellipse",
+        "id": "unit-core-ellipse-3"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 4
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -4
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -4,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-image-10": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "image",
+        "id": "unit-core-image-10"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 11
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -11
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -11,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-line-0": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "line",
+        "id": "unit-core-line-0"
+      },
+      "states": {
+        "before": {
+          "user-defined": {}
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -1,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-point-1": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "point",
+        "id": "unit-core-point-1"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 2
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -2
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -2,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-quadraticCurve-7": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "quadraticCurve",
+        "id": "unit-core-quadraticCurve-7"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 8
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -8
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -8,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-rect-4": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "rect",
+        "id": "unit-core-rect-4"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 5
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -5
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -5,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-text-9": {
+      "information": {
+        "description": "Testing .toBack() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "text",
+        "id": "unit-core-text-9"
+      },
+      "states": {
+        "before": {
+          "user-defined": {
+            "zIndex": 10
+          }
+        },
+        "after": {
+          "user-defined": {
+            "zIndex": -10
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 1,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "user-defined",
+          "expected": -10,
+          "property": "zIndex",
+          "expectedStatus": "pass",
+          "checkType": "custom",
+          "actualStatus": "pass"
+        }
+      ]
+    }
+  }
+}

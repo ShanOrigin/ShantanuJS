@@ -1,4 +1,4 @@
-import type { IEngine } from '../../models/interfaces/engine';
+import type { IEngine } from "../../models/interfaces/engine";
 
 import type {
   GraphicsNode,
@@ -9,57 +9,57 @@ import type {
   ZOrderResolutionCleanUpFuncAccessor,
   GetSceneElementsAccessor,
   GetSceneElementIdMapAccessor,
-  GetSceneZOrderResolverAccessor
-} from '../../models/interfaces/graphics-container';
+  GetSceneZOrderResolverAccessor,
+} from "../../models/interfaces/graphics-container";
 import type {
   InternalGeometryAccessor,
   InternalStyleAccessor,
   InternalComputedStyleAccessor,
-  ValidGraphicsShapes
-} from '../../models/types/graphics-model';
-import type { IRenderNode } from '../../models/interfaces/render-node';
+  ValidGraphicsShapes,
+} from "../../models/types/graphics-model";
+import type { IRenderNode } from "../../models/interfaces/render-node";
 import type {
   InternalUpdateTransformMethodAccessor,
   InternalRestoreDimensionMethodAccessor,
-  InternalUpdateAnimationMethodAccessor
-} from '../../models/types/render-node';
+  InternalUpdateAnimationMethodAccessor,
+} from "../../models/types/render-node";
 
-import type { TransformStack } from '../../models/types/common';
-import type { SceneModel } from '../scene/scene-model';
-import type { IRenderer } from '../../models/interfaces/renderer';
+import type { TransformStack } from "../../models/types/common";
+import type { SceneModel } from "../scene/scene-model";
+import type { IRenderer } from "../../models/interfaces/renderer";
 
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_COMPUTED_STYLE_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  GET_PARENT_METHOD
-} from '../../internal/keys/dev-keys.js';
+  GET_PARENT_METHOD,
+} from "../../internal/keys/dev-keys.js";
 
-import { GraphicsModel } from '../../core/graphics-model/graphics-model.js';
+import { GraphicsModel } from "../../core/graphics-model/graphics-model.js";
 
 import {
   InvalidArgumentError,
-  InvalidInternalStateError
-} from '../../errors/index.js';
-import { Log, RenderPhase } from '../../utils/helpers/helpers.js';
-import { IGraphicalElementProperties } from '../../property-definitions/specific/specific-properties.js';
+  InvalidInternalStateError,
+} from "../../errors/index.js";
+import { Log, RenderPhase } from "../../utils/helpers/helpers.js";
+import { IGraphicalElementProperties } from "../../property-definitions/specific/specific-properties.js";
 
 import {
   GET_SCENE_ELEMENTS_METHOD,
   GET_SCENE_Z_ORDER_RESOLVER_METHOD,
-  SYSTEM_INTERNAL_ACCESS_KEY
-} from '../../internal/keys/system-keys.js';
+  SYSTEM_INTERNAL_ACCESS_KEY,
+} from "../../internal/keys/system-keys.js";
 
 import {
   UPDATE_TRANSFORM_METHOD,
   RESTORE_DIMENSION_METHOD,
-  UPDATE_ANIMATION_METHOD
-} from '../../internal/keys/render-node-keys.js';
+  UPDATE_ANIMATION_METHOD,
+} from "../../internal/keys/render-node-keys.js";
 import {
   affineMatrixMultiply,
-  applyTransformToHomogeneousBuffer
-} from '../../utils/math/matrix/matrix-multiplication.js';
+  applyTransformToHomogeneousBuffer,
+} from "../../utils/math/matrix/matrix-multiplication.js";
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -482,7 +482,7 @@ export class Engine implements IEngine {
       const shape = shapes[i];
 
       const geoRef = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as Partial<{
         localDirty: boolean;
       }>;
@@ -625,7 +625,7 @@ export class Engine implements IEngine {
    */
 
   #frame(time: number) {
-    if (__DEV__) Log(' running engine ... ');
+    if (__DEV__) Log(" running engine ... ");
     // --------------------------------------------------
     // STEP 0
     // Resolve structural ordering
@@ -634,7 +634,7 @@ export class Engine implements IEngine {
     this.#renderer.render(RenderPhase.PREPARE);
 
     const sceneGeometry = this.#scene[GET_INTERNAL_GEOMETRY_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     );
     if (sceneGeometry?.localDirty || sceneGeometry?.worldDirty) {
       //	this.#scene[UPDATE_SCENE](SYSTEM_INTERNAL_ACCESS_KEY);
@@ -643,7 +643,7 @@ export class Engine implements IEngine {
     }
 
     this.#scene[GET_SCENE_Z_ORDER_RESOLVER_METHOD](
-      SYSTEM_INTERNAL_ACCESS_KEY
+      SYSTEM_INTERNAL_ACCESS_KEY,
     )();
 
     // --------------------------------------------------
@@ -673,14 +673,14 @@ export class Engine implements IEngine {
       if (!(shape instanceof GraphicsModel)) {
         throw new InvalidInternalStateError(
           shape,
-          'valid shape',
-          'Encountered non-renderable shape in engine frame execution.',
-          'engine.#frame()'
+          "valid shape",
+          "Encountered non-renderable shape in engine frame execution.",
+          "engine.#frame()",
         );
       }
 
       const geo = shape[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as {
         buffer: Float32Array;
         localMatrix: Float32Array;
@@ -694,7 +694,6 @@ export class Engine implements IEngine {
       // -----------------------------------------------------------
       if (geo.localDirty || geo.worldDirty) {
         shape[UPDATE_TRANSFORM_METHOD](DEV_INTERNAL_ACCESS_KEY);
-        if (__DEV__) Log('in update transform');
 
         // -----------------------------------------------------------
         // ANIMATION (delta)
@@ -706,7 +705,7 @@ export class Engine implements IEngine {
         if (shape.isAnimation()) {
           const animationFrameData = shape[UPDATE_ANIMATION_METHOD](
             time,
-            DEV_INTERNAL_ACCESS_KEY
+            DEV_INTERNAL_ACCESS_KEY,
           ) as {
             animationMatrix: Float32Array;
             [key: string]: string | number | Float32Array;
@@ -720,7 +719,6 @@ export class Engine implements IEngine {
             affineMatrixMultiply(base, animationMatrix, geo.localMatrix);
 
             if (style) shape.attrs(style);
-            if (__DEV__) Log(' setting animation matrix');
           }
         } else {
           geo.localMatrix.set(base);
@@ -748,7 +746,7 @@ export class Engine implements IEngine {
 
     // STEP 4: Sorting
     shapes.sort(
-      (a, b) => (a?.geometry?.zIndex ?? 0) - (b?.geometry?.zIndex ?? 0)
+      (a, b) => (a?.geometry?.zIndex ?? 0) - (b?.geometry?.zIndex ?? 0),
     );
 
     // --------------------------------------------------
@@ -844,7 +842,7 @@ export class Engine implements IEngine {
     }
 */
     parent = shape[GET_PARENT_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as GraphicsNodeWithInternalAccessMethods;
 
     // Resolve parent first
@@ -860,7 +858,7 @@ export class Engine implements IEngine {
     // -----------------------------------------------------------
     // STYLE PROPAGATION (Group only, NOT Canvas)
     // -----------------------------------------------------------
-    if (parent && parent.geometry?.shape === 'g') {
+    if (parent && parent.geometry?.shape === "g") {
       this.#computeWorldStyle(shape, parent);
     }
 
@@ -891,10 +889,10 @@ export class Engine implements IEngine {
    */
   #computeWorldMatrix(
     shape: GraphicsNodeWithInternalAccessMethods,
-    parent: GraphicsNodeWithInternalAccessMethods | null
+    parent: GraphicsNodeWithInternalAccessMethods | null,
   ) {
     const childGeometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as {
       shape: string;
       localMatrix: Float32Array;
@@ -905,7 +903,7 @@ export class Engine implements IEngine {
 
     if (parent) {
       const parentGeometry = parent[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       );
       const parentWorldMatrix = parentGeometry?.worldMatrix as Float32Array;
       const childWorldMatrix = childGeometry?.worldMatrix as Float32Array;
@@ -913,12 +911,8 @@ export class Engine implements IEngine {
       affineMatrixMultiply(
         parentWorldMatrix,
         childLocalMatrix,
-        childWorldMatrix
+        childWorldMatrix,
       );
-
-      if (childGeometry.shape == 'rect') {
-        Log('worldMatrix', JSON.stringify(childWorldMatrix));
-      }
     }
   }
 
@@ -964,22 +958,22 @@ export class Engine implements IEngine {
    */
   #computeWorldStyle(
     shape: GraphicsNodeWithInternalAccessMethods,
-    parent: GraphicsNodeWithInternalAccessMethods | null
+    parent: GraphicsNodeWithInternalAccessMethods | null,
   ) {
     const computed = shape[GET_INTERNAL_COMPUTED_STYLE_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as Record<string, string | number | boolean>;
 
     const local = shape[GET_INTERNAL_STYLE_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as Record<string, string | number | boolean>;
 
     // -----------------------------------------------------------
     // STEP 1: Inherit from parent (Group only)
     // -----------------------------------------------------------
-    if (parent && parent.geometry?.shape === 'g') {
+    if (parent && parent.geometry?.shape === "g") {
       const parentComputed = parent[GET_INTERNAL_COMPUTED_STYLE_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as Record<string, any>;
 
       for (const k in parentComputed) {

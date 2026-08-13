@@ -8,14 +8,14 @@
 
 import type {
   IShadowFilter,
-  IGlowFilter
-} from '../../../../models/interfaces/filters';
+  IGlowFilter,
+} from "../../../../models/interfaces/filters";
 
-import { createSVGElement, SVGSOURCE } from '../core/core.js';
+import { createSVGElement, SVGSOURCE } from "../core/core.js";
 
 export class SVGFilters {
   private static createFilter(id: string): SVGFilterElement {
-    const filter = createSVGElement(SVGSOURCE, 'filter') as SVGFilterElement;
+    const filter = createSVGElement(SVGSOURCE, "filter") as SVGFilterElement;
     filter.id = id;
     return filter;
   }
@@ -27,8 +27,8 @@ export class SVGFilters {
    */
   static blur(id: string, radius: number = 5): SVGFilterElement {
     const filter = this.createFilter(id);
-    const blur = createSVGElement(SVGSOURCE, 'feGaussianBlur');
-    blur.setAttribute('stdDeviation', String(radius));
+    const blur = createSVGElement(SVGSOURCE, "feGaussianBlur");
+    blur.setAttribute("stdDeviation", String(radius));
     filter.appendChild(blur);
     return filter;
   }
@@ -40,13 +40,13 @@ export class SVGFilters {
    */
   static contrast(id: string, amount: number = 1): SVGFilterElement {
     const filter = this.createFilter(id);
-    const ct = createSVGElement(SVGSOURCE, 'feComponentTransfer');
+    const ct = createSVGElement(SVGSOURCE, "feComponentTransfer");
     const intercept = (1 - amount) / 2;
-    ['R', 'G', 'B'].forEach((c) => {
+    ["R", "G", "B"].forEach((c) => {
       const fn = createSVGElement(SVGSOURCE, `feFunc${c}`);
-      fn.setAttribute('type', 'linear');
-      fn.setAttribute('slope', String(amount));
-      fn.setAttribute('intercept', String(intercept));
+      fn.setAttribute("type", "linear");
+      fn.setAttribute("slope", String(amount));
+      fn.setAttribute("intercept", String(intercept));
       ct.appendChild(fn);
     });
     filter.appendChild(ct);
@@ -60,9 +60,9 @@ export class SVGFilters {
    */
   static saturate(id: string, amount: number = 1): SVGFilterElement {
     const filter = this.createFilter(id);
-    const m = createSVGElement(SVGSOURCE, 'feColorMatrix');
-    m.setAttribute('type', 'saturate');
-    m.setAttribute('values', String(amount));
+    const m = createSVGElement(SVGSOURCE, "feColorMatrix");
+    m.setAttribute("type", "saturate");
+    m.setAttribute("values", String(amount));
     filter.appendChild(m);
     return filter;
   }
@@ -74,9 +74,9 @@ export class SVGFilters {
    */
   static grayscale(id: string, amount: number = 1): SVGFilterElement {
     const filter = this.createFilter(id);
-    const m = createSVGElement(SVGSOURCE, 'feColorMatrix');
-    m.setAttribute('type', 'saturate');
-    m.setAttribute('values', String(1 - amount));
+    const m = createSVGElement(SVGSOURCE, "feColorMatrix");
+    m.setAttribute("type", "saturate");
+    m.setAttribute("values", String(1 - amount));
     filter.appendChild(m);
     return filter;
   }
@@ -88,9 +88,9 @@ export class SVGFilters {
    */
   static hueRotate(id: string, angle: number = 0): SVGFilterElement {
     const filter = this.createFilter(id);
-    const m = createSVGElement(SVGSOURCE, 'feColorMatrix');
-    m.setAttribute('type', 'hueRotate');
-    m.setAttribute('values', String(angle));
+    const m = createSVGElement(SVGSOURCE, "feColorMatrix");
+    m.setAttribute("type", "hueRotate");
+    m.setAttribute("values", String(angle));
     filter.appendChild(m);
     return filter;
   }
@@ -105,16 +105,16 @@ export class SVGFilters {
       offsetX = 0,
       offsetY = 4,
       blur = 6,
-      color = '#000000',
-      opacity = 0.5
+      color = "#000000",
+      opacity = 0.5,
     } = props;
     const filter = this.createFilter(id);
-    const ds = createSVGElement(SVGSOURCE, 'feDropShadow');
-    ds.setAttribute('dx', String(offsetX));
-    ds.setAttribute('dy', String(offsetY));
-    ds.setAttribute('stdDeviation', String(blur));
-    ds.setAttribute('flood-color', color);
-    ds.setAttribute('flood-opacity', String(opacity));
+    const ds = createSVGElement(SVGSOURCE, "feDropShadow");
+    ds.setAttribute("dx", String(offsetX));
+    ds.setAttribute("dy", String(offsetY));
+    ds.setAttribute("stdDeviation", String(blur));
+    ds.setAttribute("flood-color", color);
+    ds.setAttribute("flood-opacity", String(opacity));
     filter.appendChild(ds);
     return filter;
   }
@@ -125,29 +125,29 @@ export class SVGFilters {
    * @param props Glow configuration.
    */
   static glow(id: string, props: IGlowFilter): SVGFilterElement {
-    const { blur = 8, color = '#000000' } = props;
+    const { blur = 8, color = "#000000" } = props;
 
     const filter = this.createFilter(id);
 
-    const gBlur = createSVGElement(SVGSOURCE, 'feGaussianBlur');
-    gBlur.setAttribute('stdDeviation', String(blur));
-    gBlur.setAttribute('result', 'blur');
+    const gBlur = createSVGElement(SVGSOURCE, "feGaussianBlur");
+    gBlur.setAttribute("stdDeviation", String(blur));
+    gBlur.setAttribute("result", "blur");
 
-    const flood = createSVGElement(SVGSOURCE, 'feFlood');
-    flood.setAttribute('flood-color', color);
-    flood.setAttribute('result', 'color');
+    const flood = createSVGElement(SVGSOURCE, "feFlood");
+    flood.setAttribute("flood-color", color);
+    flood.setAttribute("result", "color");
 
-    const comp = createSVGElement(SVGSOURCE, 'feComposite');
-    comp.setAttribute('in', 'color');
-    comp.setAttribute('in2', 'blur');
-    comp.setAttribute('operator', 'in');
-    comp.setAttribute('result', 'glow');
+    const comp = createSVGElement(SVGSOURCE, "feComposite");
+    comp.setAttribute("in", "color");
+    comp.setAttribute("in2", "blur");
+    comp.setAttribute("operator", "in");
+    comp.setAttribute("result", "glow");
 
-    const merge = createSVGElement(SVGSOURCE, 'feMerge');
-    const n1 = createSVGElement(SVGSOURCE, 'feMergeNode');
-    n1.setAttribute('in', 'glow');
-    const n2 = createSVGElement(SVGSOURCE, 'feMergeNode');
-    n2.setAttribute('in', 'SourceGraphic');
+    const merge = createSVGElement(SVGSOURCE, "feMerge");
+    const n1 = createSVGElement(SVGSOURCE, "feMergeNode");
+    n1.setAttribute("in", "glow");
+    const n2 = createSVGElement(SVGSOURCE, "feMergeNode");
+    n2.setAttribute("in", "SourceGraphic");
     merge.append(n1, n2);
 
     filter.append(gBlur, flood, comp, merge);

@@ -1,11 +1,11 @@
-import { OptimizationTechnique } from '../../../models/types/animation/control';
+import { OptimizationTechnique } from "../../../models/types/animation/control";
 import type {
   TransformAnchors,
   CenterAnchors,
   Pivot,
-  PivotAnchors
-} from '../../../models/types/geometry/anchors';
-import { PivotTransformations } from '../../../models/types/geometry/transform';
+  PivotAnchors,
+} from "../../../models/types/geometry/anchors";
+import { PivotTransformations } from "../../../models/types/geometry/transform";
 
 /**
  * List of supported anchor point identifiers.
@@ -17,15 +17,15 @@ import { PivotTransformations } from '../../../models/types/geometry/transform';
  * The identifiers follow a concise directional naming convention.
  */
 export const ANCHORS_MAP: readonly string[] = [
-  'TL',
-  'TM',
-  'TR',
-  'RM',
-  'BR',
-  'BM',
-  'BL',
-  'LM',
-  'C'
+  "TL",
+  "TM",
+  "TR",
+  "RM",
+  "BR",
+  "BM",
+  "BL",
+  "LM",
+  "C",
 ] as const;
 
 /**
@@ -38,12 +38,12 @@ export const ANCHORS_MAP: readonly string[] = [
  * Both shorthand and descriptive aliases are supported.
  */
 export const MODES_MAP: readonly string[] = [
-  'r',
-  'c',
-  'p',
-  'relative',
-  'pivot',
-  'center'
+  "r",
+  "c",
+  "p",
+  "relative",
+  "pivot",
+  "center",
 ] as const;
 
 /**
@@ -73,7 +73,7 @@ export const MODES_MAP: readonly string[] = [
  */
 export function resolvePivots(
   mode: TransformAnchors | CenterAnchors | PivotAnchors,
-  bounds: Float32Array
+  bounds: Float32Array,
 ): Required<Pivot> {
   const minX = bounds[0] as number;
   const minY = bounds[1] as number;
@@ -86,36 +86,36 @@ export function resolvePivots(
   const normalizedMode = mode.toLowerCase();
 
   switch (normalizedMode) {
-    case 'c':
-    case 'center':
+    case "c":
+    case "center":
       return { px: centerX, py: centerY };
 
-    case 'tm':
+    case "tm":
       return { px: centerX, py: minY };
 
-    case 'tr':
+    case "tr":
       return { px: maxX, py: minY };
 
-    case 'rm':
+    case "rm":
       return { px: maxX, py: centerY };
 
-    case 'br':
+    case "br":
       return { px: maxX, py: maxY };
 
-    case 'bm':
+    case "bm":
       return { px: centerX, py: maxY };
 
-    case 'bl':
+    case "bl":
       return { px: minX, py: maxY };
 
-    case 'lm':
+    case "lm":
       return { px: minX, py: centerY };
 
-    case 'r':
-    case 'relative':
-    case 'a':
-    case 'absolute':
-    case 'tl':
+    case "r":
+    case "relative":
+    case "a":
+    case "absolute":
+    case "tl":
     default:
       return { px: minX, py: minY };
   }
@@ -144,7 +144,7 @@ export function resolvePivots(
  */
 
 export function choosePivotAwareOptimization(
-  params: Pick<PivotTransformations, 'rotate'>
+  params: Pick<PivotTransformations, "rotate">,
 ): OptimizationTechnique {
   const { rotate } = params;
 
@@ -154,12 +154,12 @@ export function choosePivotAwareOptimization(
 
   if (rotationArbitrary) {
     // --- If rotation with arbitrary pivot exists → must use precompute ---
-    return 'preComputeFrames';
+    return "preComputeFrames";
   }
 
   // Optional: if skew with arbitrary pivot breaks polynomial fit, uncomment
   // if (skewArbitrary) return 'precompute';
 
   // Otherwise, polynomial fit is safe
-  return 'fitPolynomialCoefficient';
+  return "fitPolynomialCoefficient";
 }

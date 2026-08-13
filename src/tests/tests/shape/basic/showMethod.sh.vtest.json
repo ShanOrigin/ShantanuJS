@@ -1,0 +1,539 @@
+{
+  "meta": {
+    "info": {
+      "module": "core",
+      "testType": "unit",
+      "canvasId": "testing-Canvas"
+    },
+    "environment": {
+      "libraryVersion": "0.0.0",
+      "browser": {
+        "name": "Firefox",
+        "version": "152.0"
+      },
+      "platform": "Linux"
+    }
+  },
+  "tests": {
+    "unit-core-arcCurve-5": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "arcCurve",
+        "id": "unit-core-arcCurve-5"
+      },
+      "states": {
+        "before": {
+          "style": {}
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-circle-2": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "circle",
+        "id": "unit-core-circle-2"
+      },
+      "states": {
+        "before": {
+          "style": {
+            "opacity": 0
+          }
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-cubicCurve-6": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "cubicCurve",
+        "id": "unit-core-cubicCurve-6"
+      },
+      "states": {
+        "before": {
+          "style": {}
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-earcCurve-8": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "earcCurve",
+        "id": "unit-core-earcCurve-8"
+      },
+      "states": {
+        "before": {
+          "style": {}
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-ellipse-3": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "ellipse",
+        "id": "unit-core-ellipse-3"
+      },
+      "states": {
+        "before": {
+          "style": {
+            "opacity": 0
+          }
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-image-10": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "image",
+        "id": "unit-core-image-10"
+      },
+      "states": {
+        "before": {
+          "style": {
+            "opacity": 0
+          }
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-line-0": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "line",
+        "id": "unit-core-line-0"
+      },
+      "states": {
+        "before": {
+          "style": {
+            "opacity": 0
+          }
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-point-1": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "point",
+        "id": "unit-core-point-1"
+      },
+      "states": {
+        "before": {
+          "style": {
+            "opacity": 0
+          }
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-quadraticCurve-7": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "quadraticCurve",
+        "id": "unit-core-quadraticCurve-7"
+      },
+      "states": {
+        "before": {
+          "style": {}
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-rect-4": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "rect",
+        "id": "unit-core-rect-4"
+      },
+      "states": {
+        "before": {
+          "style": {
+            "opacity": 0
+          }
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    },
+    "unit-core-text-9": {
+      "information": {
+        "description": "Testing .show() method of shape",
+        "module": "core",
+        "testType": "unit",
+        "element": "text",
+        "id": "unit-core-text-9"
+      },
+      "states": {
+        "before": {
+          "style": {
+            "opacity": 0
+          }
+        },
+        "after": {
+          "style": {
+            "opacity": 1
+          }
+        }
+      },
+      "status": {
+        "result": "pass",
+        "totalPassedAssertions": 2,
+        "totalFailedAssertions": 0
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "eq",
+          "actual": 1,
+          "expected": 1,
+          "actualStatus": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "opacity",
+          "expectedStatus": "pass",
+          "checkType": "neq",
+          "actual": 1,
+          "expected": 0,
+          "actualStatus": "pass"
+        }
+      ]
+    }
+  }
+}

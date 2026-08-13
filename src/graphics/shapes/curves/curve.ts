@@ -1,33 +1,34 @@
-import { RenderNode } from '../../render-node/render-node.js';
+import { RenderNode } from "../../render-node/render-node.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  assertAccess
-} from '../../../internal/keys/dev-keys.js';
+  assertAccess,
+} from "../../../internal/keys/dev-keys.js";
 import {
   CommonGeometricProperties,
-  AllGShapeStyleProperties
-} from '../../../property-definitions/common/common-properties.js';
+  AllGShapeStyleProperties,
+} from "../../../property-definitions/common/common-properties.js";
 
 import {
   GraphicalElementProperties,
-  dimensions
-} from '../../../property-definitions/specific/specific-properties.js';
+  dimensions,
+} from "../../../property-definitions/specific/specific-properties.js";
 import type {
   AttrsMethodPropsTypes,
   InitialProps,
   ConstructorPropsTypes,
-  AttrsMethodReturnTypes
-} from '../../../models/types/common';
+  AttrsMethodReturnTypes,
+} from "../../../models/types/common";
 
-import { validProps } from '../../../utils/helpers/helpers.js';
+import { validProps } from "../../../utils/helpers/helpers.js";
 
-import { generateCurvePoints } from '../../../utils/geometry/curves/curve-generator/generate-curve-points.js';
-import { Point2D } from '../../../models/types/geometry/types.js';
-import { CurveType } from '../../../models/types/geometry/curve.js';
+import { generateCurvePoints } from "../../../utils/geometry/curves/curve-generator/generate-curve-points.js";
+import { Point2D } from "../../../models/types/geometry/types.js";
+import { CurveType } from "../../../models/types/geometry/curve.js";
+import { computeAABBPoints } from "../../../utils/geometry/bounding-box/axis-aligned-bounding-box.js";
 
-export class Curve extends RenderNode<'curve'> {
+export class Curve extends RenderNode<"curve"> {
   #copies: number = 0;
   /**
    * Reference to the base class’s internal geometry object.
@@ -62,25 +63,26 @@ export class Curve extends RenderNode<'curve'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(props: ConstructorPropsTypes<'curve'>) {
-    super('curve', props?.id ?? '');
+  constructor(props: ConstructorPropsTypes<"curve">) {
+    super("curve", props?.id ?? "");
 
     try {
+      "id" in props && delete props.id;
       const {
         x1,
         y1,
         x2,
         y2,
-        curveName = 'cubic',
+        curveName = "cubic",
         curvature = 0.5,
         smoothness,
         continuous = false,
-        continuousCount = 1
+        continuousCount = 1,
       } = props;
 
       const safeProps = {
-        stroke: props['stroke'] || 'black',
-        'stroke-width': props['stroke-width'] || 0.5,
+        stroke: props["stroke"] || "black",
+        "stroke-width": props["stroke-width"] || 0.5,
         x1,
         y1,
         x2,
@@ -91,8 +93,8 @@ export class Curve extends RenderNode<'curve'> {
         continuousCount,
         curveName,
         initial: true,
-        ...props
-      } as ConstructorPropsTypes<'curve'> & InitialProps;
+        ...props,
+      } as ConstructorPropsTypes<"curve"> & InitialProps;
 
       this.attrs(safeProps);
     } catch (e) {
@@ -101,29 +103,29 @@ export class Curve extends RenderNode<'curve'> {
   }
 
   public override attrs(
-    props: AttrsMethodPropsTypes<'curve'> | string
+    props: AttrsMethodPropsTypes<"curve"> | string,
   ): AttrsMethodReturnTypes {
     try {
-      const isObject = typeof props == 'object';
+      const isObject = typeof props == "object";
 
       if (isObject) {
-        const isCurveName = 'curveName' in props;
+        const isCurveName = "curveName" in props;
 
-        const isIntial = 'initial' in props;
+        const isIntial = "initial" in props;
 
         !isIntial &&
           (console.warn(`Curve Name Cannot be Changed `),
-          (props['curveName'] = this.#geometry?.curveName));
+          (props["curveName"] = this.#geometry?.curveName));
 
         const needRecalculatePath =
-          'x1' in props ||
-          'y1' in props ||
-          'x2' in props ||
-          'y2' in props ||
-          'curvature' in props ||
-          'smoothness' in props ||
-          'continuous' in props ||
-          'continuousCount' in props ||
+          "x1" in props ||
+          "y1" in props ||
+          "x2" in props ||
+          "y2" in props ||
+          "curvature" in props ||
+          "smoothness" in props ||
+          "continuous" in props ||
+          "continuousCount" in props ||
           isCurveName;
 
         if (needRecalculatePath) {
@@ -136,7 +138,7 @@ export class Curve extends RenderNode<'curve'> {
             smoothness = 100,
             continuous = false,
             continuousCount = 1,
-            curveName = 'linear'
+            curveName = "linear",
           } = props;
 
           if (!continuous) {
@@ -151,39 +153,39 @@ export class Curve extends RenderNode<'curve'> {
             curveName: curveName as CurveType,
             pointsOnly: true,
             continuous: continuous as boolean,
-            continuousCount: continuousCount as number
+            continuousCount: continuousCount as number,
           }) as Point2D[];
 
-          let pointsAttr = '';
+          let pointsAttr = "";
           if (
             (points && !Array.isArray(points)) ||
             !points.every(
               (row) =>
-                typeof row == 'object' &&
-                typeof row.x == 'number' &&
-                typeof row.y == 'number'
+                typeof row == "object" &&
+                typeof row.x == "number" &&
+                typeof row.y == "number",
             )
           ) {
             throw new Error(
-              'Invalid matrix: must be an array of [x, y] coordinates.'
+              "Invalid matrix: must be an array of [x, y] coordinates.",
             );
           }
 
           for (let i = 0; i < points.length; i++) {
             pointsAttr += `${points[i]!.x.toFixed(10)},${points[i]!.y.toFixed(
-              10
+              10,
             )}`;
             if (i < points.length - 1) {
-              pointsAttr += ' ';
+              pointsAttr += " ";
             }
           }
 
-          props['points'] = pointsAttr;
+          props["points"] = pointsAttr;
 
           super.attrs(props);
           return;
         }
-      } else if (typeof props == 'string') {
+      } else if (typeof props == "string") {
         const val = super.attrs(props);
 
         return val;
@@ -198,17 +200,17 @@ export class Curve extends RenderNode<'curve'> {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'polyline'
+      "polyline",
     );
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Curve {
     if (
       this.#geometry &&
-      typeof this.#geometry === 'object' &&
+      typeof this.#geometry === "object" &&
       this.#geometry !== null &&
       this.#style &&
-      typeof this.#style === 'object' &&
+      typeof this.#style === "object" &&
       this.#style !== null
     ) {
       const {
@@ -220,9 +222,9 @@ export class Curve extends RenderNode<'curve'> {
         smoothness = 0.5,
         continuous = false,
         continuousCount = 1,
-        curveName = 'cubic',
+        curveName = "cubic",
 
-        buffer
+        buffer,
       } = this.#geometry;
 
       const newPoints = [];
@@ -233,26 +235,26 @@ export class Curve extends RenderNode<'curve'> {
       }
 
       const style = { ...this.#style };
-      if ('id' in style && style.id !== '') {
+      if ("id" in style && style.id !== "") {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
       return new Curve({
-        x1,
-        x2,
-        y1,
-        y2,
+        x1: x1 + offsetX,
+        x2: x2 + offsetX,
+        y1: y1 + offsetY,
+        y2: y2 + offsetY,
         curvature,
         smoothness,
         continuous,
         continuousCount,
         curveName,
         initial: true,
-        ...style
-      } as ConstructorPropsTypes<'curve'> & InitialProps);
+        ...style,
+      } as ConstructorPropsTypes<"curve"> & InitialProps);
     }
 
-    throw new Error('Cannot clone: geometry or style is invalid.');
+    throw new Error("Cannot clone: geometry or style is invalid.");
   }
 
   #validatePolylineCoordinates(path: string) {
@@ -262,7 +264,7 @@ export class Curve extends RenderNode<'curve'> {
 
     // Check if the path matches the valid polyline format
     if (!coordinateListRegex.test(path)) {
-      throw new Error('given path or coordinate are not valid ');
+      throw new Error("given path or coordinate are not valid ");
     }
 
     // Split the path into individual coordinates (by spaces), then split each pair by comma
@@ -271,12 +273,12 @@ export class Curve extends RenderNode<'curve'> {
 
     for (let i = 0; i < rowVertex.length; i++) {
       const pair = rowVertex[i]!.trim();
-      const s = pair.indexOf(',');
+      const s = pair.indexOf(",");
       const x = parseFloat(pair.slice(0, s));
       const y = parseFloat(pair.slice(s + 1));
 
       if (isNaN(x) || isNaN(y)) {
-        throw new Error('X or Y are not numbers');
+        throw new Error("X or Y are not numbers");
       }
 
       const offset = i * 3;
@@ -304,19 +306,19 @@ export class Curve extends RenderNode<'curve'> {
 
       if (!geo) return;
 
-      const rawPoints = this.attrs('points') as string;
+      const rawPoints = this.attrs("points") as string;
 
       const vmat = this.#validatePolylineCoordinates(rawPoints);
       if (!(vmat instanceof Float32Array)) {
         throw new Error(
-          'Invalid point data: could not generate transformation matrix.'
+          "Invalid point data: could not generate transformation matrix.",
         );
       }
 
       const m = vmat.length / 3;
 
       // Retrieve expected matrix dimensions for a line
-      const [_, n] = dimensions['polyline'] as [number, number];
+      const [_, n] = dimensions["polyline"] as [number, number];
 
       // Compute total buffer length based on dimensions
       const totalLength = m * n;
@@ -338,7 +340,7 @@ export class Curve extends RenderNode<'curve'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array
+    temporaryState: Float32Array,
   ) {
     try {
       assertAccess(accessKey);
@@ -347,13 +349,31 @@ export class Curve extends RenderNode<'curve'> {
       //  if (!this.#geometry || !isValidMatrix(m, m.length, 3)) return;
 
       // Replacing reduce with traditional loop
-      let points = '';
+      let points = "";
       for (let i = 0; i < m.length; i += 3) {
         points += `${m[i]},${m[i + 1]} `;
       }
       this.#geometry!.points = points;
+      this.#computeBounds(temporaryState);
     } catch (e) {
       throw e;
     }
+  }
+
+  #computeBounds(buffer: Float32Array) {
+    const geo = this.#geometry as {
+      bounds: Float32Array;
+    };
+    const bounds = computeAABBPoints(buffer);
+
+    // Allocate the buffer once or reallocate only if the size has changed
+    if (!geo.bounds || geo.bounds.length !== 4) {
+      geo.bounds = new Float32Array(4);
+    }
+
+    geo.bounds[0] = bounds.maxX;
+    geo.bounds[1] = bounds.minY;
+    geo.bounds[2] = bounds.maxX;
+    geo.bounds[3] = bounds.maxY;
   }
 }

@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when an operation requires a shape to be attached to a canvas,
@@ -19,13 +19,13 @@ export class ShapeNotAttachedToCanvasError extends UsageError {
    */
   constructor(shapeId: string, canvasId: string, source: string) {
     super(
-      'CANVAS_SHAPE_NOT_ATTACHED',
-      'Shape is not attached to the canvas.',
+      "CANVAS_SHAPE_NOT_ATTACHED",
+      "Shape is not attached to the canvas.",
       new ErrorContext(
         { shapeId, canvasId },
-        'shape must be added to canvas before use',
-        source
-      )
+        "shape must be added to canvas before use",
+        source,
+      ),
     );
   }
 }

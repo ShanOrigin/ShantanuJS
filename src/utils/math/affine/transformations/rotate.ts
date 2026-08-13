@@ -1,4 +1,4 @@
-import type { RotateMethodProps } from '../../../../models/types/geometry/transform';
+import type { RotateMethodProps } from "../../../../models/types/geometry/transform";
 /**
  * Applies a 2D rotation transformation to an existing DOMMatrix.
  *
@@ -56,23 +56,23 @@ import type { RotateMethodProps } from '../../../../models/types/geometry/transf
  */
 export function rotate({
   angle,
-  tType = 'a',
+  tType = "a",
   px = 0,
   py = 0,
-  oMatrix
+  oMatrix,
 }: RotateMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
-      case 'relative':
-      case 'r': {
+      case "relative":
+      case "r": {
         oMatrix.rotateSelf(angle); // Simple rotation around current center
         break;
       }
 
-      case 'absolute':
-      case 'a':
-      case 'pivot':
-      case 'p':
+      case "absolute":
+      case "a":
+      case "pivot":
+      case "p":
       default: {
         // Simulate pivot-based rotation
         oMatrix.translateSelf(px, py).rotateSelf(angle).translateSelf(-px, -py);

@@ -1,5 +1,5 @@
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
-import { UsageError } from '../../core/errors/usage-error.js';
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
+import { UsageError } from "../../core/errors/usage-error.js";
 
 /**
  * Error thrown when a numeric value falls outside an allowed inclusive range.
@@ -18,9 +18,9 @@ export class OutOfRangeError extends UsageError {
    */
   constructor(value: number, min: number, max: number, source: string) {
     super(
-      'OUT_OF_RANGE',
-      'Value is outside the allowed range.',
-      new ErrorContext(value, `[${min}, ${max}]`, source)
+      "OUT_OF_RANGE",
+      "Value is outside the allowed range.",
+      new ErrorContext(value, `[${min}, ${max}]`, source),
     );
   }
 }

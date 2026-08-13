@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a parameter is provided with a value whose type does not
@@ -21,12 +21,12 @@ export class TypeMismatchError extends UsageError {
     parameterName: string,
     receivedType: string,
     expectedType: string,
-    source: string
+    source: string,
   ) {
     super(
-      'TYPE_MISMATCH',
+      "TYPE_MISMATCH",
       `Type mismatch for parameter '${parameterName}'.`,
-      new ErrorContext(receivedType, expectedType, source)
+      new ErrorContext(receivedType, expectedType, source),
     );
   }
 }

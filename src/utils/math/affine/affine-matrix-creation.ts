@@ -1,11 +1,11 @@
-import { translate } from './transformations/translation.js';
-import { scale } from './transformations/scale.js';
-import { rotate } from './transformations/rotate.js';
-import { skew } from './transformations/skew.js';
+import { translate } from "./transformations/translation.js";
+import { scale } from "./transformations/scale.js";
+import { rotate } from "./transformations/rotate.js";
+import { skew } from "./transformations/skew.js";
 
-import type { CreateTransformationMatrixProps } from '../../../models/types/geometry/transform';
-import { resetMatrix } from '../matrix/matrix-utils.js';
-import { affineMatrixMultiply } from '../matrix/matrix-multiplication.js';
+import type { CreateTransformationMatrixProps } from "../../../models/types/geometry/transform";
+import { resetMatrix } from "../matrix/matrix-utils.js";
+import { affineMatrixMultiply } from "../matrix/matrix-multiplication.js";
 
 /**
  * Creates a composed 2D affine transformation matrix from the supplied
@@ -93,7 +93,7 @@ export function createAffineTransformMatrix({
   transformations,
   baseTMatrix,
   multiplyWithBase = false,
-  major = 'row'
+  major = "row",
 }: CreateTransformationMatrixProps): Float32Array {
   const doScale = !!transformations?.scale;
   const doSkew = !!transformations?.skew;
@@ -146,7 +146,7 @@ export function createAffineTransformMatrix({
     affineMatrixMultiply(baseTMatrix, compose, output);
   }
 
-  if (major === 'column') {
+  if (major === "column") {
     return output;
   }
 
@@ -161,6 +161,6 @@ export function createAffineTransformMatrix({
 
     output[2],
     output[5],
-    output[8]
+    output[8],
   ]);
 }

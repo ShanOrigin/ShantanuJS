@@ -1,0 +1,74 @@
+{
+  "meta": {
+    "info": {
+      "module": "shapes",
+      "testType": "unit",
+      "canvasId": "testing-Canvas"
+    },
+    "environment": {
+      "libraryVersion": "0.0.0",
+      "browser": {
+        "name": "Firefox",
+        "version": "147.0"
+      },
+      "platform": "Android"
+    }
+  },
+  "tests": {
+    "unit-shapes-line-0": {
+      "information": {
+        "description": "Update stroke color of a line",
+        "module": "shapes",
+        "testType": "unit",
+        "element": "line",
+        "id": "unit-shapes-line-0"
+      },
+      "assertions": [
+        {
+          "crossCheck": "library",
+          "domain": "style",
+          "property": "stroke",
+          "actual": "blue",
+          "expected": "blue",
+          "status": "pass"
+        },
+        {
+          "crossCheck": "browser",
+          "domain": "style",
+          "property": "stroke",
+          "actual": "rgb(0, 0, 255)",
+          "expected": "blue",
+          "status": "pass"
+        },
+        {
+          "crossCheck": "library",
+          "domain": "geometry",
+          "property": "x1",
+          "actual": 20,
+          "expected": 20,
+          "delta": 0,
+          "status": "pass"
+        },
+        {
+          "crossCheck": "browser",
+          "domain": "geometry",
+          "property": "x1",
+          "actual": [
+            [19, 39],
+            [51, 39],
+            [51, 41],
+            [19, 41]
+          ],
+          "expected": [
+            [19, 39],
+            [51, 39],
+            [51, 41],
+            [19, 41]
+          ],
+          "delta": 0.5,
+          "status": "pass"
+        }
+      ]
+    }
+  }
+}

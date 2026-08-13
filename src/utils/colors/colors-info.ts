@@ -160,5 +160,5 @@ export const namedColorsList: Record<string, number[]> = {
   white: [255, 255, 255, 1],
   whitesmoke: [245, 245, 245, 1],
   yellow: [255, 255, 0, 1],
-  yellowgreen: [154, 205, 50, 1]
+  yellowgreen: [154, 205, 50, 1],
 };

@@ -1,9 +1,9 @@
-import type { Pivot, PivotAnchors } from '../geometry/anchors';
+import type { Pivot, PivotAnchors } from "../geometry/anchors";
 
 /**
  * Pivot resolution mode.
  */
-export type PivotMode = 'r' | 'relative' | 'c' | 'center' | 'p' | 'pivot';
+export type PivotMode = "r" | "relative" | "c" | "center" | "p" | "pivot";
 
 /**
  * Pivot configuration.

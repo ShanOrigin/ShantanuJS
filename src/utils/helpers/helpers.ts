@@ -1,4 +1,4 @@
-import { InvalidArgumentError } from '../../errors/index.js';
+import { InvalidArgumentError } from "../../errors/index.js";
 
 /**
  * Controls the high-level rendering lifecycle of the engine.
@@ -8,8 +8,8 @@ import { InvalidArgumentError } from '../../errors/index.js';
  * - `RENDER`: Execute the actual rendering process using the prepared state.
  */
 export enum RenderPhase {
-  PREPARE = 'PREPARE',
-  RENDER = 'RENDER'
+  PREPARE = "PREPARE",
+  RENDER = "RENDER",
 }
 
 /**
@@ -22,9 +22,9 @@ export enum RenderPhase {
  * - `TRANSFORM`: Applies transform changes only using the existing world matrix
  */
 export enum RenderUpdateType {
-  GEOMETRY = 'GEOMETRY',
-  STYLE = 'STYLE',
-  TRANSFORM = 'TRANSFORM'
+  GEOMETRY = "GEOMETRY",
+  STYLE = "STYLE",
+  TRANSFORM = "TRANSFORM",
 }
 
 /**
@@ -40,20 +40,20 @@ export enum RenderUpdateType {
  */
 export function generateId(userId?: string): string {
   try {
-    if (userId && userId.trim() !== '') return userId;
+    if (userId && userId.trim() !== "") return userId;
 
-    if (typeof crypto.randomUUID === 'function') {
-      return crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+    if (typeof crypto.randomUUID === "function") {
+      return crypto.randomUUID().replace(/-/g, "").slice(0, 16);
     }
 
     // Fallback
     const chars =
-      'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
     const fallback = Array.from(
       { length: 16 },
-      () => chars[Math.floor(Math.random() * chars.length)]
-    ).join('');
+      () => chars[Math.floor(Math.random() * chars.length)],
+    ).join("");
 
     return fallback;
   } catch (e) {
@@ -89,7 +89,7 @@ export function Log(...args: unknown[]): void {
  */
 
 export function cwarn(msg: string) {
-  console.warn('Below Operation may break entire Pipeline be careful...!');
+  console.warn("Below Operation may break entire Pipeline be careful...!");
   console.warn(msg);
 }
 
@@ -124,35 +124,35 @@ export function validProps(
   AllGShapeStyleProperties: object,
   CommonGeometricProperties: object,
   GraphicalElementProperties: object,
-  shape: string
+  shape: string,
 ) {
   const { id, roleOfSVG, name, d, ...rest } = (AllGShapeStyleProperties as any)[
     shape
   ];
   console.warn(
-    ' Note: The default properties of Rect elements are meant for viewing only. Do not try to modify the read-only properties — doing so may cause unexpected behavior or even break the program.\n\nYou can safely modify all properties listed under the "modifiable" section using the `.attrs()` method or by passing them in the props when creating the element.'
+    ' Note: The default properties of Rect elements are meant for viewing only. Do not try to modify the read-only properties — doing so may cause unexpected behavior or even break the program.\n\nYou can safely modify all properties listed under the "modifiable" section using the `.attrs()` method or by passing them in the props when creating the element.',
   );
 
   const props = {
     geometry: {
       readOnly: {
-        ...(CommonGeometricProperties as any).geometry
+        ...(CommonGeometricProperties as any).geometry,
       },
       modifiable: {
-        ...(GraphicalElementProperties as any)[shape]
-      }
+        ...(GraphicalElementProperties as any)[shape],
+      },
     },
     style: {
       readOnly: {
         id,
         roleOfSVG,
         name,
-        d
+        d,
       },
       modifiable: {
-        ...rest
-      }
-    }
+        ...rest,
+      },
+    },
   };
 
   return props;
@@ -182,16 +182,16 @@ export function validProps(
 
 export function autoFixGeometry(
   props: Record<string, any>,
-  geometryKeys: string[]
+  geometryKeys: string[],
 ): void {
   for (const key of geometryKeys) {
     const value = props[key];
 
-    if (key in props && typeof value == 'number' && value < 0) {
+    if (key in props && typeof value == "number" && value < 0) {
       console.warn(
         `⚠️  Property '${key}' was negative (${value}). Automatically converted to positive (${Math.abs(
-          value
-        )}).`
+          value,
+        )}).`,
       );
       props[key] = Math.abs(value);
     }
@@ -227,11 +227,11 @@ export function parameterTypeValidator(
   geometry: object,
   style: object,
   classOriented: object,
-  shape: string
+  shape: string,
 ) {
   try {
     const geomShape =
-      shape == '' ? (geometry as any) : (geometry as any)[shape] ?? {};
+      shape == "" ? (geometry as any) : ((geometry as any)[shape] ?? {});
     const styleShape = (style as any)[shape] ?? {};
     const classO = (classOriented as any) ?? {};
 
@@ -244,16 +244,16 @@ export function parameterTypeValidator(
       if (isP) {
         if (actual == null) {
           throw new TypeError(
-            `Invalid value for '${shape}' parameter '${k}': expected '${typeof expected}', got '${actual}'`
+            `Invalid value for '${shape}' parameter '${k}': expected '${typeof expected}', got '${actual}'`,
           );
         }
 
         if (
-          typeof expected !== 'undefined' &&
+          typeof expected !== "undefined" &&
           typeof actual !== typeof expected
         ) {
           throw new TypeError(
-            `Invalid type for '${shape}' parameter '${k}': expected '${typeof expected}', got '${typeof actual}' (value: ${actual})`
+            `Invalid type for '${shape}' parameter '${k}': expected '${typeof expected}', got '${typeof actual}' (value: ${actual})`,
           );
         }
       }
@@ -289,47 +289,47 @@ export function animationChecks(
   avdProp: object | null,
   duration: number,
   ease: ((t: number) => number) | string | null,
-  onComplete: Function | null
+  onComplete: Function | null,
 ) {
   // ==== Parameter Validation ====
   if (
-    typeof attrs !== 'object' ||
+    typeof attrs !== "object" ||
     attrs === null ||
     Object.keys(attrs).length < 1
   ) {
     throw new Error(
-      "animate(): 'attrs' must be a valid object with at least one property."
+      "animate(): 'attrs' must be a valid object with at least one property.",
     );
   }
 
-  if (avdProp !== null && typeof avdProp !== 'object') {
+  if (avdProp !== null && typeof avdProp !== "object") {
     throw new Error("animate(): 'avdProp' must be an object or null.");
   }
 
-  if (typeof duration !== 'number' || duration <= 0) {
+  if (typeof duration !== "number" || duration <= 0) {
     throw new Error("animate(): 'duration' must be a positive number.");
   }
 
   if (
     ease !== null &&
     ease !== undefined &&
-    typeof ease !== 'function' &&
-    typeof ease !== 'string'
+    typeof ease !== "function" &&
+    typeof ease !== "string"
   ) {
     throw new Error(
-      "animate(): 'ease' must be a function, string, null, or undefined."
+      "animate(): 'ease' must be a function, string, null, or undefined.",
     );
   }
 
-  if (typeof ease === 'function') {
+  if (typeof ease === "function") {
     try {
       const testResult = ease(0.5);
-      if (typeof testResult !== 'number' || isNaN(testResult)) {
+      if (typeof testResult !== "number" || isNaN(testResult)) {
         throw new Error();
       }
     } catch {
       throw new Error(
-        "animate(): 'ease' function must accept a number and return a valid number."
+        "animate(): 'ease' function must accept a number and return a valid number.",
       );
     }
   }
@@ -337,10 +337,10 @@ export function animationChecks(
   if (
     onComplete !== null &&
     onComplete !== undefined &&
-    typeof onComplete !== 'function'
+    typeof onComplete !== "function"
   ) {
     throw new Error(
-      "animate(): 'onComplete' must be a function, null, or undefined."
+      "animate(): 'onComplete' must be a function, null, or undefined.",
     );
   }
 }
@@ -405,12 +405,12 @@ export const propTypes = {
   angle: 0,
   flipX: true,
   flipY: true,
-  dirX: 'x+',
-  dirY: 'y+',
-  tType: 'a',
+  dirX: "x+",
+  dirY: "y+",
+  tType: "a",
   px: 0,
   py: 0,
-  callbacks: () => {}
+  callbacks: () => {},
 };
 
 /**
@@ -532,12 +532,12 @@ export function typeCheck(tType: string): string {
   // STEP 2: Validate against supported modes
   // -----------------------------------------------------------
 
-  if (!['absolute', 'a', 'relative', 'r', 'pivot', 'p'].includes(lowerType)) {
+  if (!["absolute", "a", "relative", "r", "pivot", "p"].includes(lowerType)) {
     throw new InvalidArgumentError(
-      'tType',
+      "tType",
       tType,
       `Invalid transformation type: "${tType}". Expected one of 'absolute' | 'a', 'relative' | 'r', or 'pivot' | 'p'.`,
-      'transformation'
+      "transformation",
     );
   }
 

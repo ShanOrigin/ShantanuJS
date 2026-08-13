@@ -1,4 +1,4 @@
-import type { CurveType } from '../../../models/types/geometry/curve';
+import type { CurveType } from "../../../models/types/geometry/curve";
 
 /**
  * List of supported path interpolation types.
@@ -9,11 +9,11 @@ import type { CurveType } from '../../../models/types/geometry/curve';
  * This list is used to validate path-related configuration.
  */
 export const PATHS_MAP: readonly string[] = [
-  'linear',
-  'quadratic',
-  'cubic',
-  'earc',
-  'arc'
+  "linear",
+  "quadratic",
+  "cubic",
+  "earc",
+  "arc",
 ] as const;
 
 /**
@@ -45,7 +45,7 @@ export function getCurveAdaptiveSmoothness(
   bend: number,
   curveType: CurveType,
   minSamples: number = 4,
-  maxSamples: number = 100
+  maxSamples: number = 100,
 ): number {
   // 1. Compute straight-line distance between points
   const dx = P2.x - P1.x;
@@ -85,7 +85,7 @@ export function getCurveAdaptiveSmoothness(
   const refDistance = 200;
   let samples = Math.round(
     adjustedMin +
-      (adjustedMax - adjustedMin) * (distance / refDistance) * bendFactor
+      (adjustedMax - adjustedMin) * (distance / refDistance) * bendFactor,
   );
 
   // Clamp between min and max

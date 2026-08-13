@@ -50,7 +50,7 @@ type BBoxPoints = {
  * { minX, minY, maxX, maxY }
  */
 export function computeAABBPoints(
-  shapeTransformedMat: Float32Array
+  shapeTransformedMat: Float32Array,
 ): BBoxPoints {
   // -----------------------------------------------------------
   // STEP 1: Handle empty input buffer
@@ -106,6 +106,6 @@ export function getBoundsCenter(bounds: Float32Array): {
 } {
   return {
     cx: (bounds[0] + bounds[2]) * 0.5,
-    cy: (bounds[1] + bounds[3]) * 0.5
+    cy: (bounds[1] + bounds[3]) * 0.5,
   };
 }

@@ -1,5 +1,5 @@
-import { UsageError } from '../../core/errors/usage-error.js';
-import { ErrorContext } from '../../core/diagnostics/error-context.js';
+import { UsageError } from "../../core/errors/usage-error.js";
+import { ErrorContext } from "../../core/diagnostics/error-context.js";
 
 /**
  * Error thrown when a transformation matrix violates required geometric invariants.
@@ -21,9 +21,9 @@ export class InvalidMatrixError extends UsageError {
    */
   constructor(reason: string, receivedMatrix: unknown, source: string) {
     super(
-      'GEOMETRY_INVALID_MATRIX',
-      'Invalid transformation matrix.',
-      new ErrorContext(receivedMatrix, reason, source)
+      "GEOMETRY_INVALID_MATRIX",
+      "Invalid transformation matrix.",
+      new ErrorContext(receivedMatrix, reason, source),
     );
   }
 }

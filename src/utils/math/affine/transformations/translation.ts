@@ -1,4 +1,4 @@
-import type { TranslateMethodProps } from '../../../../models/types/geometry/transform';
+import type { TranslateMethodProps } from "../../../../models/types/geometry/transform";
 
 /**
  * Applies a 2D translation transformation to an existing DOMMatrix.
@@ -65,27 +65,27 @@ import type { TranslateMethodProps } from '../../../../models/types/geometry/tra
 export function translate({
   x,
   y,
-  tType = 'a',
+  tType = "a",
   px = 0,
   py = 0,
-  oMatrix
+  oMatrix,
 }: TranslateMethodProps & { oMatrix: DOMMatrix }) {
   try {
     switch (tType) {
-      case 'absolute':
-      case 'a': {
+      case "absolute":
+      case "a": {
         oMatrix.translateSelf(-px, -py).translateSelf(x, y);
         break;
       }
 
-      case 'center':
-      case 'c': {
+      case "center":
+      case "c": {
         oMatrix.translateSelf(x - px, y - py);
         break;
       }
 
-      case 'pivot':
-      case 'p': {
+      case "pivot":
+      case "p": {
         oMatrix
           .translateSelf(-px, -py)
           .translateSelf(x, y)
@@ -93,8 +93,8 @@ export function translate({
         break;
       }
 
-      case 'relative':
-      case 'r':
+      case "relative":
+      case "r":
       default: {
         oMatrix.translateSelf(x, y);
         break;

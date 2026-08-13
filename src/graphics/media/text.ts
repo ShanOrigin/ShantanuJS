@@ -1,31 +1,32 @@
-import { RenderNode } from '../render-node/render-node.js';
+import { RenderNode } from "../render-node/render-node.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  assertAccess
-} from '../../internal/keys/dev-keys.js';
+  assertAccess,
+} from "../../internal/keys/dev-keys.js";
 import {
   CommonGeometricProperties,
-  AllGShapeStyleProperties
-} from '../../property-definitions/common/common-properties.js';
+  AllGShapeStyleProperties,
+} from "../../property-definitions/common/common-properties.js";
 
 import {
   GraphicalElementProperties,
-  dimensions
-} from '../../property-definitions/specific/specific-properties.js';
+  dimensions,
+} from "../../property-definitions/specific/specific-properties.js";
 import type {
   InitialProps,
-  ConstructorPropsTypes
-} from '../../models/types/common';
+  ConstructorPropsTypes,
+} from "../../models/types/common";
 
 import {
   Log,
   parameterTypeValidator,
-  validProps
-} from '../../utils/helpers/helpers.js';
+  validProps,
+} from "../../utils/helpers/helpers.js";
+import { computeAABBPoints } from "../../utils/geometry/bounding-box/axis-aligned-bounding-box.js";
 
-export class Text extends RenderNode<'text'> {
+export class Text extends RenderNode<"text"> {
   #copies: number = 0;
   /**
    * Reference to the base class’s internal geometry object.
@@ -60,28 +61,29 @@ export class Text extends RenderNode<'text'> {
    */
   #classProp = this.getClassProps(DEV_INTERNAL_ACCESS_KEY);
 
-  constructor(props: ConstructorPropsTypes<'text'>) {
-    super('text', props.id ?? '');
+  constructor(props: ConstructorPropsTypes<"text">) {
+    super("text", props.id ?? "");
 
+    "id" in props && delete props.id;
     parameterTypeValidator(
       props,
       GraphicalElementProperties,
       AllGShapeStyleProperties,
       this.#classProp,
-      'text'
+      "text",
     );
 
-    props['font-size'] ??= 16;
-    props['font-weight'] ??= 'bold';
-    props['font-style'] ??= 'normal';
-    props['letter-spacing'] ??= '0';
-    props['word-spacing'] ??= '0';
-    props['text-anchor'] ??= 'middle';
-    props['alignment-baseline'] ??= 'middle';
-    props['dominant-baseline'] ??= '';
+    props["font-size"] ??= 16;
+    props["font-weight"] ??= "bold";
+    props["font-style"] ??= "normal";
+    props["letter-spacing"] ??= "0";
+    props["word-spacing"] ??= "0";
+    props["text-anchor"] ??= "middle";
+    props["alignment-baseline"] ??= "middle";
+    props["dominant-baseline"] ??= "";
 
     // for initial setup through RenderNode
-    (props as ConstructorPropsTypes<'text'> & InitialProps)['initial'] = true;
+    (props as ConstructorPropsTypes<"text"> & InitialProps)["initial"] = true;
     this.attrs(props);
   }
 
@@ -90,23 +92,23 @@ export class Text extends RenderNode<'text'> {
       AllGShapeStyleProperties,
       CommonGeometricProperties,
       GraphicalElementProperties,
-      'text'
+      "text",
     );
   }
 
   public clone(offsetX: number = 10, offsetY: number = 10): Text {
     if (
       this.#geometry &&
-      typeof this.#geometry === 'object' &&
+      typeof this.#geometry === "object" &&
       this.#geometry !== null &&
       this.#style &&
-      typeof this.#style === 'object' &&
+      typeof this.#style === "object" &&
       this.#style !== null
     ) {
-      const { x = 0, y = 0, text = '' } = this.#geometry;
+      const { x = 0, y = 0, text = "" } = this.#geometry;
 
       const style = { ...this.#style };
-      if ('id' in style && style.id !== '') {
+      if ("id" in style && style.id !== "") {
         style.id = `${style.id}-c${++this.#copies}`;
       }
 
@@ -115,11 +117,11 @@ export class Text extends RenderNode<'text'> {
         y: offsetY + y,
         text,
         initial: true,
-        ...style
-      } as ConstructorPropsTypes<'text'> & InitialProps);
+        ...style,
+      } as ConstructorPropsTypes<"text"> & InitialProps);
     }
 
-    throw new Error('Cannot clone: geometry or style is invalid.');
+    throw new Error("Cannot clone: geometry or style is invalid.");
   }
 
   protected override generateMatrix(accessKey: symbol): void {
@@ -133,14 +135,14 @@ export class Text extends RenderNode<'text'> {
       };
 
       const style = this.#style as {
-        'font-size': number;
-        'font-weight': string;
-        'font-style': string;
-        'letter-spacing': string;
-        'word-spacing': string;
-        'text-anchor': string;
-        'alignment-baseline': string;
-        'dominant-baseline': string;
+        "font-size": number;
+        "font-weight": string;
+        "font-style": string;
+        "letter-spacing": string;
+        "word-spacing": string;
+        "text-anchor": string;
+        "alignment-baseline": string;
+        "dominant-baseline": string;
       };
 
       if (!geo || !style) return;
@@ -152,17 +154,17 @@ export class Text extends RenderNode<'text'> {
         x,
         y,
 
-        style['font-size'],
-        style['font-weight'],
+        style["font-size"],
+        style["font-weight"],
 
-        style['font-style'],
-        Number(style['letter-spacing']),
-        Number(style['word-spacing']),
-        style['text-anchor'],
-        style['alignment-baseline'],
-        style['dominant-baseline']
+        style["font-style"],
+        Number(style["letter-spacing"]),
+        Number(style["word-spacing"]),
+        style["text-anchor"],
+        style["alignment-baseline"],
+        style["dominant-baseline"],
       );
-      const [m, n] = dimensions['text']!;
+      const [m, n] = dimensions["text"]!;
       const totalLength = m * n;
 
       // Allocate once and reuse to minimize GC pressure
@@ -181,7 +183,7 @@ export class Text extends RenderNode<'text'> {
 
   protected override restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array
+    temporaryState: Float32Array,
   ) {
     try {
       assertAccess(accessKey);
@@ -190,13 +192,30 @@ export class Text extends RenderNode<'text'> {
 
       [this.#geometry.x, this.#geometry.y] = [
         temporaryState[0]!,
-        temporaryState[1]!
+        temporaryState[1]!,
       ]; // center if circle
+      this.#computeBounds(temporaryState);
     } catch (e) {
       throw e;
     }
   }
 
+  #computeBounds(buffer: Float32Array) {
+    const geo = this.#geometry as {
+      bounds: Float32Array;
+    };
+    const bounds = computeAABBPoints(buffer);
+
+    // Allocate the buffer once or reallocate only if the size has changed
+    if (!geo.bounds || geo.bounds.length !== 4) {
+      geo.bounds = new Float32Array(4);
+    }
+
+    geo.bounds[0] = bounds.maxX;
+    geo.bounds[1] = bounds.minY;
+    geo.bounds[2] = bounds.maxX;
+    geo.bounds[3] = bounds.maxY;
+  }
   /**
    * Computes an approximate bounding box for a text node prior to
    * renderer realization.
@@ -228,7 +247,7 @@ export class Text extends RenderNode<'text'> {
     wordSpacing: number,
     textAnchor: string,
     alignmentBaseline: string,
-    dominantBaseline: string
+    dominantBaseline: string,
   ) {
     // ---------------------------------------------------------
     // Width approximation
@@ -237,22 +256,22 @@ export class Text extends RenderNode<'text'> {
     let widthFactor = 0.55;
 
     switch (fontWeight) {
-      case 'bold':
+      case "bold":
         widthFactor *= 1.05;
         break;
 
-      case 'bolder':
+      case "bolder":
         widthFactor *= 1.1;
         break;
 
-      case 'lighter':
+      case "lighter":
         widthFactor *= 0.95;
         break;
     }
 
     switch (fontStyle) {
-      case 'italic':
-      case 'oblique':
+      case "italic":
+      case "oblique":
         widthFactor *= 1.02;
         break;
     }
@@ -281,17 +300,17 @@ export class Text extends RenderNode<'text'> {
     let maxX = x + width;
 
     switch (textAnchor) {
-      case 'middle':
+      case "middle":
         minX = x - width / 2;
         maxX = x + width / 2;
         break;
 
-      case 'end':
+      case "end":
         minX = x - width;
         maxX = x;
         break;
 
-      case 'start':
+      case "start":
       default:
         minX = x;
         maxX = x + width;
@@ -308,24 +327,24 @@ export class Text extends RenderNode<'text'> {
     let maxY = y + height;
 
     switch (baseline) {
-      case 'middle':
-      case 'central':
+      case "middle":
+      case "central":
         minY = y - height / 2;
         maxY = y + height / 2;
         break;
 
-      case 'hanging':
+      case "hanging":
         minY = y;
         maxY = y + height;
         break;
 
-      case 'text-bottom':
-      case 'bottom':
+      case "text-bottom":
+      case "bottom":
         minY = y - height;
         maxY = y;
         break;
 
-      case 'baseline':
+      case "baseline":
       default:
         // SVG baseline approximation:
         // ~80% ascent, ~20% descent
@@ -341,7 +360,7 @@ export class Text extends RenderNode<'text'> {
       maxX,
       maxY,
       width,
-      height
+      height,
     };
   }
 }

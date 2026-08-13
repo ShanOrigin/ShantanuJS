@@ -1,8 +1,8 @@
 import type {
   BaseTransformations,
-  PivotTransformations
-} from '../../../models/types/geometry/transform';
-import type { Point2D } from '../../../models/types/geometry/types';
+  PivotTransformations,
+} from "../../../models/types/geometry/transform";
+import type { Point2D } from "../../../models/types/geometry/types";
 
 /**
  * Performs linear interpolation between two numbers.
@@ -82,7 +82,7 @@ export function lerpTuple(a: Point2D, b: Point2D, t: number): Point2D {
 export function lerpParams(
   initialState: BaseTransformations,
   finalState: PivotTransformations,
-  t: number
+  t: number,
 ): BaseTransformations {
   const { scale: iS, skew: iSk, rotate: iR } = initialState;
   const { scale: fS, skew: fSk, rotate: fR } = finalState;
@@ -91,13 +91,13 @@ export function lerpParams(
   const fSkew = lerpTuple(
     { x: iSk!.sx, y: iSk!.sy },
     { x: fSk.sx, y: fSk.sy },
-    t
+    t,
   );
   const fRotate = lerp(iR!.angle, fR.angle, t);
 
   return {
     scale: { sx: fScale.x, sy: fScale.y },
     skew: { sx: fSkew.x, sy: fSkew.y },
-    rotate: { angle: fRotate }
+    rotate: { angle: fRotate },
   };
 }

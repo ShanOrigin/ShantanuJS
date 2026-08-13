@@ -1,4 +1,4 @@
-import { InvalidFormatError } from '../../../errors/index.js';
+import { InvalidFormatError } from "../../../errors/index.js";
 
 /**
  * Applies a 2D affine transformation to a homogeneous coordinate buffer.
@@ -48,7 +48,7 @@ import { InvalidFormatError } from '../../../errors/index.js';
 export function applyTransformToHomogeneousBuffer(
   transformation: DOMMatrix | Float32Array,
   buffer: Float32Array,
-  inPlace: boolean = false
+  inPlace: boolean = false,
 ): Float32Array {
   // -----------------------------------------------------------
   // STEP 1: Validate homogeneous buffer structure
@@ -59,8 +59,8 @@ export function applyTransformToHomogeneousBuffer(
   if (len % 3 !== 0) {
     throw new InvalidFormatError(
       buffer,
-      'Invalid homogeneous buffer: length must be a multiple of 3 [x, y, 1].',
-      'transformation.applyTransformToHomogeneousBuffer()'
+      "Invalid homogeneous buffer: length must be a multiple of 3 [x, y, 1].",
+      "transformation.applyTransformToHomogeneousBuffer()",
     );
   }
 
@@ -158,7 +158,7 @@ export function applyTransformToHomogeneousBuffer(
  */
 export function affineMatrixMultiplyUsingDOMMatrix(
   M0: DOMMatrix,
-  M1: DOMMatrix
+  M1: DOMMatrix,
 ): DOMMatrix {
   if (!(M0 instanceof DOMMatrix) || !(M1 instanceof DOMMatrix)) {
     return M0;
@@ -237,7 +237,7 @@ export function affineMatrixMultiplyUsingDOMMatrix(
 export function affineMatrixMultiply(
   M0: Float32Array,
   M1: Float32Array,
-  O: Float32Array
+  O: Float32Array,
 ): Float32Array {
   const a0 = M0[0];
   const b0 = M0[1];

@@ -28,7 +28,7 @@ export function getQuadraticCurveControlPoint(
   y1: number,
   x2: number,
   y2: number,
-  bend: number
+  bend: number,
 ): { quadraticControlX: number; quadraticControlY: number } {
   const mx = (x1 + x2) / 2;
   const my = (y1 + y2) / 2;
@@ -42,6 +42,6 @@ export function getQuadraticCurveControlPoint(
 
   return {
     quadraticControlX,
-    quadraticControlY
+    quadraticControlY,
   };
 }

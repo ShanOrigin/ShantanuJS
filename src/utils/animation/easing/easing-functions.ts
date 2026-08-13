@@ -1,7 +1,7 @@
 import type {
   EasingFunction,
-  EasingType
-} from '../../../models/types/animation/easing';
+  EasingType,
+} from "../../../models/types/animation/easing";
 
 /**
  * Computes linear easing.
@@ -208,5 +208,5 @@ export const EASING_FUNCTION_MAP: Record<EasingType, EasingFunction> = {
 
   easeOutBounce: computeEaseOutBounceEasing,
   easeInBounce: computeEaseInBounceEasing,
-  easeInOutBounce: computeEaseInOutBounceEasing
+  easeInOutBounce: computeEaseInOutBounceEasing,
 };

@@ -1,50 +1,50 @@
 import type {
   GraphicsRenderNode,
-  IRenderNode
-} from '../../models/interfaces/render-node';
+  IRenderNode,
+} from "../../models/interfaces/render-node";
 
 import type {
   TranslateMethodProps,
   ScaleMethodProps,
   RotateMethodProps,
   SkewMethodProps,
-  BaseTransformationMeta
-} from '../../models/types/geometry/transform';
+  BaseTransformationMeta,
+} from "../../models/types/geometry/transform";
 
-import type { BboxProps } from '../../models/types/geometry/types';
+import type { BboxProps } from "../../models/types/geometry/types";
 
 import type {
   GraphicsNode,
   GetInternalGraphicsAccessor,
-  GetParentAccessor
-} from '../../models/interfaces/graphics-container';
+  GetParentAccessor,
+} from "../../models/interfaces/graphics-container";
 import type {
   InternalGeometryAccessor,
   InternalStyleAccessor,
   InternalComputedStyleAccessor,
-  ValidGraphicsShapes
-} from '../../models/types/graphics-model';
+  ValidGraphicsShapes,
+} from "../../models/types/graphics-model";
 import type {
   TransformStack,
   AttrsMethodPropsTypes,
-  AttrsMethodReturnTypes
-} from '../../models/types/common';
+  AttrsMethodReturnTypes,
+} from "../../models/types/common";
 
-import type { IAnimation } from '../../models/interfaces/animation';
+import type { IAnimation } from "../../models/interfaces/animation";
 import type {
   ComponentsRegistry,
-  InitOrGetComponentsReturnType
-} from '../../models/types/components';
+  InitOrGetComponentsReturnType,
+} from "../../models/types/components";
 import type {
   IAnimationOptions,
-  UpdateAnimationReturnType
-} from '../../models/types/animation/options';
+  UpdateAnimationReturnType,
+} from "../../models/types/animation/options";
 
 import type {
   Handler,
   IEvent,
-  SupportedEvents
-} from '../../models/interfaces/event';
+  SupportedEvents,
+} from "../../models/interfaces/event";
 
 type GraphicsNodeWithInternalAccessMethods = GraphicsNode &
   InternalGeometryAccessor &
@@ -58,7 +58,7 @@ type GraphicsRenderNodeWithInternals = GraphicsRenderNode &
   InternalStyleAccessor &
   GetInternalGraphicsAccessor;
 
-import { GraphicsModel } from '../../core/graphics-model/graphics-model.js';
+import { GraphicsModel } from "../../core/graphics-model/graphics-model.js";
 
 import {
   assertAccess,
@@ -66,38 +66,38 @@ import {
   GET_INTERNAL_COMPUTED_STYLE_METHOD,
   GET_INTERNAL_GEOMETRY_METHOD,
   GET_INTERNAL_STYLE_METHOD,
-  GET_PARENT_METHOD
-} from '../../internal/keys/dev-keys.js';
+  GET_PARENT_METHOD,
+} from "../../internal/keys/dev-keys.js";
 
 import {
   GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD,
   RESTORE_DIMENSION_METHOD,
   UPDATE_ANIMATION_METHOD,
-  UPDATE_TRANSFORM_METHOD
-} from '../../internal/keys/render-node-keys.js';
+  UPDATE_TRANSFORM_METHOD,
+} from "../../internal/keys/render-node-keys.js";
 import {
   InvalidInternalStateError,
-  OperationInProgressError
-} from '../../errors/index.js';
+  OperationInProgressError,
+} from "../../errors/index.js";
 
-import { Warn, Log } from '../../utils/helpers/helpers.js';
+import { Warn, Log } from "../../utils/helpers/helpers.js";
 
 import {
   GraphicalElementProperties,
-  type IGraphicalElementProperties
-} from '../../property-definitions/specific/specific-properties.js';
-import { AllGShapeStyleProperties } from '../../property-definitions/common/common-properties.js';
+  type IGraphicalElementProperties,
+} from "../../property-definitions/specific/specific-properties.js";
+import { AllGShapeStyleProperties } from "../../property-definitions/common/common-properties.js";
 
-import { composeAffineTransformations } from '../../utils/math/affine/affine-composition.js';
+import { composeAffineTransformations } from "../../utils/math/affine/affine-composition.js";
 import {
   affineMatrixMultiply,
-  applyTransformToHomogeneousBuffer
-} from '../../utils/math/matrix/matrix-multiplication.js';
+  applyTransformToHomogeneousBuffer,
+} from "../../utils/math/matrix/matrix-multiplication.js";
 
-import { Transformation } from '../../components/transformation/transformation.js';
-import { Animation } from '../../components/animation/animation.js';
-import { EventTargets } from '../../components/event/event-target.js';
-import { Filters } from '../../components/filter/filters';
+import { Transformation } from "../../components/transformation/transformation.js";
+import { Animation } from "../../components/animation/animation.js";
+import { EventTargets } from "../../components/event/event-target.js";
+import { Filters } from "../../components/filter/filters.js";
 import {
   FilterRecord,
   IBrightnessFilter,
@@ -105,8 +105,8 @@ import {
   IGlowFilter,
   ILinearGradientFilter,
   IRadialGradientFilter,
-  IShadowFilter
-} from '../../models/interfaces/filters';
+  IShadowFilter,
+} from "../../models/interfaces/filters";
 
 export abstract class RenderNode<T extends ValidGraphicsShapes>
   extends GraphicsModel<T>
@@ -189,7 +189,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     hasCanvasSelectable: boolean;
   } = {
     selectable: false,
-    hasCanvasSelectable: false
+    hasCanvasSelectable: false,
   };
 
   /**
@@ -351,7 +351,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
   [GENERATE_CANONICAL_MATRIX_AND_BOUNDS_METHOD](
     bbox: DOMRect | null,
     setCMatrix: boolean,
-    accessKey: symbol
+    accessKey: symbol,
   ) {
     assertAccess(accessKey);
 
@@ -365,7 +365,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     if (setCMatrix && this.#geometry!.buffer) {
       (this.#geometry!.buffer as Float32Array).set(
         [minX, minY, 1, maxX, minY, 1, maxX, maxY, 1, minX, maxY, 1],
-        0
+        0,
       );
     }
 
@@ -417,7 +417,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
   protected abstract restoreDimension(
     accessKey: symbol,
-    temporaryState: Float32Array
+    temporaryState: Float32Array,
   ): void;
 
   [RESTORE_DIMENSION_METHOD](key: symbol, temporaryState: Float32Array): void {
@@ -479,10 +479,10 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
 
   #flattenTransforms(
     applyUserParams: Function,
-    userParams: Record<string, string | number>
+    userParams: Record<string, string | number>,
   ) {
     if (__DEV__) {
-      Log('in flatten transform func');
+      Log("in flatten transform func");
     }
 
     const geo = this.#geometry as {
@@ -495,7 +495,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
      */
     const affineComposedMatrix = composeAffineTransformations(
       geo.transformStack,
-      true
+      true,
     );
 
     /**
@@ -518,7 +518,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
      * - Forces transform reset (`transform: ''`)
      * - Ensures no residual transformation is reintroduced
      */
-    applyUserParams({ ...userParams, transform: '' });
+    applyUserParams({ ...userParams, transform: "" });
 
     /**
      * Step 5: Regenerate canonical geometry matrix from updated parameters.
@@ -538,7 +538,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
      */
     (geo.transformStack.stack[0] as Float32Array).set(
       [1, 0, 0, 0, 1, 0, 0, 0, 1],
-      0
+      0,
     );
   }
 
@@ -696,15 +696,15 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
 
   public override attrs(
-    props: AttrsMethodPropsTypes<T> | string | string[]
+    props: AttrsMethodPropsTypes<T> | string | string[],
   ): AttrsMethodReturnTypes {
     try {
       /**
        * Validate shape existence.
        */
       const shape = this.#geometry?.shape;
-      if (!shape || shape == '') {
-        throw new Error('Shape is not difined');
+      if (!shape || shape == "") {
+        throw new Error("Shape is not difined");
       }
       /**
        * Retrieve shape-specific property registries.
@@ -716,12 +716,12 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
        * SETTER MODE
        * ============================
        */
-      if (typeof props === 'object') {
+      if (typeof props === "object") {
         /**
          * Initialization mode:
          * - Bypasses validation and flattening
          */
-        if ('initial' in props && props.initial) {
+        if ("initial" in props && props.initial) {
           delete props.initial;
 
           /**
@@ -776,9 +776,9 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
            * Special case: Rect shape handling.
            * - `rx`, `ry` treated as style instead of geometry
            */
-          if (shape === 'rect') {
-            'rx' in g && ((s['rx'] = g['rx']), delete g['rx']);
-            'ry' in g && ((s['ry'] = g['ry']), delete g['ry']);
+          if (shape === "rect") {
+            "rx" in g && ((s["rx"] = g["rx"]), delete g["rx"]);
+            "ry" in g && ((s["ry"] = g["ry"]), delete g["ry"]);
           }
 
           /**
@@ -800,9 +800,8 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
            * - Transform stack reset (if flattening occurred)
            * - Style applied
            */
-          this.#geometry!.renderUpdateType = 'LOCAL';
         }
-      } else if (typeof props === 'string' || Array.isArray(props)) {
+      } else if (typeof props === "string" || Array.isArray(props)) {
         /**
          * ============================
          * GETTER MODE
@@ -1024,9 +1023,9 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     if (!this.#geometry) {
       throw new InvalidInternalStateError(
         this.#geometry,
-        'proper object of GraphicsModel class',
-        'Cannot compute bounding box.',
-        'transformation.getBBox()'
+        "proper object of GraphicsModel class",
+        "Cannot compute bounding box.",
+        "transformation.getBBox()",
       );
     }
 
@@ -1036,7 +1035,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     // STEP 2: Resolve stroke expansion
     // -----------------------------------------------------------
 
-    let sw = includeStroke ? (this.style['stroke-width'] ?? 0) / 2 : 0;
+    let sw = includeStroke ? (this.style["stroke-width"] ?? 0) / 2 : 0;
 
     // -----------------------------------------------------------
     // STEP 6: Compute axis-aligned bounding box (AABB)
@@ -1062,7 +1061,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
       [x, y, 1],
       [x + width, y, 1],
       [x + width, y + height, 1],
-      [x, y + height, 1]
+      [x, y + height, 1],
     ];
 
     return { x, y, width, height, matrix };
@@ -1090,7 +1089,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
   #lazyQuerySynchronization() {
     this.#resolveLocalMatrix();
     this.#resolveWorldRecursive(this as GraphicsNodeWithInternalAccessMethods);
-    this.#geometry!.renderUpdateType = 'TRANSFORM';
+    this.#geometry!.renderUpdateType = "TRANSFORM";
 
     const buffer = this.#geometry!.buffer as Float32Array;
     const worldMatrix = this.#geometry!.worldMatrix as Float32Array;
@@ -1154,7 +1153,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     }
 */
     parent = shape[GET_PARENT_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as GraphicsNodeWithInternalAccessMethods;
 
     // Resolve parent first
@@ -1170,7 +1169,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     // -----------------------------------------------------------
     // STYLE PROPAGATION (Group only, NOT Canvas)
     // -----------------------------------------------------------
-    if (parent && parent.geometry?.shape === 'g') {
+    if (parent && parent.geometry?.shape === "g") {
       this.#resolveWorldStyle(shape, parent);
     }
 
@@ -1219,22 +1218,22 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
   #resolveWorldStyle(
     shape: GraphicsNodeWithInternalAccessMethods,
-    parent: GraphicsNodeWithInternalAccessMethods | null
+    parent: GraphicsNodeWithInternalAccessMethods | null,
   ) {
     const computed = shape[GET_INTERNAL_COMPUTED_STYLE_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as Record<string, string | number | boolean>;
 
     const local = shape[GET_INTERNAL_STYLE_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as Record<string, string | number | boolean>;
 
     // -----------------------------------------------------------
     // STEP 1: Inherit from parent (Group only)
     // -----------------------------------------------------------
-    if (parent && parent.geometry?.shape === 'g') {
+    if (parent && parent.geometry?.shape === "g") {
       const parentComputed = parent[GET_INTERNAL_COMPUTED_STYLE_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       ) as Record<string, any>;
 
       for (const k in parentComputed) {
@@ -1273,7 +1272,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     // Compose only local transformations.
     const affineComposedMatrix = composeAffineTransformations(
       geo.transformStack,
-      true
+      true,
     );
 
     const localMatrix = geo.transformStack.stack[0];
@@ -1305,10 +1304,10 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
   #resolveWorldMatrix(
     shape: GraphicsNodeWithInternalAccessMethods,
-    parent: GraphicsNodeWithInternalAccessMethods | null
+    parent: GraphicsNodeWithInternalAccessMethods | null,
   ) {
     const childGeometry = shape[GET_INTERNAL_GEOMETRY_METHOD](
-      DEV_INTERNAL_ACCESS_KEY
+      DEV_INTERNAL_ACCESS_KEY,
     ) as {
       shape: string;
       localMatrix: Float32Array;
@@ -1319,7 +1318,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
 
     if (parent) {
       const parentGeometry = parent[GET_INTERNAL_GEOMETRY_METHOD](
-        DEV_INTERNAL_ACCESS_KEY
+        DEV_INTERNAL_ACCESS_KEY,
       );
       const parentWorldMatrix = parentGeometry?.worldMatrix as Float32Array;
       const childWorldMatrix = childGeometry?.worldMatrix as Float32Array;
@@ -1327,7 +1326,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
       affineMatrixMultiply(
         parentWorldMatrix,
         childLocalMatrix,
-        childWorldMatrix
+        childWorldMatrix,
       );
     }
   }
@@ -1379,25 +1378,25 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * - Optimization step to avoid unnecessary pivot computation
    */
   #preTransformChecks(
-    baseOpt: Partial<BaseTransformationMeta> | null = null
+    baseOpt: Partial<BaseTransformationMeta> | null = null,
   ): void {
     // defaults
     if (baseOpt) {
-      baseOpt.tType ??= 'r';
+      baseOpt.tType ??= "r";
       baseOpt.px ??= 0;
       baseOpt.py ??= 0;
       const mode = baseOpt.tType.toLowerCase();
 
       if (
-        (mode == 'p' || mode == 'pivot') &&
+        (mode == "p" || mode == "pivot") &&
         baseOpt.px == 0 &&
         baseOpt.py == 0
       ) {
         if (__DEV__)
           Warn(
-            "pivot px , py both are zero so effect is same as relative transformation even if type is 'pivot' or 'p' , falling to 'relative' type to save computations."
+            "pivot px , py both are zero so effect is same as relative transformation even if type is 'pivot' or 'p' , falling to 'relative' type to save computations.",
           );
-        baseOpt.tType = 'r';
+        baseOpt.tType = "r";
       }
     }
     /**
@@ -1405,13 +1404,13 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
      */
     if (this.#isAnimation) {
       throw new OperationInProgressError(
-        'transformation',
-        'animation.animation',
-        'RenderNode.#preChecks()'
+        "transformation",
+        "animation.animation",
+        "RenderNode.#preChecks()",
       );
     }
 
-    this.#initOrGetComponent('transformation');
+    this.#initOrGetComponent("transformation");
   }
 
   /**
@@ -1431,35 +1430,35 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
 
   #initOrGetComponent(
-    component: 'transformation' | 'animation' | 'event' | 'filter'
+    component: "transformation" | "animation" | "event" | "filter",
   ): InitOrGetComponentsReturnType {
     if (!this.#components?.[component]) {
       switch (component) {
-        case 'transformation': {
+        case "transformation": {
           this.#components[component] = new Transformation(
-            this as GraphicsNodeWithInternalAccessMethods
+            this as GraphicsNodeWithInternalAccessMethods,
           );
 
           break;
         }
-        case 'animation': {
+        case "animation": {
           this.#components[component] = new Animation(
             this as GraphicsNodeWithInternalAccessMethods,
             this.#parentAnimationStatus.bind(this),
             () => {
               this.#isAnimation = false;
-            }
+            },
           );
 
           break;
         }
-        case 'event': {
+        case "event": {
           this.#components[component] = new EventTargets();
 
           break;
         }
 
-        case 'filter': {
+        case "filter": {
           this.#components[component] = new Filters();
         }
       }
@@ -1568,7 +1567,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     this.#preTransformChecks(translateProps as object);
 
     const matrix = this.#components.transformation.translate(
-      translateProps
+      translateProps,
     ) as Float32Array | void;
     if (matrix) {
       this.#finalizeTransform(matrix);
@@ -1643,7 +1642,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     this.#preTransformChecks(scaleProps as object);
 
     const matrix = this.#components.transformation.scale(
-      scaleProps
+      scaleProps,
     ) as Float32Array | void;
     if (matrix) {
       this.#finalizeTransform(matrix);
@@ -1715,7 +1714,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     this.#preTransformChecks(rotateProps as object);
 
     const matrix = this.#components.transformation.rotate(
-      rotateProps
+      rotateProps,
     ) as Float32Array | void;
     if (matrix) {
       this.#finalizeTransform(matrix);
@@ -1790,7 +1789,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     this.#preTransformChecks(skewProps as object);
 
     const matrix = this.#components.transformation.skew(
-      skewProps
+      skewProps,
     ) as Float32Array | void;
     if (matrix) {
       this.#finalizeTransform(matrix);
@@ -1929,12 +1928,12 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
   public animate(animatableProps: IAnimationOptions<T>) {
     if (this.#isAnimation) {
       Warn(
-        'Animation is already going on this shape , please wait untill animation finish or cancel the animation.'
+        "Animation is already going on this shape , please wait untill animation finish or cancel the animation.",
       );
 
       return;
     }
-    this.#initOrGetComponent('animation');
+    this.#initOrGetComponent("animation");
 
     animatableProps.start = true;
     this.#components.animation.animate(animatableProps);
@@ -1979,16 +1978,16 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
 
   public animation(
-    animatableProps: IAnimationOptions<T>
-  ): Omit<IAnimation, 'animate' | 'update'> {
+    animatableProps: IAnimationOptions<T>,
+  ): Omit<IAnimation, "animate" | "update"> {
     if (this.#isAnimation) {
       Warn(
-        'Animation is already going on this shape , please wait untill animation finish or cancel the animation.'
+        "Animation is already going on this shape , please wait untill animation finish or cancel the animation.",
       );
 
       return this.#components.animation;
     }
-    this.#initOrGetComponent('animation');
+    this.#initOrGetComponent("animation");
 
     animatableProps.start = true;
     this.#components.animation.animate(animatableProps);
@@ -2001,7 +2000,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
   [UPDATE_ANIMATION_METHOD](
     time: number,
-    accessKey: symbol
+    accessKey: symbol,
   ): UpdateAnimationReturnType {
     assertAccess(accessKey);
 
@@ -2024,7 +2023,7 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * @returns The event component associated with this object.
    */
   public get events(): IEvent {
-    return this.#initOrGetComponent('event') as IEvent;
+    return this.#initOrGetComponent("event") as IEvent;
   }
 
   // * ============================================================================
@@ -2043,6 +2042,6 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    * @returns The filter component associated with this object.
    */
   public get filters(): IFilter {
-    return this.#initOrGetComponent('filter') as IFilter;
+    return this.#initOrGetComponent("filter") as IFilter;
   }
 }
