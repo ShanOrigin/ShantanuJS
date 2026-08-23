@@ -176,7 +176,8 @@ export type ExpectedBlock = {
   validators?: Validators;
 
   error?: {
-    expected: Error;
+    /** Error instance or constructor expected from the action phase. */
+    expected: Error | (new (...args: any[]) => Error);
     expectedStatus: AssertionStatus;
   };
 };
