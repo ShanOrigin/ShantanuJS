@@ -10,167 +10,313 @@
                                                                                                     
                                                                                                     
 
-### **Lightweight 2D Graphics & Animation Engine**
+> **Lightweight 2D graphics and animation for the browser**
 
-*A zero-dependency, math-first, matrix-driven 2D graphics and animation library written in TypeScript.*
+ShantanuJS is a zero-runtime-dependency TypeScript library for building
+matrix-driven 2D scenes, transformations, animation, filters, and interaction
+on an SVG surface.
 
----
+> 🧪 **Pre-release:** The API and internals are still evolving. Use it for
+> exploration and development, and pin versions carefully when integrating it.
 
-**« Math First · Matrix Driven · Zero Dependency · Renderer Agnostic »**
+## ✨ Why ShantanuJS?
 
----
+| | Capability | What it means |
+| :--: | --- | --- |
+| 🔢 | **Math-first** | Shapes, transforms, curves, and animation operate from explicit geometry and affine matrices. |
+| 🧱 | **Structured scene graph** | `Canvas`, `SceneModel`, and `Group` manage ownership, layering, and parent-child transforms. |
+| 🎞️ | **Animation built in** | Interpolate geometry and style with easing, transform sampling, polynomial fitting, and curve motion. |
+| 🖼️ | **SVG projection** | The implemented renderer efficiently synchronizes model state to SVG DOM elements. |
+| 🎛️ | **Filters and events** | Use SVG-compatible filters and synthetic pointer-event propagation on render nodes. |
+| 🧩 | **TypeScript-native** | Source contracts define public APIs, shape properties, rendering, animation, and event types. |
 
-## 📌 **Overview**
+```mermaid
+flowchart LR
+  A[🎨 Create shapes] --> B[🧱 Add to canvas]
+  B --> C[🔄 Transform or animate]
+  C --> D[⏱️ Engine frame]
+  D --> E[🖼️ SVG output]
+  E --> F[🖱️ Pointer events]
 
-**ShantanuJS** is built from the ground up around linear algebra, matrix theory, computational geometry, and explicit rendering pipelines.
+  classDef author fill:#E0F2FE,stroke:#0284C7,color:#0C4A6E,stroke-width:2px;
+  classDef core fill:#EDE9FE,stroke:#7C3AED,color:#3B0764,stroke-width:2px;
+  classDef render fill:#DCFCE7,stroke:#16A34A,color:#14532D,stroke-width:2px;
+  class A,B,C author;
+  class D core;
+  class E,F render;
+```
 
-* **Mathematical Foundation:** The engine treats transformations and animated state as mathematical data rather than renderer-specific operations.
-* **Scene-Oriented Architecture:** Strictly separates graphics state, transformations, animation, and rendering responsibilities.
-* **Affine Transformation System:** Driven by 3x3/2D affine matrices, supporting composition, hierarchical propagation, relative & absolute operations, and pivot-based transformations.
-* **Programmable Motion:** The animation system builds on interpolation, easing, parametric curves, and mathematical functions to produce smooth, deterministic motion.
-* **Backend Agnostic:** Designed to remain independent of any specific rendering target.
-* **SVG Renderer:** Currently implemented as the primary backend.
-* *Future Backends:* Architecture is structured to support Canvas2D natively.
+## 🚀 Quick start
 
+Create an HTML host element, then construct a canvas and add a shape.
 
+```html
+<div id="stage"></div>
+```
 
----
+```ts
+import { ShantanuJS } from "shantanujs";
 
-## 🚀 **Key Features**
+const canvas = new ShantanuJS.Canvas({
+  id: "stage",
+  width: 800,
+  height: 480,
+  context: "SVG",
+  fill: "#ffffff",
+});
 
-* ⚡ **Zero Dependencies** — Built completely from scratch without external runtime graphics, math, or utility libraries.
-* 📐 **Math-First Architecture** — All graphics operations are strictly grounded in linear algebra and computational geometry.
-* 🔢 **Matrix-Driven Transformations** — Affine transformation matrices form the foundation of local, world, and hierarchical transformations.
-* 🔄 **Advanced Transformation Controls** — Comprehensive support for relative, absolute, and pivot-point relative transformations.
-* 🌲 **Hierarchical Scene Management** — Efficient parent-child scene nodes with automatic transform propagation and visual graph hierarchy.
-* 🎬 **Robust Animation Engine** — Keyframe interpolation, custom easing curves, and mathematically parameterized continuous paths.
-* 🎨 **Extensible Rendering Pipeline** — Decoupled scene processing from backend-specific DOM/canvas draw calls.
-* 🖌️ **Native SVG Rendering Backend** — Vector-precise SVG element generation and differential scene rendering.
-* 🎛️ **Graphics Filters** — Built-in filter graph support for blur, contrast, saturation, grayscale, hue rotation, glow, and drop shadows.
-* 🔷 **TypeScript First** — Strong typing, complete interface definitions, and full Intellisense support throughout.
-* 🧩 **Modular Architecture** — Decoupled core systems designed for high maintainability, testing, and extension.
+const rect = new ShantanuJS.Shapes.Rect({
+  x: 80,
+  y: 80,
+  width: 180,
+  height: 110,
+  fill: "#2563eb",
+  stroke: "#1d4ed8",
+  "stroke-width": 2,
+});
 
----
+canvas.add(rect);
 
-## 📦 **Installation**
+rect.rotate({ angle: 12, tType: "pivot" });
+rect.animate({
+  attrs: { translate: { x: 360, y: 0 } },
+  duration: 1200,
+  ease: "easeInOutCubic",
+});
+```
 
-> ⚠️ **Note:** ShantanuJS is currently under active development and pre-release testing before its official npm package publication.
+The canvas owns the rendering surface. Shapes remain regular JavaScript objects:
+use `attrs()` to read or update properties, `getBBox()` to inspect bounds, and
+the transform/animation methods to change their presentation.
 
-> [!WARNING]
-> **Pre-Release Status:** `ShantanuJS` is under active development. The public API may evolve prior to the official `v1.0.0` npm release.
+> **Local source usage:** The package is not yet published as a stable npm
+> package. The import above shows the intended consumer experience; when working
+> from this repository, build first and import from the generated ESM bundle.
 
-<br>
+## 🧭 Core concepts
 
-### 🌐 **Via Package Manager** *(Upcoming)*
+### Canvas and scene
 
-Once published to the registry, install using your package manager of choice:
+`Canvas` is the entry point. It creates the SVG surface, owns the scene graph,
+starts the frame engine, and connects native browser pointer events to the
+library event system.
 
+```ts
+const canvas = new ShantanuJS.Canvas({
+  id: "stage",
+  width: 800,
+  height: 480,
+  context: "SVG",
+});
 
-# 📦 npm
+canvas.add(shapeA, shapeB);
+canvas.remove(shapeB);
+canvas.clear();
+```
+
+### Shapes, media, and groups
+
+| Category | Available constructors |
+| --- | --- |
+| Primitives | `Point`, `Line`, `Circle`, `Ellipse`, `Rect`, `Polyline`, `Polygon` |
+| Curves | `QuadraticCurve`, `CubicCurve`, `ArcCurve`, `EarcCurve` |
+| Media | `Text`, `Image` |
+| Container | `Group` |
+
+Add a group to the canvas before adding shapes to that group. Group transforms
+flow down to their children, and supported group style writes are propagated to
+current children.
+
+```ts
+const group = new ShantanuJS.Group({});
+canvas.add(group);
+group.add(rect);
+group.rotate({ angle: 20, tType: "pivot" });
+```
+
+### Transformations
+
+All transforms are affine-matrix operations. Apply them individually, batch
+them with `beginT()` / `endT()`, or pass a transform expression.
+
+```ts
+rect.beginT();
+rect.translate({ x: 40, y: 0, tType: "r" });
+rect.scale({ sx: 1.2, sy: 1.2, tType: "p" });
+rect.rotate({ angle: 15, tType: "pivot" });
+rect.endT();
+
+rect.transform("translate(24, 0) rotate(8) scale(1.05)");
+```
+
+### Animation
+
+Call `animate()` with target attrs, duration, easing, and optional advanced
+controls. The engine samples the active animation during its next frames.
+
+```ts
+rect.animate({
+  attrs: {
+    fill: "#9333ea",
+    translate: { x: 260, y: 80 },
+    rotate: { angle: 180 },
+  },
+  duration: 1000,
+  ease: "easeOutCubic",
+  advanceOptions: {
+    controls: { direction: "alternate", loop: true },
+  },
+});
+```
+
+### Events and filters
+
+Each render node exposes an event component and filter component.
+
+```ts
+rect.events.on("click", (event) => {
+  console.log("Clicked:", event.target);
+});
+
+rect.filters.shadow("card-shadow", {
+  offsetX: 4,
+  offsetY: 6,
+  blur: 8,
+  color: "#000000",
+  opacity: 0.25,
+});
+```
+
+> ⚠️ Event targeting currently uses a shape’s axis-aligned bounding box (AABB).
+> This is fast but is not yet exact path hit testing for every shape.
+
+## ⚙️ How a change reaches the screen
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant App as 👤 Your code
+  participant Node as 🔷 Render node
+  participant Engine as ⏱️ Engine
+  participant Renderer as 🖼️ SVGRenderer
+  participant DOM as 🌐 SVG DOM
+
+  App->>Node: attrs() / transform() / animate()
+  Node->>Node: update state and mark dirty
+  Engine->>Node: next animation frame
+  Node-->>Engine: resolved transform + style
+  Engine->>Renderer: render sorted nodes
+  Renderer->>DOM: patch changed SVG attributes
+```
+
+For the complete implementation map, data ownership model, control flows, and
+extension boundaries, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+## 📦 Installation and local development
+
+### Package installation
+
+Package publishing is planned. Once a stable release is available, install it
+with your preferred package manager:
 
 ```bash
 npm install shantanujs
+# or: pnpm add shantanujs
+# or: yarn add shantanujs
 ```
 
-# 🚀 pnpm
-```bash
-pnpm add shantanujs
-```
-
-# 🧶 yarn
-```bash
-yarn add shantanujs
-```
-
-### **Local Development Setup**
-
-To build, experiment, or contribute to ShantanuJS directly from source:
+### Build from this repository
 
 ```bash
-# 1️⃣ Clone the repository
-git clone [https://github.com/ShanOrigin/ShantanuJS.git](https://github.com/ShanOrigin/ShantanuJS.git)
-
-# 2️⃣ Navigate to the project root
+git clone https://github.com/ShanOrigin/ShantanuJS.git
 cd ShantanuJS
-
-# 3️⃣ Install development dependencies
 npm install
-
-# 4️⃣ Build the library bundle
 npm run build
 ```
+
+Build output is written to `dist/distribution` as UMD, ESM, and CommonJS bundles.
+
+## 🛠️ Development commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run build` | Clean, compile, and create distributable bundles. |
+| `npx tsc --noEmit` | Type-check without emitting output. |
+| `npm run lint` | Run the project ESLint configuration. |
+| `npm test` | Run Vitest’s configured test discovery. |
+| `npm run dev` | Run TypeScript watch mode and the local development server. |
+| `npm run testing` | Run development services and the custom test server together. |
+
+### Current verification status
+
+- ✅ `npx tsc --noEmit` passes.
+- ⚠️ `npm test` currently finds no files because the Vitest glob does not match
+  the repository’s custom test-harness cases.
+- ⚠️ `npm run lint` currently reports existing style and import-boundary issues.
+
+## 🧩 Architecture at a glance
+
+```text
+Canvas
+  ├─ SceneModel              logical scene ownership
+  ├─ Engine                  requestAnimationFrame execution
+  ├─ SVGRenderer             SVG DOM projection and filter resources
+  └─ EventSystem             pointer normalization and propagation
+
+RenderNode
+  ├─ GraphicsModel           geometry, style, matrices, dirty state
+  ├─ Transformation          affine operations and batching
+  ├─ Animation               interpolation, easing, curve motion
+  ├─ Filters                 declarative visual effects
+  └─ EventTargets            one handler per supported event type
+```
+
+The renderer factory currently supports **SVG**. Canvas2D and WebGL are not
+implemented backends yet.
+
+## 🛣️ Project status
+
+ShantanuJS is in active pre-release development. The math, scene, transform,
+animation, SVG renderer, event, and filter systems are present and continue to
+be refined. Public APIs may change before a stable `v0.1.0` release.
+
+The primary near-term work is improving test execution/discovery, completing
+precise shape hit testing, and hardening the package for release.
+
+## 🤝 Contributing
+
+Contributions are welcome—especially around graphics correctness, performance,
+documentation, testing, and renderer development.
+
+1. Open an issue for bugs, feature requests, or significant design proposals.
+2. Keep changes scoped and include relevant test coverage where the harness
+   supports it.
+3. Run the available type-check, lint, and test commands before opening a PR.
+
+Read the [contributing guide](./CONTRIBUTING.md) before submitting changes.
+
+## 💡 Origin
+
+ShantanuJS originated during the architectural work on
+[Code Perspective](https://github.com/ShanOrigin/code-perspective), a project
+for visualizing data structures and algorithms. It grew from an SVG experiment
+into a dedicated graphics engine focused on explicit mathematics, transparent
+rendering behavior, and a small runtime footprint.
+
+## 👤 Maintainer
+
+**Shantanu Suryawanshi**  
+Creator and principal maintainer
+
+## 📜 License
+
+Copyright © 2024–2026 Shantanu Suryawanshi.
+
+Licensed under [Apache-2.0](./LICENSE). You may use, study, modify, and
+redistribute this project under the license terms.
+
 ---
 
-## 📚 **Documentation**
-
-The repository documentation is divided by major areas of the library:
-
-* 🏁 **[Getting Started](./docs/README.md)** — Introduction and first steps.
-* 🎨 **[Graphics](./docs/graphics/README.md)** — Graphics primitives and core graphics concepts.
-* 📐 **[Transformations](./docs/transformation/README.md)** — Matrix-driven transformations and coordinate systems.
-* ⏱️ **[Animation](./docs/animation/README.md)** — Animation systems, interpolation, curves, and easing.
-* 🖼️ **[Rendering](./docs/rendering/README.md)** — Rendering architecture and rendering pipeline.
-* 🌳 **[Scene Management](./docs/scene/README.md)** — Scene organization and graphics hierarchy.
-* 📐 **[Geometry](./docs/geometry/README.md)** — Geometric operations and mathematical utilities.
-* 🎛️ **[Filters](./docs/filters/README.md)** — Visual filters and effects.
-* 🧪 **[Testing](./docs/testing/README.md)** — Testing architecture and validation.
-* 💡 **[Examples & Demos](./demos/README.md)** — Practical demonstrations built with ShantanuJS.
-
-
-
----
-
-## 🚦 **Project Status**
-
-ShantanuJS is in **Active Pre-Release Development**.
-
-* Core modules (Math Engine, Scene Tree, Affine Transforms, Animation Driver, SVG Renderer, and Filter Pipelines) are implemented and undergoing continuous refinement and performance tuning.
-* Public APIs and internal structures may evolve prior to the **v1.0.0** public npm release.
-* Long-term development roadmap includes adding **Canvas2D** rendering pipelines while maintaining the strict math-first, renderer-agnostic architecture.
-
----
-
-## 🤝 **Contributing**
-
-Contributions of all sizes are welcome! Whether you are interested in mathematical optimization, graphics rendering, documentation, or testing:
-
-1. **Bug Reports & Feature Requests:** Open an issue describing the bug or feature proposal.
-2. **Architectural Discussion:** For major API or pipeline updates, open a proposal issue prior to starting implementation.
-3. **Pull Requests:** Follow the project code style and ensure all test suites pass.
-
-Please read our **[Contributing Guide](./CONTRIBUTING.md)** for step-by-step contribution guidelines.
-
----
-
-## 💡 **Origin & Philosophy**
-
-ShantanuJS originated during the architectural development of **[Code Perspective](https://github.com/ShanOrigin/code-perspective)**, a dynamic data structure and algorithm visualization project.
-
-While engineering Code Perspective, existing high-level Web graphics frameworks lacked explicit mathematical transparency and required heavy runtime overhead. This presented an opportunity to explore how a graphics system could be built entirely from first-principles linear algebra and software engineering fundamentals.
-
-What began as an SVG visual experiment evolved into a full-featured, zero-dependency 2D graphics engine centered around matrices, geometry, and clean software architecture.
-
----
-
-## 👤 **Author & Maintainer**
-
-### **Shantanu Suryawanshi**
-
-*Creator and Principal Maintainer*
-
----
-
-## 📜 **License**
-
-Copyright © 2024–2026 **Shantanu Suryawanshi**.
-
-This project is licensed under the **"Apache-2.0"**. You are free to use, study, modify, and redistribute this software in accordance with the license conditions.
-
-See the full **[LICENSE](./LICENSE)** file for complete details.
-
----
-
-**ShantanuJS**
-
-*Zero Dependency · Math First · Matrix Driven · 2D Graphics & Animation*
-
+<p align="center">
+  <strong>Math first · Matrix driven · 2D graphics and animation</strong>
+</p>
