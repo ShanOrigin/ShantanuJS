@@ -253,7 +253,7 @@ export function getBBoxMethod() {
             if (name === "point") {
               extra.r = shape.geometry.r;
             } else if (name === "text") {
-              debugger;
+        
               const { text, x, y } = shape.geometry;
               const {
                 fontSize,
