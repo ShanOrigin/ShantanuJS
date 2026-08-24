@@ -1497,7 +1497,8 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
    */
   public endT(): this {
     this.#preTransformChecks();
-    this.#components.transformation.endT();
+    const matrix = this.#components.transformation.endT();
+    if (matrix) this.#finalizeTransform(matrix);
     return this;
   }
 
