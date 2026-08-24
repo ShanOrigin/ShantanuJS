@@ -1156,7 +1156,9 @@ export class Transformation implements ITransformation {
        * ---------------------------------------------------------------------
        * Match all supported transformation expressions from the input string.
        */
-      const expressions = input.match(/(?:[TSHRF][^)]*)\)/g);
+      const expressions = input.match(
+        /(?:(?:translate|scale|rotate|skew)|[TSHRF])\s*\([^)]*\)/gi,
+      );
 
       if (!expressions) {
         throw new InvalidFormatError(
