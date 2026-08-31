@@ -3,9 +3,9 @@
   "name": "shantanujs",
   "version": "0.1.0-beta.0",
   "description": "ShantanuJS – A zero-dependency, high-performance 2D animation library with advanced transformations, filters, and effects — all in a lightweight, modern TypeScript package.",
-  "main": "dist/distribution/Shantanu.cjs.js",
-  "module": "dist/distribution/Shantanu.esm.js",
-  "browser": "dist/distribution/Shantanu.min.js",
+  "main": "dist/distribution/ShantanuJS.cjs.js",
+  "module": "dist/distribution/ShantanuJS.esm.js",
+  "browser": "dist/distribution/ShantanuJS.min.js",
   "types": "dist/distribution/types/index.d.ts",
   "files": [
     "dist"
