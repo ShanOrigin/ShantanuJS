@@ -40,3 +40,4 @@ svgp
 svgp.pub
 *.pem
 *.key
+*.tgz
