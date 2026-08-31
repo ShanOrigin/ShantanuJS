@@ -1,7 +1,6 @@
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
 import replace from "@rollup/plugin-replace";
-import typescript from "rollup-plugin-typescript2";
 import esbuild from "rollup-plugin-esbuild";
 
 const DEV = false;
@@ -18,16 +17,12 @@ const basePlugins = [
   }),
 
   commonjs(),
-
-  typescript({
-    tsconfigOverride: {
-      compilerOptions: {
-        sourceMap: true,
-      },
-    },
-    clean: true,
-  }),
 ];
+
+const esbuildPlugin = esbuild({
+  target: "es2018",
+  treeShaking: true,
+});
 
 const minifyPlugin = esbuild({
   minify: true,
@@ -76,7 +71,10 @@ export default [
 
     treeshake: true,
 
-    plugins: basePlugins,
+    plugins: [
+      ...basePlugins,
+      esbuildPlugin,
+    ],
   },
 
   /* ---------------------------------------------------------------------- */
@@ -87,7 +85,7 @@ export default [
     input: "src/index/index.ts",
 
     output: {
-      file: "dist/distribution/ShantanuJS.cjs.js",
+      file: "dist/distribution/ShantanuJS.cjs",
       format: "cjs",
       sourcemap: true,
       exports: "named",
@@ -95,6 +93,9 @@ export default [
 
     treeshake: true,
 
-    plugins: basePlugins,
+    plugins: [
+      ...basePlugins,
+      esbuildPlugin,
+    ],
   },
 ];
