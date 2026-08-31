@@ -14,6 +14,16 @@ import { containsCanvasMethod } from "../tests/tests/canvas/contains.js";
 import { getAllElementsCanvasMethod } from "../tests/tests/canvas/getAllElements.js";
 import { attrsCanvasMethod } from "../tests/tests/canvas/attrs.js";
 import { getBBoxMethod } from "../tests/tests/shape/basic/getBBoxMethod.js";
+
+// Transformations module tests
+import { translateTransformMethod } from "../tests/tests/shape/transformations/translate.js";
+import { scaleTransformMethod } from "../tests/tests/shape/transformations/scale.js";
+import { rotateTransformMethod } from "../tests/tests/shape/transformations/rotate.js";
+import { skewTransformMethod } from "../tests/tests/shape/transformations/skew.js";
+import { transformMethod } from "../tests/tests/shape/transformations/transform.js";
+import { beginTTransformMethod } from "../tests/tests/shape/transformations/beginT.js";
+import { endTTransformMethod } from "../tests/tests/shape/transformations/endT.js";
+
 // Entry function (user-defined)
 export function runTests(module: string, method: string) {
   switch (module) {
@@ -23,7 +33,46 @@ export function runTests(module: string, method: string) {
     case "shape":
       shapeBasicMethod(method);
       break;
+    case "transformations":
+      shapeTransformationsMethod(method);
+      break;
+    default:
+      break;
+  }
+}
 
+function shapeTransformationsMethod(method: string) {
+  switch (method) {
+    case "translate":
+      translateTransformMethod();
+      break;
+    case "scale":
+      scaleTransformMethod();
+      break;
+    case "rotate":
+      rotateTransformMethod();
+      break;
+    case "skew":
+      skewTransformMethod();
+      break;
+    case "transform":
+      transformMethod();
+      break;
+    case "beginT":
+      beginTTransformMethod();
+      break;
+    case "endT":
+      endTTransformMethod();
+      break;
+    case "all":
+      translateTransformMethod();
+      scaleTransformMethod();
+      rotateTransformMethod();
+      skewTransformMethod();
+      transformMethod();
+      beginTTransformMethod();
+      endTTransformMethod();
+      break;
     default:
       break;
   }
@@ -85,6 +134,6 @@ function canvasMethods(method: string) {
   }
 }
 
-const module = "shape";
-const method = "getBBox";
+const module = "transformations";
+const method = "translate";
 setTimeout(() => runTests(module, method), 5000);

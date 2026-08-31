@@ -67,6 +67,10 @@ import type { ParsedDaTa } from "../../../models/types/geometry/transform";
  */
 export function parseExpression(expr: string): ParsedDaTa | null {
   try {
+    const normalized = expr.trim().replace(
+      /^(translate|scale|rotate|skew)\s*\(/i,
+      (_match, name: string) => `${name[0]!.toUpperCase()}(`,
+    );
     // -----------------------------------------------------------
     // STEP 1: Define transformation-specific parsing patterns
     // -----------------------------------------------------------
@@ -75,7 +79,7 @@ export function parseExpression(expr: string): ParsedDaTa | null {
       T: /^T\(\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*)?(?:,\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*)?\)$/,
       R: /^R\(\s*(-?(?:\d+\.\d+|\d+))\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*)?(?:,\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*)?\)$/,
       S: /^S\(\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*)?(?:,\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*)?\)$/,
-      H: /^H\(\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*)?(?:,\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-d+))\s*\)?\)$/,
+      H: /^H\(\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*)?(?:,\s*(-?(?:\d+\.\d+|\d+))\s*,\s*(-?(?:\d+\.\d+|\d+))\s*)?\)$/,
       F: /^F\(\s*(true|false)\s*,\s*(true|false)\s*(?:,\s*(?:"([^"]+)"|(\w+))\s*,\s*(?:"([^"]+)"|(\w+))\s*)?\)$/,
     };
 
@@ -83,7 +87,7 @@ export function parseExpression(expr: string): ParsedDaTa | null {
     // STEP 2: Resolve transformation identifier
     // -----------------------------------------------------------
 
-    const firstChar = expr[0];
+    const firstChar = normalized[0]?.toUpperCase();
     const pattern = patterns[firstChar as keyof typeof patterns];
     if (!pattern) return null;
 
@@ -91,7 +95,7 @@ export function parseExpression(expr: string): ParsedDaTa | null {
     // STEP 3: Apply regex match
     // -----------------------------------------------------------
 
-    const match = expr.match(pattern);
+    const match = normalized.match(pattern);
     if (!match) return null;
 
     // -----------------------------------------------------------
@@ -110,11 +114,11 @@ export function parseExpression(expr: string): ParsedDaTa | null {
     switch (firstChar) {
       case "T":
         return {
-          tName: "Translate",
+          tName: "translate",
           data: {
             x: parseFloat(m1),
             y: parseFloat(m2),
-            type: match[3] ?? match[4] ?? "a",
+            tType: match[3] ?? match[4] ?? "a",
             px: match[5] !== undefined ? parseFloat(m5) : 0,
             py: match[6] !== undefined ? parseFloat(m6) : 0,
           },
@@ -122,11 +126,11 @@ export function parseExpression(expr: string): ParsedDaTa | null {
 
       case "S":
         return {
-          tName: "Scale",
+          tName: "scale",
           data: {
             sx: parseFloat(m1),
             sy: parseFloat(m2),
-            type: match[3] ?? match[4] ?? "a",
+            tType: match[3] ?? match[4] ?? "a",
             px: match[5] !== undefined ? parseFloat(m5) : 0,
             py: match[6] !== undefined ? parseFloat(m6) : 0,
           },
@@ -134,11 +138,11 @@ export function parseExpression(expr: string): ParsedDaTa | null {
 
       case "H":
         return {
-          tName: "Skew",
+          tName: "skew",
           data: {
             sx: parseFloat(m1),
             sy: parseFloat(m2),
-            type: match[3] ?? match[4] ?? "a",
+            tType: match[3] ?? match[4] ?? "a",
             px: match[5] !== undefined ? parseFloat(m5) : 0,
             py: match[6] !== undefined ? parseFloat(m6) : 0,
           },
@@ -146,10 +150,10 @@ export function parseExpression(expr: string): ParsedDaTa | null {
 
       case "R":
         return {
-          tName: "Rotate",
+          tName: "rotate",
           data: {
             angle: parseFloat(m1),
-            type: m2 ?? match[3] ?? "a",
+            tType: m2 ?? match[3] ?? "a",
             px: match[4] !== undefined ? parseFloat(match[4]) : 0,
             py: match[5] !== undefined ? parseFloat(m5) : 0,
           },

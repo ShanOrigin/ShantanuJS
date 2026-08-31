@@ -11,7 +11,7 @@ import { GraphicsRenderNode } from "../../models/interfaces/render-node";
 
 type ShantanuJSTypes = typeof ShantanuJS;
 
-type GraphicsRenderNodeWithInternals = GraphicsRenderNode &
+export type GraphicsRenderNodeWithInternals = GraphicsRenderNode &
   GetInternalGraphicsAccessor;
 
 import { getBrowserInfoLegacy } from "./browser-info.js";
@@ -342,14 +342,16 @@ export default class ShantanuJSTestTool {
     // Actions
     // ---------------------------------------------------------------------------
 
+    let actionError: Error | undefined;
     try {
       testDef.actions(this.#api, this.#context);
       // this.#context.canvas.engine.flush();
     } catch (error) {
-      actionErrors.push(error as Error);
+      actionError = error instanceof Error ? error : new Error(String(error));
     }
 
-    if (actionErrors.length) {
+    if (actionError && !testDef.expect.error) {
+      actionErrors.push(actionError);
       return this.#handleErrors("action", actionErrors);
     }
 
@@ -366,7 +368,7 @@ export default class ShantanuJSTestTool {
     let assertions: OutputParam["assertions"] = [];
 
     try {
-      assertions = this.#runVerify(testDef.expect, this.#context);
+      assertions = this.#runVerify(testDef.expect, this.#context, actionError);
       //  this.#context.canvas.engine.flush();
     } catch (error) {
       verifyErrors.push(error as Error);
@@ -505,7 +507,7 @@ export default class ShantanuJSTestTool {
           tests,
         }),
       });
-    } catch (e) {}
+    } catch (e) { }
   }
 
   /**
@@ -830,7 +832,11 @@ export default class ShantanuJSTestTool {
    * - Uses live ctx instead of snapshot for shape access → inconsistency risk
    * - No validation for missing shapes → undefined access possible
    */
-  #runVerify(verifyBlock: ExpectedBlock, ctx: Context) {
+  #runVerify(
+    verifyBlock: ExpectedBlock,
+    ctx: Context,
+    actionError?: Error,
+  ) {
     const assertions: OutputParam["assertions"] = [];
 
     const { testSubject, style, geometry, error, validators } = verifyBlock;
@@ -856,7 +862,7 @@ export default class ShantanuJSTestTool {
     }
 
     if (error) {
-      this.#verifyError(error, assertions);
+      this.#verifyError(error, actionError, assertions);
     }
 
     return assertions;
@@ -990,16 +996,16 @@ export default class ShantanuJSTestTool {
         const result =
           typeof expected == "number"
             ? this.#compareNumber(
-                actualGeometry[property],
-                expected as number,
-                tolerance,
-                mode,
-              )
+              actualGeometry[property],
+              expected as number,
+              tolerance,
+              mode,
+            )
             : this.#compare(
-                expected,
-                actualGeometry[property],
-                mode as "eq" | "neq",
-              );
+              expected,
+              actualGeometry[property],
+              mode as "eq" | "neq",
+            );
 
         assertions.push({
           crossCheck: "library",
@@ -1101,25 +1107,28 @@ export default class ShantanuJSTestTool {
    */
   #verifyError(
     error: ExpectedBlock["error"],
+    actionError: Error | undefined,
     assertions: OutputParam["assertions"],
   ): void {
     if (!error) return;
 
-    let actual: Error | null = null;
-
-    try {
-      throw error.expected;
-    } catch (thrown) {
-      actual = thrown as Error;
-    }
+    const expectedConstructor =
+      typeof error.expected === "function"
+        ? error.expected
+        : error.expected.constructor;
+    const matches =
+      actionError instanceof expectedConstructor &&
+      (typeof error.expected === "function" ||
+        !error.expected.message ||
+        actionError.message === error.expected.message);
 
     assertions.push({
       domain: "error",
       property: "throws",
-      actualStatus: actual ? "pass" : "fail",
+      actualStatus: matches ? "pass" : "fail",
       expectedStatus: error.expectedStatus,
       expected: error.expected,
-      actual,
+      actual: actionError,
     });
   }
 
