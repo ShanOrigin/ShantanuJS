@@ -64,7 +64,7 @@ export type GetSceneElementIdMapAccessor = {
   [GET_SCENE_ELEMENT_ID_MAP_METHOD]: (key: symbol) => Map<string, GraphicsNode>;
 };
 export type GetSceneZOrderResolverAccessor = {
-  [GET_SCENE_Z_ORDER_RESOLVER_METHOD]: (key: symbol) => function;
+  [GET_SCENE_Z_ORDER_RESOLVER_METHOD]: (key: symbol) => Function;
 };
 
 /**

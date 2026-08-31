@@ -71,13 +71,13 @@ export interface ISyntheticEvent {
    * Current node being processed during propagation.
    * Set ONLY by dispatcher.
    */
-  currentTarget: GraphicsNode | null = null;
+  currentTarget: GraphicsNode | null;
 
   /**
    * Current propagation phase.
    * Set ONLY by dispatcher.
    */
-  eventPhase: EventPhase = EventPhase.TARGET;
+  eventPhase: EventPhase;
 
   // ========================================================================
   // PROPAGATION CONTROL

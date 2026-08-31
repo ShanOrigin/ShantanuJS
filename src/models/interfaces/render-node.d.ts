@@ -3,7 +3,7 @@ import {
   RotateMethodProps,
   ScaleMethodProps,
   SkewMethodProps,
-} from "../types/affine-transformations";
+} from "../types/geometry/transform";
 
 import type {
   AttrsMethodReturnTypes,
@@ -18,7 +18,6 @@ import type {
   PublicStyle,
 } from "../types/graphics-model";
 import type { IGraphicsModel } from "./graphics-model";
-import type { ValidGraphicsShapes } from "../types/graphics-model";
 import type { IAnimationOptions } from "../types/animation/options";
 import type { IAnimation } from "./animation";
 import type { BboxProps } from "../types/geometry/types";
@@ -90,4 +89,4 @@ export interface IRenderNode<
 export interface GraphicsRenderNode<
   T extends ValidGraphicsShapes = ValidGraphicsShapes,
 >
-  extends IGraphicsModel<T>, IRenderNode<T> {}
+  extends IRenderNode<T> {}

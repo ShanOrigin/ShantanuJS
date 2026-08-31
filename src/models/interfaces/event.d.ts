@@ -15,7 +15,9 @@ export type SupportedEvents =
  *
  * @param e The synthetic event describing the interaction.
  */
-export type Handler = (e: SyntheticEvent) => void;
+import type { ISyntheticEvent } from "./synthetic-event";
+
+export type Handler = (e: ISyntheticEvent) => void;
 
 /**
  * Defines the public event API implemented by interactive graphics
