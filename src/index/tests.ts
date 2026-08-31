@@ -134,6 +134,6 @@ function canvasMethods(method: string) {
   }
 }
 
-const module = "shape";
-const method = "getBBox";
+const module = "transformations";
+const method = "translate";
 setTimeout(() => runTests(module, method), 5000);
