@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "declarationDir": "./dist/distribution/types",
+    "sourceMap": false,
+    "incremental": false,
+    "noCheck": true
+  },
+
+  "include": [
+    "src/index/index.ts",
+    "src/build-env.d.ts"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "dist",
+    "src/tests/**",
+    "src/**/visualTest/**",
+    "src/index/tests.ts",
+    "src/index/play-ground-index.ts"
+  ]
+}
