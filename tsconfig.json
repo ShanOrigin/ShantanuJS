@@ -25,10 +25,9 @@
     "skipLibCheck": true,
 
     // ---- Types & Declarations ----
-    "types": ["vitest/globals"],
     "noEmit": false,
     "declaration": true,
-    "declarationDir": "./dist/distribution/types",
+    "declarationDir": "./dist",
     "emitDeclarationOnly": false,
 
     // ---- ADD ALL STRICT FLAGS INSIDE HERE ----
