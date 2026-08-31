@@ -1,138 +1,100 @@
-// working everything
-/*
-import typescript from 'rollup-plugin-typescript2';
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import esbuild from 'rollup-plugin-esbuild';
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
+import replace from "@rollup/plugin-replace";
+import typescript from "rollup-plugin-typescript2";
+import esbuild from "rollup-plugin-esbuild";
 
-export default [
-  // UMD build (for CDN)
-  {
-    input: 'src/index/index.ts',
-    output: {
-      file: 'dist/distribution/Shantanu.min.js',
-      format: 'umd',
-      name: 'Shantanu', // Exposed as window.Shantanu in browsers
-      sourcemap: true
-    },
-    treeshake: true,
-    plugins: [
-      resolve(),
-      commonjs(),
-      typescript({ useTsconfigDeclarationDir: true, clean: true }),
-      esbuild({
-        minify: true,
-        target: 'es2018', // modern enough for most browsers
-        legalComments: 'none', // remove comments
-        treeShaking: true
-      })
-    ]
-  },
-
-  // ESM build (for modern bundlers)
-  {
-    input: 'src/index/index.ts',
-    output: {
-      file: 'dist/distribution/Shantanu.esm.js',
-      format: 'esm',
-      sourcemap: true
-    },
-    treeshake: true,
-    plugins: [
-      resolve(),
-      commonjs(),
-      typescript(),
-      esbuild({ minify: true, target: 'es2018', treeShaking: true })
-    ]
-  },
-
-  // CommonJS build (for Node.js)
-  {
-    input: 'src/index/index.ts',
-    output: {
-      file: 'dist/distribution/Shantanu.cjs.js',
-      format: 'cjs',
-      sourcemap: true
-    },
-    treeshake: true,
-    plugins: [
-      resolve(),
-      commonjs(),
-      typescript(),
-      esbuild({ minify: true, target: 'es2018', treeShaking: true })
-    ]
-  }
-];
-
-*/
-
-import resolve from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import replace from '@rollup/plugin-replace';
-import typescript from 'rollup-plugin-typescript2';
-import esbuild from 'rollup-plugin-esbuild';
-
-const DEV = true; // flip to false when open-sourcing
+const DEV = false;
 
 const basePlugins = [
   replace({
     __SHANTANU_DEV__: JSON.stringify(DEV),
     preventAssignment: true,
-    delimiters: ['', '']
+    delimiters: ["", ""],
   }),
-  resolve(),
+
+  resolve({
+    extensions: [".js", ".ts"],
+  }),
+
   commonjs(),
+
   typescript({
     tsconfigOverride: {
       compilerOptions: {
-        sourceMap: true
-      }
+        sourceMap: true,
+      },
     },
-    clean: true
+    clean: true,
   }),
-  esbuild({
-    minify: true,
-    target: 'es2018',
-    legalComments: 'none',
-    treeShaking: true
-  })
 ];
 
+const minifyPlugin = esbuild({
+  minify: true,
+  target: "es2018",
+  legalComments: "none",
+  treeShaking: true,
+});
+
 export default [
-  // UMD (CDN)
+  /* ---------------------------------------------------------------------- */
+  /*                         UMD / Browser / CDN                            */
+  /* ---------------------------------------------------------------------- */
+
   {
-    input: 'src/index/index.ts',
+    input: "src/index/index.ts",
+
     output: {
-      file: 'dist/distribution/Shantanu.min.js',
-      format: 'umd',
-      name: 'Shantanu',
-      sourcemap: true
+      file: "dist/distribution/ShantanuJS.min.js",
+      format: "umd",
+      name: "ShantanuJS",
+      sourcemap: true,
+      exports: "named",
     },
+
     treeshake: true,
-    plugins: basePlugins
+
+    plugins: [
+      ...basePlugins,
+      minifyPlugin,
+    ],
   },
 
-  // ESM
+  /* ---------------------------------------------------------------------- */
+  /*                                  ESM                                   */
+  /* ---------------------------------------------------------------------- */
+
   {
-    input: 'src/index/index.ts',
+    input: "src/index/index.ts",
+
     output: {
-      file: 'dist/distribution/Shantanu.esm.js',
-      format: 'esm',
-      sourcemap: true
+      file: "dist/distribution/ShantanuJS.esm.js",
+      format: "esm",
+      sourcemap: true,
+      exports: "named",
     },
+
     treeshake: true,
-    plugins: basePlugins
+
+    plugins: basePlugins,
   },
 
-  // CJS
+  /* ---------------------------------------------------------------------- */
+  /*                                  CJS                                   */
+  /* ---------------------------------------------------------------------- */
+
   {
-    input: 'src/index/index.ts',
+    input: "src/index/index.ts",
+
     output: {
-      file: 'dist/distribution/Shantanu.cjs.js',
-      format: 'cjs',
-      sourcemap: true
+      file: "dist/distribution/ShantanuJS.cjs.js",
+      format: "cjs",
+      sourcemap: true,
+      exports: "named",
     },
+
     treeshake: true,
-    plugins: basePlugins
-  }
+
+    plugins: basePlugins,
+  },
 ];
