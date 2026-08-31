@@ -18,6 +18,7 @@ jPlag/
 temp/
 logs/
 .cache/
+.npm-cache/
 
 # Environment and config
 .env
