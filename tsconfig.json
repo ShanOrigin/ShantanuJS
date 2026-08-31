@@ -1,14 +1,14 @@
 {
   "compilerOptions": {
-    // ---- Target & Module ---- 
+    // ---- Target & Module ----
     "target": "ES2020",
     "module": "ES2020",
     "lib": ["DOM", "ESNext"],
 
-    // ---- Paths & Resolution ---- 
+    // ---- Paths & Resolution ----
     "rootDir": "./src/",
     "outDir": "./dist/",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": false,
@@ -16,11 +16,11 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
 
-    // ---- Incremental Build ---- 
+    // ---- Incremental Build ----
     "incremental": true,
     "sourceMap": true,
 
-    // ---- Strictness ---- 
+    // ---- Strictness ----
     "strict": true,
     "skipLibCheck": true,
 
@@ -32,7 +32,7 @@
     "emitDeclarationOnly": false,
 
     // ---- ADD ALL STRICT FLAGS INSIDE HERE ----
-/*
+    /*
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
@@ -50,15 +50,12 @@
     "noPropertyAccessFromIndexSignature": true,
     "noUncheckedIndexedAccess": true,
 
-
     // Methods / Class correctness
     "noImplicitOverride": true,
 
-
     // Exceptions & runtime safety
     "useUnknownInCatchVariables": true
-*/
-
+    */
   },
 
   "watchOptions": {
@@ -69,15 +66,9 @@
   },
 
   "include": ["src"],
-  "exclude": [
 
-    "src/**/*.test.ts",
-    "src/**/visualTest/**",
-//    "src/shapes/customGeometricShapes/*.ts",
+  "exclude": [
     "node_modules",
     "dist"
   ]
 }
-
-
-
