@@ -56,5 +56,5 @@ export type GeometricalAnimatableProperties = {
 export type AnimatableProperties<
   Shapes extends ValidGraphicsShapes = ValidGraphicsShapes,
 > = Partial<
-  AnimatableTransform | AnimatableStyle | IGraphicalElementProperties<Shapes>
+  AnimatableTransform | AnimatableStyle | IGraphicalElementProperties[Shapes]
 >;

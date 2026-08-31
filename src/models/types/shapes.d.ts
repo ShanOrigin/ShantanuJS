@@ -1,8 +1,7 @@
-import { I } from "vitest/dist/chunks/reporters.d.BFLkQcL6";
 import type {
-  IGraphicalElementProperties,
   StyleForGShapeTag,
 } from "../../property-definitions/common/common-properties";
+import type { IGraphicalElementProperties } from "../../property-definitions/specific/specific-properties";
 import { ValidGraphicsShapes } from "./graphics-model";
 
 // Point propsTypes
@@ -60,7 +59,7 @@ type TextPropsType = Partial<IGraphicalElementProperties["text"]> &
 type ImagePropsType = Partial<IGraphicalElementProperties["image"]> &
   Partial<StyleForGShapeTag<"image">>;
 
-export type GroupPropsType = Partial<IGraphicalElementProperties["group"]> &
+export type GroupPropsType = Partial<IGraphicalElementProperties["g"]> &
   Partial<StyleForGShapeTag<"g">>;
 
 export type AllShapesPropsTypes =

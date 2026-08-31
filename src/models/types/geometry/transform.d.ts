@@ -44,7 +44,7 @@ export type BaseTransformations = {
 
 // Core transform metadata shared by all except flip
 export interface BaseTransformationMeta extends Pivot {
-  tType?: TransformAnchors;
+  tType?: TransformAnchors | CenterAnchors;
 }
 
 // Translate

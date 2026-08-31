@@ -1,7 +1,8 @@
 import type {
-  IGraphicalElementProperties,
   StyleForGShapeTag,
 } from "../../property-definitions/common/common-properties";
+import type { IGraphicalElementProperties } from "../../property-definitions/specific/specific-properties";
+import type { GRAPHICS_CONTEXT } from "./graphics-model";
 
 /**
  * Internal geometry attribute contract supported by canvas.

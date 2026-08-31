@@ -13,8 +13,6 @@ import type {
 } from "../../property-definitions/common/common-properties";
 
 import type { IGraphicalElementProperties } from "../../property-definitions/specific/specific-properties";
-import type { DeepReadonly } from "../types/graphics-elements";
-
 export type ValidGraphicsShapes = Extract<
   keyof IGraphicalElementProperties,
   keyof TagToGShapeStyleKeyMap
