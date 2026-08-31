@@ -64,6 +64,7 @@ export function translateTransformMethod(): void {
               const shape = ctx.shapes[name] as GraphicsRenderNodeWithInternals;
               try {
                 shape.translate(testCase.props);
+                ctx.canvas.engine.flush();
               } catch (error) {
                 threwError = true;
                 if (!testCase.isNegative) throw error;
@@ -71,11 +72,11 @@ export function translateTransformMethod(): void {
             },
 
             expect: {
-              constraints: { save: true, oracle: { browser: false } },
+              constraints: { save: false , oracle: { browser: false } },
               testSubject: name,
 
               validators: {
-                translationOutcome: {
+                transformStack: {
                   value: testCase,
                   tolerance: testCase.tolerance ?? 0.5,
                   expectedStatus: testCase.expectedStatus,
