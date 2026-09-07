@@ -314,7 +314,7 @@ export class Line extends RenderNode<"line"> {
       geo.bounds = new Float32Array(4);
     }
 
-    geo.bounds[0] = bounds.maxX;
+    geo.bounds[0] = bounds.minX;
     geo.bounds[1] = bounds.minY;
     geo.bounds[2] = bounds.maxX;
     geo.bounds[3] = bounds.maxY;
