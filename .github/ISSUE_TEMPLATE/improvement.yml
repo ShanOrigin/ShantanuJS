@@ -1,0 +1,94 @@
+name: Improvement Request
+description: Suggest an improvement or refinement to existing ShantanuJS functionality.
+title: "[ Improvement / ] : "
+labels:
+  - "type: improvement"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ShantanuJS Improvement Request
+
+        Use this form for improving existing functionality, APIs, performance,
+        developer experience, maintainability, or behavior.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Improvement Summary
+      description: Clearly describe the existing functionality and proposed improvement.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      options:
+        - Shapes
+        - Geometry
+        - Transformations
+        - Animation
+        - Events
+        - Filters
+        - Renderer
+        - Media
+        - Scene
+        - Engine
+        - Type Definitions
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-behavior
+    attributes:
+      label: Current Behavior
+      description: Explain how the functionality currently behaves.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-behavior
+    attributes:
+      label: Proposed Behavior
+      description: Explain how you believe it should be improved.
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Explain the benefit of making this improvement.
+
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility Considerations
+      description: |
+        Mention potential API changes, backward-compatibility concerns,
+        performance implications, or migration requirements.
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing Requirements
+      description: Describe the tests that should be added or updated.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add examples, screenshots, benchmarks, or related issues.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: I have searched existing issues for related improvements.
+          required: true
+        - label: I have clearly described the current and proposed behavior.
+          required: true

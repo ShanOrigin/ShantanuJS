@@ -1,0 +1,102 @@
+name: Testing Request
+description: Propose tests, test coverage, regression tests, or verification work for ShantanuJS.
+title: "[ Testing / ] : "
+labels:
+  - "type: testing"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ShantanuJS Testing Request
+
+        Use this form for missing tests, regression tests, test coverage,
+        edge-case verification, or other testing work.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Testing Summary
+      description: Describe what needs to be tested or verified.
+      placeholder: "Example: Add regression coverage for Text getBBox() after rotation."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Target Area
+      description: Select the primary ShantanuJS area being tested.
+      options:
+        - Shapes
+        - Geometry
+        - Transformations
+        - Animation
+        - Events
+        - Filters
+        - Renderer
+        - Media
+        - Scene
+        - Engine
+        - Type Definitions
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-coverage
+    attributes:
+      label: Current Coverage
+      description: Describe the existing tests and what coverage is currently missing.
+
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Test Scenarios
+      description: List the behaviors, edge cases, and regression cases that should be tested.
+      placeholder: |
+        - Normal behavior
+        - Boundary conditions
+        - Invalid input
+        - Regression case
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Test Behavior
+      description: Explain what the tests should verify.
+    validations:
+      required: true
+
+  - type: textarea
+    id: test-files
+    attributes:
+      label: Relevant Test Files
+      description: |
+        If known, identify existing test files or the expected location
+        for the new tests.
+      placeholder: "Example: src/tests/tests/shape/transformations/rotate.ts"
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Notes
+      description: Add relevant APIs, fixtures, setup requirements, or testing considerations.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add related issues, examples, screenshots, or other useful information.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: I have searched existing tests and issues for related coverage.
+          required: true
+        - label: I have described the specific scenarios that require verification.
+          required: true
