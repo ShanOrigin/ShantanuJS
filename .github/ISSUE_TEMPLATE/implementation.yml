@@ -1,0 +1,110 @@
+name: Implementation Request
+description: Propose a new feature or functionality for ShantanuJS.
+title: "[ Implementation / ] : "
+labels:
+  - "type: implementation"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ShantanuJS Implementation Request
+
+        Use this form for new functionality or capabilities that should be
+        implemented in ShantanuJS.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: Clearly describe the functionality you propose.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Target Area
+      description: Select the primary ShantanuJS area affected.
+      options:
+        - Shapes
+        - Geometry
+        - Transformations
+        - Animation
+        - Events
+        - Filters
+        - Renderer
+        - Media
+        - Scene
+        - Engine
+        - Type Definitions
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Explain the problem this feature solves and why it is useful.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-api
+    attributes:
+      label: Proposed API / Usage
+      description: |
+        If applicable, show how you expect developers to use the proposed feature.
+      placeholder: |
+        ```ts
+        // Example proposed API
+        ```
+      render: typescript
+
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected Behavior
+      description: Describe how the feature should behave.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Describe existing approaches or alternatives you considered.
+
+  - type: textarea
+    id: implementation-notes
+    attributes:
+      label: Implementation Notes
+      description: |
+        Add relevant architectural considerations, dependencies, constraints,
+        or possible implementation approaches.
+
+  - type: textarea
+    id: testing
+    attributes:
+      label: Testing Requirements
+      description: |
+        Describe the tests that should be added or updated to verify this feature.
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add screenshots, references, examples, or related issues.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: I have searched existing issues and did not find a duplicate.
+          required: true
+        - label: This proposal describes functionality that belongs in ShantanuJS.
+          required: true
+        - label: I have explained the problem or use case this feature addresses.
+          required: true

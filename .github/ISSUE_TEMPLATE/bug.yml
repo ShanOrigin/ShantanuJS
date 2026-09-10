@@ -1,0 +1,192 @@
+name: Bug Report
+description: Report a reproducible bug or unexpected behavior in ShantanuJS.
+title: "[ Bug / ] : "
+labels:
+  - "type: bug"
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ShantanuJS Bug Report
+
+        Thank you for helping improve ShantanuJS.
+
+        Please provide enough information to reproduce and investigate the issue.
+        A minimal reproduction is strongly preferred, especially for issues involving
+        shapes, geometry, transformations, animation, events, rendering, or TypeScript.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Bug Summary
+      description: Briefly describe the problem and what you expected to happen.
+      placeholder: "Example: Text is incorrectly positioned after applying rotation."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area
+      description: Select the primary ShantanuJS area affected by this issue.
+      options:
+        - Shapes
+        - Geometry
+        - Transformations
+        - Animation
+        - Events
+        - Filters
+        - Renderer
+        - Media
+        - Scene
+        - Engine
+        - Type Definitions
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: ShantanuJS Version
+      description: Specify the exact ShantanuJS version where the issue occurs.
+      placeholder: "Example: 0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: language
+    attributes:
+      label: Language
+      description: Which language are you using with ShantanuJS?
+      options:
+        - TypeScript
+        - JavaScript
+    validations:
+      required: true
+
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime / Toolchain
+      description: Specify the relevant runtime or build tool if applicable.
+      placeholder: "Example: Node.js 22 + Vite 7"
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      description: Include the browser and version if the issue is browser-related.
+      placeholder: "Example: Chrome 140"
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating System
+      description: Specify the operating system and version.
+      placeholder: "Example: Windows 11"
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal Reproduction
+      description: |
+        Provide the smallest code example that reproduces the issue.
+        Remove unrelated application code where possible.
+      placeholder: |
+        ```ts
+        import { ShantanuJS } from "shantanujs";
+
+        // Minimal reproduction
+        ```
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Provide the exact steps required to reproduce the issue.
+      placeholder: |
+        1. Create a Text shape.
+        2. Apply a rotation transformation.
+        3. Call getBBox().
+        4. Observe the incorrect bounding box.
+    validations:
+      required: true
+
+  - type: input
+    id: reproduction-url
+    attributes:
+      label: Reproduction URL
+      description: |
+        If available, provide a public repository or online reproduction.
+        Examples include GitHub, StackBlitz, or CodeSandbox.
+      placeholder: "https://..."
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: Clearly describe what ShantanuJS should do.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: Clearly describe what ShantanuJS does instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Message / Console Output
+      description: |
+        Paste TypeScript, JavaScript, browser console, build, or runtime errors.
+      placeholder: |
+        Paste the complete relevant error here.
+      render: text
+
+  - type: dropdown
+    id: regression
+    attributes:
+      label: Regression
+      description: Did this behavior work correctly in an earlier version?
+      options:
+        - "No"
+        - "Yes"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: input
+    id: last-working-version
+    attributes:
+      label: Last Known Working Version
+      description: If this is a regression, specify the last version that worked correctly.
+      placeholder: "Example: 0.0.8"
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Add screenshots, videos, related issues, implementation details,
+        test results, or any other information that may help investigate the issue.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: I have searched existing issues and did not find a duplicate.
+          required: true
+        - label: I have provided a minimal reproduction or sufficient reproduction details.
+          required: true
+        - label: I have included the relevant ShantanuJS version and environment information.
+          required: true
