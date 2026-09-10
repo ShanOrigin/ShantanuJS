@@ -525,7 +525,7 @@ export class SceneModel
       // STEP 1: OWNERSHIP VALIDATION
       // =========================================================
 
-      const parent = shape[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
+      const parent = shape[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY) as { geometry: { shape: string } };
 
       if (
         parent &&
