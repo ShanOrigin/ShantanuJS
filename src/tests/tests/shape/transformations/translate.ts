@@ -63,7 +63,7 @@ export function translateTransformMethod(): void {
             actions(api, ctx) {
               const shape = ctx.shapes[name] as GraphicsRenderNodeWithInternals;
               try {
-                shape.translate(testCase.props);
+                shape.translate(testCase.props as any );
                 ctx.canvas.engine.flush();
               } catch (error) {
                 threwError = true;

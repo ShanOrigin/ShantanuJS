@@ -62,7 +62,7 @@ export function scaleTransformMethod(): void {
             actions(api, ctx) {
               const shape = ctx.shapes[name] as GraphicsRenderNodeWithInternals;
               try {
-                shape.scale(testCase.props);
+                shape.scale(testCase.props as any );
               } catch (error) {
                 threwError = true;
                 if (!testCase.isNegative) throw error;
