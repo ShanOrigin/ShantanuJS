@@ -33,7 +33,7 @@ type CanvasStyleTypes = StyleForGShapeTag<"scene">;
  * canvas styling properties.
  */
 export type CanvasAttrsPropsTypes = Partial<CanvasGeometryTypes> &
-  Partial<Pick<CanvasStyleTypes, "stroke" | "stroke-width" | "fill">>;
+  Partial<Pick<CanvasStyleTypes, "stroke" | "stroke-width" | "fill" | "opacity" | "stroke-dasharray" >>;
 
 /**
  * Canvas initialization configuration.
