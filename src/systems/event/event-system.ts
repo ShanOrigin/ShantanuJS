@@ -2,6 +2,8 @@ import { SyntheticEvent, EventPhase } from "./synthetic-event.js";
 
 import type { GraphicsRenderNode } from "../../models/interfaces/render-node";
 import type { SupportedEvents } from "../../models/interfaces/event";
+import { DEV_INTERNAL_ACCESS_KEY, GET_PARENT_METHOD } from "../../internal/keys/dev-keys.js";
+import type { GetParentAccessor, GraphicsNode } from "../../models/interfaces/graphics-container.js";
 //import { hitTestShape } from './hitTestShape.js';
 
 /**
@@ -221,13 +223,17 @@ export class EventSystem {
     let bestZ = -Infinity;
 
     for (let i = 0, len = elements.length; i < len; i++) {
-      const el = elements[i] as GraphicsRenderNode;
+      const el = (elements[i] as GraphicsRenderNode) ;
 
+      const geo = el.geometry as {
+        bounds: Float32Array;
+        zIndex: number;
+      };
       // ------------------------------------------------------------
       // STEP 1: Broad-phase → AABB rejection
       // ------------------------------------------------------------
 
-      if (!this.#aabbContains(x, y, el.geometry.bounds)) continue;
+      if (!this.#aabbContains(x, y, geo.bounds)) continue;
 
       // ------------------------------------------------------------
       // STEP 2: Narrow-phase → precise geometry hit test
@@ -284,24 +290,21 @@ export class EventSystem {
    * - Uses single map for O(1) lookup
    * - Avoids repeated scans
    */
-  #buildPath(target: GraphicsRenderNode): GraphicsRenderNode[] {
+  #buildPath(target: GraphicsNode): GraphicsNode[] {
     const map = this.#elementsIdMap;
 
-    const path: GraphicsRenderNode[] = [];
+    const path: GraphicsNode[] = [];
 
-    let current: GraphicsRenderNode | null = target;
+    let current: GraphicsNode | null = target;
 
     while (current) {
-      path.push(current);
+      path.push(current as GraphicsNode);
 
-      const inside = current.style.inside as string | undefined;
-      if (!inside) break;
+      const parent : GraphicsNode | undefined = (current as GraphicsNode & GetParentAccessor )[GET_PARENT_METHOD](DEV_INTERNAL_ACCESS_KEY);
 
-      // Extract parent ID (after '-')
-      const idx = inside.indexOf("-");
-      if (idx === -1) break;
+      if(!parent) break;
 
-      const parentId = inside.slice(idx + 1);
+      const parentId : string = parent.style.id ;
 
       current = map.get(parentId) ?? null;
     }
@@ -320,7 +323,7 @@ export class EventSystem {
    * true  → stop propagation
    * false → continue
    */
-  #invoke(node: GraphicsRenderNode, event: SyntheticEvent): boolean {
+  #invoke(node: GraphicsNode, event: SyntheticEvent): boolean {
     const handler = (node as GraphicsRenderNode).events.getEventHandler(
       event.type as SupportedEvents,
     );
