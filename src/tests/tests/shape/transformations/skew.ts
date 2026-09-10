@@ -64,7 +64,7 @@ export function skewTransformMethod(): void {
             actions(api, ctx) {
               const shape = ctx.shapes[name] as GraphicsRenderNodeWithInternals;
               try {
-                shape.skew(testCase.props);
+                shape.skew(testCase.props as any );
               } catch (error) {
                 threwError = true;
                 if (!testCase.isNegative) throw error;

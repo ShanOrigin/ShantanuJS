@@ -66,7 +66,7 @@ export function rotateTransformMethod(): void {
             actions(api, ctx) {
               const shape = ctx.shapes[name] as GraphicsRenderNodeWithInternals;
               try {
-                shape.rotate(testCase.props);
+                shape.rotate(testCase.props as any );
               } catch (error) {
                 threwError = true;
                 if (!testCase.isNegative) throw error;

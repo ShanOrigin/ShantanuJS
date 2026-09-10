@@ -250,21 +250,22 @@ export function getBBoxMethod() {
             const shape = ctx.shapes[name];
             let extra: Record<string, any> = {};
 
-            if (name === "point") {
-              extra.r = shape.geometry.r;
+            if (name === "dot") {
+              extra.r =( shape?.geometry as { r : number } ).r ;
+
             } else if (name === "text") {
         
-              const { text, x, y } = shape.geometry;
+              const { text, x, y } = shape.geometry as {text : string , x : number , y : number};
               const {
-                fontSize,
-                fontWeight,
-                fontStyle,
-                letterSpacing,
-                wordSpacing,
-                textAnchor,
-                alignmentBaseline,
-                dominantBaseline,
-              } = shape.style;
+                "font-size":fontSize,
+                "font-weight":fontWeight,
+                "font-style":fontStyle,
+                "letter-spacing":letterSpacing,
+                "word-spacing":wordSpacing,
+                "text-anchor":textAnchor,
+                "alignment-baseline":alignmentBaseline,
+                "dominant-baseline":dominantBaseline,
+              } = shape.style as any;
 
               extra = {
                 text,
@@ -280,7 +281,7 @@ export function getBBoxMethod() {
                 dominantBaseline,
               };
             }
-            generateBounds(name, shape.geometry.buffer, extra);
+            generateBounds(name, shape?.geometry?.buffer as Float32Array, extra);
             console.warn(" shape ", name);
           },
 

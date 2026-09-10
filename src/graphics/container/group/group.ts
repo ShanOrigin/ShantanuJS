@@ -230,7 +230,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
      * Setter logic
      */
     if (typeof props === "object") {
-      const safeProps = {} as groupProps;
+      const safeProps : Partial< groupProps > = {} as groupProps;
 
       /**
        * Filter allowed properties
@@ -240,7 +240,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
       for (let i = 0; i < allowed.length; i++) {
         const key = allowed[i];
         if (key in props) {
-          safeProps[key] = props[key];
+          (safeProps as Record<string , unknown> )[key] = props[key];
         }
       }
 
@@ -254,7 +254,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
        */
       const elements = this.#groupElements;
       for (let i = 0; i < elements.length; i++) {
-        elements[i].attrs(safeProps);
+        elements[i].attrs(safeProps as groupProps);
       }
 
       return;
@@ -408,7 +408,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
       );
     }
 
-    if (groupParent.geometry.shape !== "scene") {
+    if (groupParent?.geometry?.shape !== "scene") {
       throw new InvalidGroupMethodAccessError(
         "this.add()",
         `cannot add shape to this element , because this group\'s ( id : ${this.style.id} ) parent is not this Canvas ( id : ${groupParent.style.id} ).`,
@@ -425,7 +425,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
         DEV_INTERNAL_ACCESS_KEY,
       ) as {
         shape: string;
-        dirty: boolean;
+        localDirty: boolean;
         worldDirty: boolean;
       };
 
@@ -443,7 +443,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
             "core.canvas.add()",
           );
 
-        const currentShape = shape.geometry.shape;
+        const currentShape = shape?.geometry?.shape;
         throw new NotInitializedError(
           `this.#fig of ${currentShape}`,
           `this ${currentShape} not initialized , add this ${currentShape} first to canvas then group.`,
@@ -458,7 +458,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
 
       shape[SET_PARENT_METHOD](this, DEV_INTERNAL_ACCESS_KEY);
 
-      geometry.dirty = true;
+      geometry.localDirty = true;
       geometry.worldDirty = true;
       this.#groupElements.push(shape);
     }
@@ -529,7 +529,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
       );
     }
 
-    if (groupParent.geometry.shape !== "scene") {
+    if (groupParent?.geometry?.shape !== "scene") {
       throw new InvalidGroupMethodAccessError(
         "this.remove()",
         "cannot add shape to this element , because this group parent is not Canvas.",
@@ -565,7 +565,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
             "group.add()",
           );
 
-        const currentShape = shape.geometry.shape;
+        const currentShape = shape?.geometry?.shape;
         throw new NotInitializedError(
           `this.#fig of ${currentShape}`,
           `this ${currentShape} not initialized , add this ${currentShape} first to canvas then group.`,
@@ -640,7 +640,7 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
         );
       }
 
-      if (groupParent.geometry.shape !== "scene") {
+      if (groupParent?.geometry?.shape !== "scene") {
         throw new InvalidGroupMethodAccessError(
           "this.remove()",
           "cannot add shape to this element , because this group parent is not Canvas.",
@@ -936,8 +936,9 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
     const stack = [...(parent as Group).getAllElements()];
 
     while (stack.length) {
-      const el = stack.pop() as GraphicsNode;
-      const geo = el.geometry as { shape: string; worldDirty: boolean };
+      const el = stack.pop() as GraphicsNode & InternalGeometryAccessor;
+      const geo = el[GET_INTERNAL_GEOMETRY_METHOD](DEV_INTERNAL_ACCESS_KEY) as { shape: string; worldDirty: boolean };
+      // const geo = el.geometry as { shape: string; worldDirty: boolean };
 
       if (!geo.worldDirty) {
         geo.worldDirty = true;
@@ -955,5 +956,5 @@ export class Group extends RenderNode<"g"> implements IGraphicsContainer {
 
   protected restoreDimension(accessKeys: symbol): void {
     assertAccess(accessKeys);
-  }
+  } 
 }
