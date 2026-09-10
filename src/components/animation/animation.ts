@@ -2135,7 +2135,7 @@ export class Animation implements IAnimation {
 
     const { styleProps: sp, geometryProps: gp } = separateProperties(
       geo.shape as string,
-      attrs,
+      attrs as Record<string, any>,
     );
 
     // ------------------------------------------------------------------
@@ -2478,7 +2478,7 @@ export class Animation implements IAnimation {
      * bounds is treated as read-only input data.
      */
 
-    const bounds = this.#el.geometry.bounds as Float32Array;
+    const bounds = this.#el.geometry!.bounds as Float32Array;
 
     // --- Check if translation exists ---
 
@@ -2776,7 +2776,7 @@ export class Animation implements IAnimation {
      *
      * Treated strictly as read-only geometric input.
      */
-    const bounds = this.#el.geometry.bounds as Float32Array;
+    const bounds = this.#el.geometry!.bounds as Float32Array;
 
     /**
      * Translation vector extracted from resolved geometry.
@@ -2978,7 +2978,7 @@ export class Animation implements IAnimation {
      * - No division by zero
      * - Stable animation behavior
      */
-    const geom = this.#el.geometry?.[prop] || 1;
+    const geom = (this.#el.geometry as Record<string, any>)?.[prop] || 1;
 
     /**
      * Convert absolute value into relative scale factor.
