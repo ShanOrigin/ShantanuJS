@@ -24,6 +24,9 @@ import { transformMethod } from "../tests/tests/shape/transformations/transform.
 import { beginTTransformMethod } from "../tests/tests/shape/transformations/beginT.js";
 import { endTTransformMethod } from "../tests/tests/shape/transformations/endT.js";
 
+// testing bugs : Shapes
+import { restoreDimension } from "../tests/tests/shape/media/text/restoreDimension.js";
+
 // Entry function (user-defined)
 export function runTests(module: string, method: string) {
   switch (module) {
@@ -36,9 +39,16 @@ export function runTests(module: string, method: string) {
     case "transformations":
       shapeTransformationsMethod(method);
       break;
+    case "bug":
+      testingBug();
     default:
       break;
   }
+}
+
+function testingBug() {
+  // run bug testing code here
+  restoreDimension();
 }
 
 function shapeTransformationsMethod(method: string) {
@@ -134,6 +144,6 @@ function canvasMethods(method: string) {
   }
 }
 
-const module = "transformations";
-const method = "translate";
+const module = "bug";
+const method = "";
 setTimeout(() => runTests(module, method), 5000);
