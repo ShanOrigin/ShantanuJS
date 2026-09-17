@@ -181,6 +181,23 @@ export class Text extends RenderNode<"text"> {
     }
   }
 
+  /**
+   * Restores the semantic text position from the computed bounding box.
+   *
+   * Text geometry coordinates are defined by the text anchor and baseline,
+   * so the original `x` and `y` values cannot always be restored directly
+   * from the minimum bounding-box coordinates. This method reconstructs the
+   * semantic position according to the current text alignment properties.
+   *
+   * The vertical `baseline` case uses the same 80% ascent approximation as
+   * `#calculatePseudoBBox()` to ensure that the restored position is
+   * consistent with the generated pseudo bounding box.
+   *
+   * @param accessKey
+   *   Internal access key required to modify protected geometry state.
+   * @param temporaryState
+   *   Temporary bounding-box buffer containing the calculated text bounds.
+   */
   protected override restoreDimension(
     accessKey: symbol,
     temporaryState: Float32Array,
@@ -190,10 +207,66 @@ export class Text extends RenderNode<"text"> {
 
       if (!this.#geometry) return;
 
-      [this.#geometry.x, this.#geometry.y] = [
-        temporaryState[0]!,
-        temporaryState[1]!,
-      ]; // center if circle
+      // The text bounding box stores its corners as:
+      // [minX, minY, 1, maxX, minY, 1, maxX, maxY, 1, minX, maxY, 1].
+      const minX = temporaryState[0]!;
+      const minY = temporaryState[1]!;
+      const maxX = temporaryState[3]!;
+      const maxY = temporaryState[7]!;
+
+      const textAnchor = this.#style["text-anchor"];
+      const baseline =
+        this.#style["dominant-baseline"] || this.#style["alignment-baseline"];
+
+      let x: number;
+
+      // Restore x according to the horizontal text anchor.
+      switch (textAnchor) {
+        case "middle":
+          x = (minX + maxX) / 2;
+          break;
+
+        case "end":
+          x = maxX;
+          break;
+
+        case "start":
+        default:
+          x = minX;
+          break;
+      }
+
+      let y: number;
+
+      // Restore y according to the vertical text baseline.
+      switch (baseline) {
+        case "middle":
+        case "central":
+          y = (minY + maxY) / 2;
+          break;
+
+        case "bottom":
+        case "text-bottom":
+          y = maxY;
+          break;
+
+        case "hanging":
+        case "top":
+          y = minY;
+          break;
+
+        case "baseline":
+        default: {
+          // Keep the same 80% ascent approximation used by #calculatePseudoBBox().
+          const height = maxY - minY;
+          y = minY + height * 0.8;
+          break;
+        }
+      }
+
+      this.#geometry.x = x;
+      this.#geometry.y = y;
+
       this.#computeBounds(temporaryState);
     } catch (e) {
       throw e;
