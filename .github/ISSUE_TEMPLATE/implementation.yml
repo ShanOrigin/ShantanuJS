@@ -36,6 +36,9 @@ body:
         - Renderer
         - Media
         - Scene
+        - Group
+        - Canvas
+        - RenderNode
         - Engine
         - Type Definitions
         - Other
