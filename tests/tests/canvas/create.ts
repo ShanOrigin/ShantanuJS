@@ -164,7 +164,10 @@ export function createCanvas() {
               expectedStatus: "pass",
 
               validate(shape, expected) {
-                const actual = [...shape.geometry.worldMatrix];
+                const geo = shape.geometry as {
+                  worldMatrix?:Float32Array;
+                } ;
+                const actual = [...geo.worldMatrix!];
 
                 const { value, tolerance = 0 } = expected as {
                   value: number[];

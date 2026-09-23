@@ -1,4 +1,3 @@
-import { ShantanuJS } from "../../../../../index/index.js";
 import ShantanuJSTestTool from "../../../../testingTool/shantanuJS-test.js";
 
 export function restoreDimension(): void {

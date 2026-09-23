@@ -119,7 +119,7 @@ export function runTests() {
               value: [20, 40, 50, 40],
               expectedStatus: "pass",
               validate(shape, expected) {
-                const [x1, y1, , x2, y2] = shape.geometry.buffer; // Correctly destructuring the needed indices
+                const [x1, y1, , x2, y2] = (shape?.geometry?.buffer ?? []) as number[];
                 const actual = [x1, y1, x2, y2];
                 const { value, tolerance = 0 } = expected as {
                   value: number[];

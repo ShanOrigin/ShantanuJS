@@ -1,31 +1,32 @@
 // Import testing tool demo
-import { hideMethod } from "../tests/tests/shape/basic/hideMethod.js";
-import { showMethod } from "../tests/tests/shape/basic/showMethod.js";
-import { toBackMethod } from "../tests/tests/shape/basic/toBackMethod.js";
-import { toFrontMethod } from "../tests/tests/shape/basic/toFrontMerhod.js";
+import { hideMethod } from "./tests/shape/basic/hideMethod.js";
 
-import { cloneMethod } from "../tests/tests/shape/basic/cloneMethod.js";
+import { showMethod } from "./tests/shape/basic/showMethod.js";
+import { toBackMethod } from "./tests/shape/basic/toBackMethod.js";
+import { toFrontMethod } from "./tests/shape/basic/toFrontMerhod.js";
 
-import { createCanvas } from "../tests/tests/canvas/create.js";
-import { addCanvasMethod } from "../tests/tests/canvas/add.js";
-import { removeCanvasMethod } from "../tests/tests/canvas/remove.js";
-import { clearCanvasMethod } from "../tests/tests/canvas/clear.js";
-import { containsCanvasMethod } from "../tests/tests/canvas/contains.js";
-import { getAllElementsCanvasMethod } from "../tests/tests/canvas/getAllElements.js";
-import { attrsCanvasMethod } from "../tests/tests/canvas/attrs.js";
-import { getBBoxMethod } from "../tests/tests/shape/basic/getBBoxMethod.js";
+import { cloneMethod } from "./tests/shape/basic/cloneMethod.js";
+
+import { createCanvas } from "./tests/canvas/create.js";
+import { addCanvasMethod } from "./tests/canvas/add.js";
+import { removeCanvasMethod } from "./tests/canvas/remove.js";
+import { clearCanvasMethod } from "./tests/canvas/clear.js";
+import { containsCanvasMethod } from "./tests/canvas/contains.js";
+import { getAllElementsCanvasMethod } from "./tests/canvas/getAllElements.js";
+import { attrsCanvasMethod } from "./tests/canvas/attrs.js";
+import { getBBoxMethod } from "./tests/shape/basic/getBBoxMethod.js";
 
 // Transformations module tests
-import { translateTransformMethod } from "../tests/tests/shape/transformations/translate.js";
-import { scaleTransformMethod } from "../tests/tests/shape/transformations/scale.js";
-import { rotateTransformMethod } from "../tests/tests/shape/transformations/rotate.js";
-import { skewTransformMethod } from "../tests/tests/shape/transformations/skew.js";
-import { transformMethod } from "../tests/tests/shape/transformations/transform.js";
-import { beginTTransformMethod } from "../tests/tests/shape/transformations/beginT.js";
-import { endTTransformMethod } from "../tests/tests/shape/transformations/endT.js";
+import { translateTransformMethod } from "./tests/shape/transformations/translate.js";
+import { scaleTransformMethod } from "./tests/shape/transformations/scale.js";
+import { rotateTransformMethod } from "./tests/shape/transformations/rotate.js";
+import { skewTransformMethod } from "./tests/shape/transformations/skew.js";
+import { transformMethod } from "./tests/shape/transformations/transform.js";
+import { beginTTransformMethod } from "./tests/shape/transformations/beginT.js";
+import { endTTransformMethod } from "./tests/shape/transformations/endT.js";
 
 // testing bugs : Shapes
-import { restoreDimension } from "../tests/tests/shape/media/text/restoreDimension.js";
+import { restoreDimension } from "./tests/shape/media/text/restoreDimension.js";
 
 // Entry function (user-defined)
 export function runTests(module: string, method: string) {

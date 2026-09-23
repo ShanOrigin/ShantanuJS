@@ -33,7 +33,7 @@ export function cloneMethod() {
                 value: (ctx.shapes[name] as Shape).style.id,
                 expectedStatus: "pass",
                 validate(shape, { value }) {
-                  const clone = shape.clone();
+                  const clone = (shape as any).clone();
 
                   ctx.canvas.add(clone);
 

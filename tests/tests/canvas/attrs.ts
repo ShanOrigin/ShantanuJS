@@ -1,6 +1,4 @@
-// Import testing tool demo
-
-import { height, width } from "happy-dom/lib/PropertySymbol.js";
+// Import testing tool 
 import ShantanuJSTestTool from "../../testingTool/shantanuJS-test.js";
 
 // Entry function (user-defined)
@@ -168,7 +166,10 @@ export function attrsCanvasMethod() {
               expectedStatus: "pass",
 
               validate(shape, expected) {
-                const actual = [...shape.geometry.worldMatrix];
+                const geo = shape.geometry as {
+                  worldMatrix?:Float32Array;
+                } ;
+                const actual = [...geo.worldMatrix!];
 
                 const { value, tolerance = 0 } = expected as {
                   value: number[];

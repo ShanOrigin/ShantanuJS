@@ -2,6 +2,11 @@
 // Common Types
 // ============================================================================
 
+import { GraphicsRenderNode } from "../../src/models/interfaces/render-node";
+import {
+  GraphicsRenderNodeWithInternals
+} from "./shantanuJS-test";
+
 /**
  * Supported comparison operators.
  */
@@ -128,14 +133,14 @@ export type Validator = {
    * @returns "pass" if the validation succeeds, otherwise "fail".
    */
   validate: (
-    shape: GraphicsRenderNodeWithInternals,
+    shape: GraphicsRenderNode & GraphicsRenderNodeWithInternals ,
     expected: { value: unknown; tolerance?: number },
     bboxes?: {
       getBrowserBBoxPoints?: (
         canvas: any,
         shape: GraphicsRenderNodeWithInternals,
       ) => [number, number][];
-      getLibraryBBoxPoints?: (shape: GraphicsRenderNode) => [number, number][];
+      getLibraryBBoxPoints?: (shape: GraphicsRenderNode  ) => [number, number][];
     },
   ) => AssertionStatus;
 };

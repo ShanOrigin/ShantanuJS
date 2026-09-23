@@ -35,7 +35,7 @@ export function toFrontMethod() {
                 expectedStatus: "pass",
 
                 validate(shape, { tolerance, value }) {
-                  return shape.geometry["zIndex"] === value ? "pass" : "fail";
+                  return shape?.geometry?.["zIndex"] === value ? "pass" : "fail";
                 },
               },
             },

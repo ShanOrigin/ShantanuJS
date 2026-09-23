@@ -1,4 +1,4 @@
-import { ShantanuJS } from "../../index";
+import { ShantanuJS } from "../../src/index/index.js"
 /**
  * Geometry configuration for all default testing shapes.
  *

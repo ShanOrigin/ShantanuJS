@@ -34,7 +34,7 @@ export function toBackMethod() {
                 expectedStatus: "pass",
 
                 validate(shape, { value }) {
-                  return shape.geometry["zIndex"] === value ? "pass" : "fail";
+                  return shape?.geometry?.["zIndex"] === value ? "pass" : "fail";
                 },
               },
             },

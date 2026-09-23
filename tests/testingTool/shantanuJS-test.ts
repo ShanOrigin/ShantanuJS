@@ -1,13 +1,13 @@
-import { ShantanuJS } from "../../index/index.js";
+import { ShantanuJS } from "../../src/index/index.js";
 import {
   DEV_INTERNAL_ACCESS_KEY,
   GET_INTERNAL_GRAPHICS_METHOD,
-} from "../../internal/keys/dev-keys.js";
+} from "../../src/internal/keys/dev-keys.js";
 import {
   GetInternalGraphicsAccessor,
   GraphicsNode,
-} from "../../models/interfaces/graphics-container";
-import { GraphicsRenderNode } from "../../models/interfaces/render-node";
+} from "../../src/models/interfaces/graphics-container";
+import { GraphicsRenderNode } from "../../src/models/interfaces/render-node";
 
 type ShantanuJSTypes = typeof ShantanuJS;
 
@@ -40,7 +40,7 @@ import type {
   Tests,
 } from "./types";
 
-export type Shape = GraphicsNode;
+export type Shape = GraphicsNode & GraphicsRenderNode ;
 export type Canvas = ShantanuJS.Canvas;
 
 export type Context = {
