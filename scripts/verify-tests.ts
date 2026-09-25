@@ -1,5 +1,4 @@
-import { readFile } from "node:fs/promises";
-import { readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
 
 import {
@@ -9,6 +8,8 @@ import {
 } from "../tests/test-verification.js";
 
 import type { SaveFileData } from "../tests/testingTool/types.js";
+import { writeMarkdownTestReport } from "./test-report.js";
+import { exec } from "node:child_process";
 
 /**
  * File extension used by the ShantanuJS visual test result files.
@@ -16,15 +17,12 @@ import type { SaveFileData } from "../tests/testingTool/types.js";
 const TEST_RESULT_EXTENSION = ".sh.vtest.json";
 
 /**
- * Default location containing all test result files.
+ * Default directory containing test result files.
  */
 const DEFAULT_TEST_DIRECTORY = resolve("tests");
 
 /**
  * Recursively finds all ShantanuJS test result files.
- *
- * @param directory Directory to search.
- * @returns Absolute paths of all `.sh.vtest.json` files.
  */
 async function findTestResultFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, {
@@ -38,6 +36,7 @@ async function findTestResultFiles(directory: string): Promise<string[]> {
 
     if (entry.isDirectory()) {
       files.push(...(await findTestResultFiles(entryPath)));
+
       continue;
     }
 
@@ -50,9 +49,7 @@ async function findTestResultFiles(directory: string): Promise<string[]> {
 }
 
 /**
- * Reads and parses a single serialized test result file.
- *
- * @param file Path of the test result file.
+ * Reads and parses one serialized test-result file.
  */
 async function readTestResultFile(file: string): Promise<SaveFileData> {
   const content = await readFile(file, "utf8");
@@ -67,9 +64,7 @@ async function readTestResultFile(file: string): Promise<SaveFileData> {
 }
 
 /**
- * Collects all test results from the configured test-result directory.
- *
- * @param directory Root directory containing test result files.
+ * Collects every test case from every result file.
  */
 async function collectTestResults(
   directory: string,
@@ -90,12 +85,12 @@ async function collectTestResults(
 /**
  * Parses the threshold supplied through the command line.
  *
- * Supported usage:
+ * Examples:
  *
- *     npm run alltest
- *     npm run alltest -- 90
+ *     npm run test-report
+ *     npm run test-report -- 90
  *
- * If no value is provided, 100 is used.
+ * Default threshold: 100%.
  */
 function parseThreshold(argument?: string): number {
   if (argument === undefined) {
@@ -115,6 +110,41 @@ function parseThreshold(argument?: string): number {
 }
 
 /**
+ * Stops the ShantanuJS test environment.
+ *
+ * The test environment is started by:
+ *
+ *   npm-run-all --parallel dev test-server test:watch
+ *
+ * Killing its process tree also stops:
+ *   - tsc --watch
+ *   - test tsc --watch
+ *   - live-server
+ *   - file-server
+ *   - npm-run-all child processes
+ *
+ * The test runner itself is not part of this tree.
+ */
+function stopTestEnvironment(): Promise<void> {
+  return new Promise((resolve) => {
+    exec(
+      `powershell -NoProfile -Command "` +
+        `$root = Get-CimInstance Win32_Process | ` +
+        `Where-Object { ` +
+        `$_.CommandLine -match 'npm-run-all.*--parallel.*dev.*test-server.*test:watch' ` +
+        `} | ` +
+        `Select-Object -First 1; ` +
+        `if ($root) { ` +
+        `taskkill /PID $root.ProcessId /T /F | Out-Null ` +
+        `}"`,
+      () => {
+        resolve();
+      },
+    );
+  });
+}
+
+/**
  * Main command-line entry point.
  */
 async function main(): Promise<void> {
@@ -122,37 +152,60 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log("Collecting ShantanuJS test results...");
+
   console.log(
     `Test directory: ${relative(process.cwd(), DEFAULT_TEST_DIRECTORY)}`,
   );
+
   console.log(`Threshold     : ${threshold}%`);
+
   console.log("");
 
-  const records = await collectTestResults(DEFAULT_TEST_DIRECTORY);
+  try {
+    const records = await collectTestResults(DEFAULT_TEST_DIRECTORY);
 
-  if (records.length === 0) {
-    throw new Error(
-      `No "${TEST_RESULT_EXTENSION}" files were found in ` +
-        `"${DEFAULT_TEST_DIRECTORY}".`,
-    );
+    if (records.length === 0) {
+      throw new Error(
+        `No "${TEST_RESULT_EXTENSION}" files were found in ` +
+          `"${DEFAULT_TEST_DIRECTORY}".`,
+      );
+    }
+
+    console.log(`Collected ${records.length} test case(s).`);
+
+    const verifier = new TestResultVerifier(threshold);
+
+    const result = verifier.verifyAll(records);
+
+    // -----------------------------------------------------------------------
+    // Terminal report
+    // -----------------------------------------------------------------------
+
+    console.log(verifier.formatReport(result));
+
+    // -----------------------------------------------------------------------
+    // Markdown report
+    // -----------------------------------------------------------------------
+
+    await writeMarkdownTestReport(result, {
+      outputPath: "tests/test-report.md",
+    });
+
+    /*
+     * Machine-readable result:
+     *
+     * 0 = threshold satisfied
+     * 1 = threshold not satisfied
+     */
+    process.exitCode = result.passed ? 0 : 1;
+  } finally {
+    console.log("");
+    console.log("Stopping ShantanuJS test environment...");
+
+    await stopTestEnvironment();
+
+    console.log("ShantanuJS test environment stopped.");
   }
-
-  console.log(`Collected ${records.length} test case(s).`);
-
-  const verifier = new TestResultVerifier(threshold);
-  const result = verifier.verifyAll(records);
-
-  console.log(verifier.formatReport(result));
-
-  /*
-   * Exit code is the machine-readable result.
-   *
-   * 0 = verification succeeded
-   * 1 = verification failed
-   *
-   * This allows CI/CD systems and other scripts to use the result.
-   */
-  process.exitCode = result.passed ? 0 : 1;
 }
 
 /**
@@ -162,6 +215,7 @@ main().catch((error: unknown) => {
   console.error("");
   console.error("TEST VERIFICATION ERROR");
   console.error("=======================");
+
   console.error(error instanceof Error ? error.message : String(error));
 
   process.exitCode = 1;
