@@ -186,7 +186,7 @@ export function createCanvas() {
           // -------- ERROR VALIDATION (optional) --------
           error: {
             expected: new Error("Expected error"),
-            expectedStatus: "pass",
+            expectedStatus: "fail",
           },
         },
       });

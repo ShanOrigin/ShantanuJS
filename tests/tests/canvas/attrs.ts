@@ -188,7 +188,7 @@ export function attrsCanvasMethod() {
           // -------- ERROR VALIDATION (optional) --------
           error: {
             expected: new Error("Expected error"),
-            expectedStatus: "pass",
+            expectedStatus: "fail",
           },
         },
       });

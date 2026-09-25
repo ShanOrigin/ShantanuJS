@@ -226,7 +226,7 @@ export function initializeCanvasAndShapes(
 
   const image = new API.Media.Image({
     ...shapeGeometry.image,
-    href: "/src/tests/data/deps.png",
+    href: "/tests/data/deps.png",
   });
 
   // --------------------------------------------------------------------------
