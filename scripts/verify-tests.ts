@@ -187,8 +187,21 @@ async function main(): Promise<void> {
     // Markdown report
     // -----------------------------------------------------------------------
 
+    const now = new Date();
+
+    const date = [
+      String(now.getDate()).padStart(2, "0"),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getFullYear()).slice(-2),
+    ].join("-");
+
+    const time = [
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0"),
+    ].join("-");
+
     await writeMarkdownTestReport(result, {
-      outputPath: "tests/test-report.md",
+      outputPath: `tests/reports/test-report-${date}-${time}.md`,
     });
 
     /*
