@@ -322,7 +322,7 @@ export default class ShantanuJSTestTool {
     if (testDef.setup) {
       try {
         testDef.setup(this.#api, this.#context);
-        //  this.#context.canvas.engine.flush();
+        this.#context.canvas.engine.flush();
       } catch (error) {
         setupErrors.push(error as Error);
       }
@@ -345,7 +345,7 @@ export default class ShantanuJSTestTool {
     let actionError: Error | undefined;
     try {
       testDef.actions(this.#api, this.#context);
-      // this.#context.canvas.engine.flush();
+      this.#context.canvas.engine.flush();
     } catch (error) {
       actionError = error instanceof Error ? error : new Error(String(error));
     }
