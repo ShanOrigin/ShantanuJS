@@ -6,60 +6,58 @@ import type { MetaData, SaveFileData, Tests } from "./types";
 const PORT = 4000;
 
 /**
- * Resolves a corresponding test file path from a given dist file URL.
+ * Resolves the persistent test-result file from a compiled test file URL.
  *
- * This function enforces a strict mapping between compiled output (`/dist/...`)
- * and source test artifacts stored under `/src/...`.
+ * Compiled tests are emitted into:
  *
- * Transformation pipeline:
- * 1. Extract pathname from the URL
- * 2. Validate that the path originates from `/dist/`
- * 3. Strip `/dist` prefix to derive relative path
- * 4. Remove `.js` extension
- * 5. Remove optional hash suffix (e.g., `.abc123`)
- * 6. Map to `/src` directory
- * 7. Append `.sh.vtest.json` as test file extension
+ *   test-dist/tests/...
+ *
+ * Their corresponding test-result files are stored alongside the
+ * test source files under:
+ *
+ *   tests/...
  *
  * Example:
+ *
  * Input:
- *   http://localhost:4000/dist/module/file.abc123.js
+ *   http://127.0.0.1:3000/test-dist/tests/tests/shape/media/text/restoreDimension.js
  *
  * Output:
- *   <cwd>/src/module/file.sh.vtest.json
+ *   <cwd>/tests/tests/shape/media/text/restoreDimension.sh.vtest.json
  *
- * @param fileUrl - Absolute URL pointing to a dist JavaScript file
- * @returns Object containing resolved test file path
+ * @param fileUrl - Absolute URL pointing to a compiled test file.
+ * @returns Absolute path to the corresponding `.sh.vtest.json` file.
  *
- * @throws Error if the pathname does not start with `/dist/`
+ * @throws Error if the URL does not originate from `/test-dist/`.
  */
 function resolveFile(fileUrl: string) {
   const url = new URL(fileUrl);
   const pathname = url.pathname;
 
-  // Enforce strict contract: only dist files are allowed
-  if (!pathname.startsWith("/dist/")) {
-    throw new Error("Invalid dist path");
+  // Test artifacts must originate from test-dist.
+  if (!pathname.startsWith("/test-dist/")) {
+    throw new Error("Invalid test-dist path");
   }
 
-  // Remove `/dist` prefix
-  const relative = pathname.replace(/^\/dist/, "");
+  // Remove `/test-dist` prefix.
+  const relative = pathname.replace(/^\/test-dist/, "");
 
-  // Strip `.js` extension
+  // Strip `.js` extension.
   let withoutExt = relative.replace(/\.js$/, "");
 
-  // Remove hash suffix (e.g., `.abc123`) if present
+  // Remove optional hash suffix.
   withoutExt = withoutExt.replace(/\.[a-f0-9]+$/, "");
 
-  // Map to source directory
-  const srcBase = path.join(process.cwd(), "src", withoutExt);
+  // Remove leading slash before converting to a filesystem path.
+  const relativePath = withoutExt.replace(/^[/\\]+/, "");
 
-  const dirPath = path.dirname(srcBase);
-  const fileName = path.basename(srcBase);
+  // Map compiled test output back to the repository path.
+  const testsBase = path.join(process.cwd(), relativePath);
 
-  // Final test file path
-  const fullPath = path.join(dirPath, `${fileName}.sh.vtest.json`);
+  const dirPath = path.dirname(testsBase);
+  const fileName = path.basename(testsBase);
 
-  return fullPath;
+  return path.join(dirPath, `${fileName}.sh.vtest.json`);
 }
 
 /**
@@ -147,123 +145,42 @@ function checkConsistency(fileMeta: MetaData, testMeta: MetaData) {
 }
 
 /**
- * HTTP server responsible for receiving, validating, and persisting test data.
+ * HTTP server for ShantanuJS browser-test communication and result storage.
  *
- * Core Responsibilities:
- * ----------------------
- * 1. Handle CORS for cross-origin test runners
- * 2. Accept POST requests at `/save`
- * 3. Validate incoming payload integrity and schema
- * 4. Resolve deterministic file path from `fileUrl`
- * 5. Ensure test file existence (atomic creation if missing)
- * 6. Load and validate existing file structure
- * 7. Enforce metadata consistency across writes
- * 8. Merge incoming tests into persistent storage
- * 9. Maintain deterministic ordering of test entries
- * 10. Persist updated state back to disk
+ * Responsibilities:
+ * - Handle CORS and preflight requests.
+ * - Receive and persist test results through POST /save.
+ * - Track browser test completion through POST /test-complete.
+ * - Expose test execution status through GET /test-status.
+ * - Validate request data and enforce metadata consistency.
+ * - Merge and deterministically sort saved test results.
  *
+ * Test results are persisted as JSON files resolved from the
+ * request's fileUrl. Incoming test entries replace existing
+ * entries with the same test ID.
  *
- * Request Contract:
- * -----------------
- * POST /save
- *
- * Body (JSON):
- * {
- *   fileUrl: string,
- *   meta: {
- *     info: {
- *       canvasId: string,
- *       module: string,
- *       testType: string
- *     },
- *     environment: {
- *       platform: string,
- *       libraryVersion: string,
- *       browser: {
- *         name: string,
- *         version: string
- *       }
- *     }
- *   },
- *   tests: {
- *     [testId: string]: any
- *   }
- * }
- *
- *
- * Processing Pipeline:
- * --------------------
- * 1. Payload accumulation with size guard (≤ 1MB)
- * 2. JSON parsing with explicit failure handling
- * 3. Structural validation of required fields
- * 4. File path resolution via `resolveFile`
- * 5. File creation via `ensureFile` (idempotent)
- * 6. Existing file read + JSON parse
- * 7. Structure normalization (ensure `tests` exists)
- * 8. Metadata initialization (first write only)
- * 9. Metadata consistency enforcement (`checkConsistency`)
- * 10. Test merge (last-write-wins per ID)
- * 11. Stable sorting:
- *     - Numeric keys → ascending numeric order
- *     - Non-numeric → lexicographic order
- * 12. Atomic overwrite of file contents
- * 13. JSON response emission
- *
- *
- * Response Contract:
- * ------------------
- * Success:
- *   200 → { status: "saved" }
- *
- * Failure:
- *   500 → {
- *     status: "error",
- *     message: string
- *   }
- *
- *
- * Security / Integrity Considerations:
- * -----------------------------------
- * - Basic payload size limit (1MB) → prevents trivial memory abuse
- * - No authentication → fully open write surface (high risk)
- * - No schema validation beyond shallow checks → malformed nested data possible
- * - No concurrency control → race conditions can corrupt file
- * - No file locking → parallel writes are unsafe
- * - Path resolution depends on trusted `fileUrl` → potential attack vector if not tightly constrained
- *
- *
- * Design Constraints:
- * -------------------
- * - Synchronous file I/O → blocks event loop under load
- * - Assumes single-writer model
- * - Assumes stable metadata schema
- * - Uses overwrite strategy instead of append log → no history tracking
- *
- *
- * Failure Modes:
- * --------------
- * - Invalid JSON → immediate rejection
- * - Metadata mismatch → hard failure (write denied)
- * - File corruption → unrecoverable without manual intervention
- * - Partial writes (crash during write) → data loss risk
- *
- *
- * Strategic Weakness (Important):
- * -------------------------------
- * This system is not production-safe under concurrency.
- *
- * If two requests hit simultaneously:
- *   read → modify → write
- * you have a classic lost-update problem.
- *
- * If you scale this beyond a single process, it will break.
+ * The server uses synchronous file I/O and assumes a single-writer
+ * test environment. It is intended for local/CI test execution,
+ * not concurrent production workloads.
  */
 
+
+let testCompleted = false;
+let testSucceeded = false;
+let testError: string | undefined;
+
 const server = http.createServer((req, res) => {
-  // ---- CORS ----
+  /* ------------------------------------------------------------------------ */
+  /* CORS                                                                     */
+  /* ------------------------------------------------------------------------ */
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+
+  /* ------------------------------------------------------------------------ */
+  /* OPTIONS                                                                  */
+  /* ------------------------------------------------------------------------ */
 
   if (req.method === "OPTIONS") {
     res.writeHead(200);
@@ -271,14 +188,104 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ---- SAVE ----
+  /* ------------------------------------------------------------------------ */
+  /* TEST COMPLETE                                                            */
+  /* ------------------------------------------------------------------------ */
+
+  if (req.method === "POST" && req.url === "/test-complete") {
+    let body = "";
+
+    req.on("data", (chunk) => {
+      body += chunk;
+
+      if (body.length > 1e6) {
+        console.error("[TEST] Completion payload too large.");
+        req.socket.destroy();
+      }
+    });
+
+    req.on("end", () => {
+      try {
+        const parsed = JSON.parse(body);
+
+        testCompleted = true;
+        testSucceeded = parsed.success === true;
+
+        testError = typeof parsed.error === "string" ? parsed.error : undefined;
+
+        console.log("");
+        console.log("================ TEST COMPLETE ================");
+
+        console.log(`Success : ${testSucceeded}`);
+
+        if (testError) {
+          console.log(`Error   : ${testError}`);
+        }
+
+        console.log("================================================");
+        console.log("");
+
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+        });
+
+        res.end(
+          JSON.stringify({
+            status: "completed",
+          }),
+        );
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+
+        console.error("[TEST] Invalid completion payload:", message);
+
+        res.writeHead(400, {
+          "Content-Type": "application/json",
+        });
+
+        res.end(
+          JSON.stringify({
+            status: "error",
+            message,
+          }),
+        );
+      }
+    });
+
+    return;
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* TEST STATUS                                                              */
+  /* ------------------------------------------------------------------------ */
+
+  if (req.method === "GET" && req.url === "/test-status") {
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+    });
+
+    res.end(
+      JSON.stringify({
+        completed: testCompleted,
+        success: testSucceeded,
+        error: testError ?? null,
+      }),
+    );
+
+    return;
+  }
+
+  /* ------------------------------------------------------------------------ */
+  /* SAVE TEST RESULTS                                                        */
+  /* ------------------------------------------------------------------------ */
+
   if (req.method === "POST" && req.url === "/save") {
     let body = "";
 
     req.on("data", (chunk) => {
       body += chunk;
 
-      // basic protection against large payloads
+      // Basic protection against large payloads.
       if (body.length > 1e6) {
         console.error("Payload too large");
         req.socket.destroy();
@@ -287,24 +294,32 @@ const server = http.createServer((req, res) => {
 
     req.on("end", () => {
       try {
-        // ---------------- PARSE ----------------
-        let parsed;
+        /* ------------------------------------------------------------------ */
+        /* PARSE                                                               */
+        /* ------------------------------------------------------------------ */
+
+        let parsed: SaveFileData;
+
         try {
-          parsed = JSON.parse(body);
-        } catch (e) {
+          parsed = JSON.parse(body) as SaveFileData;
+        } catch {
           throw new Error("Invalid JSON payload");
         }
 
-        const { fileUrl, meta, tests, save } = parsed as SaveFileData;
+        const { fileUrl, meta, tests, save } = parsed;
 
         console.log("\n\n================ INCOMING REQUEST ================\n");
 
         console.log("fileUrl:", fileUrl);
         console.log("meta:", meta);
         console.log("tests:", tests);
+
         console.log("\n==================================================\n\n");
 
-        // ---------------- VALIDATION ----------------
+        /* ------------------------------------------------------------------ */
+        /* VALIDATION                                                          */
+        /* ------------------------------------------------------------------ */
+
         if (!fileUrl || typeof fileUrl !== "string") {
           throw new Error("Invalid or missing fileUrl");
         }
@@ -317,30 +332,52 @@ const server = http.createServer((req, res) => {
           throw new Error("Invalid or missing tests object");
         }
 
-        let fullPath!: string, fileData;
+        let fullPath!: string;
+        let fileData: any;
+
+        /* ------------------------------------------------------------------ */
+        /* FILE PROCESSING                                                     */
+        /* ------------------------------------------------------------------ */
+
         if (save) {
-          // ---------------- RESOLVE FILE ----------------
+          /* ---------------------------------------------------------------- */
+          /* RESOLVE FILE                                                      */
+          /* ---------------------------------------------------------------- */
+
           fullPath = resolveFile(fileUrl) as string;
 
           console.log("fullPath : ", fullPath);
-          // ---------------- ENSURE FILE ----------------
+
+          /* ---------------------------------------------------------------- */
+          /* ENSURE FILE                                                       */
+          /* ---------------------------------------------------------------- */
+
           try {
             ensureFile(fullPath);
-          } catch (e: unknown) {
-            if (e instanceof Error)
-              throw new Error(`File creation failed: ${e.message}`);
+          } catch (error: unknown) {
+            if (error instanceof Error) {
+              throw new Error(`File creation failed: ${error.message}`);
+            }
+
+            throw error;
           }
 
-          // ---------------- READ FILE ----------------
+          /* ---------------------------------------------------------------- */
+          /* READ FILE                                                         */
+          /* ---------------------------------------------------------------- */
 
           try {
             const raw = fs.readFileSync(fullPath, "utf-8");
+
             fileData = JSON.parse(raw);
-          } catch (e) {
+          } catch {
             throw new Error("Failed to read or parse existing file");
           }
 
-          // ---------------- VALIDATE STRUCTURE ----------------
+          /* ---------------------------------------------------------------- */
+          /* VALIDATE FILE STRUCTURE                                           */
+          /* ---------------------------------------------------------------- */
+
           if (!fileData || typeof fileData !== "object") {
             throw new Error("Corrupted file structure");
           }
@@ -349,53 +386,84 @@ const server = http.createServer((req, res) => {
             fileData.tests = {};
           }
 
-          // ---------------- META INIT ----------------
+          /* ---------------------------------------------------------------- */
+          /* INITIALIZE METADATA                                               */
+          /* ---------------------------------------------------------------- */
+
           if (!fileData.meta || Object.keys(fileData.meta).length === 0) {
             console.log("Initializing metadata...");
+
             fileData.meta = meta;
           }
 
-          // ---------------- META CONSISTENCY ----------------
+          /* ---------------------------------------------------------------- */
+          /* CHECK METADATA CONSISTENCY                                        */
+          /* ---------------------------------------------------------------- */
+
           if (!checkConsistency(fileData.meta, meta)) {
             console.error("Existing meta:", fileData.meta);
+
             console.error("Incoming meta:", meta);
+
             throw new Error("File metadata mismatch");
           }
 
-          // ---------------- SAVE TESTS ----------------
+          /* ---------------------------------------------------------------- */
+          /* SAVE TESTS                                                        */
+          /* ---------------------------------------------------------------- */
 
-          for (const [id, t] of Object.entries(tests)) {
+          for (const [id, testData] of Object.entries(tests)) {
             if (!id) {
               console.warn("Skipping invalid test with empty id");
+
               continue;
             }
 
-            fileData.tests[id] = t;
+            fileData.tests[id] = testData;
           }
 
-          // ---------------- SORT ----------------
+          /* ---------------------------------------------------------------- */
+          /* SORT TESTS                                                        */
+          /* ---------------------------------------------------------------- */
+
           const sorted = Object.entries(fileData.tests).sort(([a], [b]) => {
             const na = Number(a);
             const nb = Number(b);
 
-            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            if (!Number.isNaN(na) && !Number.isNaN(nb)) {
+              return na - nb;
+            }
+
             return a.localeCompare(b);
           });
 
           fileData.tests = Object.fromEntries(sorted);
         }
-        // ---------------- WRITE ----------------
+
+        /* ------------------------------------------------------------------ */
+        /* ANALYSIS + WRITE                                                    */
+        /* ------------------------------------------------------------------ */
+
         try {
-          displayAnalysis({ meta, tests });
-          save &&
-            fs.writeFileSync(
-              fullPath as string,
-              JSON.stringify(fileData, null, 2),
-            );
-        } catch (e) {
-          if (e instanceof Error)
-            throw new Error(`File write failed: ${e.message}`);
+          displayAnalysis({
+            meta,
+            tests,
+          });
+
+          if (save) {
+            fs.writeFileSync(fullPath, JSON.stringify(fileData, null, 2));
+          }
+        } catch (error: unknown) {
+          if (error instanceof Error) {
+            throw new Error(`File write failed: ${error.message}`);
+          }
+
+          throw error;
         }
+
+        /* ------------------------------------------------------------------ */
+        /* SAVE INFORMATION                                                    */
+        /* ------------------------------------------------------------------ */
 
         if (save) {
           console.log("\n\t================ SAVE FILE PATH ================\n");
@@ -407,36 +475,74 @@ const server = http.createServer((req, res) => {
           console.log(
             "\n\t===============================================\n\n",
           );
+
           console.log("\t ✔ File Saved successfully\n");
         }
 
-        // ---------------- RESPONSE ----------------
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "saved" }));
-      } catch (err: unknown) {
-        // ---------------- ERROR ----------------
-        //
-        if (err instanceof Error) {
-          console.error("❌ SERVER ERROR:", err.message);
-          console.error(err.stack);
+        /* ------------------------------------------------------------------ */
+        /* RESPONSE                                                            */
+        /* ------------------------------------------------------------------ */
 
-          res.writeHead(500, { "Content-Type": "application/json" });
+        res.writeHead(200, {
+          "Content-Type": "application/json",
+        });
+
+        res.end(
+          JSON.stringify({
+            status: "saved",
+          }),
+        );
+      } catch (error: unknown) {
+        /* ------------------------------------------------------------------ */
+        /* ERROR                                                               */
+        /* ------------------------------------------------------------------ */
+
+        if (error instanceof Error) {
+          console.error("❌ SERVER ERROR:", error.message);
+
+          console.error(error.stack);
+
+          res.writeHead(500, {
+            "Content-Type": "application/json",
+          });
+
           res.end(
             JSON.stringify({
               status: "error",
-              message: err.message,
+              message: error.message,
             }),
           );
+
+          return;
         }
+
+        res.writeHead(500, {
+          "Content-Type": "application/json",
+        });
+
+        res.end(
+          JSON.stringify({
+            status: "error",
+            message: String(error),
+          }),
+        );
       }
     });
 
     return;
   }
 
+  /* ------------------------------------------------------------------------ */
+  /* UNKNOWN ROUTE                                                            */
+  /* ------------------------------------------------------------------------ */
+
   res.writeHead(404);
   res.end();
 });
+
+/* -------------------------------------------------------------------------- */
+/* START SERVER                                                               */
+/* -------------------------------------------------------------------------- */
 
 server.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
