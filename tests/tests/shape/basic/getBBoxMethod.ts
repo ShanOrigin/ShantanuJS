@@ -251,20 +251,22 @@ export function getBBoxMethod() {
             let extra: Record<string, any> = {};
 
             if (name === "dot") {
-              extra.r =( shape?.geometry as { r : number } ).r ;
-
+              extra.r = (shape?.geometry as { r: number }).r;
             } else if (name === "text") {
-        
-              const { text, x, y } = shape.geometry as {text : string , x : number , y : number};
+              const { text, x, y } = shape.geometry as {
+                text: string;
+                x: number;
+                y: number;
+              };
               const {
-                "font-size":fontSize,
-                "font-weight":fontWeight,
-                "font-style":fontStyle,
-                "letter-spacing":letterSpacing,
-                "word-spacing":wordSpacing,
-                "text-anchor":textAnchor,
-                "alignment-baseline":alignmentBaseline,
-                "dominant-baseline":dominantBaseline,
+                "font-size": fontSize,
+                "font-weight": fontWeight,
+                "font-style": fontStyle,
+                "letter-spacing": letterSpacing,
+                "word-spacing": wordSpacing,
+                "text-anchor": textAnchor,
+                "alignment-baseline": alignmentBaseline,
+                "dominant-baseline": dominantBaseline,
               } = shape.style as any;
 
               extra = {
@@ -281,7 +283,11 @@ export function getBBoxMethod() {
                 dominantBaseline,
               };
             }
-            generateBounds(name, shape?.geometry?.buffer as Float32Array, extra);
+            generateBounds(
+              name,
+              shape?.geometry?.buffer as Float32Array,
+              extra,
+            );
             console.warn(" shape ", name);
           },
 

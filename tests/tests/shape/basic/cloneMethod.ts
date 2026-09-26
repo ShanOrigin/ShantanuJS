@@ -24,7 +24,7 @@ export function cloneMethod() {
           actions() {},
 
           expect: {
-            constraints: { save: false },
+            constraints: { save: true, oracle: { browser: false } },
 
             testSubject: name,
 
