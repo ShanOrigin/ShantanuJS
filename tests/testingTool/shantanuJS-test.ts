@@ -473,41 +473,53 @@ export default class ShantanuJSTestTool {
     this.#saveTest(this.#results);
   }
 
+  static #pendingSavePromises: Promise<void>[] = [];
+
+  /**
+   * Awaits all pending asynchronous file saves across all test executions.
+   */
+  public static async waitForPendingSaves(): Promise<void> {
+    while (ShantanuJSTestTool.#pendingSavePromises.length > 0) {
+      const batch = ShantanuJSTestTool.#pendingSavePromises.splice(0);
+      await Promise.all(batch);
+    }
+  }
+
   /**
    * Persists test results to local server endpoint via HTTP POST.
    *
    * Behavior:
    * - Sends `fileUrl`, `meta`, and `tests` as JSON payload
    * - Delegates storage responsibility to backend (`/save`)
-   * - Asynchronous, but response is not validated or consumed
+   * - Tracks execution in `#pendingSavePromises` so test runner can await completion
    *
    * @param fileUrl - Source identifier for resolving storage location
    * @param meta - Optional metadata describing test context
    * @param tests - Collection of test outputs indexed by ID
-   *
-   * @sideEffects
-   * - Triggers network request to local server
-   *
-   * @risk
-   * - No error handling → silent failures possible
-   * - No response validation → assumes success blindly
-   * - Hardcoded endpoint → no environment flexibility
    */
-  async #saveTest({ fileUrl, meta, tests }: SaveFileData) {
-    try {
-      await fetch("http://localhost:4000/save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          save: this.#constraints.save,
-          fileUrl,
-          meta,
-          tests,
-        }),
-      });
-    } catch (e) { }
+  #saveTest({ fileUrl, meta, tests }: SaveFileData) {
+    const payload = JSON.stringify({
+      save: this.#constraints.save,
+      fileUrl,
+      meta,
+      tests,
+    });
+
+    const promise = (async () => {
+      try {
+        await fetch("http://localhost:4000/save", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: payload,
+        });
+      } catch (e) {
+        console.error("Save error:", e);
+      }
+    })();
+
+    ShantanuJSTestTool.#pendingSavePromises.push(promise);
   }
 
   /**
