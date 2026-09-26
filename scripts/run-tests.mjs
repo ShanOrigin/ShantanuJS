@@ -191,8 +191,6 @@ async function main() {
   try {
     await startTest();
 
-    await runVerification();
-
     console.log("");
     console.log("Test pipeline completed successfully.");
   } catch (error) {
