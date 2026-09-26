@@ -6,26 +6,26 @@
  *
  * Test execution can be controlled at two levels:
  *
- *   1. Section
- *   2. Test within that section
+ *   1. DOMAIN
+ *   2. Test within that DOMAIN
  *
  * Examples:
  *
- *   All sections and all tests:
+ *   All DOMAINs and all tests:
  *     npm run testing
  *
- *   Run one section:
+ *   Run one DOMAIN:
  *     npm run testing -- canvas
  *
- *   Run one test from a section:
+ *   Run one test from a DOMAIN:
  *     npm run testing -- canvas create
  *
- *   Run all tests from one section:
+ *   Run all tests from one DOMAIN:
  *     npm run testing -- transformations all
  *
- * When no section or test is supplied, the runner defaults to:
+ * When no DOMAIN or test is supplied, the runner defaults to:
  *
- *     section = all
+ *     DOMAIN = all
  *     test    = all
  *
  * ---------------------------------------------------------------------------
@@ -47,7 +47,7 @@
  * Adding a new test
  * ---------------------------------------------------------------------------
  *
- * Add the test function to the appropriate section in TEST_SECTIONS below.
+ * Add the test function to the appropriate DOMAIN in TEST_DOMAINS below.
  * No additional switch statement is required.
  *
  * Example:
@@ -56,11 +56,12 @@
  *
  * The test then becomes available through:
  *
- *     npm run testing -- section newTest
+ *     npm run testing -- DOMAIN newTest
  *
  * ---------------------------------------------------------------------------
  */
 
+import ShantanuJSTestTool from "./testingTool/shantanuJS-test.js";
 import { hideMethod } from "./tests/shape/basic/hideMethod.js";
 import { showMethod } from "./tests/shape/basic/showMethod.js";
 import { toBackMethod } from "./tests/shape/basic/toBackMethod.js";
@@ -98,18 +99,24 @@ import { restoreDimension } from "./tests/shape/media/text/restoreDimension.js";
 const TEST_CONTAINER_ID = "testing";
 
 /**
- * Special selector used to execute every test in a section.
+ * Special selector used to execute every test in a DOMAIN.
  */
 const ALL_TESTS = "all";
 /**
- * Default section executed when no section is supplied.
+ * Default DOMAIN executed when no DOMAIN is supplied.
  */
-const DEFAULT_SECTION = "shape";
+const DEFAULT_DOMAIN = "shape" ;
 
 /**
  * Default test executed when no test is supplied.
  */
-const DEFAULT_TEST = "toBack";
+const DEFAULT_TEST = 'hide' ;
+
+/**
+ * Manual visult result of indiviual test case in browser 
+ * if user want visual result in browser then set it true
+ */
+const REFRESH_CONTAINER = false ; 
 
 /* -------------------------------------------------------------------------- */
 /* Test types                                                                 */
@@ -123,28 +130,28 @@ const DEFAULT_TEST = "toBack";
 type TestFunction = () => void | Promise<void>;
 
 /**
- * Collection of tests belonging to one section.
+ * Collection of tests belonging to one DOMAIN.
  */
-type TestSection = Record<string, TestFunction>;
+type TestDOMAIN = Record<string, TestFunction>;
 
 /**
  * Complete test suite definition.
  */
-type TestSections = Record<string, TestSection>;
+type TestDOMAINs = Record<string, TestDOMAIN>;
 
 /* -------------------------------------------------------------------------- */
-/* Test sections                                                              */
+/* Test DOMAINs                                                              */
 /* -------------------------------------------------------------------------- */
 
 /**
  * Central test-suite registry.
  *
- * The section names defined here are the sections supported by the test
- * runner. Empty sections are intentionally kept for future test coverage.
+ * The DOMAIN names defined here are the DOMAINs supported by the test
+ * runner. Empty DOMAINs are intentionally kept for future test coverage.
  *
- * Add new test functions directly to the appropriate section.
+ * Add new test functions directly to the appropriate DOMAIN.
  */
-const TEST_SECTIONS: TestSections = {
+const TEST_DOMAINS: TestDOMAINs = {
   /* ------------------------------------------------------------------------ */
   /* Canvas                                                                   */
   /* ------------------------------------------------------------------------ */
@@ -287,18 +294,18 @@ function removeTestContainer(): void {
  * Tests are executed sequentially so that two tests never operate on the
  * same testing container at the same time.
  *
- * @param sectionName Section containing the test.
+ * @param DOMAINName DOMAIN containing the test.
  * @param testName Name of the test.
  * @param test Test function to execute.
  */
 async function executeTest(
-  sectionName: string,
+  DOMAINName: string,
   testName: string,
   test: TestFunction,
 ): Promise<void> {
-  createFreshTestContainer();
+ if( REFRESH_CONTAINER ) createFreshTestContainer();
 
-  console.log(`[TEST] Starting: ${sectionName}/${testName}`);
+  console.log(`[TEST] Starting: ${DOMAINName}/${testName}`);
 
   try {
     await test();
@@ -307,53 +314,53 @@ async function executeTest(
      * Use a warning instead of a normal log so completed test boundaries
      * remain easy to identify in the browser console.
      */
-    console.warn(`[TEST] Finished: ${sectionName}/${testName}`);
+    console.warn(`[TEST] Finished: ${DOMAINName}/${testName}`);
 
-    removeTestContainer();
+   if(REFRESH_CONTAINER) removeTestContainer();
   }
 }
 
 /**
- * Executes tests from one section.
+ * Executes tests from one DOMAIN.
  *
- * When `testName` is `all`, every test in the section is executed
+ * When `testName` is `all`, every test in the DOMAIN is executed
  * sequentially. Otherwise, only the requested test is executed.
  *
- * @param sectionName Name of the section to execute.
- * @param section Tests belonging to the section.
+ * @param DOMAINName Name of the DOMAIN to execute.
+ * @param DOMAIN Tests belonging to the DOMAIN.
  * @param testName Test name, or "all".
  */
-async function executeSection(
-  sectionName: string,
-  section: TestSection,
+async function executeDOMAIN(
+  DOMAINName: string,
+  DOMAIN: TestDOMAIN,
   testName: string = DEFAULT_TEST,
 ): Promise<void> {
-  const tests = Object.entries(section);
+  const tests = Object.entries(DOMAIN);
 
   /*
-   * Empty sections are valid. They are intentionally present for future
+   * Empty DOMAINs are valid. They are intentionally present for future
    * test coverage and should simply be skipped when no tests are registered.
    */
   if (tests.length === 0) {
-    console.warn(`[TEST] No tests registered in section: ${sectionName}`);
+    console.warn(`[TEST] No tests registered in DOMAIN: ${DOMAINName}`);
     return;
   }
 
   if (testName === ALL_TESTS) {
     for (const [name, test] of tests) {
-      await executeTest(sectionName, name, test);
+      await executeTest(DOMAINName, name, test);
     }
 
     return;
   }
 
-  const selectedTest = section[testName];
+  const selectedTest = DOMAIN[testName];
 
   if (!selectedTest) {
-    throw new Error(`Unknown test "${testName}" in section "${sectionName}".`);
+    throw new Error(`Unknown test "${testName}" in DOMAIN "${DOMAINName}".`);
   }
 
-  await executeTest(sectionName, testName, selectedTest);
+  await executeTest(DOMAINName, testName, selectedTest);
 }
 
 /**
@@ -367,37 +374,37 @@ async function executeSection(
  *     runTests("canvas", "create")
  *     runTests("transformations", "rotate")
  *
- * @param sectionName Section to execute. Defaults to "all".
- * @param testName Test within the section. Defaults to "all".
+ * @param DOMAINName DOMAIN to execute. Defaults to "all".
+ * @param testName Test within the DOMAIN. Defaults to "all".
  */
 export async function runTests(
-  sectionName: string = DEFAULT_SECTION,
+  DOMAINName: string = DEFAULT_DOMAIN,
   testName: string = DEFAULT_TEST,
 ): Promise<void> {
-  const normalizedSection = sectionName || DEFAULT_SECTION;
+  const normalizedDOMAIN = DOMAINName || DEFAULT_DOMAIN;
   const normalizedTest = testName || DEFAULT_TEST;
 
   /*
-   * Execute every registered section sequentially.
+   * Execute every registered DOMAIN sequentially.
    *
    * This is intentionally sequential because all tests share the browser
    * document and the same testing container ID.
    */
-  if (normalizedSection === ALL_TESTS) {
-    for (const [name, section] of Object.entries(TEST_SECTIONS)) {
-      await executeSection(name, section, normalizedTest);
+  if (normalizedDOMAIN === ALL_TESTS) {
+    for (const [name, DOMAIN] of Object.entries(TEST_DOMAINS)) {
+      await executeDOMAIN(name, DOMAIN, normalizedTest);
     }
 
     return;
   }
 
-  const section = TEST_SECTIONS[normalizedSection];
+  const DOMAIN = TEST_DOMAINS[normalizedDOMAIN];
 
-  if (!section) {
-    throw new Error(`Unknown test section "${normalizedSection}".`);
+  if (!DOMAIN) {
+    throw new Error(`Unknown test DOMAIN "${normalizedDOMAIN}".`);
   }
 
-  await executeSection(normalizedSection, section, normalizedTest);
+  await executeDOMAIN(normalizedDOMAIN, DOMAIN, normalizedTest);
 }
 
 /**
@@ -405,21 +412,32 @@ export async function runTests(
  *
  * Examples:
  *
- *   ?section=canvas&test=create
- *   ?section=canvas&test=all
- *   ?section=all&test=all
+ *   ?DOMAIN=canvas&test=create
+ *   ?DOMAIN=canvas&test=all
+ *   ?DOMAIN=all&test=all
  *
  * When no parameters are supplied, the complete test suite is executed.
  */
 function getTestArguments(): {
-  section: string;
+  DOMAIN: string;
   test: string;
 } {
   const params = new URLSearchParams(window.location.search);
 
+  const rawDomain =
+    params.get("DOMAIN") ||
+    params.get("domain") ||
+    params.get("section") ||
+    DEFAULT_DOMAIN;
+
+  const rawTest =
+    params.get("test") ||
+    params.get("TEST") ||
+    DEFAULT_TEST;
+
   return {
-    section: params.get("section") || DEFAULT_SECTION,
-    test: params.get("test") || DEFAULT_TEST,
+    DOMAIN: rawDomain.trim(),
+    test: rawTest.trim(),
   };
 }
 
@@ -434,17 +452,20 @@ function getTestArguments(): {
  * before this entry point is invoked.
  */
 async function startTestRunner(): Promise<void> {
-  const { section, test } = getTestArguments();
+  const { DOMAIN, test } = getTestArguments();
 
   console.warn(
-    `[TEST] Test runner starting: section="${section}", test="${test}"`,
+    `[TEST] Test runner starting: DOMAIN="${DOMAIN}", test="${test}"`,
   );
 
   try {
-    await runTests(section, test);
+    await runTests(DOMAIN, test);
+
+    // Ensure all asynchronous test result saves are completed before signaling done
+    await ShantanuJSTestTool.waitForPendingSaves();
 
     console.warn(
-      `[TEST] Test runner completed: section="${section}", test="${test}"`,
+      `[TEST] Test runner completed: DOMAIN="${DOMAIN}", test="${test}"`,
     );
 
     await fetch("http://127.0.0.1:4000/test-complete", {
@@ -454,7 +475,7 @@ async function startTestRunner(): Promise<void> {
       },
       body: JSON.stringify({
         success: true,
-        section,
+        DOMAIN,
         test,
       }),
     });
@@ -470,7 +491,7 @@ async function startTestRunner(): Promise<void> {
       },
       body: JSON.stringify({
         success: false,
-        section,
+        DOMAIN,
         test,
         error: error instanceof Error ? error.message : String(error),
       }),
