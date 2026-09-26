@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    "lib": ["ESNext"],
+    "types": ["node"],
+
+    "strict": true,
+    "skipLibCheck": true,
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "noEmit": true
+  },
+
+  "include": [
+    "./**/*.ts",
+    "../src/tests/test-verification.ts",
+    "../src/tests/testingTool/types.ts"
+  ],
+
+  "exclude": [
+    "../node_modules",
+    "../dist"
+  ]
+}
