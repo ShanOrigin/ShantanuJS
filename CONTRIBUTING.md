@@ -105,15 +105,15 @@ Create a separate branch from the latest `main` branch.
 
 Use the following prefixes:
 
-| Prefix | Purpose |
-| --- | --- |
-| `feature/` | New functionality |
-| `fix/` | Bug fixes |
-| `test/` | Testing and test coverage |
-| `docs/` | Documentation |
-| `refactor/` | Code restructuring |
-| `perf/` | Performance improvements |
-| `chore/` | Repository and development infrastructure |
+| Prefix      | Purpose                                   |
+| ----------- | ----------------------------------------- |
+| `feature/`  | New functionality                         |
+| `fix/`      | Bug fixes                                 |
+| `test/`     | Testing and test coverage                 |
+| `docs/`     | Documentation                             |
+| `refactor/` | Code restructuring                        |
+| `perf/`     | Performance improvements                  |
+| `chore/`    | Repository and development infrastructure |
 
 ### Examples
 
@@ -171,6 +171,284 @@ When fixing a bug, identify and correct the underlying cause rather than only ma
 ---
 
 ## Testing
+
+### How to Start Testing
+
+ShantanuJS provides a structured testing workflow that supports both **continuous development testing** and **CLI-based test execution and verification**.
+
+The testing workflow is divided into the following steps.
+
+---
+
+### 1. Create the Test File
+
+Create the test file according to the area of the library you want to test under:
+
+```text
+tests/tests/
+```
+
+Use the following directory structure:
+
+```text
+<domain>/<sub-domain: optional>/<file>.ts
+```
+
+For example:
+
+```text
+tests/tests/
+├── shapes/
+│   └── basic/
+│       ├── create.ts
+│       └── hideMethod.ts
+│
+└── transformation/
+    └── translate.ts
+```
+
+#### Naming Guidelines
+
+- The **domain** represents the main area of the library being tested.
+- The **sub-domain** is optional and can be used to further organize related tests.
+- The final `.ts` file contains the actual test implementation.
+- Keep the directory structure consistent with the area of functionality being tested.
+
+For example:
+
+```text
+tests/tests/shapes/basic/hideMethod.ts
+```
+
+#### Use the Test Template
+
+A complete test template is available at:
+
+```text
+tests/testingTool/demo.ts
+```
+
+Copy this template and modify it according to the requirements of your test.
+
+The template demonstrates how to:
+
+- Initialize the test environment.
+- Create and configure a canvas.
+- Create test shapes.
+- Prepare test data in the `setup` phase.
+- Perform the operation under test in the `actions` phase.
+- Define expectations and assertions.
+- Capture the state before and after an operation.
+- Use library and browser validation oracles.
+- Write custom validators.
+- Validate expected errors.
+- Save test results.
+
+---
+
+### 2. Register the Test
+
+After creating the test file, import the test function into:
+
+```text
+tests/tests.ts
+```
+
+This file contains the `TEST_SECTIONS` object, which maps test domains and individual test names to their corresponding test functions.
+
+Add or update the appropriate domain inside the existing `TEST_SECTIONS` object.
+
+For example:
+
+```ts
+const TEST_SECTIONS = {
+  // Existing test sections...
+
+  shape: {
+    hide: hideMethod,
+  },
+};
+```
+
+The keys in this object are important because they are used later when running tests from the CLI.
+
+For example:
+
+```text
+shape
+```
+
+is the **domain name**, while:
+
+```text
+hide
+```
+
+is the **test name**.
+
+> **Important:** Only modify the existing `TEST_SECTIONS` object when registering tests. Do not create a separate test-section object.
+
+> **Nesting limitation:** Test sections support a maximum of **two levels of nesting**. Do not add additional nesting levels, as deeper structures may not be handled correctly by the test runner.
+
+---
+
+### 2.5. Run Tests Continuously During Development
+
+If you are actively developing or debugging a test and want the test environment to remain running, use:
+
+```bash
+npm run test:dev
+```
+
+After starting the development test environment, you can control which tests are executed by changing the following constants in `tests/tests.ts`:
+
+```ts
+/**
+ * Default section executed when no section is supplied.
+ */
+const DEFAULT_DOMAIN = ALL_TESTS;
+
+/**
+ * Default test executed when no test is supplied.
+ */
+const DEFAULT_TEST = ALL_TESTS;
+
+/**
+ * Controls whether the test container should be refreshed after
+ * an individual test so that its visual result can be inspected
+ * manually in the browser.
+ *
+ * Set to `true` when visual inspection is required.
+ */
+const REFRESH_CONTAINER = false;
+```
+
+Use these constants when you want to work on a specific domain or test without repeatedly invoking the CLI.
+
+For example:
+
+```ts
+const DEFAULT_DOMAIN = "shape";
+const DEFAULT_TEST = "hide";
+```
+
+This allows you to continuously work on the selected test while the development test environment is running.
+
+The **browser console is recommended** for viewing test results, debugging information, and additional test output.
+
+> **Note:** This development workflow is intended for continuous/manual testing. If you use this workflow, you do not need to continue with the CLI steps below.
+
+---
+
+### 3. Run Tests from the CLI
+
+For CLI-based test execution, use:
+
+```bash
+npm run test -- <domain> <test>
+```
+
+The `<domain>` must match a key in the `TEST_SECTIONS` object, and `<test>` must match a test key inside that domain.
+
+For example:
+
+```bash
+npm run test -- shape hide
+```
+
+This runs the `hide` test from the `shape` domain.
+
+#### Run All Tests in a Domain
+
+To run every registered test in a specific domain:
+
+```bash
+npm run test -- <domain> all
+```
+
+For example:
+
+```bash
+npm run test -- shape all
+```
+
+This executes all tests registered under the `shape` domain.
+
+#### Run All Tests
+
+To execute all registered tests across all domains:
+
+```bash
+npm run test -- all all
+```
+
+The test runner executes the requested tests and waits for the browser-based test environment to complete.
+
+If the test contains:
+
+```ts
+constraints: {
+  save: true,
+}
+```
+
+the test result is persisted to its corresponding test-result data file.
+
+If:
+
+```ts
+constraints: {
+  save: false,
+}
+```
+
+the result is not persisted.
+
+For debugging and detailed information, the **browser console is recommended**, as it provides additional information generated during test execution.
+
+---
+
+### 4. Generate and Verify the Test Report
+
+After running the required tests, generate the overall verification report using:
+
+```bash
+npm run test:report threshold%=100
+```
+
+The `threshold%` value is configurable. You can provide the threshold required for your test verification.
+
+For example:
+
+```bash
+npm run test:report threshold%=80
+```
+
+The verification process:
+
+1. Scans the available test-result data files.
+2. Verifies the recorded test results.
+3. Applies the specified threshold.
+4. Displays the verification report in the CLI.
+5. Generates a Markdown report under:
+
+```text
+tests/reports/
+```
+
+Each report is generated with a timestamped filename so previous reports are not overwritten.
+
+For example:
+
+```text
+tests/reports/test-report-26-09-26-13-45-20.md
+```
+
+The generated report provides an overall view of the test results and can be used to review the current testing state.
+
+> **This is the final verification step of the CLI workflow.** The generated report can be used to determine whether the current test results satisfy the required verification threshold.
+
+# Bug Fix and Testing Workflow
 
 Testing is an important part of contributing to ShantanuJS.
 
