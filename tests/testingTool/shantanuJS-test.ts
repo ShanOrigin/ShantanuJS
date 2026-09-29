@@ -46,6 +46,7 @@ export type Canvas = ShantanuJS.Canvas;
 export type Context = {
   shapes: Record<string, Shape | Canvas>;
   canvas: ShantanuJS.Canvas;
+  custom?: Record<string, unknown>; //  added this property for user defined states in test.
 };
 
 export type fn = (api: ShantanuJSTypes, ctx: Context) => void;
