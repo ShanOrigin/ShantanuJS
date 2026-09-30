@@ -86,6 +86,7 @@ import { beginTTransformMethod } from "./tests/shape/transformations/beginT.js";
 import { endTTransformMethod } from "./tests/shape/transformations/endT.js";
 
 import { restoreDimension } from "./tests/shape/media/text/restoreDimension.js";
+import { testAsyncWait } from "./tests/testingTool/testAsyncWait.js";
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
@@ -105,18 +106,18 @@ const ALL_TESTS = "all";
 /**
  * Default DOMAIN executed when no DOMAIN is supplied.
  */
-const DEFAULT_DOMAIN = "shape" ;
+const DEFAULT_DOMAIN = "testingTool" ;
 
 /**
  * Default test executed when no test is supplied.
  */
-const DEFAULT_TEST = 'hide' ;
+const DEFAULT_TEST = 'testAsyncWait' ;
 
 /**
  * Manual visult result of indiviual test case in browser 
  * if user want visual result in browser then set it true
  */
-const REFRESH_CONTAINER = false ; 
+const REFRESH_CONTAINER = true ; 
 
 /* -------------------------------------------------------------------------- */
 /* Test types                                                                 */
@@ -236,6 +237,14 @@ const TEST_DOMAINS: TestDOMAINs = {
   bug: {
     restoreDimension,
   },
+
+  /* ------------------------------------------------------------------------ */
+  /* Testing Tool tests (Dev only)                                            */
+  /* ------------------------------------------------------------------------ */
+
+  testingTool: {
+    testAsyncWait
+  },
 };
 
 /* -------------------------------------------------------------------------- */
@@ -308,7 +317,18 @@ async function executeTest(
   console.log(`[TEST] Starting: ${DOMAINName}/${testName}`);
 
   try {
-    await test();
+    // Reset any lingering global promise state before executing the test
+    ShantanuJSTestTool.currentTestPromise = null;
+    
+    const testResult = test();
+    if (testResult instanceof Promise) {
+      await testResult;
+    }
+
+    // Wait for the asynchronous testing tool pipelines if the test forgot to return the promise
+    if (ShantanuJSTestTool.currentTestPromise) {
+      await ShantanuJSTestTool.currentTestPromise;
+    }
   } finally {
     /*
      * Use a warning instead of a normal log so completed test boundaries
@@ -392,6 +412,9 @@ export async function runTests(
    */
   if (normalizedDOMAIN === ALL_TESTS) {
     for (const [name, DOMAIN] of Object.entries(TEST_DOMAINS)) {
+      // if (name === "testingTool") {
+      //   continue;
+      // }
       await executeDOMAIN(name, DOMAIN, normalizedTest);
     }
 

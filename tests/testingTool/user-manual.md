@@ -133,6 +133,35 @@ const canvas = new api.Canvas('testing', 250, 400, 'svg');
 
 ---
 
+## ⏳ **ASYNC WAITS (OPTIONAL)**
+
+You can add fixed time-based waits at different pipeline boundaries:
+
+**1. Environment Initialization Wait:**
+```javascript
+testEnv.env({
+  async: { waitTime: 500 }, // Wait 500ms before run()
+  initialize,
+  run
+});
+```
+
+**2. Test-level Waits:**
+```javascript
+visualTest({
+  async: {
+    beforeAction: { waitTime: 300 }, // Wait 300ms before actions phase
+    afterAction: { waitTime: 200 }   // Wait 200ms before expect phase
+  },
+  testInfo,
+  setup,
+  actions,
+  expect
+});
+```
+
+---
+
 ## 📦 **Context ("ctx") Structure**
 
 Shared across all phases:

@@ -64,6 +64,11 @@ export function runTests(): void {
   // - Preparing shared test infrastructure
   // - Storing shared objects in the test context
   testEnv.env({
+    // ========================================================================
+    // OPTIONAL: INITIALIZATION WAIT
+    // ========================================================================
+    // async: { waitTime: 500 },
+
     initialize(api, ctx) {
       // Create the canvas used by the test.
       const canvas = new api.Canvas({
@@ -94,7 +99,15 @@ export function runTests(): void {
     // ========================================================================
     // The run phase is the entry point for defining individual test cases.
     run(ctx) {
-      testEnv.shTest({
+      return testEnv.shTest({
+        // ====================================================================
+        // OPTIONAL: TEST-LEVEL WAITS
+        // ====================================================================
+        // async: {
+        //   beforeAction: { waitTime: 300 },
+        //   afterAction: { waitTime: 200 },
+        // },
+
         // ====================================================================
         // TEST METADATA
         // ====================================================================

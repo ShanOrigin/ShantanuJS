@@ -308,14 +308,6 @@ const server = http.createServer((req, res) => {
 
         const { fileUrl, meta, tests, save } = parsed;
 
-        console.log("\n\n================ INCOMING REQUEST ================\n");
-
-        console.log("fileUrl:", fileUrl);
-        console.log("meta:", meta);
-        console.log("tests:", tests);
-
-        console.log("\n==================================================\n\n");
-
         /* ------------------------------------------------------------------ */
         /* VALIDATION                                                          */
         /* ------------------------------------------------------------------ */
@@ -346,7 +338,6 @@ const server = http.createServer((req, res) => {
 
           fullPath = resolveFile(fileUrl) as string;
 
-          console.log("fullPath : ", fullPath);
 
           /* ---------------------------------------------------------------- */
           /* ENSURE FILE                                                       */
@@ -391,7 +382,6 @@ const server = http.createServer((req, res) => {
           /* ---------------------------------------------------------------- */
 
           if (!fileData.meta || Object.keys(fileData.meta).length === 0) {
-            console.log("Initializing metadata...");
 
             fileData.meta = meta;
           }
@@ -445,10 +435,10 @@ const server = http.createServer((req, res) => {
         /* ------------------------------------------------------------------ */
 
         try {
-          displayAnalysis({
-            meta,
-            tests,
-          });
+          // displayAnalysis({
+          //   meta,
+          //   tests,
+          // });
 
           if (save) {
             fs.writeFileSync(fullPath, JSON.stringify(fileData, null, 2));
@@ -466,15 +456,9 @@ const server = http.createServer((req, res) => {
         /* ------------------------------------------------------------------ */
 
         if (save) {
-          console.log("\n\t================ SAVE FILE PATH ================\n");
 
           const relativePath = path.relative(process.cwd(), fullPath);
 
-          console.log(`\t PATH : ${relativePath}`);
-
-          console.log(
-            "\n\t===============================================\n\n",
-          );
 
           console.log("\t ✔ File Saved successfully\n");
         }

@@ -54,12 +54,22 @@ export type fn = (api: ShantanuJSTypes, ctx: Context) => void;
 export type shTestParams = {
   testInfo: TestInfo;
   capture?: { before?: boolean; after?: boolean };
+  async?: {
+    beforeAction?: { waitTime: number };
+    afterAction?: { waitTime: number };
+  };
   setup?: fn;
   actions: fn;
   expect: ExpectedBlock;
 };
 
 export default class ShantanuJSTestTool {
+  /**
+   * Tracks the promise of the currently executing test environment.
+   * Used by the test runner to ensure sequential execution even if tests
+   * do not explicitly return a promise.
+   */
+  static currentTestPromise: Promise<void> | null = null;
   /**
    * Internal auto-incrementing identifier used to assign unique IDs
    * to test cases during a single execution lifecycle.
@@ -255,19 +265,33 @@ export default class ShantanuJSTestTool {
   public env({
     initialize,
     run,
+    async,
   }: {
     initialize: (api: ShantanuJSTypes, ctx: Context) => void;
-    run: (ctx: Context, api?: ShantanuJSTypes) => void;
-  }) {
-    try {
-      initialize(this.#api, this.#context);
-    } catch (e) {
-      console.error("Error in env initialize callback");
-      console.error(e);
-      return;
-    }
+    run: (ctx: Context, api?: ShantanuJSTypes) => void | Promise<void>;
+    async?: { waitTime?: number };
+  }): Promise<void> {
+    const execution = (async () => {
+      try {
+        initialize(this.#api, this.#context);
+      } catch (e) {
+        console.error("Error in env initialize callback");
+        console.error(e);
+        return;
+      }
 
-    run(this.#context, this.#api);
+      if (async?.waitTime !== undefined) {
+        await new Promise(resolve => setTimeout(resolve, async.waitTime));
+      }
+
+      const runResult = run(this.#context, this.#api);
+      if (runResult instanceof Promise) {
+        await runResult;
+      }
+    })();
+
+    ShantanuJSTestTool.currentTestPromise = execution;
+    return execution;
   }
 
   /**
@@ -296,7 +320,7 @@ export default class ShantanuJSTestTool {
    * - Stores test results internally.
    * - Persists the generated report when enabled.
    */
-  public shTest(testDef: shTestParams): void {
+  public async shTest(testDef: shTestParams): Promise<void> {
     let capture = { before: true, after: true };
     if (testDef.capture) {
       capture = { ...capture, ...testDef.capture };
@@ -333,6 +357,10 @@ export default class ShantanuJSTestTool {
       }
     }
 
+    if (testDef.async?.beforeAction?.waitTime !== undefined) {
+      await new Promise(resolve => setTimeout(resolve, testDef.async!.beforeAction!.waitTime));
+    }
+
     // ---------------------------------------------------------------------------
     // Capture Initial State
     // ---------------------------------------------------------------------------
@@ -354,6 +382,10 @@ export default class ShantanuJSTestTool {
     if (actionError && !testDef.expect.error) {
       actionErrors.push(actionError);
       return this.#handleErrors("action", actionErrors);
+    }
+
+    if (testDef.async?.afterAction?.waitTime !== undefined) {
+      await new Promise(resolve => setTimeout(resolve, testDef.async!.afterAction!.waitTime));
     }
 
     // ---------------------------------------------------------------------------
