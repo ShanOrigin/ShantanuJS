@@ -542,7 +542,7 @@ function validateControlsOptimization(
 ): void {
   if (
     "optimizationTechnique" in controls &&
-    OPT_MAP.includes(controls.optimizationTechnique as OptimizationTechnique)
+    !OPT_MAP.includes(controls.optimizationTechnique as OptimizationTechnique)
   ) {
     throw new InvalidOptionError(
       "controls.optimizationTechnique",
