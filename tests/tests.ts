@@ -87,6 +87,7 @@ import { endTTransformMethod } from "./tests/shape/transformations/endT.js";
 
 import { restoreDimension } from "./tests/shape/media/text/restoreDimension.js";
 import { testAsyncWait } from "./tests/testingTool/testAsyncWait.js";
+import { animationPipeline } from "./tests/shape/animation/animationPipeline.js";
 
 /* -------------------------------------------------------------------------- */
 /* Constants                                                                  */
@@ -106,12 +107,12 @@ const ALL_TESTS = "all";
 /**
  * Default DOMAIN executed when no DOMAIN is supplied.
  */
-const DEFAULT_DOMAIN = "testingTool" ;
+const DEFAULT_DOMAIN = "bug" ;
 
 /**
  * Default test executed when no test is supplied.
  */
-const DEFAULT_TEST = 'testAsyncWait' ;
+const DEFAULT_TEST = 'animationPipeline' ;
 
 /**
  * Manual visult result of indiviual test case in browser 
@@ -236,6 +237,7 @@ const TEST_DOMAINS: TestDOMAINs = {
 
   bug: {
     restoreDimension,
+    animationPipeline,
   },
 
   /* ------------------------------------------------------------------------ */

@@ -2004,6 +2004,9 @@ export abstract class RenderNode<T extends ValidGraphicsShapes>
     accessKey: symbol,
   ): UpdateAnimationReturnType {
     assertAccess(accessKey);
+ 
+    const geo =  this[GET_INTERNAL_GEOMETRY_METHOD]( DEV_INTERNAL_ACCESS_KEY)  as  { localDirty: boolean, worldDirty: boolean  };
+    geo.worldDirty = true;
 
     return this.#components.animation.update(time) as UpdateAnimationReturnType;
   }
