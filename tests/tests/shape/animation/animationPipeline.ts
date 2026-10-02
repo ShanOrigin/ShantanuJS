@@ -2,7 +2,6 @@
 // Animation Pipeline Regression Test
 // ============================================================================
 
-
 import ShantanuJSTestTool, {
   Shape,
 } from "../../../testingTool/shantanuJS-test.js";
@@ -39,7 +38,7 @@ export function animationPipeline(): void {
     // ------------------------------------------------------------------------
 
     run(ctx) {
-     return testEnv.shTest({
+      return testEnv.shTest({
         // ====================================================================
         // TEST METADATA
         // ====================================================================
@@ -104,15 +103,18 @@ export function animationPipeline(): void {
               },
             },
 
-            advanceOptions :{
-        physics: { speed: 1, enabled: true },
-        curve: { enabled: true, path: "linear", samples: 100, curvature: 1 },
-        controls: {
-          direction: "normal",
-          optimizationTechnique: "fitPolynomialCoefficient",
-        },
-        pivots:{ mode : "c"}
-      
+            advanceOptions: {
+              physics: { speed: 1, enabled: true },
+              curve: {
+                enabled: true,
+                path: "linear",
+                samples: 100,
+                curvature: 1,
+              },
+              controls: {
+                direction: "normal",
+              },
+              pivots: { mode: "c" },
             },
 
             duration: 1000,
@@ -138,11 +140,11 @@ export function animationPipeline(): void {
           (ctx.custom as any).animation.start();
         },
 
-        async :{
-            afterAction : {
-                waitTime : 1500
-            }
-        } ,
+        async: {
+          afterAction: {
+            waitTime: 1500,
+          },
+        },
 
         // ====================================================================
         // EXPECT PHASE — ASSERT
@@ -154,7 +156,7 @@ export function animationPipeline(): void {
           // ------------------------------------------------------------------
 
           constraints: {
-            save:true ,
+            save: true,
 
             oracle: {
               browser: false,
@@ -182,9 +184,6 @@ export function animationPipeline(): void {
               expectedStatus: "pass",
 
               validate(shape, expected) {
-
-
-                
                 if (ctx.custom?.animationCompleted === true) {
                   return "pass";
                 }
