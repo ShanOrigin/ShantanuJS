@@ -689,6 +689,11 @@ export class Engine implements IEngine {
         worldDirty: boolean;
       };
 
+      const isAnimationOn = shape.isAnimation();
+      if (isAnimationOn) {
+        geo.localDirty = true;
+      }
+
       // -----------------------------------------------------------
       // BASE TRANSFORM (static)
       // -----------------------------------------------------------
@@ -702,7 +707,7 @@ export class Engine implements IEngine {
         // return current state of animation like activeor not
         const base = geo.transformStack.stack[0];
 
-        if (shape.isAnimation()) {
+        if (isAnimationOn) {
           const animationFrameData = shape[UPDATE_ANIMATION_METHOD](
             time,
             DEV_INTERNAL_ACCESS_KEY,
@@ -726,8 +731,8 @@ export class Engine implements IEngine {
 
         // delete after adding animation
         //geo.localMatrix.set(base);
-        const tempState = applyTransformToHomogeneousBuffer(base, geo.buffer);
-
+        const tempState = applyTransformToHomogeneousBuffer(geo.localMatrix, geo.buffer);
+      
         shape[RESTORE_DIMENSION_METHOD](DEV_INTERNAL_ACCESS_KEY, tempState);
       }
     }
