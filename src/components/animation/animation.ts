@@ -2837,7 +2837,7 @@ export class Animation implements IAnimation {
      * The resulting curve data is now fully ready
      * for time-based interpolation during animation.
      */
-    this.#curveFormation(this.#curvePoints, pivot);
+  //  this.#curveFormation(this.#curvePoints, pivot);
   }
 
   /**
