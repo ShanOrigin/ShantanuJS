@@ -55,6 +55,8 @@ export function precomputeFramesRaw(
 
     let a!: number, b!: number, c!: number, d!: number, e!: number, f!: number;
 
+    const identityMatrix = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+   
     [a = 1, b = 0, , c = 0, d = 1, , e = 0, f = 0] =
       createAffineTransformMatrix({
         transformations: {
@@ -81,6 +83,8 @@ export function precomputeFramesRaw(
         },
         major: "column",
         arrayType: "float32",
+        multiplyWithBase:true,
+        baseTMatrix : identityMatrix
       } as CreateTransformationMatrixProps) as Float32Array;
 
     const offset = i * 6;

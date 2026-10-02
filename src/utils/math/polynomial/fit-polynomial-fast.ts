@@ -41,6 +41,8 @@ export function fitTransformPolynomialsFast(
     e0!: number,
     f0!: number;
 
+  const identityMatrix = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+  
   [a0 = 1, b0 = 0, , c0 = 0, d0 = 1, , e0 = 0, f0 = 0] =
     createAffineTransformMatrix({
       transformations: {
@@ -67,6 +69,8 @@ export function fitTransformPolynomialsFast(
       },
       major: "column",
       arrayType: "float32",
+              multiplyWithBase:true,
+        baseTMatrix : identityMatrix
     } as CreateTransformationMatrixProps) as Float32Array;
 
   let a1!: number,
@@ -102,6 +106,8 @@ export function fitTransformPolynomialsFast(
       },
       major: "column",
       arrayType: "float32",
+      multiplyWithBase:true,
+      baseTMatrix : identityMatrix
     } as CreateTransformationMatrixProps) as Float32Array;
 
   // Build cubic per coefficient
